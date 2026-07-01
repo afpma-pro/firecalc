@@ -37,14 +37,11 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
             firebox.origineArriveeAir match
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
                     val fullDescr = CombustionAirPipe_Module_15544.incremental
+                        .withInitialDirection                                 (PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
                         .define(
-                            setInitialDirection    (
-                                azimuth     = AzimuthDirection.Rear,
-                                inclination = InclinationDirection.Up
-                            ), // Up
-                            innerShape             (arriveeAirGeometry),
-                            roughness              (3.mm              ),
-                            addSectionVertical     (
+                            innerShape          (arriveeAirGeometry                          ),
+                            roughness           (3.mm                                        ),
+                            addSectionVertical  (
                                 "remontée dans chambre de détente",
                                 (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0
                             ),
@@ -118,4 +115,4 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                             addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm   )
                         )
                         .toFullDescr()
-                    CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)
+                    CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                                                           )

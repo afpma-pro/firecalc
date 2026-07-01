@@ -6,14 +6,13 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.AbsoluteDirection
-import afpma.firecalc.dto.all.AzimuthDirection
-import afpma.firecalc.dto.all.InclinationDirection
+import afpma.firecalc.domain.toAbsoluteDirection
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipeFrame.RelativeSide
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
+import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS
@@ -53,7 +52,7 @@ case class RelativeDirectionInput(
 
     /** Translate a RelativeSide to a localized label. */
     private def sideLabel(side: RelativeSide): String =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
         side match
             case RelativeSide.Right => i18n.relative_right
             case RelativeSide.Left  => i18n.relative_left
@@ -72,7 +71,7 @@ case class RelativeDirectionInput(
      * Otherwise, fall back to the static relative-label list.
      */
     private def optionsFor(frameOpt: Option[PipeFrame]): List[(String, RelativeSide)] =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
         frameOpt match
             case Some(f)
                 if math.abs(math.abs(f.direction.z) - 1.0) < 1e-6
@@ -98,22 +97,13 @@ case class RelativeDirectionInput(
             case _ =>
                 allSides.map(s => sideLabel(s) -> s)
 
-    private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
-        val (az, el) = v.toAzimuthElevation
-        val incl = InclinationDirection.fromDegrees(el)
-        incl match
-            case InclinationDirection.Up | InclinationDirection.Down =>
-                new AbsoluteDirection(None, incl)
-            case _                                                   =>
-                AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
-
     private def computeFinalDir(
         side   : RelativeSide,
         theta  : Double,
         frame  : PipeFrame,
         deflDeg: Double
     ): Option[AbsoluteDirection] =
-        Some(vec3ToAbsoluteDirection(frame.relativeTarget(side, theta, deflDeg)))
+        Some(frame.relativeTarget(side, theta, deflDeg).toAbsoluteDirection)
 
     private def recoverSideTheta(fd: AbsoluteDirection, frame: PipeFrame, deflDeg: Double): (RelativeSide, Double) =
         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
@@ -146,7 +136,7 @@ case class RelativeDirectionInput(
             case _ => false
 
     lazy val node: HtmlElement =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
 
         // Derived signal: what AbsoluteDirection the current (side, theta, frame, deflection) produces.
         // Depends on all 4 inputs, but is only sampled (not subscribed) by the forward sync.
@@ -223,16 +213,24 @@ case class RelativeDirectionInput(
         // .composeChanges(_.take(1)) lets through at most 1 subsequent change.
         // Net effect: fires for initial value, plus up to 1 change (in case
         // context signals aren't ready at mount but arrive shortly after).
+        //
+        // Also handles freshly-inserted elements whose absDir is None (e.g.
+        // air-intake pipe which bypasses ChainEditDispatcher): when externalStSig
+        // is None because absDir is unset, fall back to the computed default
+        // (side=Right, theta=0) and write it to absDirVar so the badge shows
+        // the actual outgoing direction instead of falling back to the incoming one.
         val initialSync =
             externalStSig
-                .composeChanges(_.take(1))
-                --> Observer[Option[(RelativeSide, Double)]] {
-                    case Some((side, theta)) =>
+                .composeChanges(identity)
+                .withCurrentValueOf(localFdSig)
+                .withCurrentValueOf(absDirVar.signal)
+                --> Observer[(Option[(RelativeSide, Double)], Option[AbsoluteDirection], Option[AbsoluteDirection])] {
+                    case (Some((side, theta)), _, _) =>
                         sideVar.set (side )
                         thetaVar.set(theta)
-                    case None                => ()
+                    case (None, localFd, curAbsDir ) =>
+                        if curAbsDir.isEmpty then localFd.foreach(fd => absDirVar.set(Some(fd)))
                 }
-
         div(
             cls := "flex flex-row items-end gap-2 mt-1",
 

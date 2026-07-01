@@ -216,6 +216,15 @@ java -Dfirecalc.env=prod -jar modules/payments/target/scala-*/firecalc-payments-
 FIRECALC_ENV=prod java -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
 ```
 
+## Test Scaffolding Directories
+
+Two additional directories exist for test infrastructure:
+
+- **`test-exists/`** — Contains `payments/` subdirectory. Used by tests to verify that the `ConfigPathResolver` correctly detects the existence of environment-specific configuration files.
+- **`test-logos/`** — Contains `reports/` subdirectory. Used by tests to verify logo file detection and fallback behavior.
+
+
+
 ## Configuration File Details
 
 ### Payments Configuration

@@ -42,7 +42,7 @@ class StrictInterleavedConnectorFixtureSuite extends AnyFreeSpec with Matchers:
 
         "overrides postFireboxPipeSlots with a 5-slot vector" in {
             val slots = StrictInterleavedConnectorFixture_15544.postFireboxPipeSlots
-            import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+            import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
             slots.size shouldBe 5
             slots(0) shouldBe a[FlueSlot]
             slots(1) shouldBe a[ConnectorSlot]

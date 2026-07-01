@@ -5,21 +5,25 @@
 
 package afpma.firecalc.engine.impl.en15544.strict
 
-import io.scalaland.chimney.dsl.*
+import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v6.FireCalcYAML_V6
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.LocalRegulations
-import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.engine.standard.TBurnoutNotSet
 
-import io.taig.babel.Locale
+import cats.data.Validated
+import io.scalaland.chimney.dsl.*
 import io.taig.babel.Languages
-
+import io.taig.babel.Locale
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -50,21 +54,25 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
         )
 
     private def stubSingleTestedDTO(
-        maxFuelMass                             : Double,
-        coMgNm3                                 : Option[Double] = None
+        maxFuelMass                               : Double,
+        coMgNm3                                   : Option[Double]   = None,
+        fireboxDepth                              : Length           = 0.44.meters,
+        fireboxWidth                              : Length           = 0.42.meters,
+        fireboxHeight                             : Length           = 0.6.meters,
+        tBurnout                                  : Option[TCelsius] = Some(550.degreesCelsius)
     ): Firebox.SingleTested =
         Firebox.SingleTested(
             reference                              = "Test SingleTested",
             type_of_appliance                      = TypeOfAppliance.WoodLogs,
             test_standard                          = Firebox.TestStandard.EN_13229,
-            firebox_depth                          = 0.44.meters,
-            firebox_width                          = 0.42.meters,
-            firebox_height                         = 0.6.meters,
+            firebox_depth                          = fireboxDepth,
+            firebox_width                          = fireboxWidth,
+            firebox_height                         = fireboxHeight,
             ash_pit_height                         = 0.05.meters,
             is_glass_surface_ratio_below_one_fifth = true,
             glass_area                             = 0.25.squareMeters,
             mean_firebox_temperature               = Some(700.degreesCelsius),
-            t_burnout                              = 550.degreesCelsius,
+            t_burnout                              = tBurnout,
             efficiency_nominal                     = 80.percent,
             efficiency_reduced                     = None,
             heat_output_reduced                    = HeatOutputReduced.NotDefined,
@@ -86,12 +94,12 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
             facing_type    = FacingType.WithoutAirGap
         )
 
-    /** Build a FireCalcYAML_V6 that wires ExampleProject_15544 pipes around a SingleTested firebox. */
+    /** Build a FireCalcYAML_V7 that wires ExampleProject_15544 pipes around a SingleTested firebox. */
     private def buildEngineState(
         firebox                            : Firebox.SingleTested,
         stoveParams                        : StoveParams
-    ): FireCalcYAML_V6 =
-        FireCalcYAML_V6(
+    ): FireCalcYAML_V7 =
+        FireCalcYAML_V7(
             locale                         = Locale(Languages.Fr),
             display_units                  = DisplayUnits.SI,
             standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
@@ -102,18 +110,25 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
             ),
             local_conditions               = ExampleProject_15544.localConditions,
             stove_params                   = stoveParams,
-            air_intake_descr               = ExampleProject_15544.conduit_air_descr,
+            air_intake_pipes               = FramedAirIntakePipes.fromLegacy(ExampleProject_15544.conduit_air_descr),
             firebox                        = firebox,
-            post_firebox_pipes             = Seq(
-                PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+            post_firebox_pipes             = FramedPostFireboxPipes(
+                PipeInitialDirection    (
+                    azimuth     = AzimuthDirection.Left,
+                    inclination = InclinationDirection.Horizontal
+                ),
+                PostFireboxStartPosition.Auto,
+                slots = Seq(
+                    PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                    PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
+                    PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+                )
             )
         )
 
     /** Load a FireCalcYAML into the strict application for testing. */
     private def loadApp(
-        yaml: FireCalcYAML_V6
+        yaml: FireCalcYAML
     ): EN15544_Strict_Application =
         val loader = FireCalcYAML_Loader(yaml)
         val appV   = loader.make_en15544_Strict_Application
@@ -153,5 +168,42 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
                 LocalRegulations.fr.wood_logs
             )
             results.unmetCriterias should not be empty
+        }
+
+        // ── RemovedFireboxSizingConstraints dispatch ────────────────────
+
+        "narrow width (20cm < 23cm base min) still passes via RemovedFireboxSizingConstraints" in {
+            val app = loadApp(
+                buildEngineState(
+                    stubSingleTestedDTO (
+                        maxFuelMass  = 18.5,
+                        fireboxDepth = 0.44.meters,
+                        fireboxWidth = 0.20.meters
+                    ),
+                    stubStoveParams     (18.5)
+                )
+            )
+            app.validateResultsExceptEmissionsValues(Country.France).isValid shouldBe true
+        }
+
+        // ── t_burnout required ────────────────────────────────────────
+
+        "t_burnout = None → TBurnoutNotSet validation error" in {
+            val app    = loadApp(
+                buildEngineState(
+                    stubSingleTestedDTO(
+                        maxFuelMass = 18.5,
+                        tBurnout    = None
+                    ),
+                    stubStoveParams    (18.5)
+                )
+            )
+            val result = app.validateResultsExceptEmissionsValues(Country.France)
+            result.isValid shouldBe false
+            result match
+                case Validated.Invalid(nel) =>
+                    nel.toList should contain(TBurnoutNotSet)
+                case Validated.Valid(_)     =>
+                    fail("Expected validation to fail with TBurnoutNotSet")
         }
     }

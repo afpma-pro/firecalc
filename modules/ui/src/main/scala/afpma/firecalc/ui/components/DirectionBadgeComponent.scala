@@ -6,13 +6,13 @@
 package afpma.firecalc.ui.components
 
 import afpma.firecalc.dto.all.AbsoluteDirection
-import afpma.firecalc.dto.all.AzimuthDirection
-import afpma.firecalc.dto.all.InclinationDirection
+import afpma.firecalc.domain.toAbsoluteDirection
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
+import afpma.firecalc.engine.formatters.Vec3Formatter
 
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
+import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.icons.lucide
@@ -86,7 +86,7 @@ case class DirectionBadgeComponent(
 
     /** Translate an English cardinal name from Vec3.toDisplayString to the current locale. */
     private def translateCardinal(english: String): String =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
         english match
             case "Up"          => i18n.cardinal_up
             case "Down"        => i18n.cardinal_down
@@ -105,18 +105,8 @@ case class DirectionBadgeComponent(
         val (azDeg, elDeg) = dir.toAzimuthElevation
         afpma.firecalc.ui.instances.DirectionFormat.compact(azDeg, elDeg)
 
-    /** Convert a Vec3 direction to a AbsoluteDirection by snapping to named enum cases. */
-    private def vec3ToAbsoluteDirection(v: Vec3): AbsoluteDirection =
-        val (az, el) = v.toAzimuthElevation
-        val incl = InclinationDirection.fromDegrees(el)
-        incl match
-            case InclinationDirection.Up | InclinationDirection.Down =>
-                new AbsoluteDirection(None, incl)
-            case _                                                   =>
-                AbsoluteDirection(AzimuthDirection.fromDegrees(az), incl)
-
     private def tooltipContent: HtmlElement =
-        val i18n = I18N_UI.direction_badge
+        val i18n = I18N.direction_badge
         div(
             cls := "text-xs",
             child <-- absDirection
@@ -150,13 +140,13 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                span     (cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label),
-                badgeText(dir                                                                      )
+                span     (cls := "text-[0.75rem] opacity-60", I18N.direction_badge.abs_dir_label),
+                badgeText(dir                                                                   )
             )
         else
             div (
                 cls := "flex flex-col",
-                label(cls := "fieldset-label text-[0.75rem]", I18N_UI.direction_badge.abs_dir_label),
+                label(cls := "fieldset-label text-[0.75rem]", I18N.direction_badge.abs_dir_label),
                 span (
                     cls <-- isCompatibleSig.map:
                         case Some(false) => "input input-xs pointer-events-none bg-base-200 text-warning"
@@ -199,7 +189,7 @@ case class DirectionBadgeComponent(
                 child <-- isCompatibleSig.map:
                     case Some(false) => lucide.`triangle-alert`(w = 12, h = 12)
                     case _           => emptyNode,
-                when(compact)(span(cls := "text-[0.75rem] opacity-60", I18N_UI.direction_badge.abs_dir_label)),
+                when(compact)(span(cls := "text-[0.75rem] opacity-60", I18N.direction_badge.abs_dir_label)),
                 badgeText(dir)
             ),
             child <-- presetsSig.map:
@@ -208,8 +198,8 @@ case class DirectionBadgeComponent(
                     ul(
                         cls := "dropdown-content menu bg-base-100 rounded-box z-10 p-1 shadow-sm border border-base-300 w-max",
                         presets.map: (cardinalVec, _) =>
-                            val fd  = vec3ToAbsoluteDirection(cardinalVec)
-                            val lbl = translateCardinal(cardinalVec.toDisplayString)
+                            val fd  = cardinalVec.toAbsoluteDirection
+                            val lbl = translateCardinal(Vec3Formatter.toDisplayString(cardinalVec))
                             li(
                                 a(
                                     cls <-- fdVar.signal.map: cur =>
@@ -234,7 +224,7 @@ case class DirectionBadgeComponent(
         else
             div(
                 cls := "flex flex-col",
-                label(cls := "fieldset-label", I18N_UI.direction_badge.abs_dir_label),
+                label(cls := "fieldset-label", I18N.direction_badge.abs_dir_label),
                 dropdown
             )
 

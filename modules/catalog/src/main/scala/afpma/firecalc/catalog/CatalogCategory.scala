@@ -10,7 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.instances.CommonInstances.given
-import afpma.firecalc.dto.instances.V4Instances.given
+import afpma.firecalc.dto.instances.V7Instances.given
 
 import io.circe.Decoder
 import io.circe.DecodingFailure

@@ -9,7 +9,10 @@ import cats.data.Validated.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.ops.Position
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -42,15 +45,17 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val d0          = 100.mm
-                        val p           =
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection    (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Horizontal
-                                ),
                                 innerShape(square(d0)),
-                                roughness              (2.mm             ),
-                                addSectionHorizontal   ("first", 2.meters)
+                                roughness           (2.mm             ),
+                                addSectionHorizontal("first", 2.meters)
                             )
 
                         val vRepr = p.toFullDescr().map(_._2)
@@ -81,12 +86,14 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val a           = 100.mm
-                        val p           =
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection      (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Horizontal
-                                ), // Rear
                                 innerShape(square(a)),
                                 roughness                (2.mm              ),
                                 addSectionHorizontal     ("first", 2.meters ),
@@ -117,7 +124,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 idx  = PipeIdx(1),
                                 typ  = FluePipeT,
                                 name = "turn left",
-                                el   = DirectionChange.AngleVifDe0A180(45.degrees)
+                                el   = DirectionChange.AngleVifDe0A180(45.degrees, effectiveShape = PipeShape.Square(a))
                             )
                         )
                         val second = elems(2).el.asInstanceOf[StraightSection]
@@ -128,20 +135,324 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     }
                 }
 
-                "case direction-tracked : SetInitialDirection(vertical up) + addSectionSlopped" - {
+                "case split + shape change + angle + straight" - {
+
+                    "stores the split branch geometry on the direction change" in {
+                        val width       = 18.cm
+                        val height      = 9.cm
+                        val branchShape = rectangle(width, height)
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (square(width)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
+                                innerShape               (branchShape                 ),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val elems = p.toFullDescr().map(_._2).toOption.get.elems
+
+                        elems.map(_.name) `shouldBe` Vector(
+                            "descente",
+                            "section geometry change",
+                            "branch-start",
+                            "vers section horizontale",
+                            "section horizontale"
+                        )
+                        elems(3).el `shouldBe` DirectionChange.AngleVifDe0A180(
+                            α              = 90.degrees,
+                            angleN2        = None,
+                            effectiveShape = branchShape
+                        )
+                        elems(3).el.innerShape(Some(square(width))).map(_(using Position.Middle)) `shouldBe` Some(
+                            branchShape
+                        )
+                    }
+
+                    "rejects split branch geometry that changes total cross-section" in {
+                        val width = 18.cm
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                                (
+                                innerShape                                      (square(width)          ),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                innerShape                                      (rectangle(width, 10.cm)),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result = p.toFullDescr()
+
+                        result.isValid `shouldBe` false
+                        val Invalid(errors) = result: @unchecked
+                        errors.toList.head shouldBe a[FlowTransitionChangesTotalCrossSection]
+                    }
+
+                    "rejects merge geometry that changes total cross-section" in {
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(18.cm, 9.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)          ),
+                                addSectionHorizontal     ("branch", 0.5.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)          ),
+                                innerShape                                      (square(20.cm)         ),
+                                addSectionHorizontal     ("apres merge", 1.meters     ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result = p.toFullDescr()
+
+                        result.isValid `shouldBe` false
+                        val Invalid(errors) = result: @unchecked
+                        errors.toList.head shouldBe a[FlowTransitionChangesTotalCrossSection]
+                    }
+
+                    "split 20×10 cm → 2×10×10 cm: exact area conservation passes" in {
+                        // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×10 = 100 cm² × 2 = 200 cm²
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(20.cm, 10.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                innerShape                                      (rectangle(10.cm, 10.cm)),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        p.toFullDescr().isValid `shouldBe` true
+                    }
+
+                    "split 20×10 cm → 2×10×9 cm: area too small fails with ExpectedDimRectangle" in {
+                        // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×9 = 90 cm² × 2 = 180 cm²  (20 cm² short)
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(20.cm, 10.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                innerShape                                      (rectangle(10.cm, 9.cm) ),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                                      = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                                             = result: @unchecked
+                        val err                                                         = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimRectangle]
+                        val ExpectedDimRectangle(_, _, _, expectedHeight, expectedArea) =
+                            err.expectedDimension: @unchecked
+                        expectedHeight.to_cm.value shouldBe (10.0 +- 0.1 )
+                        expectedArea.to_cm2.value shouldBe  (100.0 +- 0.1)
+                    }
+
+                    "split 20×10 cm → 2×10×9.99 cm: within 5 cm² tolerance passes" in {
+                        // 20×10 = 200 cm² × 1 = 200 cm²  vs  10×9.99 = 99.9 cm² × 2 = 199.8 cm²  (0.2 cm² short — within tolerance)
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                        (
+                                innerShape                                      (rectangle(20.cm, 10.cm)  ),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)             ),
+                                innerShape                                      (rectangle(10.cm, 9.99.cm)),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        p.toFullDescr().isValid `shouldBe` true
+                    }
+                    "split 18 cm square → 2×9 cm square: area too small fails (ExpectedDimSquare)" in {
+                        // 18×18 = 324 cm² × 1 = 324 cm²  vs  9×9 = 81 cm² × 2 = 162 cm²  (162 cm² short)
+                        // Expected area per flow = 324 / 2 = 162 cm², expected side = sqrt(162) ≈ 12.73 cm
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (square(18.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
+                                innerShape                                      (square(9.cm) ),
+                                addSectionHorizontal     ("branch-start", 0.1.meters  ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                   = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                          = result               : @unchecked
+                        val err                                      = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimSquare]
+                        val ExpectedDimSquare(_, _, expectedSide, _) = err.expectedDimension: @unchecked
+                        expectedSide.to_cm.value shouldBe (12.73 +- 0.1)
+                    }
+                    "split D=18 cm circle → 2×D=9 cm circle: area too small fails (ExpectedDimCircle)" in {
+                        // π×(18/2)² = 254.47 cm² × 1 = 254.47 cm²  vs  π×(9/2)² = 63.62 cm² × 2 = 127.23 cm²  (127.23 cm² short)
+                        // Expected area per flow = 254.47 / 2 = 127.23 cm², expected diameter = sqrt(4×127.23/π) ≈ 12.73 cm
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (circle(18.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2) ),
+                                innerShape                                      (circle(9.cm) ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                       = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                              = result               : @unchecked
+                        val err                                          = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimCircle]
+                        val ExpectedDimCircle(_, _, expectedDiameter, _) = err.expectedDimension: @unchecked
+                        expectedDiameter.to_cm.value shouldBe (12.73 +- 0.1)
+                    }
+                    "merge 2×10×10 cm → 1×20×9 cm: area too small fails (ExpectedDimRectangle)" in {
+                        // 10×10 = 100 cm² × 2 = 200 cm²  vs  20×9 = 180 cm² × 1 = 180 cm²  (20 cm² short)
+                        // Expected area = 200 cm², expected height for 20×H = 200/20 = 10 cm
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Right,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
+                            builder.define                                      (
+                                innerShape                                      (rectangle(10.cm, 10.cm)),
+                                roughness                (3.mm                        ),
+                                addSectionHorizontal     ("initial", 0.1.meters       ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(2)           ),
+                                addSectionHorizontal     ("descente", 1.meters        ),
+                                FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(NbOfFlows(1)           ),
+                                innerShape                                      (rectangle(20.cm, 9.cm) ),
+                                addSectionHorizontal     ("apres merge", 1.meters     ),
+                                addSharpAngle_0_to_180deg(
+                                    "vers section horizontale",
+                                    90.degrees,
+                                    AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                                ),
+                                addSectionHorizontal     ("section horizontale", 50.cm)
+                            )
+
+                        val result                                                      = p.toFullDescr()
+                        result.isValid `shouldBe` false
+                        val Invalid(errors)                                             = result: @unchecked
+                        val err                                                         = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
+                        err.expectedDimension shouldBe a[ExpectedDimRectangle]
+                        val ExpectedDimRectangle(_, _, _, expectedHeight, expectedArea) =
+                            err.expectedDimension: @unchecked
+                        expectedHeight.to_cm.value shouldBe (10.0 +- 0.1 )
+                        expectedArea.to_cm2.value shouldBe  (200.0 +- 0.1)
+                    }
+                }
+
+                "case direction-tracked : initial direction vertical up + addSectionSlopped" - {
 
                     "elevation_gain is auto-computed from direction (should be 2m for 2m vertical section)" in {
                         // given NbOfFlows = 1.flow
                         val d0 = 100.mm
-                        val p  =
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Up
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection    (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Up
-                                ),
                                 innerShape(circle(d0)),
-                                roughness              (2.mm          ),
-                                addSectionSlopped      ("s1", 2.meters)
+                                roughness        (2.mm          ),
+                                addSectionSlopped("s1", 2.meters)
                             )
 
                         val vRepr = p.toFullDescr().map(_._2)
@@ -160,12 +471,14 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     "returns proper pipe" in {
                         given NbOfFlows = 1.flow
                         val diam        = 20.cm
-                        val p           =
+                        builder.withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Horizontal
+                            )
+                        )
+                        val p =
                             builder.define(
-                                setInitialDirection      (
-                                    azimuth     = AzimuthDirection.Rear,
-                                    inclination = InclinationDirection.Horizontal
-                                ), // Rear
                                 innerShape(circle(diam)),
                                 roughness                (2.mm                     ),
                                 addSectionHorizontal     ("straight-0", 50.cm      ),
@@ -202,7 +515,8 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                     idx  = PipeIdx(1),
                                     typ  = FluePipeT,
                                     name = "turn left",
-                                    el   = DirectionChange.AngleVifDe0A180(45.degrees)
+                                    el   = DirectionChange
+                                        .AngleVifDe0A180(45.degrees, effectiveShape = PipeShape.Circle(diam))
                                 ),
                                 NamedPipeElDescr (
                                     idx  = PipeIdx(2),
@@ -219,7 +533,11 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                     idx  = PipeIdx(3),
                                     typ  = FluePipeT,
                                     name = "turn left",
-                                    el   = DirectionChange.AngleVifDe0A180(45.degrees, angleN2 = Some(90.degrees))
+                                    el   = DirectionChange.AngleVifDe0A180(
+                                        45.degrees,
+                                        angleN2        = Some(90.degrees),
+                                        effectiveShape = PipeShape.Circle(diam)
+                                    )
                                 ),
                                 NamedPipeElDescr (
                                     idx  = PipeIdx(4),

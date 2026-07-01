@@ -20,6 +20,7 @@ import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -37,19 +38,19 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     lazy val inputs: Inputs_15544
 
     /**
-     * The ordered post-firebox pipe descriptor slots from the DTO.
+     * Raw IncrDescr/seed input layer — '''sibling to `inputs`''' (NOT nested inside it).
+     * `inputs: Inputs_15544` is the FullDescr-input layer (materialized-pipe inputs);
+     * `incrInputs` is the raw IncrDescr/seed layer (feedstock for `DirectionReachability`
+     * + N-pipe fold). See [[IncrementalPipeInputs_15544]] for the layer distinction.
      *
-     * Abstract — every concrete `Application` MUST provide this. Typical wiring is via
-     * the `WithPipeChain_15544_*` trait family (e.g. `WithPipeChain_15544_MCE` produces
-     * `[ThermalFlueSlot, ConnectorSlot, ChimneySlot]`); the `*_Application.make` factory
-     * then forwards the trait's value into the Application instance.
-     *
-     * Previously had a default `[FlueSlot, ConnectorSlot, ChimneySlot]` which silently
-     * masked wiring bugs (an Application that forgot to forward `pfbSlots` would inherit
-     * the flow-only default and fail at runtime in MCE mode with "FlueSlot in flue
-     * region"). Made abstract to force explicit wiring.
+     * Consumers reach the framed wrappers directly:
+     *   - `incrInputs.postFirebox.slots` / `.initialDirection` / `.positionMode` / `.resolvedPosition`
+     *   - `incrInputs.airIntake.descr` / `.initialDirection` / `.positionMode` / `.resolvedPosition`
+     *   - `incrInputs.airIntake.AirIntakePipe_Module.airIntakeElemExtractors` (path-coupled —
+     *     descr + extractor come from the same `incrInputs.airIntake` path so the
+     *     path-dependent types unify).
      */
-    lazy val postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot]
+    lazy val incrInputs: IncrementalPipeInputs_15544
 
     export EN15544_V_2023_Application_Alg.{ErrorGen}
 
@@ -192,10 +193,10 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     // Section "4.8.2", "Mean firebox temperature"
     def t_BR: t_BR
 
-    def t_burnout: t_burnout
+    def t_burnout: VNel[t_burnout]
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
-    def t_fluepipe     (L_Z: QtyD[Meter]                  ): t_fluepipe
+    def t_fluepipe     (L_Z: QtyD[Meter]                  ): VNel[t_fluepipe]
     def t_fluepipe_mean(lz1: QtyD[Meter], lz2: QtyD[Meter]): VNel[t_fluepipe]
 
     // EN13384 variables
@@ -282,7 +283,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val estimated_output_temperatures: EstimatedOutputTemperatures
 
         // Aggregated pipe results
-        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelString
+        lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelMcalcErr
 
         // Outputs
         lazy val outputs: Outputs
@@ -298,6 +299,7 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         def validateSeasonalEfficiency(countryCode: Country): VNelMcalcErr[Unit]
         lazy val validateCitedConstraints          : VNelMcalcErr[Unit]
         lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit]
+        lazy val fluePipeLengthBelowMinimumWarning : Option[FluePipeLengthBelowMinimum]
     end AtParams
 
     // ─── Pre-built AtParams instances ───────────────────────────────────

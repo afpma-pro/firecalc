@@ -14,7 +14,7 @@ object ChannelsDSL_15544_Instances:
     // Instance for FlowOnlyPipeDescr_15544
     given flowOnly15544: ChannelsDSL[FlowOnlyPipeDescr_15544] with
         def channelsSplit(n: Int) =
-            SetFlowOnlyPipeProp_15544.SetNumberOfFlows(n.flows)
+            FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(n.flows)
 
         def channelsJoin() =
-            SetFlowOnlyPipeProp_15544.SetNumberOfFlows(1.flow)
+            FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(1.flow)

@@ -287,7 +287,7 @@ abstract class TypstReportFactory_15544(
         s"""|#[
             |  #set page(flipped: true)
             |  #set text(size: 6pt)
-            |  ${atParams.outputs.pipesResult_15544.getOrThrow.typ}
+            |  ${atParams.outputs.pipesResult_15544.accumulateErrors.getOrThrow.typ}
             |]
             |""".stripMargin
 

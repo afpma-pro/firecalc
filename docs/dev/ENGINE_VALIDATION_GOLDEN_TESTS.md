@@ -46,6 +46,7 @@ See `modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/dev_fixtur
 | EN 15544 — C2 — Kachelofen | [`cas_types/en15544/CasType_15544_C2.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/cas_types/en15544/CasType_15544_C2.scala) | `modules/engine/validation/cas_types_15544/current/02 - Kachelofen.afpma.txt` |
 | EN 15544 — C3 — Cas pratique | [`cas_types/en15544/CasType_15544_C3.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/cas_types/en15544/CasType_15544_C3.scala) | `modules/engine/validation/cas_types_15544/current/03 - Cas pratique.afpma.txt` |
 | EN 15544 — C3 FDIM variant | [`cas_types/en15544/CasType_15544_C3_FDIM.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/cas_types/en15544/CasType_15544_C3_FDIM.scala) | (variant of C3 reference output) |
+| EN 15544 — N-pipe chain | [`dev_fixtures/en15544/NPipeTopologyFixture_15544.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/dev_fixtures/en15544/NPipeTopologyFixture_15544.scala) | `modules/engine/validation/cas_types_15544/current/04 - N-pipe chain.afpma.txt` |
 
 Version-stamped history of reference outputs is preserved alongside `current/` in dated subdirectories like `v7_20250131_firecalc-v0.2.3/`. Never delete or edit history files.
 

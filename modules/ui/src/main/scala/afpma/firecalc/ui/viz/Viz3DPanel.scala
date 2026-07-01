@@ -5,16 +5,17 @@
 
 package afpma.firecalc.ui.viz
 
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.ChimneyPipeT
 import afpma.firecalc.engine.models.ConnectorPipeT
 import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.NoFluePipeT
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipePositionResult
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
@@ -164,11 +165,14 @@ final case class Viz3DPanel()(using Locale) extends Component:
                         slots.zipWithIndex
                             .map: (slot, idx) =>
                                 val (pt, displayName) = slot match
-                                    case _: PostFireboxPipeDescrSlot.FlueSlot        => (FluePipeT, displayNames.flue      )
-                                    case _: PostFireboxPipeDescrSlot.ThermalFlueSlot => (FluePipeT, displayNames.flue      )
-                                    case _: PostFireboxPipeDescrSlot.ConnectorSlot   =>
+                                    case _: PostFireboxPipeDescrSlot_V7.FlueSlot        => (FluePipeT, displayNames.flue)
+                                    case _: PostFireboxPipeDescrSlot_V7.ThermalFlueSlot =>
+                                        (FluePipeT, displayNames.flue)
+                                    case _: PostFireboxPipeDescrSlot_V7.ConnectorSlot   =>
                                         (ConnectorPipeT, displayNames.connector)
-                                    case _: PostFireboxPipeDescrSlot.ChimneySlot     => (ChimneyPipeT, displayNames.chimney)
+                                    case _: PostFireboxPipeDescrSlot_V7.ChimneySlot     =>
+                                        (ChimneyPipeT, displayNames.chimney)
+                                    case PostFireboxPipeDescrSlot_V7.NoFlueSlot => (NoFluePipeT, I18N.pipe_type.no_flue)
                                 val pos               = slotPositions.lift(idx).getOrElse(emptyPos)
                                 (pt: PipeType, s"Slot$idx", displayName, pos)
                             .toVector
@@ -206,9 +210,9 @@ final case class Viz3DPanel()(using Locale) extends Component:
                                 labelResetView       = Some(I18N_UI.viz.reset_view),
                                 labelViewMode        = Some(I18N_UI.viz.view_mode),
                                 labelAnnotations     = Some(I18N_UI.viz.annotations),
-                                labelAxisRear        = Some(I18N_UI.direction_badge.cardinal_rear),
-                                labelAxisUp          = Some(I18N_UI.direction_badge.cardinal_up),
-                                labelAxisRight       = Some(I18N_UI.direction_badge.cardinal_right)
+                                labelAxisRear        = Some(I18N.direction_badge.cardinal_rear),
+                                labelAxisUp          = Some(I18N.direction_badge.cardinal_up),
+                                labelAxisRight       = Some(I18N.direction_badge.cardinal_right)
                             ),
                             loadDisplayType          (),
                             Some[Option[FireCalcFilaireLine] => Unit] {

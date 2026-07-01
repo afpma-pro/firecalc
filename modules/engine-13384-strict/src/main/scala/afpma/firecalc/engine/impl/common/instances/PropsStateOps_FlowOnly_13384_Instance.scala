@@ -9,8 +9,11 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.ShapeState
 import afpma.firecalc.engine.models.geometry.*
+import afpma.firecalc.engine.standard.PendingFlowAreaCheck
 import afpma.firecalc.engine.typeclasses.*
+import afpma.firecalc.units.Vec3
 
 object PropsStateOps_FlowOnly_13384_Instance:
 
@@ -26,22 +29,42 @@ object PropsStateOps_FlowOnly_13384_Instance:
      *   - dirBeforePreviousDC: direction BEFORE the previous bend, used to compute angleN2
      */
     case class FlowOnlyPropsState_13384(
-        innerShape         : Option[PipeShape] = None,
-        roughness          : Option[Roughness] = None,
-        nFlows             : Option[NbOfFlows] = Some(1.flow),
-        initialFrame       : Option[PipeFrame] = None,
-        currentFrame       : Option[PipeFrame] = None,
-        dirBeforePreviousDC: Option[Vec3]      = None
+        shapeState          : ShapeState                   = ShapeState.Empty,
+        roughness           : Option[Roughness]            = None,
+        nFlows              : NbOfFlows                    = 1.flow,
+        initialFrame        : Option[PipeFrame]            = None,
+        currentFrame        : Option[PipeFrame]            = None,
+        dirBeforePreviousDC : Option[Vec3]                 = None,
+        pendingFlowAreaCheck: Option[PendingFlowAreaCheck] = None
     )
 
     given flowOnlyPropsStateOps13384: PropsStateOps[FlowOnlyPropsState_13384] with
         def isValid(s: FlowOnlyPropsState_13384) =
-            s.innerShape.isDefined &&
-                s.roughness.isDefined &&
-                s.nFlows.isDefined
+            s.shapeState.shape.isDefined &&
+                s.roughness.isDefined
 
-        def getInnerShape(s: FlowOnlyPropsState_13384) = s.innerShape
+        def getShapeState(s: FlowOnlyPropsState_13384) = s.shapeState
         def getRoughness (s: FlowOnlyPropsState_13384) = s.roughness
 
         def getNFlows(s: FlowOnlyPropsState_13384) =
-            s.nFlows.getOrElse(1.flow)
+            s.nFlows
+
+        def getPendingFlowAreaCheck(state: FlowOnlyPropsState_13384): Option[PendingFlowAreaCheck] =
+            state.pendingFlowAreaCheck
+
+        def setPendingFlowAreaCheck(
+            state: FlowOnlyPropsState_13384,
+            check: Option[PendingFlowAreaCheck]
+        ): FlowOnlyPropsState_13384 =
+            state.copy(pendingFlowAreaCheck = check)
+
+        def setInnerShape(state: FlowOnlyPropsState_13384, shape: PipeShape): FlowOnlyPropsState_13384 =
+            state.copy(shapeState = ShapeState.Set(shape))
+
+        def setNFlows(state: FlowOnlyPropsState_13384, nFlows: NbOfFlows): FlowOnlyPropsState_13384 =
+            state.copy(nFlows = nFlows)
+
+        def materialize(state: FlowOnlyPropsState_13384): FlowOnlyPropsState_13384 =
+            state.shapeState match
+                case ShapeState.Set(shape) => state.copy(shapeState = ShapeState.Materialized(shape))
+                case _                     => state

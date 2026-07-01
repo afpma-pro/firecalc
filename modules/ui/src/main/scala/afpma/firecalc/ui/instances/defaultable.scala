@@ -121,7 +121,7 @@ object defaultable:
             is_glass_surface_ratio_below_one_fifth = false,
             glass_area                             = 0.cm2,
             mean_firebox_temperature               = None,
-            t_burnout                              = 700.0.degreesCelsius,
+            t_burnout                              = None,
             efficiency_nominal                     = 75.0.percent,
             efficiency_reduced                     = None,
             heat_output_reduced                    = HeatOutputReduced.NotDefined,

@@ -145,7 +145,7 @@ class InvoicePdfGenerationServiceImpl[F[_]: Async](
     }
 
     private def productToLineItem(product: Product, order: ProductOrder, locale: Locale): InvoiceLineItem = {
-        val copy = ProductCopyResolver.resolve(product.sku, locale)(using productCopyConfig)
+        val copy = ProductCopyResolver.resolve(v1.Sku(product.sku), locale)(using productCopyConfig)
         InvoiceLineItem       (
             description        = s"${copy.name} - ${copy.description}",
             quantity           = BigDecimal(1), // Assuming quantity of 1 for now

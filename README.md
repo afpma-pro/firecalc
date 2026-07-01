@@ -43,6 +43,8 @@ See [Engine Validation — Golden Tests](docs/dev/ENGINE_VALIDATION_GOLDEN_TESTS
 - **[Payments Module](modules/payments/README.md)** - Payment processing overview
 - **[Engine Module](modules/engine/README.md)** - Calculation engine overview
 - **[UI Module](modules/ui/CONFIG.md)** - Frontend configuration
+- **[Engine Kernel Module](modules/engine-kernel/)** - Pure calculation foundation
+- **[Invoice Module](modules/invoices/README.md)** - Invoice generation
 
 ### Architecture Guides
 
@@ -63,13 +65,22 @@ make sync-build-config
 ### Run Tests
 
 ```bash
+# Engine tests
+sbt "engine/test"
+sbt "engine-15544-strict/test"
+
 # UI tests
 sbt "~ui/testOnly *AppState_Suite"
 
 # Labo tests
 sbt "~labo/testOnly *labo_Suite"
-```
 
+# DTO tests
+sbt "dtoJVM/test"
+
+# FDIM exercises
+sbt "fdim/test"
+```
 ### Development Workflows
 
 #### Electron Desktop App (with Live Reload)
@@ -117,17 +128,18 @@ make dev-backend-run
 │   ├── reports/         # Report generation
 │   ├── dto/             # Data transfer objects
 │   ├── engine/          # Calculation engine
+│   ├── engine-kernel/   # Pure calculation foundation
+│   ├── engine-*-strict/ # EN 13384/15544 implementations
 │   └── ...
 ├── web/
 │   ├── electron-app/    # Electron desktop wrapper
 │   └── dist-app/        # Built app output
 ├── configs/             # Configuration files
-│   ├── dev/
-│   ├── staging/
-│   └── prod/
-└── public/              # Public assets
+│   ├── templates/
+│   └── dev/ staging/ prod/
+├── docker/              # Docker deployment
+└── docs/                # Documentation
 ```
-
 ## Build Commands
 
 ### UI
@@ -205,4 +217,4 @@ See [`LICENSE`](LICENSE) for the full license text and [`CONTRIBUTING.md`](CONTR
 
 **Association Française du Poêle Maçonné Artisanal (AFPMA)**
 - Website: https://www.afpma.pro
-- Copyright © 2025 AFPMA
+- Copyright © 2025-2026 AFPMA

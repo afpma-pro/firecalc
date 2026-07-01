@@ -101,7 +101,7 @@ case class CustomDirectionDialog(
         cls := "modal",
         div(
             cls := "modal-box max-w-md",
-            h3(cls := "font-bold text-lg mb-4", I18N_UI.direction_badge.custom_dialog_title),
+            h3(cls := "font-bold text-lg mb-4", I18N.direction_badge.custom_dialog_title),
 
             // Inclination presets
             div(
@@ -109,9 +109,9 @@ case class CustomDirectionDialog(
                 p  (cls := "text-sm font-semibold mb-1", I18N.terms.inclination),
                 div(
                     cls := "flex flex-wrap gap-1",
-                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_up, InclinationDirection.Up                ),
-                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_down, InclinationDirection.Down            ),
-                    inclinationPresetBtn(I18N_UI.direction_badge.cardinal_horizontal, InclinationDirection.Horizontal)
+                    inclinationPresetBtn(I18N.direction_badge.cardinal_up, InclinationDirection.Up                ),
+                    inclinationPresetBtn(I18N.direction_badge.cardinal_down, InclinationDirection.Down            ),
+                    inclinationPresetBtn(I18N.direction_badge.cardinal_horizontal, InclinationDirection.Horizontal)
                 )
             ),
 
@@ -122,24 +122,24 @@ case class CustomDirectionDialog(
                 p  (cls := "text-sm font-semibold mb-1", I18N.terms.azimuth),
                 div(
                     cls := "flex flex-wrap gap-1",
-                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_rear, AzimuthDirection.Rear  ),
+                    azimuthPresetBtn(I18N.direction_badge.cardinal_rear, AzimuthDirection.Rear  ),
                     azimuthPresetBtn(
-                        s"${I18N_UI.direction_badge.cardinal_rear}+${I18N_UI.direction_badge.cardinal_right}",
+                        s"${I18N.direction_badge.cardinal_rear}+${I18N.direction_badge.cardinal_right}",
                         AzimuthDirection.RearRight
                     ),
-                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_right, AzimuthDirection.Right),
+                    azimuthPresetBtn(I18N.direction_badge.cardinal_right, AzimuthDirection.Right),
                     azimuthPresetBtn(
-                        s"${I18N_UI.direction_badge.cardinal_front}+${I18N_UI.direction_badge.cardinal_right}",
+                        s"${I18N.direction_badge.cardinal_front}+${I18N.direction_badge.cardinal_right}",
                         AzimuthDirection.FrontRight
                     ),
-                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_front, AzimuthDirection.Front),
+                    azimuthPresetBtn(I18N.direction_badge.cardinal_front, AzimuthDirection.Front),
                     azimuthPresetBtn(
-                        s"${I18N_UI.direction_badge.cardinal_front}+${I18N_UI.direction_badge.cardinal_left}",
+                        s"${I18N.direction_badge.cardinal_front}+${I18N.direction_badge.cardinal_left}",
                         AzimuthDirection.FrontLeft
                     ),
-                    azimuthPresetBtn(I18N_UI.direction_badge.cardinal_left, AzimuthDirection.Left  ),
+                    azimuthPresetBtn(I18N.direction_badge.cardinal_left, AzimuthDirection.Left  ),
                     azimuthPresetBtn(
-                        s"${I18N_UI.direction_badge.cardinal_rear}+${I18N_UI.direction_badge.cardinal_left}",
+                        s"${I18N.direction_badge.cardinal_rear}+${I18N.direction_badge.cardinal_left}",
                         AzimuthDirection.RearLeft
                     )
                 )

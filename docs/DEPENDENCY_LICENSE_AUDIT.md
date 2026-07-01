@@ -48,7 +48,7 @@ The project primarily uses permissive licenses (MIT, Apache 2.0, BSD) which are 
 
 | Dependency | Version | License | Status | Notes |
 |---|---|---|---|---|
-| **Scala Standard Library** | 3.8.3 | Apache 2.0 | ✅ Compatible | Core language |
+| **Scala Standard Library** | 3.8.4 | Apache 2.0 | ✅ Compatible | Core language |
 | **Cats Core** | 2.13.0 | MIT | ✅ Compatible | Functional programming |
 | **Cats Effect** | 3.6.1 | Apache 2.0 | ✅ Compatible | Effect system |
 | **Circe** (core, generic, parser) | 0.14.13 | Apache 2.0 | ✅ Compatible | JSON library |
@@ -59,7 +59,7 @@ The project primarily uses permissive licenses (MIT, Apache 2.0, BSD) which are 
 | **Kittens** | 3.5.0 | Apache 2.0 | ✅ Compatible | Cats derivation |
 | **Quicklens** | 1.9.12 | Apache 2.0 | ✅ Compatible | Lens library |
 | **Magnolia** (fork) | 1.3.16 | Apache 2.0 | ✅ Compatible | Derivation macro |
-| **Babel** (i18n) | 0.5.3 / 0.5.4-custom | Apache 2.0 | ✅ Compatible | Internationalization (see [custom version docs](dev/BABEL_CUSTOM_VERSION_DEPENDENCY.md)) |
+| **Babel** (i18n) | 0.6.0 | Apache 2.0 | ✅ Compatible | Internationalization |
 | **ScalaTest** | 3.2.19 | Apache 2.0 | ✅ Compatible | Testing framework |
 | **Logback** | 1.5.18 | EPL 1.0 / LGPL 2.1 | ✅ Compatible | Logging |
 | **Log4Cats** | 2.7.1 | Apache 2.0 | ✅ Compatible | Logging facade |

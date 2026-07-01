@@ -8,6 +8,7 @@ package afpma.firecalc.payments.config
 import java.nio.file.Files
 import java.time.ZoneId
 
+import afpma.firecalc.domain.FireboxAvailability
 import afpma.firecalc.payments.email.EmailAddress
 import afpma.firecalc.payments.email.EmailConfig
 import afpma.firecalc.payments.exceptions.*
@@ -191,12 +192,37 @@ object ConfigLoader:
                         )
                     }
                     .getOrElse(LoggingConfig()),
+                fireboxAvailability          = loadFireboxAvailability(envConfig),
                 corsAllowedOrigins           = Try {
                     import scala.jdk.CollectionConverters.*
                     envConfig.getStringList("cors-allowed-origins").asScala.toList
                 }.getOrElse   (List("*")      )
             )
         }
+
+    private[config] def loadFireboxAvailability(envConfig: Config): FireboxAvailability =
+        if envConfig.hasPath("firebox-availability") then
+            val faSection = envConfig.getConfig("firebox-availability")
+
+            def tryBool(key: String): Boolean =
+                if faSection.hasPath(key) then
+                    try faSection.getBoolean(key)
+                    catch
+                        case _: com.typesafe.config.ConfigException.WrongType =>
+                            val raw = faSection.getValue(key).unwrapped()
+                            throw new IllegalArgumentException(
+                                s"firebox-availability.$key: expected boolean, got '$raw' (${raw.getClass.getSimpleName})"
+                            )
+                else true
+
+            FireboxAvailability   (
+                traditional    = tryBool("traditional"),
+                ecolabeled     = tryBool("ecolabeled"),
+                afpmaPrse      = tryBool("afpma-prse"),
+                singleTested   = tryBool("single-tested"),
+                door15aCatalog = tryBool("door15a-catalog")
+            )
+        else FireboxAvailability.AllEnabled
 
     private[config] def validatePaymentsConfig[F[_]: Async](config: PaymentsConfig): F[PaymentsConfig] =
         InvoiceNumberValidator.validatePrefix(config.invoiceNumberPrefix) match {

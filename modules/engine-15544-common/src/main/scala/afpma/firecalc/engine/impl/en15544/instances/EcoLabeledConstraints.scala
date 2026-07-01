@@ -9,6 +9,7 @@ import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.{*, given}
 
+import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
@@ -28,8 +29,6 @@ import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
 
 import scala.collection.mutable.ListBuffer
-
-import io.taig.babel.Locale
 
 /**
  * EN 15544 constraints for [[Ecolabeled]] fireboxes.
@@ -61,7 +60,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
         override def firebox_custom_constraints(
             firebox: Ecolabeled,
             ctx    : FireboxConstraintContext
-        )(using Locale): List[FireboxError] =
+        ): List[FireboxError] =
             import ctx.*
             val buf = new ListBuffer[FireboxError]()
             val mass: Mass = mB
@@ -69,16 +68,20 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (firebox.h83_hauteurEntreLaSoleEtLe1erInjecteur_X < 5.cm)
                 buf.append(
                     TermValueShouldBeGreaterOrEqThan(
-                        I18N.firebox.ecolabeled.height_of_first_row_of_air_injectors_X,
+                        LocalizedString.from(I18N.firebox.ecolabeled.height_of_first_row_of_air_injectors_X),
                         firebox.h83_hauteurEntreLaSoleEtLe1erInjecteur_X,
                         5.cm
                     )
                 )
 
             if (mass < 6.kg)
-                buf.append(TermValueShouldBeGreaterOrEqThan(I18N.en15544.terms.m_B.name, mass, 6.kg))
+                buf.append(
+                    TermValueShouldBeGreaterOrEqThan(LocalizedString.from(I18N.en15544.terms.m_B.name), mass, 6.kg)
+                )
             if (mass > 40.kg)
-                buf.append(TermValueShouldBeLessOrEqThan(I18N.en15544.terms.m_B.name, mass, 40.kg))
+                buf.append(
+                    TermValueShouldBeLessOrEqThan(LocalizedString.from(I18N.en15544.terms.m_B.name), mass, 40.kg)
+                )
 
             val (d1, d2)         = (
                 firebox.h77_epaisseurParoiInterneFoyer_D1,
@@ -91,7 +94,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (d1 < d1_min)
                 buf.append(
                     TermValueShouldBeGreaterOrEqThan(
-                        I18N.firebox.ecolabeled.inner_wall_thickness_D1,
+                        LocalizedString.from(I18N.firebox.ecolabeled.inner_wall_thickness_D1),
                         d1.to_cm,
                         d1_min.to_cm
                     )
@@ -99,7 +102,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (d2 < d2_min)
                 buf.append(
                     TermValueShouldBeGreaterOrEqThan(
-                        I18N.firebox.ecolabeled.outer_wall_thickness_D2,
+                        LocalizedString.from(I18N.firebox.ecolabeled.outer_wall_thickness_D2),
                         d2.to_cm,
                         d2_min.to_cm
                     )
@@ -110,7 +113,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (w < w_min)
                 buf.append(
                     TermValueShouldBeGreaterOrEqThan(
-                        I18N.firebox.ecolabeled.air_manifold_height_W,
+                        LocalizedString.from(I18N.firebox.ecolabeled.air_manifold_height_W),
                         w.to_cm,
                         w_min.to_cm
                     )
@@ -122,7 +125,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (!((0.5 <= ratio) && (ratio <= 2.0)))
                 buf.append(
                     TermValueShouldBeBetweenInclusive(
-                        I18N.firebox.traditional.width_to_depth_ratio,
+                        LocalizedString.from(I18N.firebox.traditional.width_to_depth_ratio),
                         ratio,
                         minValue = 0.5,
                         maxValue = 2.0
@@ -135,7 +138,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (AF < AF_min)
                 buf.append(
                     TermValueShouldBeGreaterOrEqThan(
-                        I18N.firebox.ecolabeled.ash_pit_height_AF,
+                        LocalizedString.from(I18N.firebox.ecolabeled.ash_pit_height_AF),
                         AF.to_cm,
                         AF_min.to_cm
                     )
@@ -143,7 +146,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (AF > AF_max)
                 buf.append(
                     TermValueShouldBeLessOrEqThan(
-                        I18N.firebox.ecolabeled.ash_pit_height_AF,
+                        LocalizedString.from(I18N.firebox.ecolabeled.ash_pit_height_AF),
                         AF.to_cm,
                         AF_max.to_cm
                     )
@@ -153,7 +156,11 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             val H     = firebox.h13_hauteurDuFoyer
             if (H < H_min)
                 buf.append(
-                    TermValueShouldBeGreaterOrEqThan(I18N.firebox.firebox_height, H.to_cm, H_min.to_cm)
+                    TermValueShouldBeGreaterOrEqThan(
+                        LocalizedString.from(I18N.firebox.firebox_height),
+                        H.to_cm,
+                        H_min.to_cm
+                    )
                 )
 
             val c19 = firebox.c19_largeurDesInjecteursLateraux
@@ -163,7 +170,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (firebox.h79_largeurRenfortMedianLateraux > largeurRenfortMedianLateraux_max)
                 buf.append(
                     TermValueShouldBeLessOrEqThan(
-                        I18N.firebox.ecolabeled.width_between_two_air_columns_sides_E,
+                        LocalizedString.from(I18N.firebox.ecolabeled.width_between_two_air_columns_sides_E),
                         firebox.h79_largeurRenfortMedianLateraux.to_cm,
                         largeurRenfortMedianLateraux_max.to_cm
                     )
@@ -173,24 +180,23 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (firebox.h80_largeurRenfortMedianArriere > largeurRenfortMedianArriere_max)
                 buf.append(
                     TermValueShouldBeLessOrEqThan(
-                        I18N.firebox.ecolabeled.width_between_two_air_columns_rear_E,
+                        LocalizedString.from(I18N.firebox.ecolabeled.width_between_two_air_columns_rear_E),
                         firebox.h80_largeurRenfortMedianArriere.to_cm,
                         largeurRenfortMedianArriere_max.to_cm
                     )
                 )
 
             val DEBORD_MAX = 4.5.cm
-            val I18N_ECO   = I18N.firebox.ecolabeled
-            for (rxString, rx) <- Seq(
-                    (I18N_ECO.reinforcement_bars_offset_in_corners_R1, firebox.r1),
-                    (I18N_ECO.reinforcement_bars_offset_in_corners_R2, firebox.r2),
-                    (I18N_ECO.reinforcement_bars_offset_in_corners_R3, firebox.r3)
+            for (rxName, rx) <- Seq(
+                    (LocalizedString.from(I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners_R1), firebox.r1),
+                    (LocalizedString.from(I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners_R2), firebox.r2),
+                    (LocalizedString.from(I18N.firebox.ecolabeled.reinforcement_bars_offset_in_corners_R3), firebox.r3)
                 )
             yield
                 if (rx > DEBORD_MAX)
                     buf.append(
                         TermValueShouldBeLessOrEqThan(
-                            rxString,
+                            rxName,
                             rx.to_cm,
                             DEBORD_MAX.to_cm
                         )
@@ -201,7 +207,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (firebox.h82_hauteurDesInjecteurs_Z < Z_MIN)
                 buf.append(
                     TermValueShouldBeGreaterOrEqThan(
-                        I18N.firebox.ecolabeled.injector_height_Z,
+                        LocalizedString.from(I18N.firebox.ecolabeled.injector_height_Z),
                         firebox.h82_hauteurDesInjecteurs_Z.to_mm,
                         Z_MIN.to_mm
                     )
@@ -209,7 +215,7 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (firebox.h82_hauteurDesInjecteurs_Z > Z_MAX)
                 buf.append(
                     TermValueShouldBeLessOrEqThan(
-                        I18N.firebox.ecolabeled.injector_height_Z,
+                        LocalizedString.from(I18N.firebox.ecolabeled.injector_height_Z),
                         firebox.h82_hauteurDesInjecteurs_Z.to_mm,
                         Z_MAX.to_mm
                     )
@@ -223,10 +229,12 @@ given ecoLabeledConstraints: FireboxConstraints[Ecolabeled] =
             if (ratioSurfaceFenteAir > ratioSurfaceFenteAir_max)
                 buf.append(
                     TermValueCustom(
-                        I18N.firebox.ecolabeled.injector_surface_area,
+                        LocalizedString.from(I18N.firebox.ecolabeled.injector_surface_area),
                         ratioSurfaceFenteAir,
-                        I18N.firebox.ecolabeled
-                            .injector_surface_area_obstructed_max_perc(ratioSurfaceFenteAir.toPercent.showP)
+                        LocalizedString.from(
+                            I18N.firebox.ecolabeled
+                                .injector_surface_area_obstructed_max_perc(ratioSurfaceFenteAir.toPercent.showP)
+                        )
                     )
                 )
 

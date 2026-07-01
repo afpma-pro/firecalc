@@ -60,7 +60,14 @@ object FluePipe_Module_13384
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame] = None
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
-        val result = incremental.define(incrSeq*).toFullDescrWithExternalInitialFrame(externalInitialFrame)
+        val (fdResult, seedV) = mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))
+        (fdResult, seedV.map(_.frame))
+
+    def mkPipeFromIncrDescrWithSeed(
+        incrSeq: Seq[ThermalPipeDescr_13384],
+        seed   : PipeBuildSeed
+    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
+        val result = incremental.define(incrSeq*).toFullDescrWithSeed(seed)
         (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
     extension (fp: FluePipe_13384)

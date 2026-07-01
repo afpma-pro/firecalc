@@ -8,17 +8,22 @@ package afpma.firecalc.payments.service.impl
 import java.time.Instant
 import java.util.UUID
 
+import afpma.firecalc.domain.FireboxAvailability
+import afpma.firecalc.dto.all.{allows, typeName}
 import afpma.firecalc.payments.domain.*
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.exceptions.*
+import afpma.firecalc.payments.i18n.implicits.I18N_Payments
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
 import afpma.firecalc.payments.shared.api.*
+import afpma.firecalc.payments.shared.api.v1.requiresLicenseFee
 import afpma.firecalc.payments.util.LogSanitizer
+import afpma.firecalc.payments.util.MetadataFireboxDecoder
+import afpma.firecalc.payments.util.MetadataForbiddenDtoChecker
 
 import cats.effect.Async
 import cats.syntax.all.*
-
 import org.typelevel.log4cats.Logger
 
 class PurchaseServiceImpl[F[_]: Async](
@@ -30,13 +35,41 @@ class PurchaseServiceImpl[F[_]: Async](
     orderService       : OrderService[F],
     paymentService     : PaymentService[F],
     emailService       : EmailService[F],
-    productCopyConfig  : ProductCopyConfig
+    productCopyConfig  : ProductCopyConfig,
+    fireboxAvailability: FireboxAvailability
 )                                     (implicit logger: Logger[F])
     extends PurchaseService[F]:
 
     def createPurchaseIntent(request: CreatePurchaseIntentRequest): F[PurchaseToken] =
         for
             _ <- logger.info(s"Creating purchase intent for email: ${LogSanitizer.maskEmail(request.customer.email)}")
+
+            // Check disabled-firebox as the first business validation (zero side effects before this point)
+            _ <- request.productMetadata match
+                case Some(fdc: FileDescriptionWithContent) =>
+                    MetadataFireboxDecoder.extractFirebox(fdc) match
+                        case Right(firebox) =>
+                            if !fireboxAvailability.allows(firebox) then
+                                Async[F].raiseError(FireboxTypeDisabledException(firebox.typeName))
+                            else Async[F].unit
+                        case Left(_)        =>
+                            Async[F].unit
+                case None                                  =>
+                    Async[F].unit
+
+            // Reject dev-only backend-forbidden DTOs (e.g. SetInnerShapePreventSectionGeometryChangeAuto)
+            // before any database side effect. Mirrors the firebox guard above. The check decodes+migrates
+            // the uploaded project YAML and runs BackendForbiddenDtoChecker; decode failures pass through
+            // silently (surfaced later by the report factory) so we don't double-report.
+            _ <- request.productMetadata match
+                case Some(metadata) =>
+                    MetadataForbiddenDtoChecker.findForbidden(metadata) match
+                        case Some(forbidden) =>
+                            Async[F].raiseError(ForbiddenDtoException(forbidden.getClass.getSimpleName))
+                        case None            =>
+                            Async[F].unit
+                case None           =>
+                    Async[F].unit
 
             // Validate email address at API entry point
             validatedEmail <- EmailAddress.fromString(request.customer.email) match {
@@ -94,6 +127,36 @@ class PurchaseServiceImpl[F[_]: Async](
                 case None           =>
                     Async[F].pure(None)
 
+            // Validate product-license-fee compatibility
+            _ <- request.productMetadata match
+                case Some(fdc: FileDescriptionWithContent) =>
+                    MetadataFireboxDecoder.extractFirebox(fdc) match
+                        case Right(firebox) =>
+                            val locale       = request.customer.language.toLocale
+                            val i18nErrors   = I18N_Payments(using locale).errors
+                            val requiresFee  = firebox.requiresLicenseFee
+                            val isFeeProduct = v1.Sku.isLicenseFeeProduct(request.productId)
+
+                            if requiresFee && !isFeeProduct then
+                                Async[F].raiseError(
+                                    ProductFireboxMismatchException(
+                                        request.productId.value.toString,
+                                        i18nErrors.product_firebox_mismatch_fee_required
+                                    )
+                                )
+                            else if !requiresFee && isFeeProduct then
+                                Async[F].raiseError(
+                                    ProductFireboxMismatchException(
+                                        request.productId.value.toString,
+                                        i18nErrors.product_firebox_mismatch_fee_not_required
+                                    )
+                                )
+                            else Async[F].unit
+                        case Left(_)        =>
+                            Async[F].unit
+                case None                                  =>
+                    Async[F].unit
+
             // Use the UUID-based method since we have the customer entity with its UUID
             intent <- purchaseIntentRepo.create(
                 request.productId,
@@ -106,7 +169,9 @@ class PurchaseServiceImpl[F[_]: Async](
 
             isNewUser = customerOpt.isEmpty
 
-            productCopy = ProductCopyResolver.resolve(product.sku, request.customer.language)(using productCopyConfig)
+            productCopy = ProductCopyResolver.resolve(v1.Sku(product.sku), request.customer.language)(using
+                productCopyConfig
+            )
 
             authCodeEmail = AuthenticationCodeEmail(
                 email       = EmailAddress.unsafeFromString(validatedEmail),

@@ -37,11 +37,11 @@ trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544] extends Fire
                 case Dimensions.Base.Squared(w, d) => (w, d)
             val (az, incl) = fireboxInitialDirection
             val fullDescr      = FireboxPipe_Module_15544.incremental
+                .withInitialDirection                           (PipeInitialDirection(az, incl))
                 .define(
-                    setInitialDirection(az, incl),
                     innerShape(rectangle(width, depth)),
-                    roughness          (2.mm    ), // TOFIX: 3mm or 2mm ???
-                    addSectionVertical (
+                    roughness         (2.mm), // TOFIX: 3mm or 2mm ???
+                    addSectionVertical(
                         "ascension dans foyer",
                         // TOFIX: found in CalculPdM-v0.2.30
                         // - we consider the whole vertical length ? but different injection height...
@@ -49,7 +49,7 @@ trait GenericFireboxToFireboxPipe_15544_Strict[FB <: Firebox_15544] extends Fire
                     )
                 )
                 .toFullDescr()
-            FireboxPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)
+            FireboxPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                     )
 }
 
 object GenericFireboxToFireboxPipe_15544_Strict:

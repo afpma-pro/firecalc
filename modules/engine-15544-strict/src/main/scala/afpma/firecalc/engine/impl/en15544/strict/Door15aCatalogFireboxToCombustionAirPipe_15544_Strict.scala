@@ -5,6 +5,7 @@
 
 package afpma.firecalc.engine.impl.en15544.strict
 
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
@@ -41,10 +42,12 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
             firebox.pressure_loss match
                 case Right(pl)          =>
                     val fullDescr = CombustionAirPipe_Module_15544.incremental
+                        .withInitialDirection                                 (
+                            PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
+                        )
                         .define(
-                            setInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal),
-                            innerShape         (firebox.actualAirIntakePipeShape                       ),
-                            addPressureDiff    ("door_15a_pressure_loss", pl                           )
+                            innerShape     (firebox.actualAirIntakePipeShape),
+                            addPressureDiff("door_15a_pressure_loss", pl    )
                         )
                         .toFullDescr()
                     CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)

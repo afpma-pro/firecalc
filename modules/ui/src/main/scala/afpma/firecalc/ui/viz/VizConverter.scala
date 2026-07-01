@@ -10,10 +10,11 @@ import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.engine.models.ChimneyPipeT
 import afpma.firecalc.engine.models.ConnectorPipeT
 import afpma.firecalc.engine.models.FluePipeT
+import afpma.firecalc.engine.models.NoFluePipeT
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PipeSegmentPosition
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
 
@@ -186,6 +187,7 @@ object VizConverter:
         case FluePipeT      => FlueColor
         case ConnectorPipeT => ConnectorColor
         case ChimneyPipeT   => ChimneyColor
+        case NoFluePipeT    => LineColor("#888888")
         case _              => FlueColor
 
     /**

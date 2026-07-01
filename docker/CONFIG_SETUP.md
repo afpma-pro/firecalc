@@ -475,8 +475,11 @@ sudo chmod -R 700 docker/databases
 - Invoice numbering
 - Retry settings
 - Admin contact
+- Firebox availability switches (optional — omitting the block defaults all types to enabled, safe for upgrades)
 
 **Location**: [`configs/staging/payments/payments-config.conf`](../configs/staging/payments/payments-config.conf.example)
+
+**Firebox Availability Switches**: The optional `firebox-availability` block (inside the environment section) controls which firebox types are available for purchase. Valid keys (kebab-case): `traditional`, `ecolabeled`, `afpma-prse`, `single-tested`, `door15a-catalog`. Each key defaults to `true` when omitted; omitting the entire block defaults to all-enabled. This is the safe choice for upgrades — existing behaviour is preserved with no configuration change.
 
 ### email-config.conf
 

@@ -13,6 +13,7 @@ import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.service.impl.PurchaseServiceImpl
 import afpma.firecalc.payments.service.{OrderStateTransition, OrderCompletionCallback}
+import afpma.firecalc.domain.FireboxAvailability
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.email
@@ -418,7 +419,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             // Step 1: Create purchase intent
@@ -492,7 +494,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             // Create purchase intent
@@ -554,7 +557,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val fullCustomerInfo = CustomerInfo(
@@ -625,7 +629,8 @@ object PurchaseVerificationIntegrationTest extends TestSuite {
                 orderService,
                 paymentService,
                 emailService,
-                testProductCopyConfig
+                testProductCopyConfig,
+                FireboxAvailability.AllEnabled
             )
 
             val minimalCustomerInfo = CustomerInfo(

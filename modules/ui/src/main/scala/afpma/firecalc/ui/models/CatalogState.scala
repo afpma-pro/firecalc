@@ -7,7 +7,7 @@ package afpma.firecalc.ui.models
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.instances.CommonInstances.given
-import afpma.firecalc.dto.instances.V4Instances.given
+import afpma.firecalc.dto.instances.V7Instances.given
 
 import scala.collection.immutable.ListMap
 

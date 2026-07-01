@@ -47,6 +47,26 @@ VITE_BACKEND_PORT=443
 VITE_BACKEND_BASE_PATH=/v1
 ```
 
+### Staging Configuration
+
+**File:** `modules/ui/.env.staging`
+
+Used automatically when building for staging:
+```bash
+npm run build:staging
+```
+
+Default configuration:
+```env
+VITE_BACKEND_PROTOCOL=https
+VITE_BACKEND_HOST=staging-api.firecalc.afpma.pro
+VITE_BACKEND_PORT=443
+VITE_BACKEND_BASE_PATH=/v1
+VITE_CGUV_URL=https://staging-firecalc.afpma.pro/cguv
+```
+
+The template file is at `configs/templates/ui/.env.staging.template`.
+
 ## Setup Instructions
 
 ### First Time Setup
@@ -56,6 +76,7 @@ VITE_BACKEND_BASE_PATH=/v1
    cd modules/ui
    cp ../../configs/templates/ui/.env.development.template .env.development
    cp ../../configs/templates/ui/.env.production.template .env.production
+   cp ../../configs/templates/ui/.env.staging.template .env.staging
    ```
 
 2. **Edit configuration files** to match your environment:
@@ -75,6 +96,7 @@ All variables must be prefixed with `VITE_` to be accessible in the client:
 - **VITE_BACKEND_HOST**: Domain or IP address (e.g., `localhost`, `api.example.com`)
 - **VITE_BACKEND_PORT**: Port number (e.g., `8181`, `443`)
 - **VITE_BACKEND_BASE_PATH**: API base path (e.g., `/v1`)
+- **VITE_CGUV_URL**: URL for the terms and conditions page
 
 ## Usage in Code
 

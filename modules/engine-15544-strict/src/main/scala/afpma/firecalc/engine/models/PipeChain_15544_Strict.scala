@@ -7,15 +7,10 @@ package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v6.ChimneySlot_V3
-import afpma.firecalc.dto.v6.ConnectorSlot_V3
-import afpma.firecalc.dto.v6.FlueSlot_V3
-import afpma.firecalc.dto.v6.HeadSlot_V3
-import afpma.firecalc.dto.v6.PostFireboxChain_V3
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.ValidatedNel
@@ -49,51 +44,38 @@ object PipeChain_15544_Strict:
         def connectorPipeMappings = ConnectorPipe_Module.FullDescrResult.extractIdsMapping(connectorPipeResult)
         def chimneyPipeMappings   = ChimneyPipe_Module.FullDescrResult.extractIdsMapping(chimneyPipeResult)
 
-    def build(d: Descriptors): Built =
+    def build(
+        d               : Descriptors,
+        flueInitialFrame: Option[PipeFrame] = None
+    ): Built =
         import FluePipe_Module_15544.FullDescrResult.given
-        import FluePipe_Module_15544.toFullDescrWithExternalInitialFrame
+        import FluePipe_Module_15544.toFullDescrWithSeed
         // Flue pipe → capture final frame
+        val initialSeed    = PipeBuildSeed.fromFrame(flueInitialFrame)
         val flueResult     = FluePipe_Module_15544.incremental
             .define(d.flue*)
-            .toFullDescrWithExternalInitialFrame(None)
+            .toFullDescrWithSeed(initialSeed)
         val fluePipeResult: FluePipe_Module_15544.FullDescrResult = flueResult.map((ids, fd, _) => (ids, fd))
-        val flueFinalFrame = flueResult.map(_._3).toOption.flatten
+        val flueSeed       = flueResult.map(_._3).getOrElse(initialSeed)
+        val flueFinalFrame = flueSeed.frame
 
         // Connector pipe with flue's final frame → capture final frame
-        val (connectorPipeResult, connectorFinalFrameV) =
-            ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(d.connector, flueFinalFrame)
-        val connectorFinalFrame                         = connectorFinalFrameV.toOption.flatten
+        val (connectorPipeResult, connectorSeedV) =
+            ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(d.connector, flueSeed)
+        val connectorSeed                         = connectorSeedV.getOrElse(flueSeed)
+        val connectorFinalFrame                   = connectorSeed.frame
 
         // Chimney pipe with connector's final frame, falling back to flue's frame
-        val chimneyExternalFrame = connectorFinalFrame.orElse(flueFinalFrame)
-        val chimneyPipeResult    =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, chimneyExternalFrame)
+        val chimneyPipeResult =
+            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorSeed)._1
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 
-    /** Convert V4 YAML fields to descriptor slots for generic topology processing. */
-    def toSlots(d: Descriptors): Vector[PostFireboxPipeDescrSlot] =
+    /** Convert V4 YAML fields to V7 descriptor slots (engine-side enum) for generic topology processing. */
+    def toSlots(d: Descriptors): Vector[PostFireboxPipeSlot] =
         Vector(
             FlueSlot     (d.flue     ),
             ConnectorSlot(d.connector),
             ChimneySlot  (d.chimney  )
         )
-
-    /**
-     * Convert descriptors to the structured post-firebox chain (plan issue B1).
-     *
-     * EN 15544 Strict's legacy descriptor shape has a single flue + terminal
-     * connector + chimney, so the emitted chain has a single-slot HEAD_REGION
-     * (`[FlueSlot_V3(d.flue)]`), the descriptor's `connector` as terminal
-     * connector, and `chimney` as the chimney slot. This preserves byte-identical
-     * semantics for all 6 golden `CasType_*` fixtures, which all use a
-     * single-Flue head.
-     */
-    def toChain(d: Descriptors): PostFireboxChain_V3 =
-        PostFireboxChain_V3    (
-            head     = Vector[HeadSlot_V3](FlueSlot_V3(d.flue)),
-            terminal = ConnectorSlot_V3(d.connector),
-            chimney  = ChimneySlot_V3(d.chimney)
-        )
-
 end PipeChain_15544_Strict

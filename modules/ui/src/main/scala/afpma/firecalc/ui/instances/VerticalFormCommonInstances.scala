@@ -188,6 +188,13 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                 )
             )
 
+    val vertical_form_PosLength_cm: DF[PosLength] =
+        import vv.meter.valid_whenPositive
+        import defaultable.qty_d.meter.zero
+        given Form[QtyD[Meter]] = dual.given_dual_Length_cm.form()
+        import PosLength.given
+        Form.formConversionOpaque[PosLength, QtyD[Meter]]
+
     val vertical_form_Length_cm: DF[Length] =
         import vv.meter.valid_whenStrictlyPositive
         import defaultable.qty_d.meter.zero
@@ -214,12 +221,10 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given_dual_Area_cm2_or_in2.form()
 
     // Area : cm2 + m2
-    given vertical_form_Area_cm2_m2: DF[Area] =
+    val vertical_form_Area_cm2_m2: DF[Area] =
         import defaultable.qty_d.area.zero
         import vv.area.valid_whenStrictlyPositive
-        given_dual_Area_cm2_m2_or_in2
-            .form()
-            .withFieldName(I18N.firebox.glass_area)
+        given_dual_Area_cm2_m2_or_in2.form()
 
     // Firebox
 
@@ -227,7 +232,9 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given Form[HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal] =
             horizontal_form.given_HeatOutputReduced_NotDefined_or_HalfOfNominal
         given Form[Length]                                                         = vertical_form_Length_cm
-        given Form[Area]                                                           = vertical_form_Area_cm2_m2
+        given Form[Area]                                                           =
+            vertical_form_Area_cm2_m2
+                .withFieldName(I18N.firebox.traditional.total_air_intake_surface_area_on_door)
 
         // zeta = 0.3 by default
         given Form[QtyD[1]] =
@@ -345,6 +352,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             )
 
         given DF[Length]                     = vertical_form_Length_cm
+        given DF[PosLength]                  = vertical_form_PosLength_cm
         given DF[OutsideAirLocationInHeater] = FormDerivation.mk_AlwaysValid: (va, _) =>
             FieldsetLabelAndContent(
                 label = I18N.firebox.afpma_prse.outside_air_location_in_heater,
@@ -423,7 +431,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
 
     given given_Firebox_SingleTested: DF[Firebox.SingleTested] =
         import defaultable.qty_d.zeroWithUnit
-        given defaultable_TCelsius: Defaultable[TCelsius] = defaultable.given_TCelsius
         given DF[TestStandard] = given_TestStandard
         given DF[String]       = string_emptyAsDefault_alwaysValid
         given DF[Length]       = vertical_form_Length_cm
@@ -435,7 +442,6 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given optMass : DF[Option[Mass]]          = vertical_form_Option_QtyD_Kilogram
         given dimDF   : DF[Dimensionless]         = given_QtyD_Dimensionless
         given optDim  : DF[Option[Dimensionless]] = vertical_form_Option_QtyD_Dimensionless
-        given tempDF  : DF[TCelsius]              = given_TCelsius
         given optTemp : DF[Option[TCelsius]]      = vertical_form_Option_TCelsius
         given DF[HeatOutputReduced.NotDefined_Or_Tested] = given_HeatOutputReduced_NotDefined_Or_Tested
         // EmissionsAndEfficiencyValues_DTO (emissions_values)
@@ -465,6 +471,8 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
             given DF[EmissionValues_DTO]     =
                 FormDerivation.derived[EmissionValues_DTO].autoOverwriteFieldNames
             FormDerivation.derived[EmissionsAndEfficiencyValues_DTO].autoOverwriteFieldNames
+
+        given Form[Area] = vertical_form_Area_cm2_m2.withFieldName(I18N.firebox.glass_area)
 
         val autoDerivedForm                     = FormDerivation.derived[Firebox.SingleTested].autoOverwriteFieldNames
         val d                                   = autoDerivedForm.defaultable

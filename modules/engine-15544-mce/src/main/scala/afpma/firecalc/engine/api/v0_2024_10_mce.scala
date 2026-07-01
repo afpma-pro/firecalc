@@ -14,8 +14,12 @@ import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Application
 import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Formulas
 import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Wood
+import afpma.firecalc.engine.models.en15544.FramedIncrAirIntakePipe_Thermal
+import afpma.firecalc.engine.models.en15544.FramedIncrPostFireboxPipes
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_MCE
 import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -148,6 +152,31 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         protected lazy val net_calorific_value_of_wet_wood: HeatCapacity =
             pci.PCI_sur_brut(net_calorific_value_of_dry_wood, wood.humidity)
 
+        override def postFireboxInitialDirection: Option[afpma.firecalc.dto.common.PipeInitialDirection] = None
+        override def postFireboxInitialPosition : Option[afpma.firecalc.dto.common.Position3D]           = None
+        override def airIntakeInitialPosition   : Option[afpma.firecalc.dto.common.Position3D]           = None
+
+        /**
+         * Raw IncrDescr/seed input layer — bundles the post-firebox + air-intake framed
+         * wrappers from the project-trait override points. Plain `def` (no validation):
+         * the IncrDescr-input layer carries already-validated passthrough values.
+         */
+        override def en15544_incrInputs: IncrementalPipeInputs_15544_MCE =
+            IncrementalPipeInputs_15544_MCE(
+                postFirebox = FramedIncrPostFireboxPipes(
+                    initialDirection = postFireboxInitialDirection,
+                    positionMode     = postFireboxPositionMode,
+                    resolvedPosition = postFireboxInitialPosition,
+                    slots            = postFireboxPipeSlots
+                ),
+                airIntake   = FramedIncrAirIntakePipe_Thermal(
+                    initialDirection = None,
+                    positionMode     = airIntakePositionMode,
+                    resolvedPosition = airIntakeInitialPosition,
+                    descr            = airIntakeDescriptors
+                )
+            )
+
         // TODO: rename to en15544_appl
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_MCE_Application] = en15544_inputsVNel.map: i =>
             val bs845                = new BS845_Impl {}
@@ -156,7 +185,7 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
                 net_calorific_value_of_dry_wood = net_calorific_value_of_dry_wood
             )
             val wComb                = new WoodCombustionImpl
-            EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(i, postFireboxPipeSlots)
+            EN15544_MCE_Application.make(en15544_mce_formulas, bs845, wComb)(i, en15544_incrInputs)
 
     trait SimpleStoveProjectDescrFr_15544_MCE_Alg
         extends StoveProjectDescr_15544_MCE_Alg
@@ -169,7 +198,7 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         def connectorPipeDescr: Seq[ThermalPipeDescr_13384]
         def chimneyPipeDescr  : Seq[ThermalPipeDescr_13384]
 
-        override def postFireboxPipeSlots: Seq[afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot] =
+        override def postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
             PipeChain_15544_MCE.toSlots(
                 PipeChain_15544_MCE.Descriptors(fluePipeDescr, connectorPipeDescr, chimneyPipeDescr)
             )

@@ -135,7 +135,12 @@ object DaisyUIHorizontal extends FormRenderer:
             subtypeNodes
         )
 
-    def sumTypeSelect(label: Option[String], selected: Var[String], options: IArray[String]): HtmlElement =
+    def sumTypeSelect(
+        label          : Option[String],
+        selected       : Var[String],
+        options        : IArray[String],
+        disabledOptions: Signal[Set[String]] = Signal.fromValue(Set.empty)
+    ): HtmlElement =
         val selectNode = DaisyUIInputs
             .SelectAndOptionsOnly          (
                 selectedVar           = selected,
@@ -144,7 +149,8 @@ object DaisyUIHorizontal extends FormRenderer:
                 show                  = identity,
                 makeId                = identity,
                 getById               = identity,
-                selectCls             = "select"
+                selectCls             = "select",
+                disabledOptions       = disabledOptions
             )
             .node
         label match

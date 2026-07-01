@@ -5,7 +5,7 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*

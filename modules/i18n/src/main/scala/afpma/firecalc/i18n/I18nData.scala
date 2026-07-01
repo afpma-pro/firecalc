@@ -14,6 +14,8 @@ import io.taig.babel.StringFormat3
 import io.taig.babel.StringFormat4
 import io.taig.babel.StringFormat5
 import io.taig.babel.StringFormat6
+import io.taig.babel.StringFormat7
+import io.taig.babel.StringFormat8
 
 trait LocalizedAlg:
     val language: Language
@@ -46,6 +48,7 @@ final case class I18nData(
     en15544_errors                 : EN15544_Errors,
     topology_errors                : TopologyErrors,
     en16510                        : EN16510,
+    direction_badge                : DirectionBadge,
     errors                         : Errors,
     facing_type                    : FacingType,
     headers                        : Headers,
@@ -90,6 +93,40 @@ final case class I18nData(
 )
 
 object I18nData:
+
+    case class DirectionBadge(
+        label                         : String,
+        tooltip_direction             : String,
+        tooltip_azimuth               : StringFormat1,
+        tooltip_elevation             : StringFormat1,
+        tooltip_roll                  : StringFormat1,
+        tooltip_convention_up         : String,
+        tooltip_convention_horizontal : String,
+        tooltip_convention_down       : String,
+        cardinal_up                   : String,
+        cardinal_down                 : String,
+        cardinal_rear                 : String,
+        cardinal_front                : String,
+        cardinal_right                : String,
+        cardinal_left                 : String,
+        cardinal_rear_right           : String,
+        cardinal_front_right          : String,
+        cardinal_front_left           : String,
+        cardinal_rear_left            : String,
+        relative_left                 : String,
+        relative_right                : String,
+        relative_up                   : String,
+        relative_down                 : String,
+        relative_theta                : String,
+        relative_dir_label            : String,
+        abs_dir_label                 : String,
+        direction_incompatible_warning: String,
+        cardinal_horizontal           : String,
+        custom_btn                    : String,
+        custom_dialog_title           : String,
+        custom_option                 : StringFormat1,
+        az_el                         : StringFormat2
+    )
 
     case class AddElement(
         _self                              : String,
@@ -519,6 +556,7 @@ object I18nData:
         term_constraint_max_error              : StringFormat3,
         glass_area_too_large                   : StringFormat2,
         glass_surface_ratio_not_confirmed      : String,
+        t_burnout_not_set                      : String,
         firebox_height_out_of_range            : StringFormat3,
         inconsistent_max_load_accross_inputs   : StringFormat3,
         firebox_base_surface_not_in_range      : StringFormat3,
@@ -539,7 +577,8 @@ object I18nData:
         parse_error                            : StringFormat1,
         value_out_of_range                     : StringFormat2,
         value_out_of_range_with_range          : StringFormat6,
-        missing_grid_point                     : StringFormat2
+        missing_grid_point                     : StringFormat2,
+        firebox_type_disabled                  : StringFormat1
     )
 
     case class Headers(
@@ -621,7 +660,8 @@ object I18nData:
 
     case class Inputs_Error(
         invald_type_of_appliance         : Inputs_Error.InvalidTypeOfAppliance,
-        stove_params_sizing_input_missing: String
+        stove_params_sizing_input_missing: String,
+        incompatible_direction_in_pipe   : StringFormat3
     )
 
     object Inputs_Error:
@@ -755,7 +795,8 @@ object I18nData:
         firebox       : String,
         connector     : String,
         channel       : String,
-        chimney       : String
+        chimney       : String,
+        no_flue       : String
     )
 
     case class ProjectDescription(
@@ -782,12 +823,16 @@ object I18nData:
         SetPipeLocation                  : String,
         SetDuctType                      : String,
         SetNumberOfFlows                 : String,
+        AddDirectionChange               : String,
+        AddSectionChange                 : String,
         SetNumberOfFlows_fieldName       : String,
         SetNumberOfFlows_NumberOfChannels: String,
         SetNumberOfFlows_Join            : String,
         SetInitialDirection              : String,
         SetInitialPosition               : String,
         SetFinalPosition                 : String,
+        PipeInitialDirection             : String,
+        Position3D                       : String,
         LinedFlue                        : String,
         LinedFlue_liner                  : String,
         LinedFlue_casing                 : String,
@@ -966,12 +1011,16 @@ object I18nData:
         )
 
         case class Prerequisites(
-            thickness_requires_inner_geometry         : String,
-            layer_requires_section_geometry           : String,
-            layers_require_inner_shape                : String,
-            direction_change_requires_section_geometry: String,
-            final_dir_without_initial_direction       : String,
-            geometry_without_initial_direction        : String
+            thickness_requires_inner_geometry                                 : String,
+            layer_requires_section_geometry                                   : String,
+            layers_require_inner_shape                                        : String,
+            direction_change_requires_section_geometry                        : String,
+            final_dir_without_initial_direction                               : String,
+            geometry_without_initial_direction                                : String,
+            flow_split_requires_inner_shape_before_direction_change           : StringFormat1,
+            flow_merge_requires_inner_shape_before_direction_change           : StringFormat1,
+            flow_merge_requires_length_bearing_section_before_direction_change: StringFormat1,
+            flow_split_forbidden_on_ascending_pipe                            : StringFormat1
         )
 
         case class Conflicts(
@@ -980,7 +1029,13 @@ object I18nData:
             flow_resistance_requires_geometry      : StringFormat1,
             pressure_diff_requires_geometry        : StringFormat1,
             flow_resistance_requires_geometry_15544: StringFormat1,
-            casing_too_small_for_liner             : StringFormat2
+            casing_too_small_for_liner             : StringFormat2,
+            split                                  : String,
+            merge                                  : String,
+            flow_transition_area_rectangle         : StringFormat8,
+            flow_transition_area_square            : StringFormat7,
+            flow_transition_area_circle            : StringFormat7,
+            shape_not_materialized                 : StringFormat1
         )
 
         case class ForbiddenElementPosition(
@@ -1072,8 +1127,7 @@ object I18nData:
 
     case class CountryNames(
         france  : String,
-        belgique: String,
-        autriche: String
+        belgique: String
     )
 
     case class BuilderErrors(

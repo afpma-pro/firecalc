@@ -10,8 +10,9 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v4.SetThermalPipeProp_13384_V3.SetPropertiesInBatch
-
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.SetPropertiesInBatch
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as EP4
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
@@ -79,47 +80,47 @@ object ExampleProject_15544
     val accumulateur_descr =
         import FluePipe_Module_15544.*
         Seq(
-            roughness           (3.mm),
+            roughness           (3.mm                   ),
             innerShape(rectangle(251.mm, 230.mm)),
-            setInitialDirection (azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
-            setInitialPosition  (-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
-            addSectionHorizontal("sortie foyer", 317.mm                    ),
+            // setInitialDirection (azimuth = AzimuthDirection.Left, inclination = InclinationDirection.Horizontal), // Left
+            // setInitialPosition  (-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm),
+            addSectionHorizontal("sortie foyer", 317.mm ),
             addSharpAngle_90deg (
                 "virage avant descente",
-                AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Down)
+                AbsoluteDirection(None, InclinationDirection.Down)
             ), // Down
             innerShape(rectangle(251.mm, 220.mm)),
-            addSectionVertical  ("descente", -815.mm                       ),
+            addSectionVertical  ("descente", -815.mm    ),
             addSharpAngle_90deg (
                 "virage avant banc avant",
                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
             ), // Left
             innerShape(rectangle(220.mm, 240.mm)),
-            addSectionHorizontal("banc avant", 1792.mm                     ),
+            addSectionHorizontal("banc avant", 1792.mm  ),
             addSharpAngle_90deg (
                 "virage avant bout du banc",
                 AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
             ), // Rear
             innerShape(rectangle(200.mm, 240.mm)),
-            addSectionHorizontal("bout du banc", 437.mm                    ),
+            addSectionHorizontal("bout du banc", 437.mm ),
             addSharpAngle_90deg (
                 "virage avant banc arrière",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
             ), // Right
             innerShape(rectangle(190.mm, 240.mm)),
-            addSectionHorizontal("arrière banc", 2073.mm                   ),
+            addSectionHorizontal("arrière banc", 2073.mm),
             addSharpAngle_90deg (
                 "virage avant vers remontée",
                 AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
             ), // Rear
             innerShape(rectangle(210.mm, 240.mm)),
-            addSectionHorizontal("vers remontée", 437.mm                   ),
+            addSectionHorizontal("vers remontée", 437.mm),
             addSharpAngle_90deg (
                 "virage avant remontée",
-                AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+                AbsoluteDirection(None, InclinationDirection.Up)
             ), // Up
             innerShape(rectangle(210.mm, 220.mm)),
-            addSectionVertical  ("remontée", 980.mm                        )
+            addSectionVertical  ("remontée", 980.mm     )
         )
 
     val fluePipeDescr = accumulateur_descr
@@ -139,7 +140,7 @@ object ExampleProject_15544
             addSectionSlopped         ("conduit simple peau 2", 707.mm               ),
             addSharpAngle_30deg_unsafe(
                 "coude angle vif 30°",
-                AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up)
+                AbsoluteDirection(None, InclinationDirection.Up)
             ), // towards Up
             addSectionVertical        ("conduit simple peau 2", 241.mm               )
         )
@@ -147,29 +148,28 @@ object ExampleProject_15544
     val connectorPipeDescr = conduit_raccordement_descr
 
     val conduit_fumees_descr =
-        import ChimneyPipe_Module.*
         Seq(
-            SetPropertiesInBatch(
+            SetPropertiesInBatch  (
                 batch_name = "POUJOULAT 200mm DPI",
                 Seq (
-                    roughness (Material_13384.WeldedSteel()),
-                    innerShape(circle(200.mm)              ),
-                    layer(e = 2.5.cm, tr = SquareMeterKelvinPerWatt(0.440))
+                    SP4.SetRoughness (Material_13384.WeldedSteel()),
+                    SP4.SetInnerShape(circle(200.mm)              ),
+                    SP4.SetLayer(2.5.cm, WattsPerMeterKelvin(0.440))
                 )
             ),
-            pipeLocation        (PipeLocation.HeatedArea            ),
-            addSectionVertical  ("intérieur", 550.mm                ),
-            pipeLocation        (PipeLocation.OutsideOrExterior     ), // plutot NON CHAUFFEE car combles ???
-            addSectionVertical  ("combles", 560.mm                  ),
-            pipeLocation        (PipeLocation.OutsideOrExterior     ),
-            addSectionVertical  ("extérieur", 900.mm                ),
-            pipeLocation        (PipeLocation.OutsideOrExterior     ),
-            addSectionVertical  (
+            SP4.SetPipeLocation   (PipeLocation.HeatedArea                  ),
+            EP4.AddSectionVertical("intérieur", 550.mm                      ),
+            SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior           ), // plutot NON CHAUFFEE car combles ???
+            EP4.AddSectionVertical("combles", 560.mm                        ),
+            SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior           ),
+            EP4.AddSectionVertical("extérieur", 900.mm                      ),
+            SP4.SetPipeLocation   (PipeLocation.OutsideOrExterior           ),
+            EP4.AddSectionVertical(
                 "extérieur (ajout)",
                 400.mm
             ), // deviation from `formation V5 ex02_kachelofen` (40 cm added) to get proper pressure equilibrium
 
-            addFlowResistance   ("element terminal", 0.6.unitless: ζ)
+            EP4.AddFlowResistance ("element terminal", 0.6.unitless: ζ, None)
         )
 
     val chimneyPipeDescr = conduit_fumees_descr

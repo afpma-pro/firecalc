@@ -8,7 +8,14 @@ package afpma.firecalc.payments
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v5.FireCalcYAML_V5
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.common.Position3D
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
@@ -30,23 +37,31 @@ object GenerateExampleProjectFixture:
 
     /** Constructs the same FireCalcYAML as EngineState.example_projet_15544 (UI module). */
     def exampleFireCalcYaml: FireCalcYAML =
-        FireCalcYAMLMigrations.migrateV5ToV6(
-            FireCalcYAML_V5                        (
-                locale                         = Locale(Languages.Fr),
-                display_units                  = DisplayUnits.SI,
-                standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
-                project_description            = ProjectDescr(
-                    reference = ExampleProject_15544.project.reference,
-                    date      = ExampleProject_15544.project.date,
-                    country   = ExampleProject_15544.project.country
+        FireCalcYAML_V7                        (
+            locale                         = Locale(Languages.Fr),
+            display_units                  = DisplayUnits.SI,
+            standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+            project_description            = ProjectDescr(
+                reference = ExampleProject_15544.project.reference,
+                date      = ExampleProject_15544.project.date,
+                country   = ExampleProject_15544.project.country
+            ),
+            local_conditions               = ExampleProject_15544.localConditions,
+            stove_params                   = ExampleProject_15544.stoveParams,
+            air_intake_pipes               = FramedAirIntakePipes.fromLegacy(ExampleProject_15544.conduit_air_descr),
+            firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional],
+            post_firebox_pipes             = FramedPostFireboxPipes.clean(
+                initialDirection = PipeInitialDirection(
+                    azimuth     = AzimuthDirection.Left,
+                    inclination = InclinationDirection.Horizontal
                 ),
-                local_conditions               = ExampleProject_15544.localConditions,
-                stove_params                   = ExampleProject_15544.stoveParams,
-                air_intake_descr               = ExampleProject_15544.conduit_air_descr,
-                firebox                        = ExampleProject_15544.foyer_descr.transformInto[Firebox.Traditional],
-                flue_pipe_descr                = ExampleProject_15544.accumulateur_descr,
-                connector_pipe_descr           = ExampleProject_15544.conduit_raccordement_descr,
-                chimney_pipe_descr             = ExampleProject_15544.conduit_fumees_descr
+                initialPosition  =
+                    PostFireboxStartPosition.Manual(Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)),
+                slots            = Seq(
+                    PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                    PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
+                    PostFireboxPipeDescrSlot_V7.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+                )
             )
         )
 

@@ -12,6 +12,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.FireCalc_Version.<
+import afpma.firecalc.dto.common.toVec3
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
@@ -35,6 +36,7 @@ import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.config.UIConfig
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
@@ -52,7 +54,7 @@ import com.raquo.airstream.web.WebStorageVar
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
-import coulomb.ops.standard.all.given
+import coulomb.policy.standard.given
 
 import scala.util.*
 
@@ -168,7 +170,9 @@ val stove_params_max_load_var: Var[Option[Mass]] =
     )
 
 val air_intake_incrdescr_var =
-    engineStateVar.zoomLazy(_.air_intake_descr)((g, x) => g.copy(air_intake_descr = x))
+    engineStateVar.zoomLazy(_.air_intake_pipes.descr)((g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(descr = x))
+    )
 
 // EngineStateHelper
 
@@ -188,16 +192,120 @@ val firebox_var =
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.{PositionTracker, PipePositionResult}
-import afpma.firecalc.engine.models.geometry.Vec3
+import afpma.firecalc.engine.models.geometry.{PipePositionComputer, AirDistributionBox}
+import afpma.firecalc.units.Vec3
+
+/** Stored Auto/Manual mode for the air intake pipe position. */
+lazy val airIntakePositionMode_var: Var[AirIntakePosition] =
+    engineStateVar.zoomLazy(_.air_intake_pipes.position): (g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(position = x))
+
+/** Wrapper-level initial direction for the air intake pipe. */
+lazy val airIntakeInitialDir_var: Var[PipeInitialDirection] =
+    engineStateVar.zoomLazy(_.air_intake_pipes.initialDir): (g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(initialDir = x))
+
+/** Descriptor sequence for the air intake pipe. */
+lazy val airIntakeDescr_var: Var[Seq[FlowOnlyPipeDescr_13384]] =
+    engineStateVar.zoomLazy(_.air_intake_pipes.descr): (g, x) =>
+        g.copy(air_intake_pipes = g.air_intake_pipes.copy(descr = x))
+
+/**
+ * Effective air intake position derived from mode × direction × firebox × descriptor sequence.
+ * Returns (startPoint, optionalFinalPoint) for PositionTracker.
+ *
+ * - InitialAuto: reverse-compute start so pipe terminates at air distribution box surface.
+ * - InitialManual(pos): start at stored pos; no final constraint.
+ * - FinalAuto: reverse-compute start so pipe terminates at air distribution box surface.
+ * - FinalManual(pos): start at origin; final constraint at stored pos.
+ *
+ * Note: InitialAuto and FinalAuto are geometrically identical — both use the reverse
+ * computation (replay descriptors from origin, offset so end lands at box).
+ * The Initial/Final distinction is purely a migration label (SetInitialPosition vs
+ * SetFinalPosition found in V3 descriptors).
+ */
+lazy val airIntakeEffectivePosition_sig: Signal[(Position3D, Option[Position3D])] =
+    airIntakePositionMode_var.signal
+        .combineWith(airIntakeInitialDir_var.signal)
+        .combineWith(airIntakeDescr_var.signal)
+        .combineWith(firebox_var.signal)
+        .map: (mode, initialDir, descr, fb) =>
+            val fbWidth = fb.firebox_width.value
+            val fbDepth = fb.firebox_depth.value
+            mode match
+                case AirIntakePosition.InitialManual(pos) =>
+                    (pos, None)
+                case AirIntakePosition.FinalManual(pos)   =>
+                    (Position3D.Origin, Some(pos))
+                case AirIntakePosition.InitialAuto        =>
+                    // Reverse computation: start offset so last descriptor element ends at box
+                    val offset = PipePositionComputer.computeAirIntakeFinalAuto(
+                        descr      = descr,
+                        initialDir = initialDir,
+                        boxXWidth  = fbWidth,
+                        boxYDepth  = fbDepth,
+                        boxZBottom = AirDistributionBox.Z_BOTTOM,
+                        boxZHeight = AirDistributionBox.Z_HEIGHT
+                    )
+                    (offset, None)
+                case AirIntakePosition.FinalAuto          =>
+                    val offset = PipePositionComputer.computeAirIntakeFinalAuto(
+                        descr      = descr,
+                        initialDir = initialDir,
+                        boxXWidth  = fbWidth,
+                        boxYDepth  = fbDepth,
+                        boxZBottom = AirDistributionBox.Z_BOTTOM,
+                        boxZHeight = AirDistributionBox.Z_HEIGHT
+                    )
+                    (offset, None)
+
+/**
+ * Displayed position for the air intake Position3D form.
+ *
+ * Initial modes (InitialAuto, InitialManual) display the start position.
+ * Final modes (FinalAuto, FinalManual) display the final/end position.
+ *
+ * For FinalAuto, the final position is the connection point on the air
+ * distribution box surface, computed by the same replay as the start offset.
+ */
+lazy val airIntakeDisplayedPosition_sig: Signal[Position3D] =
+    airIntakePositionMode_var.signal
+        .combineWith(airIntakeInitialDir_var.signal)
+        .combineWith(airIntakeDescr_var.signal)
+        .combineWith(firebox_var.signal)
+        .combineWith(airIntakeEffectivePosition_sig)
+        .map: t =>
+            val (mode, initialDir, descr, fb, startPos, finalPos) = t
+            val fbWidth = fb.firebox_width.value
+            val fbDepth = fb.firebox_depth.value
+            mode match
+                case AirIntakePosition.InitialManual(p) => p
+                case AirIntakePosition.FinalManual(p)   => p
+                case AirIntakePosition.InitialAuto      =>
+                    // Display the start offset (first element of effective tuple)
+                    startPos
+                case AirIntakePosition.FinalAuto        =>
+                    // Display the final connection point (end position)
+                    PipePositionComputer.computeAirIntakeConnectionPoint     (
+                        descr      = descr,
+                        initialDir = initialDir,
+                        boxXWidth  = fbWidth,
+                        boxYDepth  = fbDepth,
+                        boxZBottom = AirDistributionBox.Z_BOTTOM,
+                        boxZHeight = AirDistributionBox.Z_HEIGHT
+                    )
 
 lazy val airintake_positions_sig: Signal[PipePositionResult] =
-    air_intake_incrdescr_var.signal
-        .map: descr =>
+    airIntakeInitialDir_var.signal
+        .combineWith(airIntakeDescr_var.signal)
+        .combineWith(airIntakeEffectivePosition_sig)
+        .map: (initialDir, descr, effectiveStart, effectiveFinal) =>
             PositionTracker.computeFlowOnly13384(
                 descr,
-                externalFrame = None,
-                startPoint    = Vec3(0, 0, 0),
-                finalPoint    = Some(Vec3(0, 0, -1.0))
+                initialDirection = initialDir,
+                externalFrame    = None,
+                startPoint       = effectiveStart.toVec3,
+                finalPoint       = effectiveFinal.map(_.toVec3)
             )
         .distinct
 
@@ -205,8 +313,9 @@ lazy val airintake_positions_sig: Signal[PipePositionResult] =
 // Slot-indexed reactive state for dynamic N-pipe UI.
 
 import afpma.firecalc.dto.common.PipeShape
-import afpma.firecalc.dto.v4.endsWithSingularFlowResistance
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.dto.v7.endsWithSingularFlowResistance
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.common.{PipeInitialDirection, Position3D}
 import afpma.firecalc.engine.models.ChimneyPipe_Module
 import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
@@ -218,9 +327,58 @@ import afpma.firecalc.engine.ops.generic.{PostFireboxPipeChain, TopologyError}
  * Mutations here (add/remove/reorder/edit) propagate through engineStateVar
  * and trigger re-computation of all derived signals.
  */
-lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot]] =
-    engineStateVar.zoomLazy(_.post_firebox_pipes): (g, x) =>
-        g.copy(post_firebox_pipes = x)
+lazy val postFireboxSlots_var: Var[Seq[PostFireboxPipeDescrSlot_V7]] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.slots): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(slots = x))
+
+/** Wrapper-level initial direction for the post-firebox pipe chain. */
+lazy val postFireboxInitialDir_var: Var[PipeInitialDirection] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialDirection): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialDirection = x))
+
+/** Stored Auto/Manual mode for the post-firebox pipe start position. */
+lazy val postFireboxStartPositionMode_var: Var[PostFireboxStartPosition] =
+    engineStateVar.zoomLazy(_.post_firebox_pipes.initialPosition): (g, x) =>
+        g.copy(post_firebox_pipes = g.post_firebox_pipes.copy(initialPosition = x))
+
+/**
+ * Auto-computed post-firebox start position from direction × firebox × firstSlotShape.
+ * Independent of mode — used only when mode is Auto (see postFireboxEffectivePosition_sig).
+ */
+lazy val postFireboxAutoPosition_sig: Signal[Position3D] =
+    postFireboxInitialDir_var.signal
+        .combineWith(firebox_var.signal)
+        .combineWith(postFireboxSlots_var.signal)
+        .map: (dir, fb, slots) =>
+            val firstShape = PipePositionComputer.firstInnerShapeIn(slots)
+            firstShape match
+                case Some(shape) =>
+                    PipePositionComputer.computePostFireboxStart (
+                        direction  = dir,
+                        boxXWidth  = fb.firebox_width.value,
+                        boxYDepth  = fb.firebox_depth.value,
+                        boxZBottom = 0.0,
+                        boxZHeight = fb.firebox_height.value,
+                        innerShape = shape
+                    )
+                case None        =>
+                    // No inner shape found in first slot — fallback to firebox top center.
+                    // This is the correct position for a vertical pipe (Up/Down direction)
+                    // and a reasonable default when shape info is missing.
+                    Position3D(0.0.m, 0.0.m, fb.firebox_height.value.m)
+
+/**
+ * Effective post-firebox start position derived from mode × autoPosition.
+ * In Auto mode, returns the reactively computed position.
+ * In Manual mode, returns the stored position directly (ignores autoPosition).
+ */
+lazy val postFireboxEffectivePosition_sig: Signal[Position3D] =
+    postFireboxStartPositionMode_var.signal
+        .combineWith(postFireboxAutoPosition_sig)
+        .map: (mode, autoPos) =>
+            mode match
+                case PostFireboxStartPosition.Manual(pos) => pos
+                case PostFireboxStartPosition.Auto        => autoPos
 
 /**
  * App-wide Var for the post-firebox rotation offer toast.
@@ -246,7 +404,7 @@ lazy val rotateOffer_var: Var[Option[afpma.firecalc.engine.models.geometry.Chain
  * into an arbitrary number of echoes (300ms debounced snapshot + ~200ms bidirsync
  * roundtrip + possible normalize pass). A single boolean would only absorb the first.
  */
-lazy val lastDispatcherWrite_var: Var[Option[Seq[PostFireboxPipeDescrSlot]]] = Var(None)
+lazy val lastDispatcherWrite_var: Var[Option[Seq[PostFireboxPipeDescrSlot_V7]]] = Var(None)
 
 // ── Slot-indexed build results ───────────────────────────────────
 
@@ -273,37 +431,81 @@ lazy val slotFinalFrames_sig: Signal[Vector[Option[PipeFrame]]] =
     slotBuildResults_sig.map(_.map(_.finalFrame))
 
 /**
- * The initial frame for slot at index `idx`: None for slot 0,
- * otherwise the final frame of the previous slot.
+ * The initial frame for slot at index `idx`: derived from the V7 wrapper-level
+ * `postFireboxInitialDir_var` for slot 0, otherwise the final frame of the previous slot.
+ *
+ * Slot 0 has no preceding slot, so the frame must come from the wrapper direction —
+ * the same value the engine uses (`PipeChainGeneric.build` / `wrapperInitialDirection`).
+ * Previously this returned `Signal.fromValue(None)`, which left `frameBefore` permanently
+ * empty for the first slot, causing the direction badge to render `emptyNode` for every
+ * element with `absDir = None`.
  */
 def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
-    if idx <= 0 then Signal.fromValue(None                                  )
-    else slotFinalFrames_sig.map     (frames => frames.lift(idx - 1).flatten)
+    if idx <= 0 then
+        postFireboxInitialDir_var.signal.map: dir =>
+            Some(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                        InclinationDirection.toDegrees                       (dir.inclination)
+                    )
+                )
+            )
+    else slotFinalFrames_sig.map(frames => frames.lift(idx - 1).flatten)
 
 // ── Slot-indexed position tracking ───────────────────────────────
 
 lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
     postFireboxSlots_var.signal
-        .combineWith(slotFinalFrames_sig, firebox_var.signal)
-        .map: (slots, frames, firebox) =>
-            val fbHeightM = firebox.firebox_height.value
+        .combineWith(
+            slotFinalFrames_sig,
+            postFireboxInitialDir_var.signal,
+            postFireboxEffectivePosition_sig
+        )
+        .map: (slots, frames, initialDir, effectivePosition) =>
+            // Slot 0 starts at the effective position (Auto: computed, Manual: stored)
+            val slot0Start =
+                if slots.isEmpty then
+                    // Intentional: origin (0,0,0) for empty slot list.
+                    // Previously used firebox_height + 1 as a sentinel, but with no slots there's
+                    // nothing to position — origin is the clean default.
+                    Vec3(0, 0, 0)
+                else effectivePosition.toVec3
             slots.zipWithIndex
-                .foldLeft((Vector.empty[PipePositionResult], Vec3(0, 0, fbHeightM + 1.0))):
+                .foldLeft((Vector.empty[PipePositionResult], slot0Start)):
                     case ((results, startPoint), (slot, idx)) =>
                         val prevFrame = if idx == 0 then None else frames.lift(idx - 1).flatten
                         val pos       = slot match
-                            case PostFireboxPipeDescrSlot.FlueSlot(descr)        =>
+                            case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
                                 PositionTracker.computeFlowOnly15544(
                                     descr,
-                                    externalFrame = prevFrame,
-                                    startPoint    = startPoint
+                                    initialDirection = initialDir,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
                                 )
-                            case PostFireboxPipeDescrSlot.ThermalFlueSlot(descr) =>
-                                PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
-                            case PostFireboxPipeDescrSlot.ConnectorSlot(descr)   =>
-                                PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
-                            case PostFireboxPipeDescrSlot.ChimneySlot(descr)     =>
-                                PositionTracker.computeThermal13384(descr, prevFrame, startPoint)
+                            case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
+                                PositionTracker.computeThermal13384(
+                                    descr,
+                                    initialDirection = initialDir,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
+                                )
+                            case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
+                                PositionTracker.computeThermal13384(
+                                    descr,
+                                    initialDirection = initialDir,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
+                                )
+                            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     =>
+                                PositionTracker.computeThermal13384(
+                                    descr,
+                                    initialDirection = initialDir,
+                                    externalFrame    = prevFrame,
+                                    startPoint       = startPoint
+                                )
+                            case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
+                                PipePositionResult(Seq.empty, startPoint, None)
                         (results :+ pos, pos.finalPoint)
                 ._1
         .distinct
@@ -329,7 +531,7 @@ lazy val chimneyEndCapInputs_sig: Signal[Option[(PipePositionResult, PipeShape)]
         .map: (slots, positions) =>
             val lastChimneyIdxOpt = slots.zipWithIndex
                 .collect:
-                    case (s: PostFireboxPipeDescrSlot.ChimneySlot, i) => (s, i)
+                    case (s: PostFireboxPipeDescrSlot_V7.ChimneySlot, i) => (s, i)
                 .lastOption
             for
                 (slot, idx) <- lastChimneyIdxOpt
@@ -374,9 +576,13 @@ lazy val results_en15544_strict_sig: Signal[VNelMcalcErr[EN15544_Strict_Applicat
         // .composeChanges(_.throttle(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
         .map: helper =>
-            scala.util.Try(helper.make_en15544_Strict_Application) match
-                case scala.util.Success(result) => result
-                case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
+            val currentFirebox = helper.fcProj.firebox
+            if !UIConfig.uiAvailability.allows(currentFirebox) then
+                Validated.invalidNel(FireboxTypeDisabledError(currentFirebox.typeName))
+            else
+                scala.util.Try(helper.make_en15544_Strict_Application) match
+                    case scala.util.Success(result) => result
+                    case scala.util.Failure(e)      => Validated.invalidNel(UnexpectedDevError(e.getMessage))
 
 lazy val en15544_strict_validate_results_except_emissions: Signal[Boolean] =
     results_en15544_strict_sig
@@ -419,16 +625,13 @@ lazy val results_en15544_outputs: Signal[VNelMcalcErr[Outputs]] =
     results_en15544_strict_sig.mapVNelE(strict => strict.primary.outputs)
 
 lazy val results_en15544_air_intake_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.airIntake))
+    results_en15544_outputs.flatMapVNelE(_.pipesResult_15544.airIntake)
 
 lazy val results_en15544_combustion_air_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.combustionAir))
+    results_en15544_outputs.flatMapVNelE(_.pipesResult_15544.combustionAir)
 
 lazy val results_en15544_firebox_pipe: Signal[VNelMcalcErr[PipeResult]] =
-    results_en15544_outputs.map: outputs =>
-        outputs.andThen(_.pipesResult_15544.map(_.firebox))
+    results_en15544_outputs.flatMapVNelE(_.pipesResult_15544.firebox)
 
 lazy val results_en15544_estimated_output_temperatures: Signal[VNelMcalcErr[EstimatedOutputTemperatures]] =
     results_en15544_strict_sig.mapVNelE(strict => strict.primary.estimated_output_temperatures)
@@ -479,7 +682,7 @@ def makeQuadrionSubtotalForSingle(
 )(using Locale): Signal[Option[QuadrionSubtotal]] =
     outputsSig.map:
         case Validated.Valid(outputs) =>
-            outputs.pipesResult_15544.map(toPipeResult) match
+            outputs.pipesResult_15544.accumulateErrors.map(toPipeResult) match
                 case Validated.Valid(pres) =>
                     Some(
                         QuadrionSubtotal   (
@@ -503,9 +706,9 @@ def makeQuadrionSubtotalForFirebox(
             None
         case Validated.Valid(outputs) =>
             val cc_intlair_pres =
-                outputs.pipesResult_15544.map(to_cc_intlair_pres)
+                outputs.pipesResult_15544.accumulateErrors.map(to_cc_intlair_pres)
             val cc_firebox_pres =
-                outputs.pipesResult_15544.map(to_cc_firebox_pres)
+                outputs.pipesResult_15544.accumulateErrors.map(to_cc_firebox_pres)
             (cc_intlair_pres, cc_firebox_pres) match
                 case (Valid(cc_intlair_pres), Valid(cc_firebox_pres)) =>
                     Some(
@@ -631,10 +834,10 @@ lazy val door15aFireboxesSignal: Signal[Seq[Firebox.Door15aFirebox_Catalog]] =
 lazy val singleTestedFireboxesSignal: Signal[Seq[Firebox.SingleTested]] =
     catalogStateVar.signal.map(_.single_tested_fireboxes.values.toSeq)
 
-lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+lazy val pipePresetsSignal: Signal[Seq[SetThermalPipeProp_13384.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.pipe_presets.values.toSeq)
 
-lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384_V3.SetPropertiesInBatch]] =
+lazy val casingPresetsSignal: Signal[Seq[SetThermalPipeProp_13384.SetPropertiesInBatch]] =
     catalogStateVar.signal.map(_.casing_presets.values.toSeq)
 
 lazy val flowResistancePresetsSignal: Signal[Seq[FlowResistanceCatalogEntry]] =

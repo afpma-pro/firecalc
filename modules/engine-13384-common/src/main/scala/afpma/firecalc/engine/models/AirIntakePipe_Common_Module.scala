@@ -8,6 +8,7 @@ package afpma.firecalc.engine.models
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.impl.common.*
+import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.syntax.all.*
@@ -16,7 +17,24 @@ import scala.reflect.*
 
 trait AirIntakePipe_Common_Module extends IncrementalPipeDefModule_Common[AirIntakePipeT]:
 
-    import incremental.{IdsMapping, IncrDescr}
+    import incremental.IdsMapping
+
+    /**
+     * Path-dependent incremental descriptor type for this air-intake module.
+     * Exposed as a type member so the engine alg trait can declare
+     * `airIntakeDescriptors: Seq[AirIntakePipe_Module.IncrDescr]`, resolving per-app
+     * to FlowOnly (strict) or Thermal (MCE/labo) V4 descr via the module machinery.
+     */
+    type IncrDescr = incremental.IncrDescr
+
+    /**
+     * `FrameReplay.ElemExtractors` for this module's `IncrDescr`, resolving per-app
+     * to the flow-only or thermal V4 extractor. Exposed as a member so callers can
+     * pass it explicitly to `checkAirIntakeChain` — the path-dependent type unifies
+     * with `airIntakeDescriptors: Seq[AirIntakePipe_Module.IncrDescr]` because both
+     * share the same `AirIntakePipe_Module` path.
+     */
+    def airIntakeElemExtractors: FrameReplay.ElemExtractors[IncrDescr]
 
     type G = CombustionAir
     val gas = CombustionAir

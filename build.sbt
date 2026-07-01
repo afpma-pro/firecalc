@@ -24,10 +24,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.8.3"
-
-// only available locally, waiting for PR to be merged at https://github.com/taig/babel/pull/481
-val babel_version_custom = "0.5.4"
+val scala_version = "3.8.4"
 
 // =========
 // Shared i18n Configuration
@@ -126,10 +123,10 @@ ThisBuild / startYear        := Some(2025)
 ThisBuild / licenses         := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version        = "0.3.0-b20"
-lazy val reports_base_version  = "0.9.0-b20"
-lazy val payments_base_version = "0.9.0-b20"
-lazy val ui_base_version       = "0.9.0-b20"
+lazy val engine_version        = "0.3.0-b21"
+lazy val reports_base_version  = "0.9.0-b21"
+lazy val payments_base_version = "0.9.0-b21"
+lazy val ui_base_version       = "0.9.0-b21"
 
 // Repository information (single source of truth)
 lazy val githubOwner = "afpma-pro"
@@ -264,7 +261,7 @@ lazy val i18n_utils = crossProject(JVMPlatform, JSPlatform)
             // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
             "pro.afpma"     %%% "magnolia"     % "1.3.16",
             "org.typelevel" %%% "cats-core"    % "2.13.0",
-            "io.taig"       %%% "babel-loader" % babel_version_custom
+            "io.taig"       %%% "babel-loader" % "0.6.0"
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
@@ -371,8 +368,9 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
         name    := "firecalc-domain",
         version := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:48"),
-        libraryDependencies ++= Seq(
-            "org.typelevel" %%% "kittens" % "3.5.0"
+        libraryDependencies ++= Seq  (
+            "org.typelevel" %%% "kittens"   % "3.5.0",
+            "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
@@ -396,7 +394,7 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
         ),
         libraryDependencies ++= Seq       (
             "io.scalaland"  %%% "chimney"       % "1.8.2",
-            "io.taig"       %%% "babel-generic" % babel_version_custom,
+            "io.taig"       %%% "babel-generic" % "0.6.0",
             "org.typelevel" %%% "kittens"       % "3.5.0",
             // Test
             "org.scalatest" %%% "scalatest"     % "3.2.19" % "test"
@@ -459,9 +457,9 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
         libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
 
         // i18n
-        libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
-        libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
-        libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom
+        libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
+        libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
+        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
@@ -486,7 +484,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
         commonSettings,
         name                                                 := "firecalc-engine",
         version                                              := engine_version,
-        mainClass                                            := Some("afpma.firecalc.MCalc"),
+        mainClass                                            := Some("afpma.firecalc.engine.MCalc"),
         scalacOptions ++= Seq(
             "-Xmax-inlines:32"
             // "-Yprofile-enabled",
@@ -505,9 +503,9 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
         libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
 
         // i18n
-        libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
-        libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
-        libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom
+        libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
+        libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
+        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0"
     )
     .jvmConfigure(
         _.settings(
@@ -753,9 +751,9 @@ lazy val i18n = crossProject(JVMPlatform, JSPlatform)
         ),
 
         // i18n
-        libraryDependencies += "io.taig" %%% "babel-circe"   % babel_version_custom,
-        libraryDependencies += "io.taig" %%% "babel-generic" % babel_version_custom,
-        libraryDependencies += "io.taig" %%% "babel-loader"  % babel_version_custom,
+        libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
+        libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
+        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0",
 
         // Make Bloop/Metals watch the i18n conf files for changes
         Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -1119,9 +1117,9 @@ lazy val ui = (project in file("modules/ui"))
 
             // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
             "pro.afpma" %%% "magnolia"      % "1.3.16",
-            "io.taig"   %%% "babel-circe"   % babel_version_custom,
-            "io.taig"   %%% "babel-generic" % babel_version_custom,
-            "io.taig"   %%% "babel-loader"  % babel_version_custom,
+            "io.taig"   %%% "babel-circe"   % "0.6.0",
+            "io.taig"   %%% "babel-generic" % "0.6.0",
+            "io.taig"   %%% "babel-loader"  % "0.6.0",
 
             // encoding / decoding
 
@@ -1209,7 +1207,7 @@ lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
         name                                    := "firecalc-ui-i18n",
         version                                 := ui_version,
         libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %%% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0",
 
         // DirectionBadge has 30 fields — bump inline limit to prevent deriveDecoder overflow
         scalacOptions += "-Xmax-inlines:48",
@@ -1242,7 +1240,7 @@ lazy val payments_shared_i18n = crossProject(JSPlatform, JVMPlatform)
         name                                    := "firecalc-payments-shared-i18n",
         version                                 := payments_base_version,
         libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %%% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0",
 
         // Make Bloop/Metals watch the i18n conf files for changes
         Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -1285,9 +1283,9 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
             "io.scalaland" %% "chimney" % "1.8.2",
 
             // i18n
-            "io.taig" %% "babel-circe"   % babel_version_custom,
-            "io.taig" %% "babel-generic" % babel_version_custom,
-            "io.taig" %% "babel-loader"  % babel_version_custom,
+            "io.taig" %% "babel-circe"   % "0.6.0",
+            "io.taig" %% "babel-generic" % "0.6.0",
+            "io.taig" %% "babel-loader"  % "0.6.0",
 
             // encoding / decoding
             "io.circe" %% "circe-core"    % "0.14.13",
@@ -1300,7 +1298,7 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("payments-shared-i18n"))
-    .dependsOn(utils, payments_shared_i18n)
+    .dependsOn(utils, dto, payments_shared_i18n)
 
 // =========
 // payments-i18n
@@ -1311,7 +1309,7 @@ lazy val payments_i18n = (project in file("modules/payments-i18n"))
         name                                   := "firecalc-payments-i18n",
         version                                := payments_version,
         libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0",
 
         // Make Bloop/Metals watch the i18n conf files for changes
         Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -1335,7 +1333,7 @@ lazy val invoices_i18n = (project in file("modules/invoices-i18n"))
         name                                   := "firecalc-invoices-i18n",
         version                                := payments_version,
         libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %% "babel-generic" % babel_version_custom,
+        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0",
 
         // Make Bloop/Metals watch the i18n conf files for changes
         Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
@@ -1363,9 +1361,9 @@ lazy val reports = (project in file("modules/reports"))
         assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
         libraryDependencies ++= Seq  (
             // i18n
-            "io.taig" %% "babel-circe"   % babel_version_custom,
-            "io.taig" %% "babel-generic" % babel_version_custom,
-            "io.taig" %% "babel-loader"  % babel_version_custom,
+            "io.taig" %% "babel-circe"   % "0.6.0",
+            "io.taig" %% "babel-generic" % "0.6.0",
+            "io.taig" %% "babel-loader"  % "0.6.0",
 
             // os
             "com.lihaoyi" %% "os-lib" % "0.11.4",
@@ -1450,18 +1448,19 @@ lazy val payments = (project in file("modules/payments"))
 
         // Merge strategy for conflicting files
         assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
-        libraryDependencies ++= Seq   (
-            "org.http4s"    %% "http4s-ember-server" % "0.23.30",
-            "org.http4s"    %% "http4s-ember-client" % "0.23.30",
-            "org.http4s"    %% "http4s-circe"        % "0.23.30",
-            "org.http4s"    %% "http4s-dsl"          % "0.23.30",
-            "org.http4s"    %% "http4s-scalatags"    % "0.25.2",
-            "io.circe"      %% "circe-generic"       % "0.14.14",
-            "io.circe"      %% "circe-literal"       % "0.14.14",
-            "org.typelevel" %% "cats-effect"         % "3.6.1",
-            "ch.qos.logback" % "logback-classic"     % "1.5.18",
-            "org.typelevel" %% "log4cats-slf4j"      % "2.7.1",
-            "com.lihaoyi"   %% "scalatags"           % "0.13.1",
+        libraryDependencies ++= Seq    (
+            "org.http4s"    %% "http4s-ember-server"  % "0.23.30",
+            "org.http4s"    %% "http4s-ember-client"  % "0.23.30",
+            "org.http4s"    %% "http4s-circe"         % "0.23.30",
+            "org.http4s"    %% "http4s-dsl"           % "0.23.30",
+            "org.http4s"    %% "http4s-scalatags"     % "0.25.2",
+            "io.circe"      %% "circe-generic"        % "0.14.14",
+            "io.circe"      %% "circe-literal"        % "0.14.14",
+            "io.circe"      %% "circe-yaml-scalayaml" % "0.16.0",
+            "org.typelevel" %% "cats-effect"          % "3.6.1",
+            "ch.qos.logback" % "logback-classic"      % "1.5.18",
+            "org.typelevel" %% "log4cats-slf4j"       % "2.7.1",
+            "com.lihaoyi"   %% "scalatags"            % "0.13.1",
 
             // transformers
             "io.scalaland" %% "chimney" % "1.8.2",
@@ -1528,9 +1527,9 @@ lazy val invoices = (project in file("modules/invoices"))
         assembly / assemblyMergeStrategy := commonAssemblyMergeStrategy,
         libraryDependencies ++= Seq  (
             // i18n
-            "io.taig" %% "babel-circe"   % babel_version_custom,
-            "io.taig" %% "babel-generic" % babel_version_custom,
-            "io.taig" %% "babel-loader"  % babel_version_custom,
+            "io.taig" %% "babel-circe"   % "0.6.0",
+            "io.taig" %% "babel-generic" % "0.6.0",
+            "io.taig" %% "babel-loader"  % "0.6.0",
 
             // os
             "com.lihaoyi" %% "os-lib" % "0.11.4",

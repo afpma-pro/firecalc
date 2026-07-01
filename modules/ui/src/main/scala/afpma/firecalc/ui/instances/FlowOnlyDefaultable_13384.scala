@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_13384.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_13384.*
+import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_13384.*
 
 import afpma.firecalc.i18n.implicits.given
 
@@ -32,15 +33,6 @@ object FlowOnlyDefaultable_13384:
         def default = SetMaterial(defaultable_Material_13384.default)
     given Defaultable[SetNumberOfFlows]                       :
         def default = SetNumberOfFlows(divideFlowIn.default)
-    given Defaultable[SetInitialDirection]                    :
-        def default = SetInitialDirection(
-            azimuth     = AzimuthDirection.Rear,
-            inclination = InclinationDirection.Up
-        )
-    given Defaultable[SetInitialPosition]                     :
-        def default = SetInitialPosition(0.meters, 0.meters, 0.meters)
-    given Defaultable[SetFinalPosition]                       :
-        def default = SetFinalPosition(0.meters, 0.meters, 0.meters)
     given Locale => Defaultable[AddSectionSlopped]            :
         def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
     given Locale => Defaultable[AddSectionHorizontal]         :

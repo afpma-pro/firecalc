@@ -51,7 +51,7 @@ class RoundTripV6Suite extends AnyFreeSpec with Matchers with ScalaCheckProperty
             }
 
         "V6 round-trip: N=1 (chimney only)" in
-            forAll(generators.genPostFireboxPipesN(1).flatMap { pipes =>
+            forAll(generators.genFramedPostFireboxPipesN(1).flatMap { pipes =>
                 generators.genFireCalcYAML_V6.map(_.copy(post_firebox_pipes = pipes))
             }) { original =>
                 original.post_firebox_pipes should have size 1
@@ -66,7 +66,7 @@ class RoundTripV6Suite extends AnyFreeSpec with Matchers with ScalaCheckProperty
             }
 
         "V6 round-trip: N=2 (flue|connector then chimney)" in
-            forAll(generators.genPostFireboxPipesN(2).flatMap { pipes =>
+            forAll(generators.genFramedPostFireboxPipesN(2).flatMap { pipes =>
                 generators.genFireCalcYAML_V6.map(_.copy(post_firebox_pipes = pipes))
             }) { original =>
                 original.post_firebox_pipes should have size 2
@@ -82,7 +82,7 @@ class RoundTripV6Suite extends AnyFreeSpec with Matchers with ScalaCheckProperty
 
         "V6 round-trip: N=4 through N=8 (extended flue regions)" in {
             for n <- 4 to 8 do
-                forAll(generators.genPostFireboxPipesN(n).flatMap { pipes =>
+                forAll(generators.genFramedPostFireboxPipesN(n).flatMap { pipes =>
                     generators.genFireCalcYAML_V6.map(_.copy(post_firebox_pipes = pipes))
                 }) { original =>
                     original.post_firebox_pipes should have size n

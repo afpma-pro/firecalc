@@ -51,7 +51,7 @@ web/
 ├── electron-app/         # Electron application source
 │   ├── src/
 │   │   ├── main.js      # Electron main process
-│   │   └── preload.js   # IPC security bridge
+│   │   └── preload.cjs   # IPC security bridge
 │   ├── build/           # Application icons and resources
 │   │   ├── icon.png     # App icon (1024x1024)
 │   │   └── README.md    # Icon documentation

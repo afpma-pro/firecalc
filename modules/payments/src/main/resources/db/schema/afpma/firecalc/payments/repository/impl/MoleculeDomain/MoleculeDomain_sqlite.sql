@@ -1,7 +1,5 @@
-/*
- * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
- */
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
  
 PRAGMA foreign_keys = 1;
 

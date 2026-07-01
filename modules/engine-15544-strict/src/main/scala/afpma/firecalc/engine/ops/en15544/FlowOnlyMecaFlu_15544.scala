@@ -104,13 +104,12 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
         )
 
     def makePipeSectionResult(
-        gip                  : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, DraftCondition],
-        loadQty              : LoadQty,
-        last_CrossSectionArea: Option[Area],
-        last_InnerGeom       : Option[PipeShape],
-        next_Velocity_middle : Option[FlowVelocity],
-        next_Density_middle  : Option[Density],
-        gas_temp             : PositionOp[TCelsius]
+        gip                 : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, DraftCondition],
+        loadQty             : LoadQty,
+        last_InnerGeom      : Option[PipeShape],
+        next_Velocity_middle: Option[FlowVelocity],
+        next_Density_middle : Option[Density],
+        gas_temp            : PositionOp[TCelsius]
     )(using
         alg: ApplicationAlg,
         dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]]
@@ -118,7 +117,6 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
         new FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
             gip,
             loadQty,
-            last_CrossSectionArea,
             last_InnerGeom,
             next_Velocity_middle,
             next_Density_middle,
@@ -152,16 +150,50 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
                 override given shortSection: ShortSectionAlg = ssa
             }
 
+    override def makePipeSectionResult(
+        ctx: MecaFluSectionContext[PipeElDescr, DraftCondition]
+    )(using appCtx: MecaFluAppContext): PipeSectionResult[PipeElDescr] =
+        val ctx15544   = appCtx.asInstanceOf[MecaFlu_15544_AppCtx]
+        val en15544App = ctx15544.en15544.asInstanceOf[ApplicationAlg]
+        val gasTempApprox: PositionOp[TCelsius] =
+            QtyDAtPosition.constant(ctx.gasTempStart).atPos
+        given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544App.dynFrict13384Factory
+        given ShortSectionAlg                                            = ctx15544.shortSection
+        given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
+            FlowOnlyDynamicFrictionCoeff_15544()(using ctx.gasInPipeEl.pipeEl.typ)
+                .mkInstanceForNamedPipesConcat(Vector(ctx.gasInPipeEl.pipeEl))
+        makePipeSectionResult(
+            ctx.gasInPipeEl,
+            ctx15544.loadQty,
+            ctx.lastInnerGeom,
+            ctx.lastPipeVelocity,
+            ctx.lastPipeDensity,
+            gasTempApprox
+        )(using en15544App)
+
+    override def makePipeResult(
+        ctx   : MecaFluPipeContext[PipeElDescr],
+        params: DraftCondition
+    )(using appCtx: MecaFluAppContext): Either[MecaFlu_Error, PipeResult] =
+        val ctx15544   = appCtx.asInstanceOf[MecaFlu_15544_AppCtx]
+        val en15544App = ctx15544.en15544.asInstanceOf[ApplicationAlg]
+        makePipeResult(
+            ctx.fullDescr,
+            ctx.gas,
+            ctx15544.loadQty,
+            ctx15544.zGeo,
+            params
+        )(using en15544App, ctx15544.shortSection)
+
 end FlowOnlyMecaFlu_15544
 
 private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
-    gip                  : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, DraftCondition],
-    loadQty              : LoadQty,
-    last_CrossSectionArea: Option[Area],
-    last_InnerGeom       : Option[PipeShape],
-    next_Velocity_middle : Option[FlowVelocity],
-    next_Density_middle  : Option[Density],
-    gas_temp             : PositionOp[TCelsius]
+    gip                 : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, DraftCondition],
+    loadQty             : LoadQty,
+    last_InnerGeom      : Option[PipeShape],
+    next_Velocity_middle: Option[FlowVelocity],
+    next_Density_middle : Option[Density],
+    gas_temp            : PositionOp[TCelsius]
 ) extends PipeSectionResult[PipeElDescr]:
 
     given en15544           : FlowOnlyMecaFlu_15544.ApplicationAlg                       = scala.compiletime.deferred
@@ -215,32 +247,11 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
             .innerShape(oPrevGeom = last_InnerGeom)
             .getOrElse(throw new Exception(s"${curr.fullRef}: could not determine inner geometry"))
 
-    private val _crossSectionArea: PositionOpX[Start | End, Area] =
-        MecaFluOps
-            .computeCrossSectionArea(last_CrossSectionArea, curr.fullRef, curr.typ)        (
-                getStraightArea         = curr.el match
-                    case s: StraightSection => Some(s.geometry.area)
-                    case _ => None
-                ,
-                getSectionChangeAreas   = curr.el match
-                    case s: SectionGeometryChange => Some((s.from.area, s.to.area))
-                    case _ => None
-                ,
-                getSingularCrossSection = curr.el match
-                    case SingularFlowResistance(_, Some(crossSection)) => Some(crossSection)
-                    case PressureDiff(_, Some(crossSection))           => Some(crossSection)
-                    case _                                             => None
-            )
-            .fold(MecaFluOps.throwMecaFluError, identity)
-
     val crossSectionArea: PositionOp[Area] =
-        QtyDAtPosition
-            .from (
-                start  = _crossSectionArea(using Start),
-                middle = (_crossSectionArea(using Start) + _crossSectionArea(using End)) / 2.0,
-                end    = _crossSectionArea(using End)
-            )
-            .atPos
+        Position.summon match
+            case Position.Start  => innerShape(using Start).area
+            case Position.Middle => innerShape(using Middle).area
+            case Position.End    => innerShape(using End).area
 
     val flowVelocity: PositionOp[FlowVelocity] =
         en15544.formulas.v_calc(volumeFlow, crossSectionArea)
@@ -443,15 +454,23 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                         // because `gasTemperature` is only invoked with `elem.typ ==
                         // FluePipeT` for flue pipe elements. Nothing to return as
                         // "identity" in that case — plan issue E2.
-                        en15544.t_fluepipe(totalLengthUntil(elem))
+                        en15544
+                            .t_fluepipe(totalLengthUntil(elem))
+                            .toEither
+                            .leftMap(e => MecaFlu_Error.ComputationError(e.head, FluePipeT))
+                            .fold      (
+                                err => MecaFluOps.throwMecaFluError(err),
+                                v => QtyDAtPosition.constant(v).atPos
+                            )
+            case NoFluePipeT        =>
+                QtyDAtPosition.constant(tempStartOverride.getOrElse(en15544.t_BR)).atPos
             case _                  =>
                 throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")
 
     private val _out =
 
         val initS = MapState(
-            last_InnerGeom        = None,
-            last_CrossSectionArea = None
+            last_InnerGeom = None
         )
 
         // step1: run minimalist calculation, just to get all velocities at middle
@@ -484,15 +503,12 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                     FlowOnlyMecaFlu_15544.makePipeSectionResult(
                         GasInPipeEl    (gas, curr, params),
                         loadQty,
-                        st.last_CrossSectionArea,
                         st.last_InnerGeom,
                         next_dv_opt.map(_._2             ),
                         next_dv_opt.map(_._1             ),
                         gasTemperature (curr             )
                     )
                 val nextS = st
-                    .modify(_.last_CrossSectionArea)
-                    .setTo(psr.crossSectionArea_end.some)
                     .modify(_.last_InnerGeom)
                     .setTo(psr.innerShape_end.some)
                 (nextS, psr)
@@ -536,6 +552,5 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
 
 object FlowOnlyMecaFlu_15544_PipeResult_Impl:
     private case class MapState(
-        last_InnerGeom       : Option[PipeShape],
-        last_CrossSectionArea: Option[Area]
+        last_InnerGeom: Option[PipeShape]
     )

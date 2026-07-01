@@ -1,6 +1,6 @@
 <!--
 SPDX-License-Identifier: AGPL-3.0-or-later
-Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
 -->
 
 # Contributing to FireCalc AFPMA
@@ -36,14 +36,14 @@ See [`LICENSE-HEADER-TEMPLATE.txt`](LICENSE-HEADER-TEMPLATE.txt) for all templat
 ```scala
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+ * Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
  */
 ```
 
 **Configuration files example:**
 ```conf
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+# Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
 ```
 
 **Enforcement:**

@@ -13,9 +13,6 @@ Backend payment processing system with GoCardless integration, passwordless auth
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture and implementation details
 - **[AGPLV3_NETWORK_COMPLIANCE.md](AGPLV3_NETWORK_COMPLIANCE.md)** - AGPLv3 compliance for network services
 
-### Product Management
-- **[PRODUCT_CATALOG_TESTING.md](PRODUCT_CATALOG_TESTING.md)** - Product catalog testing guide
-- **[PRODUCT_CATALOG_UI_INTEGRATION.md](PRODUCT_CATALOG_UI_INTEGRATION.md)** - Frontend integration guide
 
 ## 🏗️ Architecture Overview
 
@@ -80,7 +77,7 @@ sbt "payments/test:testOnly afpma.firecalc.payments.repository.ProductCatalogInt
 
 ### 1. Create Purchase Intent
 ```
-User → POST /api/v1/purchase/intent
+User → POST /v1/purchase/create-intent
      → Generates 6-digit auth code
      → Sends email with code
      → Returns purchase token
@@ -88,7 +85,7 @@ User → POST /api/v1/purchase/intent
 
 ### 2. Verify & Process
 ```
-User → POST /api/v1/purchase/verify
+User → POST /v1/purchase/verify-and-process
      → Validates auth code
      → Creates/authenticates user
      → Creates order
@@ -98,7 +95,7 @@ User → POST /api/v1/purchase/verify
 
 ### 3. Payment Confirmation
 ```
-GoCardless → Webhook /api/v1/webhooks/gocardless
+GoCardless → Webhook /v1/webhooks/gocardless
           → Updates order status
           → Generates invoice
           → Sends invoice email
@@ -109,14 +106,12 @@ GoCardless → Webhook /api/v1/webhooks/gocardless
 **Configuration Files:**
 ```
 configs/
-├── dev/payments/
-│   ├── payments-config.conf
-│   ├── gocardless-config.conf
-│   └── email-config.conf
-├── staging/payments/
-│   └── ... (same structure)
-└── prod/payments/
-    └── ... (same structure)
+├── templates/payments/
+│   ├── payments-config.conf.template
+│   ├── gocardless-config.conf.template
+│   └── email-config.conf.template
+└── test-exists/payments/
+    └── test.conf
 ```
 
 **Environment Detection:**
@@ -132,7 +127,7 @@ The system supports multiple product catalogs:
 - **Staging**: Production-like products at minimal prices
 - **Production**: Real products with actual prices
 
-See [PRODUCT_CATALOG_TESTING.md](PRODUCT_CATALOG_TESTING.md) for details.
+Contact the development team for catalog testing details.
 
 ## 🔐 Security
 
@@ -185,11 +180,11 @@ that affects pipe descriptors or validation rules.
 ## 📖 API Documentation
 
 ### Purchase Endpoints
-- `POST /api/v1/purchase/intent` - Create purchase intent
-- `POST /api/v1/purchase/verify` - Verify code and process payment
+- `POST /v1/purchase/create-intent` - Create purchase intent
+- `POST /v1/purchase/verify-and-process` - Verify code and process payment
 
 ### Webhook Endpoints
-- `POST /api/v1/webhooks/gocardless` - Payment status updates
+- `POST /v1/webhooks/gocardless` - Payment status updates
 
 ### Utility Endpoints
 - `GET /health` - Health check

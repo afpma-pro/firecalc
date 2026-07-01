@@ -59,6 +59,7 @@ modules/*/src/main/resources/deployment/
 # Scalamolecule generated files
 molecule/
 modules/payments/src/main/resources/moleculeGen
+modules/payments/src/main/resources/db/schema/**/*.sql
 
 # Generated files with sensitive data
 **/company-*.conf

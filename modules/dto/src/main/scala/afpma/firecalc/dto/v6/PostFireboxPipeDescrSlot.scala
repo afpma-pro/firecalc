@@ -31,21 +31,25 @@ enum PostFireboxPipeDescrSlot:
     case ThermalFlueSlot(descr: Seq[ThermalPipeDescr_13384_V3])
     case ConnectorSlot(descr: Seq[ThermalPipeDescr_13384_V3])
     case ChimneySlot(descr: Seq[ThermalPipeDescr_13384_V3])
+    case NoFlueSlot
 
 object PostFireboxPipeDescrSlot:
     import afpma.firecalc.dto.instances.CommonInstances.given
     import afpma.firecalc.dto.instances.V4Instances.given
 
     /**
-     * Indices (within the given slot vector) that belong to the HEAD_REGION.
+     * Returns indices of the flue-based head region (from index 0 to the last
+     * FlueSlot/ThermalFlueSlot).
+     *
+     * This measures the head region based on flue slots only — a chain with
+     * NoFlueSlot returns an empty vector, even though the typed
+     * PostFireboxChain_V3.head may contain NoFlueSlot_V3 (the grammatical head
+     * region).
      *
      * Mirrors the engine-side authoritative definition in
-     * `PostFireboxPipeChain.headRegion`: the head region extends from index 0
-     * up to and including the last flue slot (either `FlueSlot` or
-     * `ThermalFlueSlot`). A chain with no flue slot has an empty head region.
-     *
-     * Kept here (and not in engine) so UI and tests can compute head-region
-     * membership directly from the DTO, without loading engine code paths.
+     * `PostFireboxPipeChain.headRegion`. Kept here (and not in engine) so UI
+     * and tests can compute head-region membership directly from the DTO,
+     * without loading engine code paths.
      */
     def headRegionIndices(slots: Seq[PostFireboxPipeDescrSlot]): Vector[Int] =
         val lastFlueIdx = slots.lastIndexWhere:
@@ -63,6 +67,8 @@ object PostFireboxPipeDescrSlot:
             Json.obj("ConnectorSlot" -> Encoder[Seq[ThermalPipeDescr_13384_V3]].apply(d))
         case PostFireboxPipeDescrSlot.ChimneySlot(d)     =>
             Json.obj("ChimneySlot" -> Encoder[Seq[ThermalPipeDescr_13384_V3]].apply(d))
+        case PostFireboxPipeDescrSlot.NoFlueSlot         =>
+            Json.obj("NoFlueSlot" -> Json.Null)
     }
 
     given Decoder[PostFireboxPipeDescrSlot] = Decoder.instance { c =>
@@ -84,6 +90,9 @@ object PostFireboxPipeDescrSlot:
                     .as[Seq[ThermalPipeDescr_13384_V3]]
                     .map(PostFireboxPipeDescrSlot.ChimneySlot(_))
             )
+            .orElse(
+                c.downField("NoFlueSlot").as[Unit].map(_ => PostFireboxPipeDescrSlot.NoFlueSlot)
+            )
     }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -93,7 +102,7 @@ object PostFireboxPipeDescrSlot:
 // Grammar enforced by the typed chain:
 //
 //   PostFireboxChain_V3 := HEAD_REGION  TERMINAL_CONNECTOR  CHIMNEY
-//   HEAD_REGION         := alternating Flue/Connector (NON-EMPTY, ends with Flue)
+//   HEAD_REGION         := [NoFlueSlot_V3] | alternating Flue/Connector ending with Flue
 //   TERMINAL_CONNECTOR  := exactly one ConnectorSlot_V3 (descr may be empty)
 //   CHIMNEY             := exactly one ChimneySlot_V3
 //
@@ -137,6 +146,9 @@ final case class ThermalFlueSlot_V3(descr: Seq[ThermalPipeDescr_13384_V3]) exten
  */
 final case class ConnectorSlot_V3(descr: Seq[ThermalPipeDescr_13384_V3]) extends HeadSlot_V3
 
+/** Zero-field marker for EN 15544 topologies with no flue pipe. */
+case object NoFlueSlot_V3 extends HeadSlot_V3
+
 /**
  * Chimney slot (EN 13384 thermal). Exactly one, always the last slot in a
  * `PostFireboxChain_V3`.
@@ -153,7 +165,8 @@ final case class ChimneySlot_V3(descr: Seq[ThermalPipeDescr_13384_V3])
  *
  * Invariants (NOT currently enforced at the type level — enforced by
  * `PostFireboxPipeChain.validated` in the topology validator):
- *   - `head` is non-empty
+ *   - `head` is `[NoFlueSlot_V3]` for EN 15544 with no flues, or empty for EN 13384
+ *     standalone, or alternating flue/connector ending with flue
  *   - `head` alternates `FlueSlot_V3` / `ConnectorSlot_V3` (no two consecutive
  *     slots of the same subtype)
  *   - `head` ends with a `FlueSlot_V3`

@@ -13,7 +13,8 @@ import afpma.firecalc.dto.generators.schema.{
     FireCalcYAML_V3_Generators,
     FireCalcYAML_V4_Generators,
     FireCalcYAML_V5_Generators,
-    FireCalcYAML_V6_Generators
+    FireCalcYAML_V6_Generators,
+    FireCalcYAML_V7_Generators
 }
 import afpma.firecalc.dto.v1.FireCalcYAML_V1
 import afpma.firecalc.dto.v2.FireCalcYAML_V2
@@ -21,12 +22,13 @@ import afpma.firecalc.dto.v3.FireCalcYAML_V3
 import afpma.firecalc.dto.v4.FireCalcYAML_V4
 import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
 
 /**
  * AllGenerators - Master generator object combining all schema generators
  *
  * This object provides a single entry point for accessing schema generators
- * across all versions (V1, V2, V3, V4, V5, V6).
+ * across all versions (V1, V2, V3, V4, V5, V6, V7).
  *
  * Features:
  * - genFireCalcYAML_V1: Complete FireCalcYAML V1 instances
@@ -35,6 +37,7 @@ import afpma.firecalc.dto.v6.FireCalcYAML_V6
  * - genFireCalcYAML_V4: Complete FireCalcYAML V4 instances
  * - genFireCalcYAML_V5: Complete FireCalcYAML V5 instances
  * - genFireCalcYAML_V6: Complete FireCalcYAML V6 instances
+ * - genFireCalcYAML_V7: Complete FireCalcYAML V7 instances
  *
  * Usage:
  *   val v1Schema = AllGenerators.genFireCalcYAML_V1.sample
@@ -43,6 +46,7 @@ import afpma.firecalc.dto.v6.FireCalcYAML_V6
  *   val v4Schema = AllGenerators.genFireCalcYAML_V4.sample
  *   val v5Schema = AllGenerators.genFireCalcYAML_V5.sample
  *   val v6Schema = AllGenerators.genFireCalcYAML_V6.sample
+ *   val v7Schema = AllGenerators.genFireCalcYAML_V7.sample
  */
 object AllGenerators:
 
@@ -63,6 +67,9 @@ object AllGenerators:
 
     private val v6Generators: FireCalcYAML_V6_Generators =
         new FireCalcYAML_V6_Generators {}
+
+    private val v7Generators: FireCalcYAML_V7_Generators =
+        new FireCalcYAML_V7_Generators {}
 
     /** Generate a complete FireCalcYAML_V1 instance */
     def genFireCalcYAML_V1: Gen[FireCalcYAML_V1] =
@@ -87,5 +94,9 @@ object AllGenerators:
     /** Generate a complete FireCalcYAML_V6 instance */
     def genFireCalcYAML_V6: Gen[FireCalcYAML_V6] =
         v6Generators.genFireCalcYAML_V6
+
+    /** Generate a complete FireCalcYAML_V7 instance */
+    def genFireCalcYAML_V7: Gen[FireCalcYAML_V7] =
+        v7Generators.genFireCalcYAML_V7
 
 end AllGenerators

@@ -5,8 +5,8 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot.*
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
@@ -41,11 +41,11 @@ class DynamicPipeSlotPanelNumberingAndLengthSuite extends AnyFreeSpec with Match
         s"Length: $x (cum. $y, min. $z)"
 
     // ── Convenience wrapper ─────────────────────────────────────────
-    private def numberedTitle(slots: Seq[PostFireboxPipeDescrSlot], idx: Int): Option[String] =
+    private def numberedTitle(slots: Seq[PostFireboxPipeDescrSlot_V7], idx: Int): Option[String] =
         DynamicPipeSlotPanel.numberedTitle(slots, idx, "Channel", "Connector")
 
     private def lengthSummary(
-        slots                       : Seq[PostFireboxPipeDescrSlot],
+        slots                       : Seq[PostFireboxPipeDescrSlot_V7],
         idx                         : Int,
         lengths                     : Option[Vector[Double]],
         lZMin                       : Option[Double]

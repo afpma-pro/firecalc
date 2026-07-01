@@ -38,11 +38,16 @@ object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
             firebox.origineArriveeAir match
                 case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
                     CombustionAirPipe_Module_13384.incremental
+                        .withInitialDirection(
+                            PipeInitialDirection    (
+                                azimuth     = AzimuthDirection.Rear,
+                                inclination = InclinationDirection.Up
+                            )
+                        )
                         .define(
-                            setInitialDirection(azimuth = AzimuthDirection.Rear, inclination = InclinationDirection.Up),
-                            pipeLocation       (PipeLocation.HeatedArea                                               ), // added for EN13384
-                            innerShape         (arriveeAirGeometry                                                    ),
-                            layer              (e       = 1.cm, λ                            = 1.3.W_per_mK           ), // added for EN13384
+                            pipeLocation(PipeLocation.HeatedArea   ), // added for EN13384
+                            innerShape  (arriveeAirGeometry        ),
+                            layer       (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
 
                             addSectionVertical  (
                                 "remontée dans chambre de détente",

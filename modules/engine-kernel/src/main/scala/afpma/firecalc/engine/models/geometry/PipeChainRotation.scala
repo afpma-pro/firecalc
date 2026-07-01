@@ -8,6 +8,7 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
+import afpma.firecalc.units.Vec3
 
 /**
  * Pure algorithm for rewriting downstream `absDir` pins after an upstream direction edit.

@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -45,7 +45,8 @@ import io.taig.babel.Languages
  * (`FluePipe_Module_13384`) — the new code path unlocked by Step 6.
  *
  *   Slot 0 — FlueSlot        : horizontal exit from firebox (Right/Horizontal, 28.1 cm)
- *                              + 90° turn upward — flow-only (FluePipe_Module_15544)
+ *                              + 90° turn upward + short vertical section (10 cm)
+ *                              — flow-only (FluePipe_Module_15544)
  *   Slot 1 — ThermalFlueSlot : ascending vertical column (11.1 × 11.1 cm, 3.20 m)
  *                              — thermal (FluePipe_Module_13384)
  *   Slot 2 — ConnectorSlot   : short steel connector (Ø 130 mm, 5 cm)
@@ -107,22 +108,22 @@ object StrictNPipeThermalFixture_15544
     // These provide the fallback path used when postFireboxPipeSlots is not overridden.
     // The 4-slot override below supersedes the chain's default toSlots mapping.
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            roughness              (3.mm                        ),
+            roughness           (3.mm                        ),
             innerShape(rectangle(11.1.cm, 12.2.cm)),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm     ),
-            addSharpAngle_90deg    (
+            addSectionHorizontal("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.20.m)
+            addSectionVertical  ("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =
@@ -157,34 +158,32 @@ object StrictNPipeThermalFixture_15544
     // unlocked by Step 6 of the N-pipe topology remediation.
     //
     // Topology:
-    //   Slot 0 — FlueSlot: horizontal exit + 90° turn upward (flow-only)
+    //   Slot 0 — FlueSlot: horizontal exit + 90° turn upward + short vertical section
+    //                      (direction change must be between two length-bearing elements)
     //   Slot 1 — ThermalFlueSlot: ascending vertical column (thermal)
     //   Slot 2 — ConnectorSlot: short steel connector (inherits Up frame)
     //   Slot 3 — ChimneySlot: insulated chimney (inherits Up frame)
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         import ConnectorPipe_Module as CPM
         import ChimneyPipe_Module as CHPM
         val slot0 =
             import FluePipe_Module_15544.*
-            PostFireboxPipeDescrSlot.FlueSlot(
+            PostFireboxPipeSlot.FlueSlot(
                 Seq(
-                    setInitialDirection    (
-                        azimuth     = AzimuthDirection.Right,
-                        inclination = InclinationDirection.Horizontal
-                    ),
-                    roughness              (3.mm                      ),
+                    roughness           (3.mm                      ),
                     innerShape(rectangle(11.1.cm, 12.2.cm)),
-                    addSectionHorizontal   ("F1-sortie foyer", 28.1.cm),
-                    addSharpAngle_90deg    (
+                    addSectionHorizontal("F1-sortie foyer", 28.1.cm),
+                    addSharpAngle_90deg (
                         "F1-virage 90 deg (-> Haut)",
                         AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
-                    )
+                    ),
+                    addSectionVertical  ("F1-colonne courte", 10.cm)
                 )
             )
         val slot1 =
             import FluePipe_Module_13384.*
-            PostFireboxPipeDescrSlot.ThermalFlueSlot(
+            PostFireboxPipeSlot.ThermalFlueSlot(
                 Seq(
                     innerShape(rectangle(11.1.cm, 11.1.cm)),
                     pipeLocation      (PipeLocation.HeatedArea        ),
@@ -199,7 +198,7 @@ object StrictNPipeThermalFixture_15544
             // Slot 1 — ThermalFlueSlot: ascending vertical column (thermal, inherits Up frame)
             slot1,
             // Slot 2 — ConnectorSlot: short steel connector (inherits Up frame)
-            PostFireboxPipeDescrSlot.ConnectorSlot(
+            PostFireboxPipeSlot.ConnectorSlot(
                 Seq (
                     CPM.roughness (Material_13384.WeldedSteel()),
                     CPM.innerShape(circle(130.mm)              ),
@@ -209,7 +208,7 @@ object StrictNPipeThermalFixture_15544
                 )
             ),
             // Slot 3 — ChimneySlot: insulated chimney (inherits Up frame)
-            PostFireboxPipeDescrSlot.ChimneySlot  (
+            PostFireboxPipeSlot.ChimneySlot  (
                 Seq(
                     CHPM.roughness         (1.mm                                           ),
                     CHPM.innerShape(circle(130.mm)),

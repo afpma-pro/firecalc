@@ -11,7 +11,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.dto.v6.PostFireboxPipeDescrSlot
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -104,22 +104,22 @@ object StrictInterleavedConnectorFixture_15544
     // These provide the fallback path used when postFireboxPipeSlots is not overridden.
     // The 5-slot override below supersedes the chain's default toSlots mapping.
 
+    override def postFireboxInitialDirection = Some(
+        PipeInitialDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
+    )
+
     val fluePipeDescr =
         import FluePipe_Module_15544.*
         Seq(
-            setInitialDirection    (
-                azimuth     = AzimuthDirection.Right,
-                inclination = InclinationDirection.Horizontal
-            ),
-            roughness              (3.mm                        ),
+            roughness           (3.mm                        ),
             innerShape(rectangle(11.1.cm, 12.2.cm)),
-            addSectionHorizontal   ("sortie foyer", 28.1.cm     ),
-            addSharpAngle_90deg    (
+            addSectionHorizontal("sortie foyer", 28.1.cm     ),
+            addSharpAngle_90deg (
                 "virage 90 deg",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
             ),
             innerShape(rectangle(11.1.cm, 11.1.cm)),
-            addSectionVertical     ("colonne ascendante", 3.20.m)
+            addSectionVertical  ("colonne ascendante", 3.20.m)
         )
 
     val connectorPipeDescr =
@@ -160,21 +160,17 @@ object StrictInterleavedConnectorFixture_15544
     //   Slot 3 — ConnectorSlot: standard connector after flue region (thermal)
     //   Slot 4 — ChimneySlot: insulated chimney
 
-    override val postFireboxPipeSlots: Seq[PostFireboxPipeDescrSlot] =
+    override val postFireboxPipeSlots: Seq[PostFireboxPipeSlot] =
         import ConnectorPipe_Module as CPM
         import ChimneyPipe_Module as CHPM
         val slot0 =
             import FluePipe_Module_15544.*
-            PostFireboxPipeDescrSlot.FlueSlot(
+            PostFireboxPipeSlot.FlueSlot(
                 Seq(
-                    setInitialDirection    (
-                        azimuth     = AzimuthDirection.Right,
-                        inclination = InclinationDirection.Horizontal
-                    ),
-                    roughness              (3.mm                      ),
+                    roughness           (3.mm                      ),
                     innerShape(rectangle(11.1.cm, 12.2.cm)),
-                    addSectionHorizontal   ("F1-sortie foyer", 28.1.cm),
-                    addSharpAngle_90deg    (
+                    addSectionHorizontal("F1-sortie foyer", 28.1.cm),
+                    addSharpAngle_90deg (
                         "F1-virage 90 deg (-> Haut)",
                         AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
                     )
@@ -182,7 +178,7 @@ object StrictInterleavedConnectorFixture_15544
             )
         val slot1 =
             import ConnectorPipe_Module as CPM
-            PostFireboxPipeDescrSlot.ConnectorSlot(
+            PostFireboxPipeSlot.ConnectorSlot(
                 Seq (
                     CPM.roughness (Material_13384.WeldedSteel()),
                     CPM.innerShape(circle(130.mm)              ),
@@ -193,7 +189,7 @@ object StrictInterleavedConnectorFixture_15544
             )
         val slot2 =
             import FluePipe_Module_15544.*
-            PostFireboxPipeDescrSlot.FlueSlot(
+            PostFireboxPipeSlot.FlueSlot(
                 Seq(
                     innerShape(rectangle(11.1.cm, 11.1.cm)),
                     roughness         (3.mm                           ),
@@ -208,7 +204,7 @@ object StrictInterleavedConnectorFixture_15544
             // Slot 2 — FlueSlot: ascending vertical column (flow-only, LAST flue → end of flue region)
             slot2,
             // Slot 3 — ConnectorSlot: standard connector after flue region (thermal)
-            PostFireboxPipeDescrSlot.ConnectorSlot(
+            PostFireboxPipeSlot.ConnectorSlot(
                 Seq (
                     CPM.roughness (Material_13384.WeldedSteel()),
                     CPM.innerShape(circle(130.mm)              ),
@@ -218,7 +214,7 @@ object StrictInterleavedConnectorFixture_15544
                 )
             ),
             // Slot 4 — ChimneySlot: insulated chimney
-            PostFireboxPipeDescrSlot.ChimneySlot  (
+            PostFireboxPipeSlot.ChimneySlot  (
                 Seq(
                     CHPM.roughness         (1.mm                                           ),
                     CHPM.innerShape(circle(130.mm)),

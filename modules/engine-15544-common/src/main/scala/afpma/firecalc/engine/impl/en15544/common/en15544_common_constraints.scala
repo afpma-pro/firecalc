@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.models.geometry.DirectionReachability
 import afpma.firecalc.dto.all.Country
 
 /**
@@ -116,10 +117,22 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             )
         )
 
+    def validateDirectionReachability(): VNel[Unit] =
+        val initialFrame = en15544.incrInputs.postFirebox.initialDirection.map(PostFireboxFrameHelpers.toPipeFrame)
+        val pfbErrors    = DirectionReachability.checkPostFireboxChain(en15544.incrInputs.postFirebox.slots, initialFrame)
+        val airIntake    = en15544.incrInputs.airIntake
+        val airErrors    = DirectionReachability.checkAirIntakeChain(airIntake.descr)(using
+            airIntake.AirIntakePipe_Module.airIntakeElemExtractors
+        )
+        val allErrors    = pfbErrors ++ airErrors
+        if allErrors.isEmpty then Valid(())
+        else Invalid(NonEmptyList.fromListUnsafe(allErrors))
+
     final def validateResultsExceptEmissionsValues(countryCode: Country): VNel[Unit] =
         val ap = atDraftMin_LoadNominal
         List(
-            validateFluePipeShape(),
+            validateFluePipeShape        (),
+            validateDirectionReachability(),
             ap.validateVelocitiesInPipes,
             ap.validatePressureRequirements_EN15544,
             ap.validateChimneyWallTempIsAboveCondensationTemp,
@@ -130,9 +143,11 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             // So this EN 16510 constraint does not need to pass. Even if it does in practice.
             // ap.validateSeasonalEfficiency(countryCode),
 
-            ap.validateCitedConstraints,
-            // Firebox
-            ap.validateFireboxSpecificConstraints
+            // Firebox-specific constraints first (e.g. TBurnoutNotSet) so that
+            // missing-input errors surface before cited constraints that may
+            // depend on those values being valid.
+            ap.validateFireboxSpecificConstraints,
+            ap.validateCitedConstraints
             // TODO: any missing validation ?
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())

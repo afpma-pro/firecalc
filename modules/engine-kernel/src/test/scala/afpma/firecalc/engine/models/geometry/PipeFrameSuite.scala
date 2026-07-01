@@ -5,6 +5,11 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.units.Vec3
+
+import afpma.firecalc.engine.formatters.Vec3Formatter
+
+import io.taig.babel.Locales
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -129,33 +134,33 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     // ── Vec3.toDisplayString ───────────────────────────────────────────────────
 
     "Vec3.toDisplayString" should "return 'Up' for Vec3.Up" in {
-        Vec3.Up.toDisplayString shouldBe "Up"
+        Vec3Formatter.toDisplayString(Vec3.Up)(using Locales.en) shouldBe "Up"
     }
 
     it should "return 'Down' for Vec3.Down" in {
-        Vec3.Down.toDisplayString shouldBe "Down"
+        Vec3Formatter.toDisplayString(Vec3.Down)(using Locales.en) shouldBe "Down"
     }
 
     it should "return 'Rear' for Vec3.Rear" in {
-        Vec3.Rear.toDisplayString shouldBe "Rear"
+        Vec3Formatter.toDisplayString(Vec3.Rear)(using Locales.en) shouldBe "Rear"
     }
 
     it should "return 'Front' for Vec3.Front" in {
-        Vec3.Front.toDisplayString shouldBe "Front"
+        Vec3Formatter.toDisplayString(Vec3.Front)(using Locales.en) shouldBe "Front"
     }
 
     it should "return 'Right' for Vec3.Right" in {
-        Vec3.Right.toDisplayString shouldBe "Right"
+        Vec3Formatter.toDisplayString(Vec3.Right)(using Locales.en) shouldBe "Right"
     }
 
     it should "return 'Left' for Vec3.Left" in {
-        Vec3.Left.toDisplayString shouldBe "Left"
+        Vec3Formatter.toDisplayString(Vec3.Left)(using Locales.en) shouldBe "Left"
     }
 
     it should "show cardinal + elevation for Rear tilted 45° up" in {
         // normalize(0, 1, 1) → Rear direction tilted 45° up
         val v = Vec3(0, 1, 1).normalized
-        val s = v.toDisplayString
+        val s = Vec3Formatter.toDisplayString(v)(using Locales.en)
         s should startWith("Rear ↑")
         s should include("45.0°")
     }
@@ -163,15 +168,15 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     it should "show cardinal + elevation for Right tilted down 30°" in {
         val angle = math.toRadians(30.0)
         val v     = Vec3(math.cos(angle), 0, -math.sin(angle)).normalized
-        val s     = v.toDisplayString
+        val s     = Vec3Formatter.toDisplayString(v)(using Locales.en)
         s should startWith("Right ↓")
     }
 
     it should "return compound cardinal for diagonal direction" in {
-        Vec3(1, 1, 0).normalized.toDisplayString shouldBe "Rear+Right"
-        Vec3(1, -1, 0).normalized.toDisplayString shouldBe "Front+Right"
-        Vec3(-1, -1, 0).normalized.toDisplayString shouldBe "Front+Left"
-        Vec3(-1, 1, 0).normalized.toDisplayString shouldBe "Rear+Left"
+        Vec3Formatter.toDisplayString(Vec3(1, 1, 0).normalized)(using Locales.en) shouldBe "Rear+Right"
+        Vec3Formatter.toDisplayString(Vec3(1, -1, 0).normalized)(using Locales.en) shouldBe "Front+Right"
+        Vec3Formatter.toDisplayString(Vec3(-1, -1, 0).normalized)(using Locales.en) shouldBe "Front+Left"
+        Vec3Formatter.toDisplayString(Vec3(-1, 1, 0).normalized)(using Locales.en) shouldBe "Rear+Left"
     }
 
     // ── PipeFrame.initial ──────────────────────────────────────────────────────
@@ -312,7 +317,7 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
         // roll=0° bends toward Up → new direction = Up
         val frame1   = frame0.applyBend(deflectionDeg = 90.0, rollDeg = 0.0)
         assertVec3Approx(frame1.direction, Vec3.Up)
-        frame1.direction.toDisplayString shouldBe "Up"
+        Vec3Formatter.toDisplayString(frame1.direction)(using Locales.en) shouldBe "Up"
     }
 
     it should "suppress azimuth for vertical Up in toAzimuthElevation (elevation ≈ 90°)" in {
@@ -326,12 +331,12 @@ class PipeFrameSuite extends AnyFlatSpec with Matchers:
     it should "show 'Up' for near-vertical vector with tiny x,y residuals (snap robustness)" in {
         // Simulate IEEE 754 residuals after trig — snapped by Vec3.snap at 1e-12
         val nearUp = Vec3(1e-16, 1e-16, 1.0).normalized.snap
-        nearUp.toDisplayString shouldBe "Up"
+        Vec3Formatter.toDisplayString(nearUp)(using Locales.en) shouldBe "Up"
     }
 
     it should "show 'Down' for near-vertical-down vector with tiny x,y residuals" in {
         val nearDown = Vec3(-1e-16, 1e-16, -1.0).normalized.snap
-        nearDown.toDisplayString shouldBe "Down"
+        Vec3Formatter.toDisplayString(nearDown)(using Locales.en) shouldBe "Down"
     }
 
     // ── reachableCardinals with tracked frame vs initial ──────────────────────

@@ -122,8 +122,30 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     given horizontal_form_PipeShape_Rectangle: DisplayUnits => Locale => Form[PipeShape.Rectangle] =
         import defaultable.qty_d.meter.zero
         import vv.meter.valid_whenStrictlyPositive
-        given Form[QtyD[Meter]] = given_dual_Length_mm_cm.form()
-        autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
+        given Form[QtyD[Meter]]                = given_dual_Length_mm_cm.form()
+        val autoDerived                        = autoDeriveAndOverwriteFieldNames[PipeShape.Rectangle]
+        val d                                  = autoDerived.defaultable
+        given ValidateVar[PipeShape.Rectangle] = autoDerived.validateVar
+        Form.makeFor[PipeShape.Rectangle](d): (v, fc) =>
+            (_: FormRenderer) ?=>
+                import com.raquo.laminar.api.L.*
+                import afpma.firecalc.ui.icons.lucide
+                import afpma.firecalc.ui.i18n.implicits.I18N_UI
+                div(
+                    cls := "flex flex-row flex-wrap items-end gap-2",
+                    autoDerived.render(v, fc),
+                    button            (
+                        cls := "btn btn-xs btn-outline",
+                        tpe := "button",
+                        lucide.`arrows-left-right`(w = 14, h = 14, stroke_width = 1.5),
+                        I18N_UI.buttons.switch_dimensions,
+                        onClick --> { _ =>
+                            val r       = v.now()
+                            val swapped = PipeShape.Rectangle(r.b, r.a)
+                            v.set(swapped)
+                        }
+                    )
+                )
 
     given horizontal_form_PipeShape: DisplayUnits => Locale => Form[PipeShape] =
         autoDeriveAndOverwriteFieldNames[PipeShape]
@@ -291,20 +313,19 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_AzimuthDirection: Locale => Form[AzimuthDirection] =
         import cats.Show
-        import afpma.firecalc.ui.i18n.implicits.I18N_UI
         given Show[AzimuthDirection]        = Show.show:
-            case AzimuthDirection.Rear       => I18N_UI.direction_badge.cardinal_rear
+            case AzimuthDirection.Rear       => I18N.direction_badge.cardinal_rear
             case AzimuthDirection.RearRight  =>
-                s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_right}"
-            case AzimuthDirection.Right      => I18N_UI.direction_badge.cardinal_right
+                s"${I18N.direction_badge.cardinal_rear}-${I18N.direction_badge.cardinal_right}"
+            case AzimuthDirection.Right      => I18N.direction_badge.cardinal_right
             case AzimuthDirection.FrontRight =>
-                s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_right}"
-            case AzimuthDirection.Front      => I18N_UI.direction_badge.cardinal_front
+                s"${I18N.direction_badge.cardinal_front}-${I18N.direction_badge.cardinal_right}"
+            case AzimuthDirection.Front      => I18N.direction_badge.cardinal_front
             case AzimuthDirection.FrontLeft  =>
-                s"${I18N_UI.direction_badge.cardinal_front}-${I18N_UI.direction_badge.cardinal_left}"
-            case AzimuthDirection.Left       => I18N_UI.direction_badge.cardinal_left
+                s"${I18N.direction_badge.cardinal_front}-${I18N.direction_badge.cardinal_left}"
+            case AzimuthDirection.Left       => I18N.direction_badge.cardinal_left
             case AzimuthDirection.RearLeft   =>
-                s"${I18N_UI.direction_badge.cardinal_rear}-${I18N_UI.direction_badge.cardinal_left}"
+                s"${I18N.direction_badge.cardinal_rear}-${I18N.direction_badge.cardinal_left}"
             case AzimuthDirection.Custom(az) => s"${az.value}\u00b0"
         given Defaultable[AzimuthDirection] = Defaultable(AzimuthDirection.Rear)
         given ValidateVar[AzimuthDirection] =
@@ -316,11 +337,10 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
 
     given horizontal_form_InclinationDirection: Locale => Form[InclinationDirection] =
         import cats.Show
-        import afpma.firecalc.ui.i18n.implicits.I18N_UI
         given Show[InclinationDirection]        = Show.show:
-            case InclinationDirection.Up         => I18N_UI.direction_badge.cardinal_up
-            case InclinationDirection.Down       => I18N_UI.direction_badge.cardinal_down
-            case InclinationDirection.Horizontal => I18N_UI.direction_badge.cardinal_horizontal
+            case InclinationDirection.Up         => I18N.direction_badge.cardinal_up
+            case InclinationDirection.Down       => I18N.direction_badge.cardinal_down
+            case InclinationDirection.Horizontal => I18N.direction_badge.cardinal_horizontal
             case InclinationDirection.Custom(el) => s"${el.value}\u00b0"
         given Defaultable[InclinationDirection] = Defaultable(InclinationDirection.Up)
         given ValidateVar[InclinationDirection] =
@@ -332,11 +352,10 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
     // Each pipe-specific HorizontalForm class calls this with zoomed Vars.
 
     def renderInitialDirectionForm(
-        azVar  : com.raquo.airstream.state.Var[AzimuthDirection],
+        azVar  : com.raquo.airstream.state.Var[Option[AzimuthDirection]],
         inclVar: com.raquo.airstream.state.Var[InclinationDirection]
     )(using FormRenderer): com.raquo.laminar.api.L.HtmlElement =
         import com.raquo.laminar.api.L.*
-        import afpma.firecalc.ui.i18n.implicits.I18N_UI
         import afpma.firecalc.ui.components.CustomDirectionDialog
         import com.raquo.airstream.core.Observer
 
@@ -353,6 +372,20 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
         val showAz   = summon[Show[AzimuthDirection]]
         val showIncl = summon[Show[InclinationDirection]]
 
+        // When inclination changes to Up/Down, set azimuth to None.
+        // When inclination changes from Up/Down to something else, restore azimuth to a default if None.
+        var lastIncl        : InclinationDirection         = inclVar.now()
+        val handleInclChange: InclinationDirection => Unit = newIncl =>
+            val wasVertical = lastIncl match
+                case InclinationDirection.Up | InclinationDirection.Down => true
+                case _                                                   => false
+            val isVertical  = newIncl match
+                case InclinationDirection.Up | InclinationDirection.Down => true
+                case _                                                   => false
+            if isVertical then azVar.set                             (None                       )
+            else if wasVertical && azVar.now().isEmpty then azVar.set(Some(AzimuthDirection.Rear))
+            lastIncl = newIncl
+
         // Hand-rolled inclination <select> — supports Custom sentinel option
         def inclSelect(v: Var[InclinationDirection]): HtmlElement =
             label(
@@ -365,7 +398,7 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
                             option   (
                                 value    := "__custom__",
                                 selected := true,
-                                I18N_UI.direction_badge.custom_option(s"${a.value}°")
+                                I18N.direction_badge.custom_option(s"${a.value}°")
                             )
                         case _                              => emptyNode
                     ,
@@ -376,35 +409,40 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
                             showIncl.show(c)
                         ),
                     onChange.mapToValue --> { s =>
-                        if s != "__custom__" then InclinationDirection.namedCases.find(_.toString == s).foreach(v.set)
+                        if s != "__custom__" then
+                            InclinationDirection.namedCases
+                                .find(_.toString == s)
+                                .foreach: c =>
+                                    v.set           (c)
+                                    handleInclChange(c)
                     }
                 )
             )
 
-        // Hand-rolled azimuth <select> — supports Custom sentinel option
-        def azSelect(v: Var[AzimuthDirection]): HtmlElement =
+        // Hand-rolled azimuth <select> — accepts Signal + setter for flexibility
+        def azSelect(sig: Signal[AzimuthDirection], setAz: AzimuthDirection => Unit): HtmlElement =
             label(
                 cls := "floating-label",
                 span  (I18N.terms.azimuth),
                 select(
                     cls := "select select-bordered w-full",
-                    child <-- v.signal.map:
+                    child <-- sig.map:
                         case AzimuthDirection.Custom(a) =>
                             option   (
                                 value    := "__custom__",
                                 selected := true,
-                                I18N_UI.direction_badge.custom_option(s"${a.value}°")
+                                I18N.direction_badge.custom_option(s"${a.value}°")
                             )
                         case _                          => emptyNode
                     ,
                     AzimuthDirection.namedCases.map: c =>
                         option(
                             value := c.toString,
-                            selected <-- v.signal.map(_ == c),
+                            selected <-- sig.map(_ == c),
                             showAz.show(c)
                         ),
                     onChange.mapToValue --> { s =>
-                        if s != "__custom__" then AzimuthDirection.namedCases.find(_.toString == s).foreach(v.set)
+                        if s != "__custom__" then AzimuthDirection.namedCases.find(_.toString == s).foreach(setAz)
                     }
                 )
             )
@@ -413,38 +451,52 @@ class HorizontalFormCommonInstances(using DisplayUnits, Locale):
             case InclinationDirection.Up | InclinationDirection.Down => false
             case _                                                   => true
 
+        // Derive a Signal[AzimuthDirection] from Var[Option[AzimuthDirection]] for the select widget
+        // Only used when showAzimuth is true, so azimuth is guaranteed Some
+        val azSignal: Signal[AzimuthDirection] =
+            azVar.signal.map(_.getOrElse(AzimuthDirection.Rear))
+
+        // Setter: wraps the value in Some and sets the Option var
+        val setAzimuth: AzimuthDirection => Unit = az => azVar.set(Some(az))
+
         val dialog = CustomDirectionDialog(
             onApply = Observer[(AzimuthDirection, InclinationDirection)]: (az, incl) =>
-                azVar.set  (az  )
+                val azOpt = incl match
+                    case InclinationDirection.Up | InclinationDirection.Down => None
+                    case _                                                   => Some(az)
+                azVar.set(azOpt)
                 inclVar.set(incl)
         )
 
         // Badge showing custom degree values when not a named case
         val isCustom = azVar.signal
             .combineWith(inclVar.signal)
-            .map: (az, incl) =>
-                az.isInstanceOf[AzimuthDirection.Custom] || incl.isInstanceOf[InclinationDirection.Custom]
+            .map: (azOpt, incl) =>
+                azOpt.exists(_.isInstanceOf[AzimuthDirection.Custom]) || incl.isInstanceOf[InclinationDirection.Custom]
 
         val customBadge = span(
             cls := "badge badge-ghost badge-sm font-mono text-xs",
             display <-- isCustom.map(if _ then "inline-flex" else "none"),
             child.text <-- azVar.signal
                 .combineWith(inclVar.signal)
-                .map: (az, incl) =>
-                    DirectionFormat.compact(az, incl)
+                .map: (azOpt, incl) =>
+                    DirectionFormat.compact(azOpt, incl)
         )
 
         val customBtn = button(
             cls := "btn btn-xs btn-outline",
             tpe := "button",
-            I18N_UI.direction_badge.custom_btn,
-            onClick --> { _ => dialog.open(azVar.now(), inclVar.now()) }
+            I18N.direction_badge.custom_btn,
+            onClick --> { _ =>
+                val currentAz = azVar.now().getOrElse(AzimuthDirection.Rear)
+                dialog.open(currentAz, inclVar.now())
+            }
         )
 
         div(
             cls := "flex flex-row gap-1 items-center",
             div(cls := "flex-auto", inclSelect(inclVar)),
-            child <-- showAzimuth.map(if _ then div(cls := "flex-auto", azSelect(azVar)) else emptyNode),
+            child <-- showAzimuth.map(if _ then div(cls := "flex-auto", azSelect(azSignal, setAzimuth)) else emptyNode),
             customBadge,
             customBtn,
             dialog.node

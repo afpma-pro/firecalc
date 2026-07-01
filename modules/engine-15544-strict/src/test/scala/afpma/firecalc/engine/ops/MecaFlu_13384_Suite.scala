@@ -14,6 +14,7 @@ import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 import afpma.firecalc.engine.impl.en13384.EN13384_WithThermalAirIntake_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
+import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 import afpma.firecalc.engine.models.ChimneyPipe_Module
 import afpma.firecalc.engine.models.FlueGas
 import afpma.firecalc.engine.models.Gas
@@ -92,16 +93,17 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             "PipeResult" in {
                 val f             = EN15544_Strict_Formulas.make
                 val inputs        = CasType_15544_C2.en15544_inputsVNel.toOption.get
-                val en15544       = EN15544_Strict_Application.make(f)(inputs)
+                val en15544       = EN15544_Strict_Application.make(f)(inputs, CasType_15544_C2.en15544_incrInputs)
                 val chimney_elems = {
                     // Build the typed chimney pipe via PipeChain_15544_Strict, which
                     // chains frames from flue → connector → chimney descriptors.
                     val chain = PipeChain_15544_Strict.build(
-                        PipeChain_15544_Strict.Descriptors(
+                        PipeChain_15544_Strict.Descriptors              (
                             CasType_15544_C2.fluePipeDescr,
                             CasType_15544_C2.connectorPipeDescr,
                             CasType_15544_C2.chimneyPipeDescr
-                        )
+                        ),
+                        CasType_15544_C2.postFireboxInitialDirection.map(toPipeFrame)
                     )
                     chain.chimneyPipe.toOption.get
                 }
@@ -140,7 +142,6 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     last_pipe_density     = 0.393.kg_per_m3.some, // for PG calculation
                     last_pipe_velocity    = 5.24.m_per_s.some, // for PG calculation
                     last_AirSpaceDetailed = None,
-                    last_CrossSectionArea = None,
                     last_InnerGeom        = None,
                     prevO                 = None
                 )(using en13384)

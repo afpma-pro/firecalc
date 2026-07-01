@@ -11,7 +11,15 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.common.AppendLayerDescr
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
 
-import afpma.firecalc.domain.IsSingularFlowResistance
+import afpma.firecalc.domain.{
+    IsDirectionChange,
+    IsLengthBearingPipeElement,
+    IsPressureDiff,
+    IsSectionGeometryChange,
+    IsSingularFlowResistance,
+    SetsInnerShape,
+    SetsNumberOfFlows
+}
 
 import afpma.firecalc.i18n.*
 
@@ -48,6 +56,7 @@ object SetThermalPipeProp_13384_V3:
         @Transl(I(_.terms.pipe_shape._self))
         shape: PipeShape
     ) extends SetSingleProp
+        with SetsInnerShape
 
     @Transl(I(_.set_prop.SetOuterShape))
     case class SetOuterShape(
@@ -108,8 +117,10 @@ object SetThermalPipeProp_13384_V3:
         @Transl(I(_.set_prop.SetNumberOfFlows_fieldName))
         n_flows: NbOfFlows
     ) extends SetSingleProp
+        with SetsNumberOfFlows
 
     @Transl(I(_.set_prop.SetInitialDirection))
+    @deprecated("Use PipeInitialDirection on FramedPostFireboxPipes instead. Will be removed in V8.", "V7")
     case class SetInitialDirection(
         @Transl(I(_.terms.azimuth))
         azimuth    : AzimuthDirection,
@@ -118,6 +129,7 @@ object SetThermalPipeProp_13384_V3:
     ) extends SetThermalPipeProp_13384_V3
 
     @Transl(I(_.set_prop.SetInitialPosition))
+    @deprecated("Use Position3D on FramedPostFireboxPipes instead. Will be removed in V8.", "V7")
     case class SetInitialPosition(
         @Transl(I(_.terms.x)) x: Length,
         @Transl(I(_.terms.y)) y: Length,
@@ -125,6 +137,7 @@ object SetThermalPipeProp_13384_V3:
     ) extends SetThermalPipeProp_13384_V3
 
     @Transl(I(_.set_prop.SetFinalPosition))
+    @deprecated("Not supported in V7 post-firebox pipes. Use PositionTracker instead. Will be removed in V8.", "V7")
     case class SetFinalPosition(
         @Transl(I(_.terms.x)) x: Length,
         @Transl(I(_.terms.y)) y: Length,
@@ -156,6 +169,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.length))
         length: Length
     ) extends AddThermalPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     @Transl(I(_.add_element.AddSectionSlopped))
     case class AddSectionSloppedForceManualElevationGain(
@@ -166,6 +180,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddThermalPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     /**
      * Legacy section type — treated as `AddSectionSlopped(name, length = horizontal_length)` by the engine.
@@ -180,6 +195,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.horizontal_length))
         horizontal_length: Length
     ) extends AddThermalPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     /**
      * Legacy section type — treated as `AddSectionSlopped(name, length = elevation_gain)` by the engine.
@@ -194,6 +210,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddThermalPipeElement_13384_V3
+        with IsLengthBearingPipeElement
 
     sealed abstract class AddDirectionChange(
         @Transl(I(_.terms.name))
@@ -203,6 +220,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.absolute_direction))
         val absDir: Option[AbsoluteDirection] = None
     ) extends AddThermalPipeElement_13384_V3
+        with IsDirectionChange
 
     @Transl(I(_.add_element.AddAngleAdjustable))
     case class AddAngleAdjustable(
@@ -328,6 +346,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.pipe_shape._self))
         val to_shape: PipeShape
     ) extends AddThermalPipeElement_13384_V3
+        with IsSectionGeometryChange
 
     @Transl(I(_.add_element.AddSectionDecrease))
     case class AddSectionDecrease(
@@ -363,6 +382,7 @@ object AddThermalPipeElement_13384_V3:
         @Transl(I(_.terms.pressure_difference))
         pressure_difference: Pressure
     ) extends AddThermalPipeElement_13384_V3
+        with IsPressureDiff
 
 extension (descrs: Seq[ThermalPipeDescr_13384_V3])
     /**

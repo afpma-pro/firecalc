@@ -34,7 +34,7 @@ class LegacyFileLoadSuite extends AnyFreeSpec with Matchers:
             }
 
             val migrated = result.get
-            migrated.version.unwrap shouldBe 6
+            migrated.version.unwrap shouldBe 7
         }
     }
 

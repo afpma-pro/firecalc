@@ -61,35 +61,39 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
                     QtyDAtPosition
                         .from (
                             start  = from,
-                            middle = (from, to) match
-                                case (Circle(from), Circle(to)                    ) => Circle((from + to) / 2.0)
-                                case (Square(from), Square(to)                    ) => Square((from + to) / 2.0)
-                                case (Rectangle(fromA, fromB), Rectangle(toA, toB)) =>
-                                    Rectangle((fromA + toA) / 2.0, (fromB + toB) / 2.0)
-                                case (Square(from), Rectangle(toA, toB)           ) =>
-                                    Rectangle((from + toA) / 2.0, (from + toB) / 2.0)
-                                case (Rectangle(fromA, fromB), Square(to)         ) =>
-                                    Rectangle((fromA + to) / 2.0, (fromB + to) / 2.0)
-                                case (from, to                                    ) =>
-                                    Circle((from.dh + to.dh) / 2.0),
-                                // throw new IllegalStateException(s"pipe shape transition not implemented : '${from} -> ${to}"),
+                            middle = {
+                                (from, to) match
+                                    case (Circle(from), Circle(to)                    ) => Circle((from + to) / 2.0)
+                                    case (Square(from), Square(to)                    ) => Square((from + to) / 2.0)
+                                    case (Rectangle(fromA, fromB), Rectangle(toA, toB)) =>
+                                        Rectangle((fromA + toA) / 2.0, (fromB + toB) / 2.0)
+                                    case (Square(from), Rectangle(toA, toB)           ) =>
+                                        Rectangle((from + toA) / 2.0, (from + toB) / 2.0)
+                                    case (Rectangle(fromA, fromB), Square(to)         ) =>
+                                        Rectangle((fromA + to) / 2.0, (fromB + to) / 2.0)
+                                    case (from, to                                    ) =>
+                                        Circle((from.dh + to.dh) / 2.0)
+                            },
+                            // throw new IllegalStateException(s"pipe shape transition not implemented : '${from} -> ${to}"),
                             end    = to
                         )
                         .some
                         .map(_.atPos)
 
                 el match
-                    case s: StraightSection         =>
+                    case s : StraightSection         =>
                         QtyDAtPosition.constant(s.geometry).some.map(_.atPos)
-                    case s: SectionGeometryChange   =>
+                    case s : SectionGeometryChange   =>
                         makeQtyAtPositionForGeometryTransition(s.from, s.to)
+                    case dc: DirectionChange         =>
+                        QtyDAtPosition.constant(dc.effectiveShape).some.map(_.atPos)
                     case SingularFlowResistance(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
                     case PressureDiff(_, Some(crossSection)) =>
                         val equivCircle = Circle.fromArea(crossSection)
                         QtyDAtPosition.constant(equivCircle).some.map(_.atPos)
-                    case _: IsZeroLengthPipeElement =>
+                    case _ : IsZeroLengthPipeElement =>
                         oPrevGeom.map(prevGeom => QtyDAtPosition.constant(prevGeom).atPos)
 
     type NotPressureDiff = StraightSection | DirectionChange | SectionGeometryChange | SingularFlowResistance
@@ -109,18 +113,25 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
     }
 
     sealed abstract class DirectionChange(
-        val angleN1: QtyD[Degree],
-        val angleN2: Option[QtyD[Degree]]
+        val angleN1       : QtyD[Degree],
+        val angleN2       : Option[QtyD[Degree]],
+        val effectiveShape: PipeShape
     ) extends PipeElDescr
         with IsDirectionChange derives Show
 
     object DirectionChange:
-        val angleVifZero = AngleVifDe0A180(0.0.degrees, None)
-        case class AngleVifDe0A180(α: Angle, override val angleN2: Option[Angle] = None)
-            extends DirectionChange(α, angleN2) derives Show
+        def angleVifZero(effectiveShape: PipeShape): AngleVifDe0A180 =
+            AngleVifDe0A180(0.0.degrees, None, effectiveShape)
 
-        case object CircularArc60 extends DirectionChange(60.degrees, None)
-        type CircularArc60 = CircularArc60.type
+        case class AngleVifDe0A180(
+            α                          : Angle,
+            override val angleN2       : Option[Angle] = None,
+            override val effectiveShape: PipeShape
+        ) extends DirectionChange(α, angleN2, effectiveShape) derives Show
+
+        case class CircularArc60(
+            override val effectiveShape: PipeShape
+        ) extends DirectionChange(60.degrees, None, effectiveShape) derives Show
 
     case class SectionGeometryChange(
         from: PipeShape,

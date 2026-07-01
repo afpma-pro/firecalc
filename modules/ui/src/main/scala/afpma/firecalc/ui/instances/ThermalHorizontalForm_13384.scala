@@ -29,6 +29,7 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
+    import ThermalChannelTopologyOp_13384.*
 
     // import defaultable.given
     private given horizontal_form: HorizontalFormCommonInstances = HorizontalFormCommonInstances()
@@ -231,6 +232,10 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
     given horizontal_form_SetInnerShape: Form[SetInnerShape] =
         autoDeriveAndOverwriteFieldNames[SetInnerShape]
 
+    given horizontal_form_SetInnerShapePreventSectionGeometryChangeAuto
+        : Form[SetInnerShapePreventSectionGeometryChangeAuto] =
+        autoDeriveAndOverwriteFieldNames[SetInnerShapePreventSectionGeometryChangeAuto]
+
     given horizontal_form_SetOuterShape: Form[SetOuterShape] =
         autoDeriveAndOverwriteFieldNames[SetOuterShape]
 
@@ -302,24 +307,6 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
 
     given horizontal_form_SetDuctType: Form[SetDuctType] =
         autoDeriveAndOverwriteFieldNames[SetDuctType]
-
-    given horizontal_form_SetInitialDirection: Form[SetInitialDirection] =
-        given Defaultable[SetInitialDirection] =
-            Defaultable(SetInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
-        given ValidateVar[SetInitialDirection] =
-            ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid[SetInitialDirection]
-        Form.makeFor[SetInitialDirection](summon[Defaultable[SetInitialDirection]]): (variable, _) =>
-            val azVar   = variable.zoomLazy(_.azimuth)((sid, az) => sid.copy(azimuth = az))
-            val inclVar = variable.zoomLazy(_.inclination)((sid, incl) => sid.copy(inclination = incl))
-            horizontal_form.renderInitialDirectionForm(azVar, inclVar)
-
-    given horizontal_form_SetInitialPosition: Form[SetInitialPosition] =
-        given Form[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames[SetInitialPosition]
-
-    given horizontal_form_SetFinalPosition: Form[SetFinalPosition] =
-        given Form[QtyD[Meter]] = horizontal_form_Length_cm_m
-        autoDeriveAndOverwriteFieldNames[SetFinalPosition]
 
     given horizontal_form_SetNumberOfFlows: Form[SetNumberOfFlows] =
         import ValidateVarCommonInstances.validOption_always.given
