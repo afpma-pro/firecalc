@@ -238,6 +238,12 @@ dev-web-ui-open:
 	@open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT)
 	@cd modules/ui && npm run dev
 
+dev-web-ui-zip:
+	@echo "Building and packaging UI for file:// usage..."
+	@make dev-web-ui-build
+	@cd web/dist-app && zip -r ../../firecalc-web-v$(UI_BASE_VERSION)-dev.zip app/
+	@echo "Created firecalc-web-v$(UI_BASE_VERSION)-dev.zip"
+
 ## ================================
 ## DEVELOPMENT - ELECTRON
 ## ================================
