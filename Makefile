@@ -230,7 +230,7 @@ dev-web-ui-run:
 dev-web-ui-build:
 	@echo "Building UI for development..."
 	$(call generate_ui_version,dev)
-	@cd modules/ui && npm run build
+	@cd modules/ui && SINGLE_FILE=1 npm run build
 	$(call copy_landing_page)
 
 dev-web-ui-open:

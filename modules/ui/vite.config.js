@@ -9,6 +9,7 @@ import { defineConfig, loadEnv } from "vite";
 import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from '@tailwindcss/vite';
+import { viteSingleFile } from 'vite-plugin-singlefile';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -55,6 +56,8 @@ export default defineConfig(({ mode }) => {
         exclude: ['scalajs:main.js'],
     },
     plugins: [
+        // Inline all JS/CSS into index.html for file:// usage (only when SINGLE_FILE=1)
+        ...(process.env.SINGLE_FILE === '1' ? [viteSingleFile({ removeViteModuleLoader: true })] : []),
         // Resolve 'three' and 'three/addons/*' imports originating from the aliased
         // filaire-viz.js (which lives outside this project root at modules/viz/...).
         // Without this, vite:import-analysis cannot find 'three' because node_modules
