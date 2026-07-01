@@ -230,13 +230,19 @@ dev-web-ui-run:
 dev-web-ui-build:
 	@echo "Building UI for development..."
 	$(call generate_ui_version,dev)
-	@cd modules/ui && npm run build
+	@cd modules/ui && SINGLE_FILE=1 npm run build
 	$(call copy_landing_page)
 
 dev-web-ui-open:
 	@echo "Opening browser and starting UI dev server on port $(FIRECALC_VITE_DEV_SERVER_PORT)..."
 	@open http://localhost:$(FIRECALC_VITE_DEV_SERVER_PORT)
 	@cd modules/ui && npm run dev
+
+dev-web-ui-zip:
+	@echo "Building and packaging UI for file:// usage..."
+	@make dev-web-ui-build
+	@cd web/dist-app && zip -r ../../firecalc-web-v$(UI_BASE_VERSION)-dev.zip app/
+	@echo "Created firecalc-web-v$(UI_BASE_VERSION)-dev.zip"
 
 ## ================================
 ## DEVELOPMENT - ELECTRON
