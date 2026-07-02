@@ -62,20 +62,26 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     protected given thermalElemExtractors_13384: FrameReplay.ElemExtractors[ThermalPipeDescr_13384] =
         FrameReplay.ElemExtractors  (
             asInitialDirection   = PartialFunction.empty,
-            asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asDirectionChange    = {
+                case dc: AddDirectionChange                       => (dc.angle, dc.absDir  )
+                case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => (90.degrees, sm.absDir)
+                case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => (90.degrees, sm.absDir)
+            },
             asInnerShape         = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir  = (e, newAbsDir) =>
                 e match
-                    case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
-                    case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
-                    case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                    case x: AddAngleAdjustable                       => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90                   => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90_Unsafe            => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90                        => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90_Unsafe                 => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60                        => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60_Unsafe                 => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_2x45                           => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_3x30                           => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_4x22p5                         => x.copy(absDir = newAbsDir)
+                    case x: SplitSingleFlowIntoTwoFlowsWith90DegTurn => x.copy(absDir = newAbsDir)
+                    case x: MergeTwoFlowsIntoSingleWith90DegTurn     => x.copy(absDir = newAbsDir)
                     case _ => e,
             withInitialDirection = (e, _, _) => e
         )
@@ -85,6 +91,13 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      *  Defaults to no external frame (first pipe in a sequence, or direction tracking inactive).
      */
     protected def externalInitialFrameSig: Signal[Option[PipeFrame]] = Signal.fromValue(None)
+
+    /**
+     * Shape prefill at insert position — uses the builder's state machine
+     * (`innerShapeAtPrefix`) for robustness. Subclasses must override with
+     * their module-specific incremental builder.
+     */
+    protected def shapeAtPrefix(insertIdx: Int): PipeShape
 
     /**
      * Compute PipeFrame per element index by scanning the element list.
@@ -117,7 +130,7 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                             .get(idx)
                             .flatMap: frameBefore =>
                                 elem match
-                                    case dc: AddDirectionChange          =>
+                                    case dc: AddDirectionChange                       =>
                                         // Pinned: show the STORED pin as-is, not the engine's reachable
                                         // projection. See DynamicPipeSlotPanel.directionAfterByIdx for
                                         // rationale. The badge's isCompatibleSig renders the warning
@@ -129,7 +142,23 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                                             case None     =>
                                                 frameBefore.direction
                                         Some(idx -> dir)
-                                    case _ : AddThermalPipeElement_13384 =>
+                                    case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                                        val dir = sm.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
+                                    case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                                        val dir = sm.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
+                                    case _ : AddThermalPipeElement_13384              =>
                                         Some(idx -> frameBefore.direction)
                                     case _ => None
                     .toMap
@@ -149,7 +178,11 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
-                    .collect { case (idx, _: AddDirectionChange) => idx }
+                    .collect {
+                        case (idx, _: AddDirectionChange                      ) => idx
+                        case (idx, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => idx
+                        case (idx, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => idx
+                    }
                     .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
                     .toMap
 
@@ -160,13 +193,13 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
      * Returns the `badgeFinalDirVar` factory for a DC element.
      * The derived Var zooms into the absDir field of the element.
      */
-    private def absDirBadgeVar[A <: AddDirectionChange](
+    private def absDirBadgeVar[A](
         getter: A => Option[AbsoluteDirection],
         setter: (A, Option[AbsoluteDirection]) => A
     ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
 
-    private def relativeDirectionExtra[A <: AddDirectionChange](
+    private def relativeDirectionExtra[A](
         idx   : Int,
         getter: A => Option[AbsoluteDirection],
         setter: (A, Option[AbsoluteDirection]) => A
@@ -182,7 +215,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
     override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
         welems_var.signal.map: elems =>
             elems.collectFirst:
-                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
+                case (i, dc: AddDirectionChange                          ) if i == idx => dc.angle.toUnit[Degree].value
+                case (i: Int, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) if i == idx => 90.0
+                case (i: Int, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) if i == idx => 90.0
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -586,6 +621,58 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, ThermalPipeDescr_13384, XtraOutputs), (Int, AddPressureDiff, XtraOutputs), HtmlElement] {
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs                  ),
+                (Int, SplitSingleFlowIntoTwoFlowsWith90DegTurn, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: SplitSingleFlowIntoTwoFlowsWith90DegTurn, x) =>
+                (i, incr, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SplitSingleFlowIntoTwoFlowsWith90DegTurn]    (
+                    iaax._1,
+                    I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                    iaax._2,
+                    sig,
+                    isProperty     = false,
+                    customFormNode = Some(
+                        splitMergeFormNode(
+                            iaax._1,
+                            sig.map(_._3),
+                            _.name,
+                            (a, n ) => a.copy(name = n),
+                            _.absDir,
+                            (a, fd) => a.copy(absDir = fd),
+                            None
+                        )
+                    )
+                )
+            }
+            .handleCase[
+                (Int, ThermalPipeDescr_13384, XtraOutputs              ),
+                (Int, MergeTwoFlowsIntoSingleWith90DegTurn, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: MergeTwoFlowsIntoSingleWith90DegTurn, x) =>
+                (i, incr, x)
+            } { (iaax, sig) =>
+                renderElemTyped[MergeTwoFlowsIntoSingleWith90DegTurn]    (
+                    iaax._1,
+                    I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                    iaax._2,
+                    sig,
+                    isProperty     = false,
+                    customFormNode = Some(
+                        splitMergeFormNode(
+                            iaax._1,
+                            sig.map(_._3),
+                            _.name,
+                            (a, n ) => a.copy(name = n),
+                            _.absDir,
+                            (a, fd) => a.copy(absDir = fd),
+                            None
+                        )
+                    )
+                )
+            }
             .toSignal
             .map(renderV7WrapperElems(isSlotZero))
 
@@ -638,13 +725,34 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val split_group = TagTreeMenu.Group(
-        txt  = I18N.set_prop.SetNumberOfFlows,
-        next = List(
-            TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_NumberOfChannels, SetNumberOfFlows(2)),
-            TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_Join, SetNumberOfFlows(1)            )
+    lazy val split_group =
+        TagTreeMenu.Group (
+            txt  = I18N.split_merge._self,
+            next = List(
+                TagTreeMenu.ShortcutFn[ThermalPipeDescr_13384]    (
+                    txt     = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                    compute = (insertIdx: Int) =>
+                        Seq(
+                            SplitSingleFlowIntoTwoFlowsWith90DegTurn         (
+                                name          = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                                absDir        = None,
+                                newInnerShape = shapeAtPrefix(insertIdx)
+                            )
+                        )
+                ),
+                TagTreeMenu.ShortcutFn[ThermalPipeDescr_13384]    (
+                    txt     = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                    compute = (insertIdx: Int) =>
+                        Seq(
+                            MergeTwoFlowsIntoSingleWith90DegTurn         (
+                                name          = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                                absDir        = None,
+                                newInnerShape = shapeAtPrefix(insertIdx)
+                            )
+                        )
+                )
+            )
         )
-    )
 
     // lazy val straight_elements = TagTreeMenu.Group(
     //     txt  = I18N.add_element.add_section_element,

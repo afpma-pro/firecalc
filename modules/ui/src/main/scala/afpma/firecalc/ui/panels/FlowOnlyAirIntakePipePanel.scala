@@ -19,7 +19,8 @@ import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_13384
 import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.*
-import afpma.firecalc.ui.instances.V7FormInstances
+import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
 
 import cats.Show
@@ -78,6 +79,39 @@ final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extend
             .signal
 
     override protected def renderWrapperElems: Boolean = true
+
+    override protected def shapeAtPrefix(insertIdx: Int): PipeShape =
+        import afpma.laminar.form.{Defaultable as D}
+        import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384
+        import FlowOnlyAirIntakePipe_Module_13384.innerShapeAtPrefix
+        import SetFlowOnlyPipeProp_13384.SetInnerShape
+        import afpma.firecalc.ui.instances.FlowOnlyDefaultable_13384.given
+        FlowOnlyAirIntakePipe_Module_13384.incremental
+            .define(elems_v.now()*)
+            .innerShapeAtPrefix(insertIdx)
+            .getOrElse(summon[D[SetInnerShape]].default.shape)
+
+    /** Override to use dynamic inner shape for SetInnerShape menu entry. */
+    override lazy val prop_elements =
+        import hastranslations.given
+        import FlowOnlyDefaultable_13384.given
+        import SetFlowOnlyPipeProp_13384.{SetInnerShape, SetMaterial, SetRoughness}
+        TagTreeMenu.Group (
+            txt  = I18N.set_prop._self,
+            next = List(
+                TagTreeMenu.Group                               (
+                    txt     = I18N.set_prop._material_and_roughness,
+                    next    = List(
+                        TagTreeMenu.Leaf[SetMaterial],
+                        TagTreeMenu.Leaf[SetRoughness]
+                    )
+                ),
+                TagTreeMenu.LeafFn[SetFlowOnlyPipeProp_13384]   (
+                    txt     = I18N.set_prop.SetInnerShape,
+                    compute = (insertIdx: Int) => SetInnerShape(shapeAtPrefix(insertIdx))
+                )
+            )
+        )
 
     private lazy val fixedWrapperElems: Seq[HtmlElement] =
         import v7.given

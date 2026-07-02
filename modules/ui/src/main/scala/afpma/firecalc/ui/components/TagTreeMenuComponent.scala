@@ -68,6 +68,8 @@ case class TagTreeMenuComponent[A](
                 collectAllModals(g.next)
             case _: TagTreeMenu.Leaf[A]       =>
                 Nil
+            case _: TagTreeMenu.LeafFn[A]     =>
+                Nil
             case _: TagTreeMenu.Shortcut[A]   =>
                 Nil
             case _: TagTreeMenu.ShortcutFn[A] =>
@@ -108,6 +110,7 @@ case class TagTreeMenuComponent[A](
         val (icon, btnClass) = nl match
             case _: TagTreeMenu.Shortcut[A]   => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
             case _: TagTreeMenu.ShortcutFn[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.LeafFn[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
             case _: TagTreeMenu.Group[A]      => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
             case _: TagTreeMenu.Leaf[A]       => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
             case _: TagTreeMenu.Modal[A]      => (lucide.`book-open-text`, "bg-base-200 hover:bg-secondary"       )
@@ -159,6 +162,15 @@ case class TagTreeMenuComponent[A](
                                         CollectionCommand.Append((currentSize, elem))
                                     currentSize += 1
                                 }
+                                onDone()
+                                TreeState.initWith(resetTo)
+
+                            case lf: TagTreeMenu.LeafFn[A] =>
+                                // Compute single element at click time based on insert position
+                                val atIdx = resolvedInsertIdxFn()
+                                appendBus.onNext:
+                                    val size = incrDescrSizeVar.now()
+                                    CollectionCommand.Append((size, lf.compute(atIdx)))
                                 onDone()
                                 TreeState.initWith(resetTo)
 
@@ -276,6 +288,7 @@ object TagTreeMenuComponent:
                 choices       = x match
                     case n: TagTreeMenu.Group[A]      => n.next
                     case _: TagTreeMenu.Leaf[A]       => Nil
+                    case _: TagTreeMenu.LeafFn[A]     => Nil
                     case _: TagTreeMenu.Shortcut[A]   => Nil
                     case _: TagTreeMenu.ShortcutFn[A] => Nil
                     case _: TagTreeMenu.Modal[A]      => Nil
@@ -322,6 +335,9 @@ object TagTreeMenu:
 
     /** Dynamic shortcut: compute(insertIdx) is called at click time so the element list can depend on where we insert. */
     case class ShortcutFn[+A](txt: String, compute: Int => Seq[A]) extends Elems[A]
+
+    /** Dynamic single element: compute(insertIdx) is called at click time so the element can depend on the insert position. */
+    case class LeafFn[+A](txt: String, compute: Int => A) extends Elems[A]
 
     /**
      * A menu entry that opens a modal dialog instead of directly adding an element.

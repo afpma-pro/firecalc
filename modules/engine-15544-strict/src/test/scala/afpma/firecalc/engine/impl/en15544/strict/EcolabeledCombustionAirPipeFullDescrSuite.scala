@@ -172,6 +172,7 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
             case _: SectionGeometryChange  => "SectionGeometryChange"
             case _: SingularFlowResistance => "SingularFlowResistance"
             case _: PressureDiff           => "PressureDiff"
+            case _: SplitMerge90           => "SplitMerge90"
 
         val lengthStr = el match
             case s: StraightSection => fmtLength(s.length)

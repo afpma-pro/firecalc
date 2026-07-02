@@ -7,7 +7,13 @@ package afpma.firecalc.engine.alg
 
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
-import afpma.firecalc.domain.{IsDirectionChange, IsLengthBearingPipeElement, SetsInnerShape, SetsNumberOfFlows}
+import afpma.firecalc.domain.{
+    IsDirectionChange,
+    IsLengthBearingPipeElement,
+    IsSplitMergeTurn,
+    SetsInnerShape,
+    SetsNumberOfFlows
+}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
@@ -202,25 +208,33 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     private def addElementRef(idIncr: IdIncr, addElement: AddElement): String =
         s"'${addElement.name}' (#$idIncr)"
 
-    private def flowEvent(idIncr: IdIncr, descr: IncrDescr): Option[FlowEvent] =
+    private def flowEvents(idIncr: IdIncr, descr: IncrDescr): List[FlowEvent] =
         descr match
             case sp: SetProp      =>
                 sp match
-                    case flowCount: SetsNumberOfFlows => Some(FlowEvent.FlowCountSet(flowCount.n_flows))
-                    case _        : SetsInnerShape    => Some(FlowEvent.InnerShapeSet)
-                    case _ => None
+                    case flowCount: SetsNumberOfFlows => List(FlowEvent.FlowCountSet(flowCount.n_flows))
+                    case _        : SetsInnerShape    => List(FlowEvent.InnerShapeSet)
+                    case _ => Nil
             case op: PreElementOp =>
                 op match
-                    case flowCount: SetsNumberOfFlows => Some(FlowEvent.FlowCountSet(flowCount.n_flows))
-                    case _        : SetsInnerShape    => Some(FlowEvent.InnerShapeSet)
-                    case _ => None
+                    case flowCount: SetsNumberOfFlows => List(FlowEvent.FlowCountSet(flowCount.n_flows))
+                    case _        : SetsInnerShape    => List(FlowEvent.InnerShapeSet)
+                    case _ => Nil
             case ae: AddElement   =>
                 ae match
+                    // Split/Merge types emit 3 events in specific order.
+                    // MUST appear before generic IsDirectionChange arm, otherwise only 1 event is emitted.
+                    case sm: (IsSplitMergeTurn & SetsNumberOfFlows) =>
+                        List(
+                            FlowEvent.DirectionChange(addElementRef(idIncr, ae)),
+                            FlowEvent.FlowCountSet(sm.n_flows),
+                            FlowEvent.InnerShapeSet
+                        )
                     // Direction changes are zero-length operations; if a descriptor ever carries both markers,
                     // the direction-change requirement is the safer interpretation for validation.
-                    case _: IsDirectionChange          => Some(FlowEvent.DirectionChange(addElementRef(idIncr, ae)))
-                    case _: IsLengthBearingPipeElement => Some(FlowEvent.LengthBearing)
-                    case _ => None
+                    case _ : IsDirectionChange                      => List(FlowEvent.DirectionChange(addElementRef(idIncr, ae)))
+                    case _ : IsLengthBearingPipeElement             => List(FlowEvent.LengthBearing)
+                    case _ => Nil
 
     private def applyFlowEvent(acc: FlowTransAcc, event: FlowEvent): FlowTransAcc =
         event match
@@ -258,7 +272,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         initialNFlows: NbOfFlows
     ): ValidatedResult[Unit] =
         val acc = incrDescrs.foldLeft(FlowTransAcc(initialNFlows, FlowTransState.None, Nil)):
-            case (current, (idIncr, descr)) => flowEvent(idIncr, descr).fold(current)(applyFlowEvent(current, _))
+            case (current, (idIncr, descr)) =>
+                flowEvents(idIncr, descr).foldLeft(current)((acc, e) => applyFlowEvent(acc, e))
 
         NonEmptyList.fromList(acc.errorsReversed.reverse) match
             case Some(errors) => errors.invalid[Unit]

@@ -51,6 +51,7 @@ final case class I18nData(
     direction_badge                : DirectionBadge,
     errors                         : Errors,
     facing_type                    : FacingType,
+    forbidden_dto                  : ForbiddenDto,
     headers                        : Headers,
     heat_output_reduced            : HeatOutputReduced,
     heating_appliance              : HeatingAppliance,
@@ -69,6 +70,7 @@ final case class I18nData(
     pressure_requirements          : String,
     project_description            : ProjectDescription,
     set_prop                       : SetProp,
+    split_merge                    : SplitMerge,
     stove_params                   : String,
     subtotal                       : String,
     technical_specifications       : TechnicalSpecficiations,
@@ -849,6 +851,13 @@ object I18nData:
             add_new_connector: String
         )
 
+    case class SplitMerge(
+        _self                                   : String,
+        SplitSingleFlowIntoTwoFlowsWith90DegTurn: String,
+        MergeTwoFlowsIntoSingleWith90DegTurn    : String,
+        newInnerShape                           : String
+    )
+
     case class TechnicalSpecficiations(
         sizing_method                           : String,
         nominal_heat_output                     : String,
@@ -1137,6 +1146,14 @@ object I18nData:
     case class BuilderErrors(
         errors_in_other_section_type: String,
         results_not_computed        : String
+    )
+
+    case class ForbiddenDto(
+        _self                       : String,
+        generic                     : StringFormat1,
+        set_number_of_flows         : StringFormat3,
+        set_inner_shape_prevent_auto: StringFormat1,
+        element_at                  : StringFormat1
     )
 
     case class TopologyErrors(

@@ -9,6 +9,10 @@ import cats.data.Validated.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.{
+    SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+    MergeTwoFlowsIntoSingleWith90DegTurn
+}
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.ops.Position
@@ -573,6 +577,162 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                 }
             }
 
+        }
+
+        "materialization" - {
+
+            "reject SetInnerShape right after a split (not materialized)" in {
+                builder.withInitialDirection(
+                    PipeInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    )
+                )
+                val p = builder.define(
+                    innerShape(square(18.cm)          ),
+                    roughness                               (3.mm                ),
+                    addSectionHorizontal                    ("preSplit", 1.meters),
+                    SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                        "split",
+                        newInnerShape = rectangle(9.cm, 9.cm),
+                        absDir        = None
+                    ),
+                    innerShape(rectangle(20.cm, 10.cm)),
+                    addSectionHorizontal                    ("dual", 1.meters    )
+                )
+                val result = p.toFullDescr()
+                result.isValid `shouldBe` false
+                val errors = result.toEither.left.toOption.get
+                errors.head shouldBe a[ShapeNotMaterialized]
+            }
+
+            "reject SetInnerShape right after a merge (not materialized)" in {
+                builder.withInitialDirection(
+                    PipeInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    )
+                )
+                val p = builder.define(
+                    innerShape(square(18.cm)          ),
+                    roughness                               (3.mm                 ),
+                    addSectionHorizontal                    ("preSplit", 1.meters ),
+                    SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                        "split",
+                        newInnerShape = rectangle(9.cm, 9.cm),
+                        absDir        = None
+                    ),
+                    addSectionHorizontal                    ("dual", 1.meters     ),
+                    MergeTwoFlowsIntoSingleWith90DegTurn    (
+                        "merge",
+                        newInnerShape = square(18.cm),
+                        absDir        = None
+                    ),
+                    innerShape(rectangle(20.cm, 10.cm)),
+                    addSectionHorizontal                    ("postMerge", 1.meters)
+                )
+                val result = p.toFullDescr()
+                result.isValid `shouldBe` false
+                val errors = result.toEither.left.toOption.get
+                errors.head shouldBe a[ShapeNotMaterialized]
+            }
+
+            "accept SetInnerShape after split + length-bearing section" in {
+                builder.withInitialDirection(
+                    PipeInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    )
+                )
+                val p = builder.define(
+                    innerShape(square(18.cm)          ),
+                    roughness                               (3.mm                ),
+                    addSectionHorizontal                    ("preSplit", 1.meters),
+                    SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                        "split",
+                        newInnerShape = rectangle(9.cm, 9.cm),
+                        absDir        = None
+                    ),
+                    addSectionHorizontal                    ("dual", 1.meters    ),
+                    innerShape(rectangle(10.cm, 10.cm)),
+                    addSectionHorizontal                    ("dual2", 1.meters   )
+                )
+                val result = p.toFullDescr()
+                result.isValid `shouldBe` true
+            }
+
+            "accept SetInnerShape after merge + length-bearing section" in {
+                builder.withInitialDirection(
+                    PipeInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    )
+                )
+                val p = builder.define(
+                    innerShape(square(18.cm)          ),
+                    roughness                               (3.mm                  ),
+                    addSectionHorizontal                    ("preSplit", 1.meters  ),
+                    SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                        "split",
+                        newInnerShape = rectangle(9.cm, 9.cm),
+                        absDir        = None
+                    ),
+                    addSectionHorizontal                    ("dual", 1.meters      ),
+                    MergeTwoFlowsIntoSingleWith90DegTurn    (
+                        "merge",
+                        newInnerShape = square(18.cm),
+                        absDir        = None
+                    ),
+                    addSectionHorizontal                    ("postMerge", 1.meters ),
+                    innerShape(rectangle(20.cm, 10.cm)),
+                    addSectionHorizontal                    ("postMerge2", 1.meters)
+                )
+                val result = p.toFullDescr()
+                result.isValid `shouldBe` true
+            }
+
+            "n_flows updates to 2 after split and back to 1 after merge" in {
+                builder.withInitialDirection(
+                    PipeInitialDirection    (
+                        azimuth     = AzimuthDirection.Right,
+                        inclination = InclinationDirection.Horizontal
+                    )
+                )
+                // Descriptors:
+                //  0: innerShape(square(18.cm))
+                //  1: roughness(3.mm)
+                //  2: addSectionHorizontal("preSplit", 1.meters)
+                //  3: SplitSingleFlowIntoTwoFlowsWith90DegTurn("split", ...)
+                //  4: addSectionHorizontal("dual", 1.meters)
+                //  5: MergeTwoFlowsIntoSingleWith90DegTurn("merge", ...)
+                //  6: addSectionHorizontal("postMerge", 1.meters)
+                val p = builder.define(
+                    innerShape(square(18.cm)),
+                    roughness                               (3.mm                 ),
+                    addSectionHorizontal                    ("preSplit", 1.meters ),
+                    SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                        "split",
+                        newInnerShape = rectangle(9.cm, 9.cm),
+                        absDir        = None
+                    ),
+                    addSectionHorizontal                    ("dual", 1.meters     ),
+                    MergeTwoFlowsIntoSingleWith90DegTurn    (
+                        "merge",
+                        newInnerShape = square(18.cm),
+                        absDir        = None
+                    ),
+                    addSectionHorizontal                    ("postMerge", 1.meters)
+                )
+
+                // Before split (after preSplit section) — should be 1 flow
+                p.nFlowsAtPrefix(3).getOrElse(1.flow) shouldBe 1.flow
+
+                // After split — should be 2 flows
+                p.nFlowsAtPrefix(4).getOrElse(1.flow) shouldBe 2.flows
+
+                // After merge — should be 1 flow
+                p.nFlowsAtPrefix(7).getOrElse(1.flow) shouldBe 1.flow
+            }
         }
     }
 

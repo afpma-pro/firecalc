@@ -14,6 +14,8 @@ import afpma.firecalc.domain.{
     IsPressureDiff,
     IsSectionGeometryChange,
     IsSingularFlowResistance,
+    IsSplitMergeTurn,
+    NbOfFlows,
     SetsInnerShape,
     SetsNumberOfFlows
 }
@@ -40,7 +42,9 @@ object SetFlowOnlyPipeProp_15544_V4:
         shape: PipeShape
     ) extends SetFlowOnlyPipeProp_15544_V4
         with SetsInnerShape
-        with IsBackendForbidden
+        with IsBackendForbidden {
+        def forbiddenKind = IsBackendForbidden.SetsInnerShapePreventAutoKind
+    }
 
     @Transl(I(_.set_prop.SetInnerShape))
     case class SetInnerShape(
@@ -71,6 +75,9 @@ object FlowOnlyChannelTopologyOp_15544_V4:
         n_flows: NbOfFlows
     ) extends FlowOnlyChannelTopologyOp_15544_V4
         with SetsNumberOfFlows
+        with IsBackendForbidden {
+        def forbiddenKind = IsBackendForbidden.SetsNumberOfFlowsKind
+    }
 
 sealed trait AddFlowOnlyPipeElement_15544_V4 extends FlowOnlyPipeDescr_15544_V4:
     def name: String
@@ -184,3 +191,37 @@ object AddFlowOnlyPipeElement_15544_V4:
         pressure_difference: Pressure
     ) extends AddFlowOnlyPipeElement_15544_V4
         with IsPressureDiff
+
+    @Transl(I(_.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn))
+    case class SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+        @Transl(I(_.terms.name))
+        name         : String,
+        @Transl(I(_.terms.absolute_direction))
+        absDir       : Option[AbsoluteDirection] = None,
+        @Transl(I(_.split_merge.newInnerShape))
+        newInnerShape: PipeShape
+    ) extends AddFlowOnlyPipeElement_15544_V4
+        with SetsNumberOfFlows
+        with SetsInnerShape
+        with IsDirectionChange
+        with IsSingularFlowResistance
+        with IsSplitMergeTurn {
+        def n_flows: NbOfFlows = 2
+    }
+
+    @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
+    case class MergeTwoFlowsIntoSingleWith90DegTurn(
+        @Transl(I(_.terms.name))
+        name         : String,
+        @Transl(I(_.terms.absolute_direction))
+        absDir       : Option[AbsoluteDirection] = None,
+        @Transl(I(_.split_merge.newInnerShape))
+        newInnerShape: PipeShape
+    ) extends AddFlowOnlyPipeElement_15544_V4
+        with SetsNumberOfFlows
+        with SetsInnerShape
+        with IsDirectionChange
+        with IsSingularFlowResistance
+        with IsSplitMergeTurn {
+        def n_flows: NbOfFlows = 1
+    }

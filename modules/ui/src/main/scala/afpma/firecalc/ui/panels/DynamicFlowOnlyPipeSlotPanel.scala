@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
+import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544
 import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
 import afpma.firecalc.i18n.implicits.I18N
@@ -17,6 +18,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.FluePipe_Module_15544.innerShapeAtPrefix
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.standard.*
@@ -216,12 +218,18 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     private given AutoCalcHelper.ElemExtractors[FlowOnlyPipeDescr_15544] = AutoCalcHelper.ElemExtractors(
         asInitialDirection   = PartialFunction.empty,
-        asDirectionChange    = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+        asDirectionChange    = {
+            case dc: AddDirectionChange                       => (dc.angle, dc.absDir  )
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => (90.degrees, sm.absDir)
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => (90.degrees, sm.absDir)
+        },
         asInnerShape         = { case sis: SetInnerShape => sis.shape },
         withDirChangeAbsDir  = (e, newAbsDir) =>
             e match
-                case x: AddSharpeAngle_0_to_180 => x.copy(absDir = newAbsDir)
-                case x: AddCircularArc_60       => x.copy(absDir = newAbsDir)
+                case x: AddSharpeAngle_0_to_180                  => x.copy(absDir = newAbsDir)
+                case x: AddCircularArc_60                        => x.copy(absDir = newAbsDir)
+                case x: SplitSingleFlowIntoTwoFlowsWith90DegTurn => x.copy(absDir = newAbsDir)
+                case x: MergeTwoFlowsIntoSingleWith90DegTurn     => x.copy(absDir = newAbsDir)
                 case _ => e,
         withInitialDirection = (e, _, _) => e
     )
@@ -241,7 +249,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                             .get(idx)
                             .flatMap: frameBefore =>
                                 elem match
-                                    case dc: AddDirectionChange           =>
+                                    case dc: AddDirectionChange                       =>
                                         // For pinned direction changes, show the STORED pin as-is.
                                         // Previously this called `applyBendForFinalDir(...)` which
                                         // silently projects to the closest reachable direction when
@@ -259,7 +267,23 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                                             case None     =>
                                                 frameBefore.direction
                                         Some(idx -> dir)
-                                    case _ : AddFlowOnlyPipeElement_15544 =>
+                                    case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                                        val dir = sm.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
+                                    case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                                        val dir = sm.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
+                                    case _ : AddFlowOnlyPipeElement_15544             =>
                                         Some(idx -> frameBefore.direction)
                                     case _ => None
                     .toMap
@@ -275,14 +299,18 @@ final case class DynamicFlowOnlyPipeSlotPanel(
             .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
-                    .collect { case (idx, _: AddDirectionChange) => idx }
+                    .collect {
+                        case (idx, _: AddDirectionChange                      ) => idx
+                        case (idx, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => idx
+                        case (idx, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => idx
+                    }
                     .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
                     .toMap
 
     override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
         previousDirectionByIdx.map(_.get(idx))
 
-    private def absDirBadgeVar[A <: AddDirectionChange](
+    private def absDirBadgeVar[A](
         getter: A => Option[AbsoluteDirection],
         setter: (A, Option[AbsoluteDirection]) => A
     ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
@@ -301,7 +329,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     ): Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] =
         None
 
-    private def relativeDirectionExtra[A <: AddDirectionChange](
+    private def relativeDirectionExtra[A](
         idx   : Int,
         getter: A => Option[AbsoluteDirection],
         setter: (A, Option[AbsoluteDirection]) => A
@@ -317,7 +345,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
         welems_var.signal.map: elems =>
             elems.collectFirst:
-                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
+                case (i, dc: AddDirectionChange                          ) if i == idx => dc.angle.toUnit[Degree].value
+                case (i: Int, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) if i == idx => 90.0
+                case (i: Int, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) if i == idx => 90.0
 
     // ── Rendered elements (same splitMatchSeq as FluePipePanel) ──
 
@@ -521,12 +551,78 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                     isProperty = false
                 )
             }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs                 ),
+                (Int, SplitSingleFlowIntoTwoFlowsWith90DegTurn, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: SplitSingleFlowIntoTwoFlowsWith90DegTurn, x) =>
+                (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[SplitSingleFlowIntoTwoFlowsWith90DegTurn]            (
+                    iix._1,
+                    I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                    iix._2,
+                    sig,
+                    isProperty             = false,
+                    onBadgeDirectionCommit = mkOnDirectionCommit(iix._1),
+                    customFormNode         = Some(
+                        splitMergeFormNode(
+                            iix._1,
+                            sig.map(_._3),
+                            _.name,
+                            (a, n ) => a.copy(name = n),
+                            _.absDir,
+                            (a, fd) => a.copy(absDir = fd),
+                            mkOnDirectionCommit(iix._1)
+                        )
+                    )
+                )
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_15544, XtraOutputs             ),
+                (Int, MergeTwoFlowsIntoSingleWith90DegTurn, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: MergeTwoFlowsIntoSingleWith90DegTurn, x) =>
+                (i, incr, x)
+            } { (iix, sig) =>
+                renderElemTyped[MergeTwoFlowsIntoSingleWith90DegTurn]            (
+                    iix._1,
+                    I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                    iix._2,
+                    sig,
+                    isProperty             = false,
+                    onBadgeDirectionCommit = mkOnDirectionCommit(iix._1),
+                    customFormNode         = Some(
+                        splitMergeFormNode(
+                            iix._1,
+                            sig.map(_._3),
+                            _.name,
+                            (a, n ) => a.copy(name = n),
+                            _.absDir,
+                            (a, fd) => a.copy(absDir = fd),
+                            mkOnDirectionCommit(iix._1)
+                        )
+                    )
+                )
+            }
             .toSignal
             .map(renderV7WrapperElems(slotIndex == 0))
 
     // ── Tag tree menu (same as FluePipePanel) ────────────────────
 
     import defaultable_15544.incr_descr_en15544.given
+
+    /**
+     * Shape prefill at insert position — uses the builder's state machine.
+     * Extracted to avoid repeating the innerShapeAtPrefix computation across
+     * shortcut_quick_flue_section, split/merge ShortcutFns, and prop_elements LeafFn.
+     */
+    private def shapeAtPrefix(insertIdx: Int): PipeShape =
+        import afpma.laminar.form.{Defaultable as D}
+        FluePipe_Module_15544.incremental
+            .define(elems_v.now()*)
+            .innerShapeAtPrefix(insertIdx)
+            .getOrElse(summon[D[SetInnerShape]].default.shape)
 
     lazy val tagTreeMenu = TagTreeMenu(
         shortcut_quick_flue_section,
@@ -538,20 +634,14 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     lazy val shortcut_quick_flue_section =
         import afpma.laminar.form.{Defaultable as D}
-        import afpma.firecalc.engine.models.FluePipe_Module_15544.innerShapeAtPrefix
         TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544]    (
             txt     = I18N_UI.shortcuts.quick_flue_section,
-            compute = (insertIdx: Int) => {
-                val prevShape: PipeShape = FluePipe_Module_15544.incremental
-                    .define(elems_v.now()*)
-                    .innerShapeAtPrefix(insertIdx)
-                    .getOrElse(summon[D[SetInnerShape]].default.shape)
+            compute = (insertIdx: Int) =>
                 Seq(
                     summon[D[AddSharpeAngle_0_to_180]].default,
-                    SetInnerShape(prevShape),
+                    SetInnerShape(shapeAtPrefix(insertIdx)),
                     summon[D[AddSectionSlopped]].default
                 )
-            }
         )
 
     lazy val shortcut_start_new_pipe =
@@ -567,48 +657,72 @@ final case class DynamicFlowOnlyPipeSlotPanel(
             elems = (SetRoughness(1.mm), SetInnerShape(Circle(180.mm)), AddSectionSlopped("connecteur", 6.cm))
         )
 
-    lazy val geom_elements = TagTreeMenu.Group(
-        txt  = I18N.add_element._self,
-        next = List(
-            TagTreeMenu.Leaf[AddSectionSlopped],
-            TagTreeMenu.Group (
-                txt  = I18N.add_element.add_direction_change_element,
-                next = List(TagTreeMenu.Leaf[AddSharpeAngle_0_to_180], TagTreeMenu.Leaf[AddCircularArc_60])
-            ),
-            TagTreeMenu.Group (
-                txt  = I18N.set_prop.SetNumberOfFlows,
-                next = List(
-                    TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_NumberOfChannels, SetNumberOfFlows(2)),
-                    TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_Join, SetNumberOfFlows(1)            )
-                )
-            ),
-            TagTreeMenu.Group (
-                txt  = I18N.add_element.AddFlowResistance,
-                next = List(
-                    TagTreeMenu.Modal[FlowOnlyPipeDescr_15544]         (
-                        txt          = afpma.firecalc.ui.i18n.implicits.I18N_UI.catalog.flow_resistance_presets,
-                        modalContent = (onSelect) =>
-                            FlowResistanceCatalogSelectComponent(
-                                entriesSignal = flowResistancePresetsSignal,
-                                onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
-                                    AddFlowResistance(e.name, e.zeta, e.cross_section)
+    lazy val geom_elements =
+        TagTreeMenu.Group (
+            txt  = I18N.add_element._self,
+            next = List(
+                TagTreeMenu.Leaf[AddSectionSlopped],
+                TagTreeMenu.Group (
+                    txt  = I18N.add_element.add_direction_change_element,
+                    next = List(TagTreeMenu.Leaf[AddSharpeAngle_0_to_180], TagTreeMenu.Leaf[AddCircularArc_60])
+                ),
+                TagTreeMenu.Group (
+                    txt  = I18N.split_merge._self,
+                    next = List(
+                        TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544]    (
+                            txt     = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                            compute = (insertIdx: Int) =>
+                                Seq(
+                                    SplitSingleFlowIntoTwoFlowsWith90DegTurn         (
+                                        name          = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                                        absDir        = None,
+                                        newInnerShape = shapeAtPrefix(insertIdx)
+                                    )
                                 )
-                            ).node
-                    ),
-                    TagTreeMenu.Leaf[AddFlowResistance]                ("ζ spécifique")
+                        ),
+                        TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_15544]    (
+                            txt     = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                            compute = (insertIdx: Int) =>
+                                Seq(
+                                    MergeTwoFlowsIntoSingleWith90DegTurn         (
+                                        name          = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                                        absDir        = None,
+                                        newInnerShape = shapeAtPrefix(insertIdx)
+                                    )
+                                )
+                        )
+                    )
+                ),
+                TagTreeMenu.Group (
+                    txt  = I18N.add_element.AddFlowResistance,
+                    next = List(
+                        TagTreeMenu.Modal[FlowOnlyPipeDescr_15544]         (
+                            txt          = afpma.firecalc.ui.i18n.implicits.I18N_UI.catalog.flow_resistance_presets,
+                            modalContent = (onSelect) =>
+                                FlowResistanceCatalogSelectComponent(
+                                    entriesSignal = flowResistancePresetsSignal,
+                                    onSelect      = onSelect.contramap[FlowResistanceCatalogEntry](e =>
+                                        AddFlowResistance(e.name, e.zeta, e.cross_section)
+                                    )
+                                ).node
+                        ),
+                        TagTreeMenu.Leaf[AddFlowResistance]                ("ζ spécifique")
+                    )
                 )
             )
         )
-    )
 
     lazy val prop_elements = TagTreeMenu.Group(
         txt  = I18N.set_prop._self,
         next = List(
-            TagTreeMenu.Group (
-                txt  = I18N.set_prop._material_and_roughness,
-                next = List(TagTreeMenu.Leaf[SetMaterial], TagTreeMenu.Leaf[SetRoughness])
+            TagTreeMenu.Group                               (
+                txt     = I18N.set_prop._material_and_roughness,
+                next    = List(TagTreeMenu.Leaf[SetMaterial], TagTreeMenu.Leaf[SetRoughness])
             ),
-            TagTreeMenu.Leaf[SetInnerShape]
+            TagTreeMenu.LeafFn[SetFlowOnlyPipeProp_15544]   (
+                txt     = I18N.set_prop.SetInnerShape,
+                compute = (insertIdx: Int) => SetInnerShape(shapeAtPrefix(insertIdx))
+            )
         )
     )
 

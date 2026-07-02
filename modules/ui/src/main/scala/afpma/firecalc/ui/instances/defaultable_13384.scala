@@ -67,52 +67,64 @@ object defaultable_13384:
         given Locale => Defaultable[AddSectionSlopped]:
             def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
 
-        given Locale => Defaultable[AddSectionHorizontal]         :
+        given Locale => Defaultable[AddSectionHorizontal]                    :
             def default = AddSectionHorizontal(I18N_UI.default_element_names.horizontal_straight_element, 1.meters)
-        given Locale => Defaultable[AddSectionVertical]           :
+        given Locale => Defaultable[AddSectionVertical]                      :
             def default = AddSectionVertical(I18N.add_element.AddSectionVertical, 1.meters)
-        given Locale => Defaultable[AddAngleAdjustable]           :
+        given Locale => Defaultable[AddAngleAdjustable]                      :
             def default =
                 AddAngleAdjustable(I18N.add_element.AddAngleAdjustable, qty_d.angle.ninety.default, zeta.default)
-        given Locale => Defaultable[AddSharpeAngle_0_to_90]       :
+        given Locale => Defaultable[AddSharpeAngle_0_to_90]                  :
             def default = AddSharpeAngle_0_to_90(I18N.add_element.AddSharpeAngle_0_to_90, qty_d.angle.ninety.default)
-        given Locale => Defaultable[AddSharpeAngle_0_to_90_Unsafe]:
+        given Locale => Defaultable[AddSharpeAngle_0_to_90_Unsafe]           :
             def default =
                 AddSharpeAngle_0_to_90_Unsafe(
                     I18N.add_element.AddSharpeAngle_0_to_90_Unsafe,
                     qty_d.angle.ninety.default
                 )
-        given Locale => Defaultable[AddSmoothCurve_90]            :
+        given Locale => Defaultable[AddSmoothCurve_90]                       :
             def default =
                 AddSmoothCurve_90(I18N.add_element.AddSmoothCurve_90, curvature_radius = radiusOfCurvature.default)
-        given Locale => Defaultable[AddSmoothCurve_90_Unsafe]     :
+        given Locale => Defaultable[AddSmoothCurve_90_Unsafe]                :
             def default = AddSmoothCurve_90_Unsafe(
                 I18N.add_element.AddSmoothCurve_90_Unsafe,
                 curvature_radius = radiusOfCurvature.default
             )
-        given Locale => Defaultable[AddSmoothCurve_60]            :
+        given Locale => Defaultable[AddSmoothCurve_60]                       :
             def default =
                 AddSmoothCurve_60(I18N.add_element.AddSmoothCurve_60, curvature_radius = radiusOfCurvature.default)
-        given Locale => Defaultable[AddSmoothCurve_60_Unsafe]     :
+        given Locale => Defaultable[AddSmoothCurve_60_Unsafe]                :
             def default = AddSmoothCurve_60_Unsafe(
                 I18N.add_element.AddSmoothCurve_60_Unsafe,
                 curvature_radius = radiusOfCurvature.default
             )
-        given Locale => Defaultable[AddElbows_2x45]               :
+        given Locale => Defaultable[AddElbows_2x45]                          :
             def default = AddElbows_2x45(I18N.add_element.AddElbows_2x45, curvature_radius = radiusOfCurvature.default)
-        given Locale => Defaultable[AddElbows_3x30]               :
+        given Locale => Defaultable[AddElbows_3x30]                          :
             def default = AddElbows_3x30(I18N.add_element.AddElbows_3x30, curvature_radius = radiusOfCurvature.default)
-        given Locale => Defaultable[AddElbows_4x22p5]             :
+        given Locale => Defaultable[AddElbows_4x22p5]                        :
             def default =
                 AddElbows_4x22p5(I18N.add_element.AddElbows_4x22p5, curvature_radius = radiusOfCurvature.default)
-        given Locale => Defaultable[AddSectionDecrease]           :
+        given Locale => Defaultable[AddSectionDecrease]                      :
             def default =
                 AddSectionDecrease(I18N.add_element.AddSectionDecrease, to_diameter = qty_d.meter.zero.default)
-        given Locale => Defaultable[AddSectionIncrease]           :
+        given Locale => Defaultable[AddSectionIncrease]                      :
             def default =
                 AddSectionIncrease(I18N.add_element.AddSectionIncrease, to_diameter = qty_d.meter.zero.default)
-        given Locale => Defaultable[AddFlowResistance]            :
+        given Locale => Defaultable[AddFlowResistance]                       :
             def default = AddFlowResistance(I18N_UI.default_element_names.grid, defaultable.zeta.default, None)
+        given Locale => Defaultable[SplitSingleFlowIntoTwoFlowsWith90DegTurn]:
+            def default = SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                name          = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                absDir        = None,
+                newInnerShape = pipeShapeInner.default
+            )
+        given Locale => Defaultable[MergeTwoFlowsIntoSingleWith90DegTurn]    :
+            def default = MergeTwoFlowsIntoSingleWith90DegTurn(
+                name          = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                absDir        = None,
+                newInnerShape = pipeShapeInner.default
+            )
 
     val airSpaceDetailed = Defaultable(AirSpaceDetailed.WithoutAirSpace_V2)
 

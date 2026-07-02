@@ -5,6 +5,8 @@
 
 package afpma.firecalc.ui.panels
 
+import afpma.firecalc.domain.IsBackendForbidden
+import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
@@ -13,6 +15,8 @@ import afpma.firecalc.engine.standard.HasSectionTypError
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 import afpma.firecalc.engine.standard.InvalidConstraint
 import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.showUsingLocale
 
 import cats.data.*
 import cats.data.Validated.Valid
@@ -36,6 +40,23 @@ object PanelStatusHelper:
 
     /** CSS tooltip style class name for warnings. */
     def tooltipStyleClsNameForWarnings: String = "tooltip-warning"
+
+    // ── PanelError ADT ─────────────────────────────────────────────
+
+    /**
+     * UI-level error type unifying engine computation errors and forbidden DTO errors.
+     * Used by `PipePanel.statusIcon` to render a single red-X with combined tooltip.
+     */
+    sealed trait PanelError
+
+    object PanelError:
+        case class EngineError(err: MCalc_Error)                                 extends PanelError
+        case class ForbiddenDtoError(dto: IsBackendForbidden, elementIndex: Int) extends PanelError
+
+        given ShowUsingLocale[PanelError] = showUsingLocale: (err: PanelError) =>
+            err match
+                case EngineError(mcalcErr)           => mcalcErr.show
+                case ForbiddenDtoError(dto, elemIdx) => ForbiddenDtoFound(dto, elemIdx).show
 
     /**
      * Build a direction-incompatible warning signal from indexed pipe elements and their frames.
@@ -76,6 +97,23 @@ object PanelStatusHelper:
 
     def tooltipStyleClsNameFoErrors(errs: NonEmptyList[MCalc_Error]): String =
         clsNameForErrors(errs)(prefix = "tooltip-")
+
+    /**
+     * CSS class name for a combined list of `PanelError`. Warning style only if ALL
+     * engine errors are warning-level and there are no forbidden DTO errors.
+     */
+    private def clsNameForPanelErrors(errs: NonEmptyList[PanelError])(prefix: String): String =
+        val isWarning = errs.toList.forall:
+            case PanelError.EngineError(ErrorsInOtherSectionType)       => true
+            case PanelError.EngineError(_: IncompatibleDirectionInPipe) => true
+            case _                                                      => false
+        if isWarning then s"${prefix}warning" else s"${prefix}error"
+
+    def textClsNameForPanelErrors(errs: NonEmptyList[PanelError]): String =
+        clsNameForPanelErrors(errs)(prefix = "text-")
+
+    def tooltipStyleClsNameForPanelErrors(errs: NonEmptyList[PanelError]): String =
+        clsNameForPanelErrors(errs)(prefix = "tooltip-")
 
     def keepGlobalErrorsOrErrorsSpecificToSectionTyp[A](
         keepSectionTyp: PipeType => Boolean

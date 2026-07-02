@@ -64,9 +64,9 @@ class PurchaseServiceImpl[F[_]: Async](
             _ <- request.productMetadata match
                 case Some(metadata) =>
                     MetadataForbiddenDtoChecker.findForbidden(metadata) match
-                        case Some(forbidden) =>
-                            Async[F].raiseError(ForbiddenDtoException(forbidden.getClass.getSimpleName))
-                        case None            =>
+                        case Some((forbidden, elementIndex)) =>
+                            Async[F].raiseError(ForbiddenDtoException(forbidden.getClass.getSimpleName, elementIndex))
+                        case None                            =>
                             Async[F].unit
                 case None           =>
                     Async[F].unit

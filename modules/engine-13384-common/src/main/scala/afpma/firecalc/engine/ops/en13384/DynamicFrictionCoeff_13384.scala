@@ -10,7 +10,7 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.models.PipeType
-import afpma.firecalc.engine.models.gtypedefs.ζ
+import afpma.firecalc.engine.models.gtypedefs.{ζ, CoefficientOfFlowResistance}
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
@@ -48,6 +48,7 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
                         case ss: FlowOnly.CoudeCourbe60         => flowOnlyCoudeCourbe60.dynamicFrictionCoeff(ss)
                         case ss: FlowOnly.CoudeCourbe60_Unsafe  => flowOnlyCoudeCourbe60_unsafe.dynamicFrictionCoeff(ss)
                         case ss: FlowOnly.CoudeASegment90       => flowOnlyCoudeASegment90.dynamicFrictionCoeff(ss)
+                        case ss: FlowOnly.SplitMerge90          => flowOnlySplitMerge90.dynamicFrictionCoeff(ss)
 
     given flowOnlySectionGeometryChange: DynamicFrictionCoeffOp[FlowOnly.SectionGeometryChange] =
         new DynamicFrictionCoeffOp[FlowOnly.SectionGeometryChange]:
@@ -91,6 +92,7 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
                         case ss: Thermal.CoudeCourbe60         => thermalCoudeCourbe60.dynamicFrictionCoeff(ss)
                         case ss: Thermal.CoudeCourbe60_Unsafe  => thermalCoudeCourbe60_unsafe.dynamicFrictionCoeff(ss)
                         case ss: Thermal.CoudeASegment90       => thermalCoudeASegment90.dynamicFrictionCoeff(ss)
+                        case ss: Thermal.SplitMerge90          => thermalSplitMerge90.dynamicFrictionCoeff(ss)
 
     given thermalSectionGeometryChange: DynamicFrictionCoeffOp[Thermal.SectionGeometryChange] =
         new DynamicFrictionCoeffOp[Thermal.SectionGeometryChange]:
@@ -164,6 +166,11 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
             interpolateCoudeASegment90(shape, shape.R, shape.Dh)
         }
 
+    given flowOnlySplitMerge90: DynamicFrictionCoeffOp[FlowOnly.SplitMerge90] =
+        DynamicFrictionCoeffOp.fromFunction { _ =>
+            CoefficientOfFlowResistance.splitMerge90Zeta.validNel
+        }
+
     given flowOnlyDecrease: DynamicFrictionCoeffOp[FlowOnly.SectionDecrease] =
         DynamicFrictionCoeffOp.fromFunction { shape =>
             interpolateDecrease(shape, (shape.toA2 / shape.fromA1).value, shape.to.diameter, shape.from.diameter)
@@ -220,6 +227,11 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
     given thermalCoudeASegment90: DynamicFrictionCoeffOp[Thermal.CoudeASegment90] =
         DynamicFrictionCoeffOp.fromFunction { shape =>
             interpolateCoudeASegment90(shape, shape.R, shape.Dh)
+        }
+
+    given thermalSplitMerge90: DynamicFrictionCoeffOp[Thermal.SplitMerge90] =
+        DynamicFrictionCoeffOp.fromFunction { _ =>
+            CoefficientOfFlowResistance.splitMerge90Zeta.validNel
         }
 
     given thermalDecrease: DynamicFrictionCoeffOp[Thermal.SectionDecrease] =

@@ -463,12 +463,14 @@ final case class FireboxTypeDisabledException(
  * Forbidden by `PurchaseRoutes.handlePurchaseServiceError`.
  */
 final case class ForbiddenDtoException(
-    typeName: String
+    typeName    : String,
+    elementIndex: Int = -1
 ) extends PurchaseServiceError(
         s"Backend-forbidden DTO type '$typeName' is not allowed in a project submitted to the backend"
     ) {
     override def errorCode: String              = "backend_forbidden_dto"
     override def context  : Map[String, String] = Map(
-        "dto_type" -> typeName
+        "dto_type"      -> typeName,
+        "element_index" -> elementIndex.toString
     )
 }

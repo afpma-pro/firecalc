@@ -133,6 +133,14 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
             override val effectiveShape: PipeShape
         ) extends DirectionChange(60.degrees, None, effectiveShape) derives Show
 
+    case class SplitMerge90(
+        nFlows                     : NbOfFlows,
+        zeta                       : ζ,
+        override val angleN2       : Option[QtyD[Degree]] = None,
+        override val effectiveShape: PipeShape
+    ) extends DirectionChange(90.degrees, angleN2, effectiveShape)
+        with IsSingularFlowResistance derives Show
+
     case class SectionGeometryChange(
         from: PipeShape,
         to  : PipeShape

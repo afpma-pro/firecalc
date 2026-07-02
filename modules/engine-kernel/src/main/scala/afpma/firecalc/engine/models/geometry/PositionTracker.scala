@@ -33,7 +33,9 @@ object PositionTracker:
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
         elem match
             case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle)  )
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
             case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
             case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
             case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
@@ -46,7 +48,9 @@ object PositionTracker:
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         elem match
             case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle)  )
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
             case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
             case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
             case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
@@ -58,12 +62,14 @@ object PositionTracker:
         import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
         elem match
-            case SetInnerShape(shape)                                           => Seq(CmdSetInnerShape(shape)       )
-            case SetPropertiesInBatch(_, props, _)                              =>
+            case SetInnerShape(shape)              => Seq(CmdSetInnerShape(shape))
+            case SetPropertiesInBatch(_, props, _) =>
                 props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
-            case LinedFlue(_, liner, _, _)                                      =>
+            case LinedFlue(_, liner, _, _)         =>
                 liner.props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
             case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
             case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
             case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
             case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )

@@ -97,14 +97,18 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
         addElement: AddElement
     ): Boolean =
         addElement match
-            case _: AddDirectionChange => true
+            case _: AddDirectionChange                       => true
+            case _: SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+            case _: MergeTwoFlowsIntoSingleWith90DegTurn     => true
             case _ => false
 
     override protected def isForbiddenAddElementAtEnd(
         addElement: AddElement
     ): Boolean =
         addElement match
-            case _: AddDirectionChange => true
+            case _: AddDirectionChange                       => true
+            case _: SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+            case _: MergeTwoFlowsIntoSingleWith90DegTurn     => true
             case _ => false
 
     override protected def isTrailingAllowed(preOp: PreElementOp): Boolean =
@@ -132,7 +136,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
 
         /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */
         def innerShapeAtPrefix(n: Int): Option[PipeShape] =
-            piDescr.propsStateAtPrefix(n).toOption.flatMap(stateOps.getInnerShape)
+            val prefixResult = piDescr.propsStateAtPrefix(n)
+            prefixResult.toOption.flatMap(stateOps.getInnerShape)
+
+        /** Number of flows in effect after folding the first n descriptors. */
+        def nFlowsAtPrefix(n: Int): Option[NbOfFlows] =
+            val prefixResult = piDescr.propsStateAtPrefix(n)
+            prefixResult.toOption.map(stateOps.getNFlows)
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
         val initDir = wrapperInitialDirection
@@ -177,7 +187,9 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
         if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
         else
             val hasFinalDir = incrDescrs.exists:
-                case (_, dc: AddDirectionChange) => dc.absDir.isDefined
+                case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
+                case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
+                case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
                 case _ => false
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
             else ().validNel
@@ -191,7 +203,9 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                     case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
                     case _ @AddSectionHorizontal(_, l)                         => l.some
                     case _ @AddSectionVertical(_, l)                           => l.some
-                    case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff) => None
+                    case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff |
+                            SplitSingleFlowIntoTwoFlowsWith90DegTurn | MergeTwoFlowsIntoSingleWith90DegTurn) =>
+                        None
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
@@ -245,6 +259,30 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                                     ).validNel[IncrementalValidation_Error]
                     }
 
+                // Split/Merge: no SectionGeometryChange auto-insertion needed.
+                // The element's `effectiveShape` (from DTO `newInnerShape`) already
+                // captures the post-transition shape. `hasInnerShapeAtPos` returns
+                // `effectiveShape` for `SplitMerge90` via its `DirectionChange` parent,
+                // so downstream shape resolution and any subsequent SectionGeometryChange
+                // comparison work correctly. Intentional for both EN 15544 and EN 13384.
+                case op: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                    val dc = SplitMerge90(
+                        nFlows         = 2.flows,
+                        zeta           = CoefficientOfFlowResistance.splitMerge90Zeta,
+                        angleN2        = None,
+                        effectiveShape = op.newInnerShape
+                    )
+                    NonEmptyList.one((elIdx, None, dc)).validNel
+
+                case op: MergeTwoFlowsIntoSingleWith90DegTurn =>
+                    val dc = SplitMerge90(
+                        nFlows         = 1.flow,
+                        zeta           = CoefficientOfFlowResistance.splitMerge90Zeta,
+                        angleN2        = None,
+                        effectiveShape = op.newInnerShape
+                    )
+                    NonEmptyList.one((elIdx, None, dc)).validNel
+
                 case op: AddDirectionChange =>
                     stateOps
                         .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
@@ -293,13 +331,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
         convStep.findNextAddElement.map(_._2) match
-            case None                                => propsState.validNel
+            case None                                               => propsState.validNel
             case Some(
                     _: AddSectionSlopped | _: AddSectionSloppedForceManualElevationGain | _: AddSectionHorizontal |
                     _: AddSectionVertical
                 ) =>
                 stateOps.materialize(propsState).validNel
-            case Some(addDC: AddDirectionChange)     =>
+            case Some(addDC: AddDirectionChange)                    =>
                 addDC.absDir match
                     case Some(fd) =>
                         propsState.currentFrame match
@@ -316,9 +354,43 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                                     .validNel
                             case None        => propsState.validNel
                     case None     => propsState.validNel
-            case Some(_ @AddFlowResistance(_, _, _)) => propsState.validNel
-            case Some(_ @AddPressureDiff(_, _))      => propsState.validNel
-            case Some(obj: AddSectionShapeChange)    =>
+            case Some(op: SplitSingleFlowIntoTwoFlowsWith90DegTurn) =>
+                val frameUpdate = op.absDir match
+                    case Some(fd) =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                )
+                            case None        => propsState
+                    case None     => propsState
+                stateOps
+                    .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 2.flows)
+                    .validNel
+            case Some(op: MergeTwoFlowsIntoSingleWith90DegTurn)     =>
+                val frameUpdate = op.absDir match
+                    case Some(fd) =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                )
+                            case None        => propsState
+                    case None     => propsState
+                stateOps
+                    .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 1.flow)
+                    .validNel
+            case Some(_ @AddFlowResistance(_, _, _))                => propsState.validNel
+            case Some(_ @AddPressureDiff(_, _))                     => propsState.validNel
+            case Some(obj: AddSectionShapeChange)                   =>
                 stateOps.setInnerShape(propsState, obj.to_shape).validNel
 
     override protected def updateStateBeforeConversionStep(
