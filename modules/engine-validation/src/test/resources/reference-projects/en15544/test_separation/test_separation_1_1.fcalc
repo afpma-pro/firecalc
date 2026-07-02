@@ -100,20 +100,12 @@ engine_state:
                 value: "0.3"
                 unit: "meter"
           - 
-            AddSharpeAngle_0_to_180: 
-              name: "1-2"
-              angle: 
-                value: "90"
-                unit: "degree"
+            SplitSingleFlowIntoTwoFlowsWith90DegTurn: 
+              name: "Division 1-2"
               absDir: 
                 azimuth: "Front"
                 inclination: "Horizontal"
-          - 
-            SetNumberOfFlows: 
-              n_flows: 2
-          - 
-            SetInnerShape: 
-              shape: 
+              newInnerShape: 
                 Rectangle: 
                   a: 
                     value: "0.09"
@@ -158,20 +150,12 @@ engine_state:
                 value: "1"
                 unit: "meter"
           - 
-            AddSharpeAngle_0_to_180: 
-              name: "4-5"
-              angle: 
-                value: "90"
-                unit: "degree"
+            MergeTwoFlowsIntoSingleWith90DegTurn: 
+              name: "Fusion 4-5"
               absDir: 
                 azimuth: "Right"
                 inclination: "Horizontal"
-          - 
-            SetNumberOfFlows: 
-              n_flows: 1
-          - 
-            SetInnerShape: 
-              shape: 
+              newInnerShape: 
                 Square: 
                   side: 
                     value: "0.18"
