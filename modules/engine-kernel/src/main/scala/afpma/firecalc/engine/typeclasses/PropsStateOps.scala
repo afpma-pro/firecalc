@@ -69,11 +69,13 @@ trait PropsStateOps[State]:
      * If not materialized, returns the corresponding error.
      */
     def validateMaterialized(
-        state: State,
-        op   : ShapeNotMaterialized.Operation,
-        pt   : PipeType
+        state       : State,
+        op          : ShapeNotMaterialized.Operation,
+        pt          : PipeType,
+        elementIndex: Int,
+        elementName : String
     ): ValidatedNel[IncrementalValidation_Error, Unit] =
-        if requiresMaterializedShape(state) then ShapeNotMaterialized(pt, op).invalidNel
+        if requiresMaterializedShape(state) then ShapeNotMaterialized(pt, op, elementIndex, elementName).invalidNel
         else ().validNel
 
     // Common validation helper

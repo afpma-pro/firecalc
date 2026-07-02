@@ -113,6 +113,13 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
         _.firebox
     )
 
+    // Air intake pipe missing warning signal
+    private lazy val airIntakeWarningSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
+        air_intake_incrdescr_var.signal.map { descr =>
+            if descr.isEmpty then PanelStatusHelper.PanelWarning.AirIntakePipeMissing.invalidNel
+            else ().validNel
+        }
+
     lazy val node =
         DaisyUIVerticalAccordionAndJoin
             .Element    (
@@ -124,9 +131,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                             firebox_type_avail_sig,
                             firebox_backend_avail_sig,
                             all_cons_signal,
-                            firebox_pressures_avail_signal
+                            firebox_pressures_avail_signal,
+                            airIntakeWarningSig
                         )
-                        .map: (fb, typeAvail, backendAvail, all_cons, fb_press_avail) =>
+                        .map: (fb, typeAvail, backendAvail, all_cons, fb_press_avail, airIntakeWarning) =>
                             val typeDisabledIcon =
                                 if !typeAvail then
                                     Some(
@@ -151,6 +159,23 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                         ).node
                                     )
                                 else None
+
+                            val airIntakeWarningIcon =
+                                airIntakeWarning match
+                                    case Validated.Invalid(_) =>
+                                        Some(
+                                            DaisyUITooltip (
+                                                ttContent  = span(
+                                                    cls := "text-xs",
+                                                    I18N.firebox.air_intake_pipe_missing_warning
+                                                ),
+                                                element    = span(cls := "text-warning", lucide.`triangle-alert`()),
+                                                ttStyle    = PanelStatusHelper.tooltipStyleClsNameForWarnings,
+                                                ttPosition = "tooltip-bottom"
+                                            ).node
+                                        )
+                                    case Validated.Valid(_)   =>
+                                        None
 
                             val statusCons =
                                 if !typeAvail then div(lucide.`circle-check`)
@@ -205,6 +230,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                     statusCons,
                                     statusOther
                                 ) ++
+                                    airIntakeWarningIcon.toList ++
                                     typeDisabledIcon.toList ++
                                     backendNotAvailableIcon.toList ++
                                     List(

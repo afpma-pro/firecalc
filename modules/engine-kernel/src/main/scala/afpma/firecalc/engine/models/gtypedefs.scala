@@ -126,6 +126,7 @@ object gtypedefs:
     object CoefficientOfFlowResistance extends afpma.firecalc.engine.OTypedQtyD[1]:
         override def valueFormat: String = "%.2f"
         val zero                : ζ      = 0.0.unitless
+        val splitMerge90Zeta    : ζ      = 1.4.unitless // EN 15544: singular loss coefficient for 90° split/merge turns
         def termDef        = TermDef(
             "ζ",
             "global definitions"

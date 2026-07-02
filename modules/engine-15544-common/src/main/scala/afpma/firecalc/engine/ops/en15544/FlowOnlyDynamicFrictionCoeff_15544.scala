@@ -55,6 +55,8 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
                             angleVifDe0A180.dynamicFrictionCoeff(ss)
                         case ss: en15544_pipedescr.DirectionChange.CircularArc60   =>
                             circularArc60.dynamicFrictionCoeff(ss)
+                        case ss: en15544_pipedescr.SplitMerge90                    =>
+                            splitMerge90.dynamicFrictionCoeff(ss)
 
         // Individual Resistance
         given angleVifDe0A180: DynamicFrictionCoeffOp[en15544_pipedescr.DirectionChange.AngleVifDe0A180] =
@@ -82,6 +84,11 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
         given circularArc60: DynamicFrictionCoeffOp[en15544_pipedescr.DirectionChange.CircularArc60] =
             DynamicFrictionCoeffOp.fromFunction { _ =>
                 (0.7.unitless: ζ).validNel[SingularFlowResistanceCoeffError]
+            }
+
+        given splitMerge90: DynamicFrictionCoeffOp[en15544_pipedescr.SplitMerge90] =
+            DynamicFrictionCoeffOp.fromFunction { _ =>
+                CoefficientOfFlowResistance.splitMerge90Zeta.validNel[SingularFlowResistanceCoeffError]
             }
 
         given straightSection: DynamicFrictionCoeffOp[en15544_pipedescr.StraightSection] =

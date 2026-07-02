@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.all.FlowOnlyPipeDescr_13384
 import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
@@ -23,20 +25,26 @@ object PipeDescrExtractors:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_13384.*
         FrameReplay.ElemExtractors (
             asInitialDirection  = PartialFunction.empty,
-            asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asDirectionChange   = {
+                case dc: AddDirectionChange                       => (dc.angle, dc.absDir  )
+                case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => (90.degrees, sm.absDir)
+                case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => (90.degrees, sm.absDir)
+            },
             asInnerShape        = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir = (e, newAbsDir) =>
                 e match
-                    case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
-                    case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
-                    case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                    case x: AddAngleAdjustable                       => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90                   => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90_Unsafe            => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90                        => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90_Unsafe                 => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60                        => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60_Unsafe                 => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_2x45                           => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_3x30                           => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_4x22p5                         => x.copy(absDir = newAbsDir)
+                    case x: SplitSingleFlowIntoTwoFlowsWith90DegTurn => x.copy(absDir = newAbsDir)
+                    case x: MergeTwoFlowsIntoSingleWith90DegTurn     => x.copy(absDir = newAbsDir)
                     case _ => e
         )
 
@@ -45,12 +53,18 @@ object PipeDescrExtractors:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         FrameReplay.ElemExtractors (
             asInitialDirection  = PartialFunction.empty,
-            asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asDirectionChange   = {
+                case dc: AddDirectionChange                       => (dc.angle, dc.absDir  )
+                case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => (90.degrees, sm.absDir)
+                case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => (90.degrees, sm.absDir)
+            },
             asInnerShape        = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir = (e, newAbsDir) =>
                 e match
-                    case x: AddSharpeAngle_0_to_180 => x.copy(absDir = newAbsDir)
-                    case x: AddCircularArc_60       => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_180                  => x.copy(absDir = newAbsDir)
+                    case x: AddCircularArc_60                        => x.copy(absDir = newAbsDir)
+                    case x: SplitSingleFlowIntoTwoFlowsWith90DegTurn => x.copy(absDir = newAbsDir)
+                    case x: MergeTwoFlowsIntoSingleWith90DegTurn     => x.copy(absDir = newAbsDir)
                     case _ => e
         )
 
@@ -59,20 +73,26 @@ object PipeDescrExtractors:
         import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
         FrameReplay.ElemExtractors (
             asInitialDirection  = PartialFunction.empty,
-            asDirectionChange   = { case dc: AddDirectionChange => (dc.angle, dc.absDir) },
+            asDirectionChange   = {
+                case dc: AddDirectionChange                       => (dc.angle, dc.absDir  )
+                case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => (90.degrees, sm.absDir)
+                case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => (90.degrees, sm.absDir)
+            },
             asInnerShape        = { case sis: SetInnerShape => sis.shape },
             withDirChangeAbsDir = (e, newAbsDir) =>
                 e match
-                    case x: AddAngleAdjustable            => x.copy(absDir = newAbsDir)
-                    case x: AddSharpeAngle_0_to_90        => x.copy(absDir = newAbsDir)
-                    case x: AddSharpeAngle_0_to_90_Unsafe => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_90             => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_90_Unsafe      => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_60             => x.copy(absDir = newAbsDir)
-                    case x: AddSmoothCurve_60_Unsafe      => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_2x45                => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_3x30                => x.copy(absDir = newAbsDir)
-                    case x: AddElbows_4x22p5              => x.copy(absDir = newAbsDir)
+                    case x: AddAngleAdjustable                       => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90                   => x.copy(absDir = newAbsDir)
+                    case x: AddSharpeAngle_0_to_90_Unsafe            => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90                        => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_90_Unsafe                 => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60                        => x.copy(absDir = newAbsDir)
+                    case x: AddSmoothCurve_60_Unsafe                 => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_2x45                           => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_3x30                           => x.copy(absDir = newAbsDir)
+                    case x: AddElbows_4x22p5                         => x.copy(absDir = newAbsDir)
+                    case x: SplitSingleFlowIntoTwoFlowsWith90DegTurn => x.copy(absDir = newAbsDir)
+                    case x: MergeTwoFlowsIntoSingleWith90DegTurn     => x.copy(absDir = newAbsDir)
                     case _ => e
         )
 

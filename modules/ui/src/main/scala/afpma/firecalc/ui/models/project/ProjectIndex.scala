@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.models.project
 
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
+import scala.scalajs.js
 
 object ProjectIndex:
 
@@ -26,7 +27,14 @@ object ProjectIndex:
 
     def save(entries: Vector[ProjectEntry]): Unit =
         val json = io.circe.Encoder[Vector[ProjectEntry]].apply(entries).noSpaces
-        org.scalajs.dom.window.localStorage.setItem(LocalStorageKeys.PROJECTS_INDEX, json)
+        try org.scalajs.dom.window.localStorage.setItem(LocalStorageKeys.PROJECTS_INDEX, json)
+        catch
+            case ex: js.JavaScriptException if LocalStorageUtils.isQuotaExceeded(ex) =>
+                val (usage, perKey) = LocalStorageUtils.estimateStorageUsage()
+                afpma.firecalc.ui.components.StorageWarningDialog.show(usage, perKey)
+            case ex: js.JavaScriptException                                          =>
+                org.scalajs.dom.console
+                    .error(s"[ProjectIndex] Failed to save index — localStorage unavailable: ${ex.getMessage}")
 
     def addEntry(entry: ProjectEntry): Unit =
         save(load() :+ entry)

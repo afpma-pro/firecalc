@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine
 
+import scala.annotation.nowarn
+
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.coulombutils.given
 
@@ -132,9 +134,16 @@ object standard {
         case e: IncrementalValidation_Error => e.show // Uses ShowUsingLocale[IncrementalValidation_Error]
         case e: ErrorsInOtherSectionType    => e.show // Uses ShowUsingLocale[ErrorsInOtherSectionType]
         case e: FireboxTypeDisabledError    => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
+        case ResultsNotComputed => I18N.builder_errors.results_not_computed
 
     // Unexpected Error
     case class UnexpectedDevError(msg: String) extends MCalc_Error
+
+    /**
+     * Signals that computation results are not yet available (debounce window or project switch).
+     * Filtered from panel error displays — consumers should treat as "no data".
+     */
+    case object ResultsNotComputed extends MCalc_Error
 
     /**
      * Restriction — certain slot topologies are not yet supported in the flue region
@@ -189,18 +198,19 @@ object standard {
         override final def sectionTyp: PipeType = FireboxPipeT
 
     given ShowUsingLocale[FireboxError] = showUsingLocale:
-        case e: InvalidTermValue[?]              => show_InvalidTermValue(using e.showT).show(e)
-        case e: InconsistentMaxLoadAccrossInputs => Show[InconsistentMaxLoadAccrossInputs].show(e)
-        case e: FireboxBaseSurfaceNotInRange     => Show[FireboxBaseSurfaceNotInRange].show(e)
-        case e: FireboxBaseRatioInvalid          => Show[FireboxBaseRatioInvalid].show(e)
-        case e: FireboxBaseMinWidthInvalid       => Show[FireboxBaseMinWidthInvalid].show(e)
-        case e: GlassAreaTooLarge                => Show[GlassAreaTooLarge].show(e)
-        case e: GlassSurfaceRatioNotConfirmed    => Show[GlassSurfaceRatioNotConfirmed].show(e)
-        case e: FireboxHeightOutOfRange          => Show[FireboxHeightOutOfRange].show(e)
-        case e: InjectorVelocityBelowMinimum     => Show[InjectorVelocityBelowMinimum].show(e)
-        case e: InjectorVelocityAboveMaximum     => Show[InjectorVelocityAboveMaximum].show(e)
-        case e: MissingFlowRate                  => Show[MissingFlowRate].show(e)
-        case e: AirIntakePipeShapeMismatch       => e.show
+        case e: InvalidTermValue[?]                => show_InvalidTermValue(using e.showT).show(e)
+        case e: InconsistentMaxLoadAccrossInputs   => Show[InconsistentMaxLoadAccrossInputs].show(e)
+        case e: FireboxBaseSurfaceNotInRange       => Show[FireboxBaseSurfaceNotInRange].show(e)
+        case e: FireboxBaseRatioInvalid            => Show[FireboxBaseRatioInvalid].show(e)
+        case e: FireboxBaseMinWidthInvalid         => Show[FireboxBaseMinWidthInvalid].show(e)
+        case e: GlassAreaTooLarge                  => Show[GlassAreaTooLarge].show(e)
+        case e: GlassSurfaceRatioNotConfirmed      => Show[GlassSurfaceRatioNotConfirmed].show(e)
+        case e: FireboxHeightOutOfRange            => Show[FireboxHeightOutOfRange].show(e)
+        case e: InjectorVelocityBelowMinimum       => Show[InjectorVelocityBelowMinimum].show(e)
+        case e: InjectorVelocityAboveMaximum       => Show[InjectorVelocityAboveMaximum].show(e)
+        case e: MissingFlowRate                    => Show[MissingFlowRate].show(e)
+        case e: AirIntakePipeShapeMismatch         => e.show
+        case e: AirIntakePipeShapeTopologyMismatch => e.show
         case TBurnoutNotSet => TBurnoutNotSet.show
         case e: FireboxErrorCustom       => e.reason
         case e: InvalidFireboxConstraint => e.show
@@ -274,6 +284,11 @@ object standard {
     object AirIntakePipeShapeMismatch:
         given ShowUsingLocale[AirIntakePipeShapeMismatch] = showUsingLocale: e =>
             I18N.errors.air_intake_pipe_shape_mismatch(e.expected, e.actual)
+
+    case class AirIntakePipeShapeTopologyMismatch(declared: String, computed: String) extends FireboxError
+    object AirIntakePipeShapeTopologyMismatch:
+        given ShowUsingLocale[AirIntakePipeShapeTopologyMismatch] = showUsingLocale: e =>
+            I18N.errors.air_intake_pipe_shape_topology_mismatch(e.declared, e.computed)
 
     case object TBurnoutNotSet extends FireboxError:
         given ShowUsingLocale[TBurnoutNotSet.type] = showUsingLocale: e =>
@@ -743,7 +758,17 @@ object standard {
         given ShowUsingLocale[EfficiencyIsTooLow] = showUsingLocale: e =>
             I18N.en15544_errors.efficiency_is_too_low(e.eff.show, e.min_eff.show)
 
-    case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error
+    case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error:
+        /**
+         * Extract sectionTyp from inner TypedError when it wraps a HasSectionTypError
+         * (e.g. FireboxError → FireboxPipeT). Generic constraint violations
+         * (MinError, MaxError, GenericError) return None — they remain global.
+         */
+        def sectionTyp: Option[PipeType] = error match
+            case TermConstraintError.TypedError(_, nestedErr: HasSectionTypError, _) =>
+                Some(nestedErr.sectionTyp)
+            case _                                                                   => None
+
     object InvalidConstraint:
         given ShowUsingLocale[InvalidConstraint] = showUsingLocale(_.error.failMsg)
 
@@ -822,6 +847,10 @@ object standard {
         case class NoStraightSectionDefinedForTemperatureCalc(sectionRef: String, override val sectionTyp: PipeType)
             extends MecaFlu_Error
 
+        // Missing upstream seed values (density/velocity) for en13384_pg calculation
+        // — signals that an upstream pipe extraction failure was not caught earlier
+        case class MissingUpstreamSeedValues(reason: String, override val sectionTyp: PipeType) extends MecaFlu_Error
+
         // All error messages are provided via I18N translations
         given ShowUsingLocale[MecaFlu_Error] = showUsingLocale:
             case UnexpectedFireboxType(reason)                      => I18N.mecaflu.errors.unexpected_firebox_type(reason)
@@ -849,6 +878,8 @@ object standard {
                 I18N.mecaflu.errors.mean_temperature_calculation_errors(errs.toList.map(_.show).mkString(", "))
             case NoStraightSectionDefinedForTemperatureCalc(ref, _) =>
                 I18N.mecaflu.errors.no_straight_section_for_temperature_calc(ref)
+            case MissingUpstreamSeedValues(reason, _)               =>
+                I18N.mecaflu.errors.missing_upstream_seed_values(reason)
             case ComputationError(err, _)                           => err.show
             case x: SingularFlowResistanceCoeffError => x.show
             case x: FluePipeShapeSequenceError       => x.show
@@ -1011,8 +1042,10 @@ object standard {
 
     /** Shape was set but not yet materialized into a physical element. */
     case class ShapeNotMaterialized(
-        sectionTyp: PipeType,
-        operation : ShapeNotMaterialized.Operation
+        sectionTyp  : PipeType,
+        operation   : ShapeNotMaterialized.Operation,
+        elementIndex: Int,
+        elementName : String
     ) extends ConflictDetected
 
     object ShapeNotMaterialized:
@@ -1026,7 +1059,9 @@ object standard {
             case AddPressureDiff
 
     // Expected dimension for informative error messages on flow split/merge area violations
+    // ⚠ DEPRECATED: flow area check deactivated — see FlowAreaConservation
     sealed trait ExpectedDimension
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class ExpectedDimRectangle(
         enteredWidth  : QtyD[Meter],
         enteredHeight : QtyD[Meter],
@@ -1034,12 +1069,14 @@ object standard {
         expectedHeight: QtyD[Meter],
         expectedArea  : Area
     ) extends ExpectedDimension
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class ExpectedDimSquare(
         enteredSide : QtyD[Meter],
         enteredArea : Area,
         expectedSide: QtyD[Meter],
         expectedArea: Area
     ) extends ExpectedDimension
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class ExpectedDimCircle(
         enteredDiameter : QtyD[Meter],
         enteredArea     : Area,
@@ -1047,9 +1084,11 @@ object standard {
         expectedArea    : Area
     ) extends ExpectedDimension
 
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     enum FlowAreaTransition:
         case Split, Merge
 
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class PendingFlowAreaCheck(
         beforeShape: PipeShape,
         beforeFlows: NbOfFlows,
@@ -1057,16 +1096,22 @@ object standard {
         transition : FlowAreaTransition
     )
 
+    @deprecated("Flow area check deactivated, re-enable via FLOW_AREA_CHECK_ENABLED", "2026-07-01")
     case class FlowTransitionChangesTotalCrossSection(
         transition       : FlowAreaTransition,
         beforeTotalArea  : Area,
         beforeFlows      : NbOfFlows,
         afterFlows       : NbOfFlows,
         expectedDimension: ExpectedDimension,
-        sectionTyp       : PipeType
+        sectionTyp       : PipeType,
+        elementIndex     : Int,
+        elementName      : String
     ) extends ConflictDetected
 
     object ConflictDetected:
+        // @deprecated usage: FlowTransitionChangesTotalCrossSection / ExpectedDim* are dormant
+        // while FLOW_AREA_CHECK_ENABLED = false. See FlowAreaConservation banner.
+        @nowarn("cat=deprecation")
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
             case CannotSetGeometryBeforeChange(_)                 =>
                 I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
@@ -1091,11 +1136,14 @@ object standard {
                     case ShapeNotMaterialized.Operation.AddSectionShapeChange => I18N.add_element.AddSectionShapeChange
                     case ShapeNotMaterialized.Operation.AddFlowResistance     => I18N.add_element.AddFlowResistance
                     case ShapeNotMaterialized.Operation.AddPressureDiff       => I18N.add_element.AddPressureDiff
-                I18N.incremental_validation.conflicts.shape_not_materialized(translatedOp)
+                I18N.incremental_validation.conflicts.shape_not_materialized(translatedOp) +
+                    I18N.incremental_validation.conflicts.element_ref(e.elementIndex.toString, e.elementName)
             case e: FlowTransitionChangesTotalCrossSection =>
                 val transitionLabel = e.transition match
                     case FlowAreaTransition.Split => I18N.incremental_validation.conflicts.split
                     case FlowAreaTransition.Merge => I18N.incremental_validation.conflicts.merge
+                val elementRef      =
+                    I18N.incremental_validation.conflicts.element_ref(e.elementIndex.toString, e.elementName)
                 e.expectedDimension match
                     case ExpectedDimRectangle(enteredWidth, enteredHeight, enteredArea, expectedHeight, expectedArea) =>
                         I18N.incremental_validation.conflicts.flow_transition_area_rectangle(
@@ -1107,7 +1155,7 @@ object standard {
                             enteredArea.showP,
                             expectedHeight.showP,
                             expectedArea.showP
-                        )
+                        ) + elementRef
                     case ExpectedDimSquare(enteredSide, enteredArea, expectedSide, expectedArea)                      =>
                         I18N.incremental_validation.conflicts.flow_transition_area_square(
                             transitionLabel,
@@ -1117,7 +1165,7 @@ object standard {
                             enteredArea.showP,
                             expectedSide.showP,
                             expectedArea.showP
-                        )
+                        ) + elementRef
                     case ExpectedDimCircle(enteredDiameter, enteredArea, expectedDiameter, expectedArea)              =>
                         I18N.incremental_validation.conflicts.flow_transition_area_circle(
                             transitionLabel,
@@ -1127,7 +1175,7 @@ object standard {
                             enteredArea.showP,
                             expectedDiameter.showP,
                             expectedArea.showP
-                        )
+                        ) + elementRef
 
     // Forbidden element position errors
     sealed trait ForbiddenElementPosition extends IncrementalValidation_Error

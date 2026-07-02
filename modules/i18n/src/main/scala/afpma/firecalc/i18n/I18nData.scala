@@ -51,6 +51,7 @@ final case class I18nData(
     direction_badge                : DirectionBadge,
     errors                         : Errors,
     facing_type                    : FacingType,
+    forbidden_dto                  : ForbiddenDto,
     headers                        : Headers,
     heat_output_reduced            : HeatOutputReduced,
     heating_appliance              : HeatingAppliance,
@@ -69,6 +70,7 @@ final case class I18nData(
     pressure_requirements          : String,
     project_description            : ProjectDescription,
     set_prop                       : SetProp,
+    split_merge                    : SplitMerge,
     stove_params                   : String,
     subtotal                       : String,
     technical_specifications       : TechnicalSpecficiations,
@@ -204,7 +206,8 @@ object I18nData:
         tested                                     : Firebox_15544.Tested,
         traditional                                : Firebox_15544.Traditional,
         single_tested                              : Firebox_15544.SingleTested,
-        door_15a_firebox                           : Firebox_15544.Door15aFirebox
+        door_15a_firebox                           : Firebox_15544.Door15aFirebox,
+        air_intake_pipe_missing_warning            : String
     )
 
     object Firebox_15544:
@@ -571,6 +574,7 @@ object I18nData:
         velocity_position_at_end               : String,
         missing_flow_rate                      : String,
         air_intake_pipe_shape_mismatch         : StringFormat2,
+        air_intake_pipe_shape_topology_mismatch: StringFormat2,
         value_out_of_bound                     : StringFormat5,
         could_not_interpolate                  : StringFormat7,
         empty_data_set                         : String,
@@ -847,6 +851,13 @@ object I18nData:
             add_new_connector: String
         )
 
+    case class SplitMerge(
+        _self                                   : String,
+        SplitSingleFlowIntoTwoFlowsWith90DegTurn: String,
+        MergeTwoFlowsIntoSingleWith90DegTurn    : String,
+        newInnerShape                           : String
+    )
+
     case class TechnicalSpecficiations(
         sizing_method                           : String,
         nominal_heat_output                     : String,
@@ -1035,7 +1046,8 @@ object I18nData:
             flow_transition_area_rectangle         : StringFormat8,
             flow_transition_area_square            : StringFormat7,
             flow_transition_area_circle            : StringFormat7,
-            shape_not_materialized                 : StringFormat1
+            shape_not_materialized                 : StringFormat1,
+            element_ref                            : StringFormat2
         )
 
         case class ForbiddenElementPosition(
@@ -1055,6 +1067,7 @@ object I18nData:
         heat_transfer_coefficient_errors                    : StringFormat1,
         mean_temperature_calculation_errors                 : StringFormat1,
         no_straight_section_for_temperature_calc            : StringFormat1,
+        missing_upstream_seed_values                        : StringFormat1,
 
         // Firebox type errors
         unexpected_firebox_type: StringFormat1,
@@ -1131,7 +1144,16 @@ object I18nData:
     )
 
     case class BuilderErrors(
-        errors_in_other_section_type: String
+        errors_in_other_section_type: String,
+        results_not_computed        : String
+    )
+
+    case class ForbiddenDto(
+        _self                       : String,
+        generic                     : StringFormat1,
+        set_number_of_flows         : StringFormat3,
+        set_inner_shape_prevent_auto: StringFormat1,
+        element_at                  : StringFormat1
     )
 
     case class TopologyErrors(

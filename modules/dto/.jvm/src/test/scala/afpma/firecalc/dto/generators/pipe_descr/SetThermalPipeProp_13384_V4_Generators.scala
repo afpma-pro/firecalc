@@ -11,9 +11,9 @@ import afpma.firecalc.dto.common.*
 import afpma.firecalc.dto.generators.base.*
 import afpma.firecalc.dto.v3.Material_13384_V2
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
-import afpma.firecalc.dto.v7.ThermalChannelTopologyOp_13384_V4
 import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 
 import org.scalacheck.Gen
@@ -147,9 +147,34 @@ trait SetThermalPipeProp_13384_V4_Generators
         yield LinedFlue(name, liner, airSpace, casing)
 
     // ── ChannelTopologyOp ───────────────────────────────────────────────
+    // SetNumberOfFlows is backend-forbidden (IsBackendForbidden) — excluded from
+    // random generation. The new Split/Merge types are AddElement, not TopologyOp.
 
-    def genSetNumberOfFlows_Thermal_V4: Gen[ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows] =
-        Gen.choose(1, 4).map(n => ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows(NbOfFlows(n)))
+    // ── AddElement: Split/Merge ─────────────────────────────────────────
+
+    def genSplitSingleFlowIntoTwoFlowsWith90DegTurn_Thermal_V4
+        : Gen[AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
+        for
+            name          <- genSectionName
+            absDir        <- Gen.option(genAbsoluteDirection)
+            newInnerShape <- genPipeShape
+        yield AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn         (
+            name          = name,
+            absDir        = absDir,
+            newInnerShape = newInnerShape
+        )
+
+    def genMergeTwoFlowsIntoSingleWith90DegTurn_Thermal_V4
+        : Gen[AddThermalPipeElement_13384_V4.MergeTwoFlowsIntoSingleWith90DegTurn] =
+        for
+            name          <- genSectionName
+            absDir        <- Gen.option(genAbsoluteDirection)
+            newInnerShape <- genPipeShape
+        yield AddThermalPipeElement_13384_V4.MergeTwoFlowsIntoSingleWith90DegTurn         (
+            name          = name,
+            absDir        = absDir,
+            newInnerShape = newInnerShape
+        )
 
     // ── PipeTrackingOp: removed in V7 (SetInitialDirection, SetInitialPosition, SetFinalPosition) ──
     // These generators were removed because the corresponding descriptors no longer exist in V7.
@@ -192,5 +217,54 @@ trait SetThermalPipeProp_13384_V4_Generators
             ) ++ maybeLayer.toList ++ maybeLocation.toList ++ maybeBatch.toList ++ maybeLinedFlue.toList
 
             setProps
+
+    // ── Composite: split-merge sequence ─────────────────────────────────
+
+    /**
+     * Generator for a split-merge sequence modelled after
+     * `test_separation_1_1.fcalc` reference project.
+     *
+     * Produces: [setup props, section, Split, dual-flow sections×N, Merge, post-merge section]
+     * The Split bundles 90° turn + flow change (1→2) + shape change into one element.
+     * The Merge bundles flow change (2→1) + shape change into one element.
+     */
+    def genSplitMergeThermalPipeDescr_13384_V4_Seq: Gen[Seq[ThermalPipeDescr_13384_V4]] =
+        for
+            initShape  <- genPipeShape
+            splitShape <- genPipeShape
+            mergeShape <- genPipeShape
+            nDual      <- Gen.choose(2, 4)
+        yield
+            val setup     = List[ThermalPipeDescr_13384_V4](
+                SetRoughness (0.003.meters),
+                SetInnerShape(initShape   ),
+                SetMaterial(Material_13384_V2.ClayFlueLiners())
+            )
+            val preSplit  = List(
+                AddThermalPipeElement_13384_V4.AddSectionSlopped("PreSplit", 0.3.meters)
+            )
+            val split     = List(
+                AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn         (
+                    name          = "Split",
+                    absDir        = None,
+                    newInnerShape = splitShape
+                )
+            )
+            val dualFlow  = (1 to nDual).flatMap: i =>
+                List(
+                    AddThermalPipeElement_13384_V4.AddSectionSlopped     (s"Car$i", 1.0.meters        ),
+                    AddThermalPipeElement_13384_V4.AddSharpeAngle_0_to_90(s"Angle$i", 90.degrees, None)
+                )
+            val merge     = List(
+                AddThermalPipeElement_13384_V4.MergeTwoFlowsIntoSingleWith90DegTurn         (
+                    name          = "Merge",
+                    absDir        = None,
+                    newInnerShape = mergeShape
+                )
+            )
+            val postMerge = List(
+                AddThermalPipeElement_13384_V4.AddSectionSlopped("PostMerge", 2.0.meters)
+            )
+            setup ++ preSplit ++ split ++ dualFlow ++ merge ++ postMerge
 
 end SetThermalPipeProp_13384_V4_Generators

@@ -13,6 +13,8 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
 
+import afpma.firecalc.ui.components.*
+import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
@@ -20,6 +22,8 @@ import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.syntax.all.*
+
+import scala.annotation.nowarn
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
@@ -117,6 +121,44 @@ final case class DynamicThermalPipeSlotPanel(
 
     override protected def isSlotZero: Boolean = slotIndex == 0
 
+    @nowarn("msg=unused import")
+    override protected def shapeAtPrefix(insertIdx: Int): PipeShape =
+        import afpma.laminar.form.{Defaultable as D}
+        import afpma.firecalc.engine.models.FluePipe_Module_13384
+        import FluePipe_Module_13384.innerShapeAtPrefix
+        import afpma.firecalc.engine.models.ConnectorPipe_Module
+        import ConnectorPipe_Module.innerShapeAtPrefix
+        import afpma.firecalc.engine.models.ChimneyPipe_Module
+        import ChimneyPipe_Module.innerShapeAtPrefix
+        import SetThermalPipeProp_13384.SetInnerShape
+        import afpma.firecalc.ui.instances.defaultable_13384.incr_descr_en13384.given
+        val builder = pipeTypeVal match
+            case FluePipeT      => FluePipe_Module_13384.incremental
+            case ConnectorPipeT => ConnectorPipe_Module.incremental
+            case ChimneyPipeT   => ChimneyPipe_Module.incremental
+            case _              => FluePipe_Module_13384.incremental
+        builder
+            .define(elems_v.now()*)
+            .innerShapeAtPrefix(insertIdx)
+            .getOrElse(summon[D[SetInnerShape]].default.shape)
+
+    /** Override to use dynamic inner shape for SetInnerShape menu entry. */
+    override lazy val prop_elements_geom =
+        import hastranslations.given
+        import defaultable_13384.incr_descr_en13384.given
+        import SetThermalPipeProp_13384.{SetInnerShape, SetOuterShape, SetThickness}
+        TagTreeMenu.Group (
+            txt  = I18N.set_prop._geometric_properties,
+            next = List(
+                TagTreeMenu.LeafFn[SetThermalPipeProp_13384.SetSingleProp]    (
+                    txt     = I18N.set_prop.SetInnerShape,
+                    compute = (insertIdx: Int) => SetInnerShape(shapeAtPrefix(insertIdx))
+                ),
+                TagTreeMenu.Leaf[SetOuterShape],
+                TagTreeMenu.Leaf[SetThickness]
+            )
+        )
+
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] =
         postFireboxSlots_var.zoomLazy(slots =>
             slots.lift(slotIndex) match
@@ -177,13 +219,19 @@ final case class DynamicThermalPipeSlotPanel(
         slotBuildResults_sig
             .combineWithDistinct(pipeResult_vnel_signal, pressureSumCheck_sig, velocityCheck_sig)
             .map: (results, pipeResultV, pressureV, velocityV) =>
-                val buildV = results
-                    .lift(slotIndex)
-                    .map(_.pipe)
-                    .getOrElse(
+                results.lift(slotIndex) match
+                    case Some(result) if result.upstreamFailure =>
+                        ErrorsInOtherSectionType.invalidNel
+                    case Some(result)                           =>
+                        // When pipe build fails, use its error directly — combining with
+                        // pipeResultV via `*>` would duplicate the same extraction error
+                        // because both paths (PipeChainGeneric and en15544_common_application)
+                        // independently call extractPipe on the same descriptor.
+                        result.pipe match
+                            case Validated.Invalid(_) => result.pipe
+                            case _                    => pipeResultV *> pressureV *> velocityV
+                    case None                                   =>
                         Validated.invalidNel(ChimneyPipeNotDefinedYet)
-                    )
-                buildV *> pipeResultV *> pressureV *> velocityV
 
     // ── Quadrion subtotal ────────────────────────────────────────
 

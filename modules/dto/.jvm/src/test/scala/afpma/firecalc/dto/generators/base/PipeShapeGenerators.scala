@@ -8,6 +8,7 @@ package afpma.firecalc.dto.generators.base
 import org.scalacheck.Gen
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.domain.AbsoluteDirection
 
 trait PipeShapeGenerators extends PrimitiveGenerators:
 
@@ -66,5 +67,21 @@ trait PipeShapeGenerators extends PrimitiveGenerators:
             PipeShape.Rectangle(20.cm, 25.cm    ),
             PipeShape.Rectangle(15.cm, 20.cm    )
         )
+
+    // AbsoluteDirection generator — shared across V4 pipe descriptor generators
+    def genAbsoluteDirection: Gen[AbsoluteDirection] =
+        for
+            azimuth     <- Gen.oneOf(
+                afpma.firecalc.dto.v4.AzimuthDirection.Front,
+                afpma.firecalc.dto.v4.AzimuthDirection.Right,
+                afpma.firecalc.dto.v4.AzimuthDirection.Rear,
+                afpma.firecalc.dto.v4.AzimuthDirection.Left
+            )
+            inclination <- Gen.oneOf(
+                afpma.firecalc.dto.v4.InclinationDirection.Up,
+                afpma.firecalc.dto.v4.InclinationDirection.Down,
+                afpma.firecalc.dto.v4.InclinationDirection.Horizontal
+            )
+        yield AbsoluteDirection(azimuth, inclination)
 
 end PipeShapeGenerators

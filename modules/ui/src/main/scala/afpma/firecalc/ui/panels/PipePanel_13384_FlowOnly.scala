@@ -55,6 +55,13 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
      */
     protected def renderWrapperElems: Boolean = false
 
+    /**
+     * Shape prefill at insert position — uses the builder's state machine
+     * (`innerShapeAtPrefix`) for robustness. Subclasses must override with
+     * their module-specific incremental builder.
+     */
+    protected def shapeAtPrefix(insertIdx: Int): PipeShape
+
     protected lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         initialDirectionSig
             .combineWith(welems_var.signal)
@@ -66,7 +73,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                 for (idx, elem) <- elems do
                     frame.foreach(f => builder += (idx -> f))
                     elem match
-                        case dc: AddDirectionChange =>
+                        case dc: AddDirectionChange                       =>
                             for
                                 f  <- frame
                                 fd <- dc.absDir
@@ -74,6 +81,22 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                                 val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                                 val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                                 frame = Some(f.applyBendForFinalDir(dc.angle.toUnit[Degree].value, targetVec))
+                        case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                            for
+                                f  <- frame
+                                fd <- sm.absDir
+                            do
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                frame = Some(f.applyBendForFinalDir(90.0, targetVec))
+                        case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                            for
+                                f  <- frame
+                                fd <- sm.absDir
+                            do
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                frame = Some(f.applyBendForFinalDir(90.0, targetVec))
                         case _ => ()
                 builder.result()
 
@@ -87,7 +110,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                             .get(idx)
                             .flatMap: frameBefore =>
                                 elem match
-                                    case dc: AddDirectionChange           =>
+                                    case dc: AddDirectionChange                       =>
                                         // Pinned: show the STORED pin as-is, not the engine's reachable
                                         // projection. See DynamicPipeSlotPanel.directionAfterByIdx for
                                         // rationale. The badge's isCompatibleSig renders the warning
@@ -99,7 +122,23 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
                                             case None     =>
                                                 frameBefore.direction
                                         Some(idx -> dir)
-                                    case _ : AddFlowOnlyPipeElement_13384 =>
+                                    case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                                        val dir = sm.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
+                                    case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                                        val dir = sm.absDir match
+                                            case Some(fd) =>
+                                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                                Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                            case None     =>
+                                                frameBefore.direction
+                                        Some(idx -> dir)
+                                    case _ : AddFlowOnlyPipeElement_13384             =>
                                         Some(idx -> frameBefore.direction)
                                     case _ => None
                     .toMap
@@ -115,20 +154,24 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             .combineWithDistinct(frameBeforeByIdx)
             .map: (elems, frameMap) =>
                 elems
-                    .collect { case (idx, _: AddDirectionChange) => idx }
+                    .collect {
+                        case (idx, _: AddDirectionChange                      ) => idx
+                        case (idx, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => idx
+                        case (idx, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => idx
+                    }
                     .flatMap(idx => frameMap.get(idx).map(f => idx -> f.direction))
                     .toMap
 
     override protected def previousDirectionSig_badge(idx: Int): Signal[Option[Vec3]] =
         previousDirectionByIdx.map(_.get(idx))
 
-    private def absDirBadgeVar[A <: AddDirectionChange](
+    private def absDirBadgeVar[A](
         getter: A => Option[AbsoluteDirection],
         setter: (A, Option[AbsoluteDirection]) => A
     ): Var[A] => Option[Var[Option[AbsoluteDirection]]] =
         ev => Some(ev.zoomLazy(getter)(setter))
 
-    private def relativeDirectionExtra[A <: AddDirectionChange](
+    private def relativeDirectionExtra[A](
         idx   : Int,
         getter: A => Option[AbsoluteDirection],
         setter: (A, Option[AbsoluteDirection]) => A
@@ -144,7 +187,9 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
     override protected def deflectionAngleSig(idx: Int): Signal[Option[Double]] =
         welems_var.signal.map: elems =>
             elems.collectFirst:
-                case (i, dc: AddDirectionChange) if i == idx => dc.angle.toUnit[Degree].value
+                case (i, dc: AddDirectionChange                          ) if i == idx => dc.angle.toUnit[Degree].value
+                case (i: Int, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) if i == idx => 90.0
+                case (i: Int, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) if i == idx => 90.0
 
     lazy val rendered_elems_sig: Signal[Seq[HtmlElement]] =
         welem_xtraoutput_sig.signal
@@ -459,6 +504,58 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
             .handleCase[(Int, FlowOnlyPipeDescr_13384, XtraOutputs), (Int, AddPressureDiff, XtraOutputs), HtmlElement] {
                 case (i, aa: AddPressureDiff, x) => (i, aa, x)
             } { (_, _) => throw new Exception("ERROR: AddPressureDiff not implemented.") }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_13384, XtraOutputs                 ),
+                (Int, SplitSingleFlowIntoTwoFlowsWith90DegTurn, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: SplitSingleFlowIntoTwoFlowsWith90DegTurn, x) =>
+                (i, incr, x)
+            } { (iaax, sig) =>
+                renderElemTyped[SplitSingleFlowIntoTwoFlowsWith90DegTurn]    (
+                    iaax._1,
+                    I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                    iaax._2,
+                    sig,
+                    isProperty     = false,
+                    customFormNode = Some(
+                        splitMergeFormNode(
+                            iaax._1,
+                            sig.map(_._3),
+                            _.name,
+                            (a, n ) => a.copy(name = n),
+                            _.absDir,
+                            (a, fd) => a.copy(absDir = fd),
+                            None
+                        )
+                    )
+                )
+            }
+            .handleCase[
+                (Int, FlowOnlyPipeDescr_13384, XtraOutputs             ),
+                (Int, MergeTwoFlowsIntoSingleWith90DegTurn, XtraOutputs),
+                HtmlElement
+            ] { case (i, incr: MergeTwoFlowsIntoSingleWith90DegTurn, x) =>
+                (i, incr, x)
+            } { (iaax, sig) =>
+                renderElemTyped[MergeTwoFlowsIntoSingleWith90DegTurn]    (
+                    iaax._1,
+                    I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                    iaax._2,
+                    sig,
+                    isProperty     = false,
+                    customFormNode = Some(
+                        splitMergeFormNode(
+                            iaax._1,
+                            sig.map(_._3),
+                            _.name,
+                            (a, n ) => a.copy(name = n),
+                            _.absDir,
+                            (a, fd) => a.copy(absDir = fd),
+                            None
+                        )
+                    )
+                )
+            }
             .toSignal
             .map(renderV7WrapperElems(renderWrapperElems))
 
@@ -508,13 +605,34 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val split_group = TagTreeMenu.Group(
-        txt  = I18N.set_prop.SetNumberOfFlows,
-        next = List(
-            TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_NumberOfChannels, SetNumberOfFlows(2)),
-            TagTreeMenu.Leaf(I18N.set_prop.SetNumberOfFlows_Join, SetNumberOfFlows(1)            )
+    lazy val split_group =
+        TagTreeMenu.Group (
+            txt  = I18N.split_merge._self,
+            next = List(
+                TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_13384]    (
+                    txt     = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                    compute = (insertIdx: Int) =>
+                        Seq(
+                            SplitSingleFlowIntoTwoFlowsWith90DegTurn         (
+                                name          = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                                absDir        = None,
+                                newInnerShape = shapeAtPrefix(insertIdx)
+                            )
+                        )
+                ),
+                TagTreeMenu.ShortcutFn[FlowOnlyPipeDescr_13384]    (
+                    txt     = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                    compute = (insertIdx: Int) =>
+                        Seq(
+                            MergeTwoFlowsIntoSingleWith90DegTurn         (
+                                name          = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                                absDir        = None,
+                                newInnerShape = shapeAtPrefix(insertIdx)
+                            )
+                        )
+                )
+            )
         )
-    )
 
     // lazy val straight_elements = TagTreeMenu.Group(
     //     txt  = I18N.add_element.add_section_element,

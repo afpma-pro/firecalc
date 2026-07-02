@@ -110,6 +110,36 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                         )
                     )
                 else projects.sortBy(-_.lastModified).map(renderProjectCard)
+            },
+
+            // Storage usage footer
+            storageUsageFooter
+        )
+
+    private def storageUsageFooter: Div =
+        val expandedVar = Var(false)
+
+        val (totalSize, perKeyBreakdown) = LocalStorageUtils.estimateStorageUsage()
+        val allKeys = perKeyBreakdown.toSeq.sortBy(-_._2)
+
+        val detailsChildren = allKeys.take(15).map { (k, size) =>
+            p(cls := "ml-2", s"  $k: ${LocalStorageUtils.formatBytes(size)}")
+        }
+
+        div(
+            cls := "mt-8 text-xs text-base-content/40 font-mono border-t",
+            // Summary line (always visible, clickable to expand)
+            div(
+                cls := "cursor-pointer hover:text-base-content/60 transition-colors pt-2",
+                onClick --> { _ => expandedVar.set(!expandedVar.now()) },
+                children <-- expandedVar.signal.map { expanded =>
+                    val icon = if expanded then lucide.`chevron-up` else lucide.`chevron-down`
+                    Seq(icon, span(s"localStorage: ${LocalStorageUtils.formatBytes(totalSize)} (${allKeys.size} keys)"))
+                }
+            ),
+            // Expandable details
+            children <-- expandedVar.signal.map { expanded =>
+                if expanded then detailsChildren else Seq.empty
             }
         )
 

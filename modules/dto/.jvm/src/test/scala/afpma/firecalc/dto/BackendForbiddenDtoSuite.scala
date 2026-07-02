@@ -22,7 +22,8 @@ import afpma.firecalc.dto.v7.{
     SetFlowOnlyPipeProp_13384_V4,
     SetFlowOnlyPipeProp_15544_V4,
     SetThermalPipeProp_13384_V4,
-    ThermalPipeDescr_13384_V4
+    ThermalPipeDescr_13384_V4,
+    ThermalChannelTopologyOp_13384_V4
 }
 
 import afpma.firecalc.units.coulombutils.meters
@@ -32,6 +33,11 @@ import io.circe.syntax._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.OptionValues.convertOptionToValuable
+import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_15544_V4
+import afpma.firecalc.dto.v7.FlowOnlyChannelTopologyOp_13384_V4
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 
 /**
  * Tests for the dev-only `SetInnerShapePreventSectionGeometryChangeAuto` DTO variant
@@ -172,9 +178,10 @@ class BackendForbiddenDtoSuite extends AnyFreeSpec with Matchers:
                 post_firebox_pipes = emptyPostFireboxOf(baseFc)
             )
             val hits = BackendForbiddenDtoChecker.findForbidden(fc)
-            hits.size.shouldBe(1                                              )
-            hits.head.getClass.getSimpleName
-                .shouldBe     ("SetInnerShapePreventSectionGeometryChangeAuto")
+            hits.size.shouldBe             (1                                              )
+            hits.head.dto.getClass.getSimpleName
+                .shouldBe                  ("SetInnerShapePreventSectionGeometryChangeAuto")
+            hits.head.elementIndex.shouldBe(0                                              )
         }
 
         "finds the variant in a FlueSlot (FlowOnly 15544)" in {
@@ -302,5 +309,122 @@ class BackendForbiddenDtoSuite extends AnyFreeSpec with Matchers:
             )
             // one from liner + one from casing
             BackendForbiddenDtoChecker.findForbidden(fc).size.shouldBe(2)
+        }
+    }
+
+    // ── 4. Split/Merge types are NOT backend-forbidden ────────────────────
+
+    "Split/Merge types are NOT backend-forbidden" - {
+
+        "FlowOnly 15544 SplitSingleFlowIntoTwoFlowsWith90DegTurn is NOT forbidden" in {
+            AddFlowOnlyPipeElement_15544_V4
+                .SplitSingleFlowIntoTwoFlowsWith90DegTurn("split", None, shapeA)
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(false)
+        }
+
+        "FlowOnly 15544 MergeTwoFlowsIntoSingleWith90DegTurn is NOT forbidden" in {
+            AddFlowOnlyPipeElement_15544_V4
+                .MergeTwoFlowsIntoSingleWith90DegTurn("merge", None, shapeA)
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(false)
+        }
+
+        "FlowOnly 13384 SplitSingleFlowIntoTwoFlowsWith90DegTurn is NOT forbidden" in {
+            AddFlowOnlyPipeElement_13384_V4
+                .SplitSingleFlowIntoTwoFlowsWith90DegTurn("split", None, shapeA)
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(false)
+        }
+
+        "FlowOnly 13384 MergeTwoFlowsIntoSingleWith90DegTurn is NOT forbidden" in {
+            AddFlowOnlyPipeElement_13384_V4
+                .MergeTwoFlowsIntoSingleWith90DegTurn("merge", None, shapeA)
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(false)
+        }
+
+        "Thermal 13384 SplitSingleFlowIntoTwoFlowsWith90DegTurn is NOT forbidden" in {
+            AddThermalPipeElement_13384_V4
+                .SplitSingleFlowIntoTwoFlowsWith90DegTurn("split", None, shapeA)
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(false)
+        }
+
+        "Thermal 13384 MergeTwoFlowsIntoSingleWith90DegTurn is NOT forbidden" in {
+            AddThermalPipeElement_13384_V4
+                .MergeTwoFlowsIntoSingleWith90DegTurn("merge", None, shapeA)
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(false)
+        }
+    }
+
+    // ── 5. SetNumberOfFlows is backend-forbidden ─────────────────────────
+
+    "SetNumberOfFlows is backend-forbidden" - {
+
+        "FlowOnly 15544 SetNumberOfFlows is forbidden" in {
+            FlowOnlyChannelTopologyOp_15544_V4
+                .SetNumberOfFlows(afpma.firecalc.dto.common.NbOfFlows(2))
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(true)
+        }
+
+        "FlowOnly 13384 SetNumberOfFlows is forbidden" in {
+            FlowOnlyChannelTopologyOp_13384_V4
+                .SetNumberOfFlows(afpma.firecalc.dto.common.NbOfFlows(2))
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(true)
+        }
+
+        "Thermal 13384 SetNumberOfFlows is forbidden" in {
+            ThermalChannelTopologyOp_13384_V4
+                .SetNumberOfFlows(afpma.firecalc.dto.common.NbOfFlows(2))
+                .isInstanceOf[IsBackendForbidden]
+                .shouldBe(true)
+        }
+
+        "BackendForbiddenDtoChecker detects SetNumberOfFlows in FlueSlot" in {
+            val fc   = baseFc.copy(
+                air_intake_pipes   = emptyAirIntakeOf(baseFc),
+                post_firebox_pipes = emptyPostFireboxOf(baseFc).copy(slots =
+                    Seq(
+                        PostFireboxPipeDescrSlot_V7.FlueSlot(
+                            Seq(
+                                SetFlowOnlyPipeProp_15544_V4.SetInnerShape         (shapeA),
+                                FlowOnlyChannelTopologyOp_15544_V4.SetNumberOfFlows(
+                                    afpma.firecalc.dto.common.NbOfFlows(2)
+                                ): FlowOnlyPipeDescr_15544_V4
+                            )
+                        )
+                    )
+                )
+            )
+            val hits = BackendForbiddenDtoChecker.findForbidden(fc)
+            hits.size.shouldBe                           (1                 )
+            hits.head.dto.getClass.getSimpleName.shouldBe("SetNumberOfFlows")
+            hits.head.elementIndex.shouldBe              (1                 ) // after SetInnerShape at index 0
+        }
+
+        "BackendForbiddenDtoChecker detects SetNumberOfFlows in ThermalFlueSlot" in {
+            val fc   = baseFc.copy(
+                air_intake_pipes   = emptyAirIntakeOf(baseFc),
+                post_firebox_pipes = emptyPostFireboxOf(baseFc).copy(slots =
+                    Seq(
+                        PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(
+                            Seq(
+                                SetThermalPipeProp_13384_V4.SetInnerShape         (shapeA),
+                                ThermalChannelTopologyOp_13384_V4.SetNumberOfFlows(
+                                    afpma.firecalc.dto.common.NbOfFlows(2)
+                                ): ThermalPipeDescr_13384_V4
+                            )
+                        )
+                    )
+                )
+            )
+            val hits = BackendForbiddenDtoChecker.findForbidden(fc)
+            hits.size.shouldBe                           (1                 )
+            hits.head.dto.getClass.getSimpleName.shouldBe("SetNumberOfFlows")
+            hits.head.elementIndex.shouldBe              (1                 ) // after SetInnerShape at index 0
         }
     }

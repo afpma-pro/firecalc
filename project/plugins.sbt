@@ -30,3 +30,11 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.0")
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 
 // addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "2.0.19")
+
+// Force scalameta 4.14.3 for sbt-molecule (needs newer scalameta to run on modern JVMs)
+dependencyOverrides ++= Seq(
+    "org.scalameta" % "scalameta_2.12" % "4.14.3",
+    "org.scalameta" % "common_2.12"    % "4.14.3",
+    "org.scalameta" % "trees_2.12"     % "4.14.3",
+    "org.scalameta" % "parsers_2.12"   % "4.14.3"
+)

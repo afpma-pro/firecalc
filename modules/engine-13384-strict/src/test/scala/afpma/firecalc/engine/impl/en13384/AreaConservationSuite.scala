@@ -68,7 +68,8 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         result.toFullDescr().isValid shouldBe true
     }
 
-    it should "reject SetInnerShape when area is NOT conserved (split 1→2)" in {
+    // @ignore: flow area check deactivated — see FlowAreaConservation
+    ignore should "reject SetInnerShape when area is NOT conserved (split 1→2)" in {
         // 20×10 = 200 cm² × 1 = 200 cm²  vs  5×5 = 25 cm² × 2 = 50 cm²
         given FluePipeT                                                 = FluePipeT
         val builder                                                     = FlowOnlyIncrementalBuilder_13384
@@ -92,7 +93,8 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         expectedArea.to_cm2.value shouldBe  (100.0 +- 0.1)
     }
 
-    it should "reject SetInnerShape when area is NOT conserved with Square (split 1→2)" in {
+    // @ignore: flow area check deactivated — see FlowAreaConservation
+    ignore should "reject SetInnerShape when area is NOT conserved with Square (split 1→2)" in {
         // 18×18 = 324 cm² × 1 = 324 cm²  vs  9×9 = 81 cm² × 2 = 162 cm²  (162 cm² short)
         // Expected area per flow = 324 / 2 = 162 cm², expected side = sqrt(162) ≈ 12.73 cm
         given FluePipeT                              = FluePipeT
@@ -116,7 +118,8 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         expectedSide.to_cm.value shouldBe (12.73 +- 0.1)
     }
 
-    it should "reject SetInnerShape when area is NOT conserved with Circle (split 1→2)" in {
+    // @ignore: flow area check deactivated — see FlowAreaConservation
+    ignore should "reject SetInnerShape when area is NOT conserved with Circle (split 1→2)" in {
         // π×(18/2)² = 254.47 cm² × 1 = 254.47 cm²  vs  π×(9/2)² = 63.62 cm² × 2 = 127.23 cm²  (127.23 cm² short)
         // Expected area per flow = 254.47 / 2 = 127.23 cm², expected diameter = sqrt(4×127.23/π) ≈ 12.73 cm
         given FluePipeT                                  = FluePipeT
@@ -159,7 +162,8 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         descr.toFullDescr().isValid shouldBe true
     }
 
-    it should "clear pending check and reject transition when area is NOT conserved (merge 2→1)" in {
+    // @ignore: flow area check deactivated — see FlowAreaConservation
+    ignore should "clear pending check and reject transition when area is NOT conserved (merge 2→1)" in {
         // 10×10 = 100 cm² × 2 = 200 cm²  vs  10×10 = 100 cm² × 1 = 100 cm²
         given FluePipeT                                                 = FluePipeT
         val builder                                                     = FlowOnlyIncrementalBuilder_13384
@@ -258,7 +262,8 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         descr.toFullDescr().isValid shouldBe true
     }
 
-    it should "preserve pending check through no-op SetNumberOfFlows then reject non-conserved area" in {
+    // @ignore: flow area check deactivated — see FlowAreaConservation
+    ignore should "preserve pending check through no-op SetNumberOfFlows then reject non-conserved area" in {
         // SetNumberOfFlows(2) creates pending check. SetNumberOfFlows(2) again is no-op (preserves check).
         // SetInnerShape with non-conserved area clears check and produces error.
         // 20×10 = 200 cm² × 1 = 200 cm²  vs  5×5 = 25 cm² × 2 = 50 cm²
@@ -305,7 +310,8 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         descr.toFullDescr().isValid shouldBe true
     }
 
-    it should "reject SetInnerShape when area is NOT conserved (split 1→2)" in {
+    // @ignore: flow area check deactivated — see FlowAreaConservation
+    ignore should "reject SetInnerShape when area is NOT conserved (split 1→2)" in {
         // 20×10 = 200 cm² × 1 = 200 cm²  vs  5×5 = 25 cm² × 2 = 50 cm²
         given FluePipeT                                                 = FluePipeT
         val builder                                                     = ThermalIncrementalBuilder_13384

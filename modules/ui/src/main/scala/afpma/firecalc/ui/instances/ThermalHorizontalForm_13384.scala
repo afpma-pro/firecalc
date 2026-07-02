@@ -394,6 +394,37 @@ class ThermalHorizontalForm_13384(using DisplayUnits, Locale):
             horizontal_form_Either_AreaInCm2_or_PipeShape
         autoDeriveAndOverwriteFieldNames_AddElement_Subtype[AddFlowResistance]
 
+    // Renders only newInnerShape; name + RDI + badge are composed by the panel (customFormNode)
+    private def splitMergeForm[A](
+        getShape: A => PipeShape,
+        setShape: (A, PipeShape) => A
+    )(using
+        Defaultable[A],
+        Defaultable[Option[AbsoluteDirection]],
+        Defaultable[PipeShape],
+        ValidateVar[A]
+    ): Form[A] =
+        val d = summon[Defaultable[A]]
+        Form.makeFor[A](d): (v, fc) =>
+            val shapeVar = v.zoomLazy(getShape)(setShape)
+            Form[PipeShape].render(shapeVar, fc)
+
+    given horizontal_form_SplitSingleFlowIntoTwoFlowsWith90DegTurn: Form[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
+        import defaultable.pipeShapeInner
+        given Defaultable[Option[AbsoluteDirection]]                = Defaultable(None)
+        given ValidateVar[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
+            ValidateVarCommonInstances.valid_always
+                .given_ValidateVar_AlwaysValid[SplitSingleFlowIntoTwoFlowsWith90DegTurn]
+        splitMergeForm(_.newInnerShape, (a, s) => a.copy(newInnerShape = s))
+
+    given horizontal_form_MergeTwoFlowsIntoSingleWith90DegTurn: Form[MergeTwoFlowsIntoSingleWith90DegTurn] =
+        import defaultable.pipeShapeInner
+        given Defaultable[Option[AbsoluteDirection]]            = Defaultable(None)
+        given ValidateVar[MergeTwoFlowsIntoSingleWith90DegTurn] =
+            ValidateVarCommonInstances.valid_always
+                .given_ValidateVar_AlwaysValid[MergeTwoFlowsIntoSingleWith90DegTurn]
+        splitMergeForm(_.newInnerShape, (a, s) => a.copy(newInnerShape = s))
+
     // AmbiantAirTemperatureSet
 
     given horizontal_form_AmbiantAirTemperatureSet: Form[AmbiantAirTemperatureSet] =

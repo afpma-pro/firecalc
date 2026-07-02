@@ -26,7 +26,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     given loc: Locale = Locales.fr // acceptable to force Locale in tests
 
     private def showDebug_impl(
-        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg,
+        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg,
         _en15544: EN15544_V_2023_Common_Application,
         ap      : _en15544.AtParams
     )(emit: String => Unit) =
@@ -147,14 +147,14 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     end showDebug_impl
 
     private def showDebug(
-        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg,
+        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg,
         _en15544: EN15544_V_2023_Common_Application,
         ap      : _en15544.AtParams
     ) =
         showDebug_impl(cas_type, _en15544, ap)(println)
 
     def run_cas_type_15544_strict(
-        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg
+        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
     ) =
         val out = cas_type.en15544_Alg.map: _strict =>
             showDebug(cas_type, _strict, _strict.atDraftMin_LoadNominal)
@@ -165,7 +165,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     end run_cas_type_15544_strict
 
     def run_cas_type_15544_strict_asString(
-        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & afpma.firecalc.engine.cas_types.v2024_10_Alg
+        cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
     ): VNelMcalcErr[String] =
         cas_type.en15544_Alg.map: _strict =>
             val sb = new StringBuilder

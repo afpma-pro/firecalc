@@ -18,6 +18,8 @@ import afpma.firecalc.domain.{
     IsPressureDiff,
     IsSectionGeometryChange,
     IsSingularFlowResistance,
+    IsSplitMergeTurn,
+    NbOfFlows,
     SetsInnerShape,
     SetsNumberOfFlows
 }
@@ -45,7 +47,9 @@ object SetThermalPipeProp_13384_V4:
         shape: PipeShape
     ) extends SetSingleProp
         with SetsInnerShape
-        with IsBackendForbidden
+        with IsBackendForbidden {
+        def forbiddenKind = IsBackendForbidden.SetsInnerShapePreventAutoKind
+    }
 
     @Transl(I(_.set_prop.SetInnerShape))
     case class SetInnerShape(
@@ -161,6 +165,9 @@ object ThermalChannelTopologyOp_13384_V4:
         n_flows: NbOfFlows
     ) extends ThermalChannelTopologyOp_13384_V4
         with SetsNumberOfFlows
+        with IsBackendForbidden {
+        def forbiddenKind = IsBackendForbidden.SetsNumberOfFlowsKind
+    }
 
 sealed trait AddThermalPipeElement_13384_V4 extends ThermalPipeDescr_13384_V4:
     def name: String
@@ -387,6 +394,40 @@ object AddThermalPipeElement_13384_V4:
         pressure_difference: Pressure
     ) extends AddThermalPipeElement_13384_V4
         with IsPressureDiff
+
+    @Transl(I(_.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn))
+    case class SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+        @Transl(I(_.terms.name))
+        name         : String,
+        @Transl(I(_.terms.absolute_direction))
+        absDir       : Option[AbsoluteDirection] = None,
+        @Transl(I(_.split_merge.newInnerShape))
+        newInnerShape: PipeShape
+    ) extends AddThermalPipeElement_13384_V4
+        with SetsNumberOfFlows
+        with SetsInnerShape
+        with IsDirectionChange
+        with IsSingularFlowResistance
+        with IsSplitMergeTurn {
+        def n_flows: NbOfFlows = 2
+    }
+
+    @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
+    case class MergeTwoFlowsIntoSingleWith90DegTurn(
+        @Transl(I(_.terms.name))
+        name         : String,
+        @Transl(I(_.terms.absolute_direction))
+        absDir       : Option[AbsoluteDirection] = None,
+        @Transl(I(_.split_merge.newInnerShape))
+        newInnerShape: PipeShape
+    ) extends AddThermalPipeElement_13384_V4
+        with SetsNumberOfFlows
+        with SetsInnerShape
+        with IsDirectionChange
+        with IsSingularFlowResistance
+        with IsSplitMergeTurn {
+        def n_flows: NbOfFlows = 1
+    }
 
 extension (descrs: Seq[ThermalPipeDescr_13384_V4])
     /**

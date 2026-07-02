@@ -302,19 +302,31 @@ object FormDerivation extends AutoDerivation[Form]:
         variable : Var[A],
         config   : FormConfig
     )(using FormRenderer): HtmlElement =
-        def value_to_param(a: A): param.PType =
-            Try(param.deref(a)).getOrElse(param.default).asInstanceOf[param.PType]
+        // Check for field override first
+        config.fieldOverride(param.label) match
+            case Some((tag, overrideFn)) =>
+                // Verify the override's expected type matches the actual parent value type.
+                if !tag.runtimeClass.isInstance(variable.now()) then
+                    throw new IllegalArgumentException(
+                        s"Field override for '${param.label}' expects type ${tag.runtimeClass.getName} " +
+                            s"but parent value is ${variable.now().getClass.getName}"
+                    )
+                overrideFn(variable)(using summon[FormRenderer])
+                    .amend(idAttr := param.label)
+            case None                    =>
+                def value_to_param(a: A): param.PType =
+                    Try(param.deref(a)).getOrElse(param.default).asInstanceOf[param.PType]
 
-        val zoomed = variable.zoomLazy(value_to_param) { (currentParent, newValue) =>
-            caseClass.construct { p =>
-                if (p.label == param.label) newValue
-                else p.deref(currentParent)
-            }
-        }
+                val zoomed = variable.zoomLazy(value_to_param) { (currentParent, newValue) =>
+                    caseClass.construct { p =>
+                        if (p.label == param.label) newValue
+                        else p.deref(currentParent)
+                    }
+                }
 
-        param.typeclass
-            .render(zoomed, config)
-            .amend(idAttr := param.label)
+                param.typeclass
+                    .render(zoomed, config)
+                    .amend(idAttr := param.label)
 
     // =========================================================================
     // Primitive type given instances
@@ -575,6 +587,26 @@ object FormDerivation extends AutoDerivation[Form]:
         Form.makeFor[A](Defaultable.summon[A]): (variable, formConfig) =>
             (renderer: FormRenderer) ?=>
                 renderer.selectRequired(variable, updateFieldName(formConfig.shownFieldName), options)
+
+    /**
+     * Render a select dropdown whose options come from a sibling field.
+     *
+     * @param parentVar The parent case class Var (provides access to all fields)
+     * @param getOptions Extract the options list from the parent
+     * @param getCurrent Extract the current value from the parent
+     * @param setCurrent Update the parent with a new value
+     * @param label Optional field label
+     */
+    def selectFromSiblingField[P, A](
+        parentVar : Var[P],
+        getOptions: P => Seq[A],
+        getCurrent: P => A,
+        setCurrent: (P, A) => P,
+        label     : Option[String]
+    )(using Show[A], FormRenderer): HtmlElement =
+        val optionsSig = parentVar.signal.map(getOptions)
+        val zoomedVar  = parentVar.zoomLazy(getCurrent)((p, a) => setCurrent(p, a))
+        summon[FormRenderer].selectRequiredReactive(zoomedVar, label, optionsSig)
 
     /** List form from a custom component function (always valid). */
     @deprecated("Use Form.makeFor instead", "0.9.0")

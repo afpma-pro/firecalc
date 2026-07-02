@@ -713,4 +713,50 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
     }
 
+    // ── upstreamFailure cascade suppression ────────────────────────────
+
+    it should "set upstreamFailure=true on downstream slots when an upstream slot fails to build" in {
+        // Two consecutive SetInnerShape without a section element triggers ShapeNotMaterialized
+        val badThermalFlue = ThermalFlueSlot(
+            Seq[ThermalPipeDescr_13384](
+                SetThermalPipeProp_13384.SetInnerShape(PipeShape.Circle(150.mm)),
+                SetThermalPipeProp_13384.SetInnerShape(
+                    PipeShape.Circle(200.mm)
+                ) // no section between → ShapeNotMaterialized
+            )
+        )
+
+        val results = PipeChainGeneric.build(Seq(badThermalFlue, emptyChimney))
+        results.size shouldBe 2
+
+        // First slot (bad flue) should have an invalid pipe
+        results(0).pipe.isValid shouldBe false
+        results(0).upstreamFailure shouldBe false // the failing slot itself is not "upstream"
+
+        // Second slot (chimney) should have upstreamFailure=true
+        results(1).upstreamFailure shouldBe true
+    }
+
+    it should "set upstreamFailure=true on all slots after the first failure" in {
+        val badFlue = FlueSlot(
+            Seq[FlowOnlyPipeDescr_15544](
+                SetFlowOnlyPipeProp_15544.SetInnerShape(Circle(150.mm)),
+                SetFlowOnlyPipeProp_15544.SetInnerShape(Circle(200.mm)) // no section → ShapeNotMaterialized
+            )
+        )
+
+        val results = PipeChainGeneric.build(Seq(badFlue, emptyConnector, emptyChimney))
+        results.size shouldBe 3
+
+        results(0).upstreamFailure shouldBe false
+        results(0).pipe.isValid shouldBe false
+        results(1).upstreamFailure shouldBe true
+        results(2).upstreamFailure shouldBe true
+    }
+
+    it should "leave upstreamFailure=false for all slots when build succeeds" in {
+        val results = PipeChainGeneric.build(Seq(emptyFlue, emptyConnector, emptyChimney))
+        for r <- results do r.upstreamFailure shouldBe false
+    }
+
 end PipeChainGenericSuite

@@ -414,7 +414,8 @@ object PurchaseServiceForbiddenDtoTest extends TestSuite {
                 case Left(ex: ForbiddenDtoException) =>
                     assert(ex.errorCode == "backend_forbidden_dto"                                  )
                     assert(ex.context("dto_type") == "SetInnerShapePreventSectionGeometryChangeAuto")
-                    assert(ex.context.size == 1                                                     )
+                    assert(ex.context.contains("element_index")                                     )
+                    assert(ex.context.size == 2                                                     )
                 case Left(other)                     =>
                     throw new Exception(
                         s"Expected ForbiddenDtoException but got ${other.getClass}: ${other.getMessage}"

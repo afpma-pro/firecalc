@@ -29,7 +29,7 @@ object GenerateSampleTyp:
 
         FireCalcReportFactory_15544_Strict
             .init()
-            .loadAndValidateFireCalcProject(ExampleProject_15544)
+            .loadFireCalcProject_AndValidate(ExampleProject_15544)
             .fold(
                 err =>
                     System.err.println(err)

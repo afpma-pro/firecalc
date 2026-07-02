@@ -22,6 +22,7 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
+import afpma.firecalc.domain.IsBackendForbidden
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
@@ -73,6 +74,13 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     lazy val titleString: String
     lazy val vnel_signal: Signal[ValidatedNel[MCalc_Error, Out]]
     lazy val elems_v    : Var[Seq[In]]
+
+    /**
+     * Reactive signal: scans panel's `elems_v` for `IsBackendForbidden` DTO instances,
+     * tracking their index in the descriptor sequence.
+     */
+    protected lazy val forbiddenDtoSignal: Signal[List[(IsBackendForbidden, Int)]] =
+        elems_v.signal.map(_.zipWithIndex.collect { case (f: IsBackendForbidden, idx) => (f, idx) }.toList)
 
     type PipeIdsMapping
 
@@ -184,6 +192,55 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 if matchesHover || matchesSelect then "viz-highlighted" else ""
             }
 
+    /**
+     * Build a custom 2-row form node for split/merge elements.
+     * Row 1: name input + RelativeDirectionInput + DirectionBadgeComponent
+     * Row 2: the element's own form (renders only newInnerShape)
+     */
+    protected def splitMergeFormNode[AA](
+        idx              : Int,
+        xtraSig          : Signal[XtraOutputs],
+        getName          : AA => String,
+        setName          : (AA, String) => AA,
+        getAbsDir        : AA => Option[AbsoluteDirection],
+        setAbsDir        : (AA, Option[AbsoluteDirection]) => AA,
+        onDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit]
+    )(using faa: Form[AA]): (Var[AA], FormConfig) => HtmlElement =
+        import afpma.laminar.form.Form
+        import afpma.laminar.form.derivation.FormDerivation.forString
+        import afpma.firecalc.ui.instances.ValidateVarCommonInstances.string.given
+        (ev, fc) =>
+            val nameVar   = ev.zoomLazy(getName)(setName)
+            val absDirVar = ev.zoomLazy(getAbsDir)(setAbsDir)
+
+            val rdiNode = RelativeDirectionInput(
+                frameBefore     = frameBeforeSig_badge(idx),
+                deflectionAngle = deflectionAngleSig(idx),
+                absDirVar       = absDirVar
+            ).node
+
+            val nameEl  = Form[String].render(nameVar, fc)
+            val badgeEl = DirectionBadgeComponent(
+                absDirection      = directionBadgeSig(idx, xtraSig),
+                previousDirection = previousDirectionSig_badge(idx),
+                frameBefore       = frameBeforeSig_badge(idx),
+                absDirVar         = Some(absDirVar),
+                deflectionAngle   = deflectionAngleSig(idx),
+                compact           = false,
+                onDirectionCommit = onDirectionCommit
+            ).node
+
+            div(
+                cls := "flex flex-col gap-2",
+                div       (
+                    cls := "flex flex-row items-center gap-2",
+                    nameEl,
+                    rdiNode,
+                    badgeEl
+                ),
+                faa.render(ev, fc)
+            )
+
     protected def renderElemTyped[AA <: Elem](
         i                     : Int,
         title                 : String,
@@ -195,7 +252,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         badgeFinalDirVar      : Var[AA] => Option[Var[Option[AbsoluteDirection]]]                      = (_: Var[AA]) => None,
         afterBadge            : Var[AA] => HtmlElement                                                 = (_: Var[AA]) => span(),
         propertyShow          : Option[Show[AA]]                                                       = None,
-        onBadgeDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None
+        onBadgeDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit] = None,
+        customFormNode        : Option[(Var[AA], FormConfig) => HtmlElement]                           = None
     )(using DF[AA]): HtmlElement =
         val (binders, elem_v) = makeAssociatedVarForIdx[AA](i)
         val extraNode      = extra(elem_v)
@@ -213,13 +271,16 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         ).node
 
         // Full form node (used inline for non-property, or inside dialog for property)
-        val formNode = div(
-            cls := "flex flex-row justify-start items-end gap-2",
-            div    (cls := "flex-none", elem_v.as_HtmlElement),
-            extraNode,
-            mkBadge(                                         ),
-            afterBadgeNode
-        )
+        val formNode = customFormNode match
+            case Some(custom) => custom(elem_v, FormConfig.default)
+            case None         =>
+                div(
+                    cls := "flex flex-row justify-start items-end gap-2",
+                    div    (cls := "flex-none", elem_v.as_HtmlElement),
+                    extraNode,
+                    mkBadge(                                         ),
+                    afterBadgeNode
+                )
 
         val complexIncrNode: HtmlElement = propertyShow match
             case Some(show) if isProperty =>
@@ -574,24 +635,47 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
     def statusIcon =
         vnel_signal
-            .combineWithDistinct(pipeMappings_vnel_signal.map(_.toOption), elems_v.signal.map(_.size))
-            .map: (vnel, idsMappingOpt, elemsSize) =>
+            .combineWithDistinct(
+                pipeMappings_vnel_signal.map(_.toOption),
+                elems_v.signal.map          (_.size    ),
+                forbiddenDtoSignal
+            )
+            .map: (vnel, idsMappingOpt, elemsSize, forbiddenDtos) =>
                 val reverseMap = buildReverseIdsMap(idsMappingOpt, elemsSize)
-                PanelStatusHelper
-                    .keepGlobalErrorsOrErrorsSpecificToSectionTyp(_ == sectionType)(vnel) match
-                    case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
-                        DaisyUITooltip (
-                            ttContent  = ul(
-                                cls := "list",
-                                li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                                errs.toList.map: err =>
-                                    li(cls := "list-row text-xs", remapErrorSectionId(err, reverseMap).show)
-                            ),
-                            element    = span(cls := PanelStatusHelper.textClsNameFoErrors(errs), lucide.`circle-x`),
-                            ttStyle    = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
-                            ttPosition = "tooltip-bottom"
-                        ).node
-                    case _                                            => span(cls := "", lucide.`circle-check`)
+
+                // Collect engine errors for this section
+                val engineErrs: List[PanelStatusHelper.PanelError] =
+                    PanelStatusHelper
+                        .keepGlobalErrorsOrErrorsSpecificToSectionTyp(_ == sectionType)(vnel) match
+                        case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
+                            errs.toList.map: err =>
+                                PanelStatusHelper.PanelError.EngineError(remapErrorSectionId(err, reverseMap))
+                        case _                                            => Nil
+
+                // Add forbidden DTO errors
+                val dtoErrs: List[PanelStatusHelper.PanelError] =
+                    forbiddenDtos.map { case (dto, idx) =>
+                        PanelStatusHelper.PanelError.ForbiddenDtoError(dto, idx)
+                    }
+
+                val allErrs: List[PanelStatusHelper.PanelError] = engineErrs ++ dtoErrs
+
+                if allErrs.nonEmpty then
+                    val nel        = NonEmptyList.fromListUnsafe(allErrs)
+                    val textCls    = PanelStatusHelper.textClsNameForPanelErrors(nel)
+                    val tooltipCls = PanelStatusHelper.tooltipStyleClsNameForPanelErrors(nel)
+                    DaisyUITooltip (
+                        ttContent  = ul(
+                            cls := "list",
+                            li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
+                            nel.toList.map: panelErr =>
+                                li(cls := "list-row text-xs", panelErr.show)
+                        ),
+                        element    = span(cls := textCls, lucide.`circle-x`),
+                        ttStyle    = tooltipCls,
+                        ttPosition = "tooltip-bottom"
+                    ).node
+                else span(cls := "", lucide.`circle-check`)
 
     type DF[x] = Form[x]
 

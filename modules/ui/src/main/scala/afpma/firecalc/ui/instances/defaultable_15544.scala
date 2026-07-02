@@ -43,21 +43,33 @@ object defaultable_15544:
         given Locale => Defaultable[AddSectionSlopped]:
             def default = AddSectionSlopped(I18N_UI.default_element_names.straight_element, 1.meters)
 
-        given Locale => Defaultable[AddSectionHorizontal]   :
+        given Locale => Defaultable[AddSectionHorizontal]                    :
             def default = AddSectionHorizontal(I18N_UI.default_element_names.horizontal_straight_element, 1.meters)
-        given Locale => Defaultable[AddSectionVertical]     :
+        given Locale => Defaultable[AddSectionVertical]                      :
             def default = AddSectionVertical(I18N.add_element.AddSectionVertical, 1.meters)
-        given Locale => Defaultable[AddSharpeAngle_0_to_180]:
+        given Locale => Defaultable[AddSharpeAngle_0_to_180]                 :
             def default =
                 AddSharpeAngle_0_to_180(I18N.add_element.AddSharpeAngle_0_to_180, qty_d.angle.ninety.default, None)
-        given Locale => Defaultable[AddCircularArc_60]      :
+        given Locale => Defaultable[AddCircularArc_60]                       :
             def default = AddCircularArc_60(I18N.add_element.AddCircularArc_60)
-        given Locale => Defaultable[AddSectionShapeChange]  :
+        given Locale => Defaultable[AddSectionShapeChange]                   :
             def default = AddSectionShapeChange(
                 I18N.add_element.AddSectionShapeChange,
                 to_shape = defaultable.pipeShapeInner.default
             )
-        given Locale => Defaultable[AddFlowResistance]      :
+        given Locale => Defaultable[AddFlowResistance]                       :
             def default = AddFlowResistance(I18N_UI.default_element_names.grid, defaultable.zeta.default, None)
+        given Locale => Defaultable[SplitSingleFlowIntoTwoFlowsWith90DegTurn]:
+            def default = SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                name          = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                absDir        = None,
+                newInnerShape = pipeShapeInner.default
+            )
+        given Locale => Defaultable[MergeTwoFlowsIntoSingleWith90DegTurn]    :
+            def default = MergeTwoFlowsIntoSingleWith90DegTurn(
+                name          = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                absDir        = None,
+                newInnerShape = pipeShapeInner.default
+            )
 
 end defaultable_15544

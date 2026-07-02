@@ -400,10 +400,14 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         val locVar: Var[L] = globalVar.zoomLazy(zoomIn)(zoomOut)
 
         val syncLocalToExt = locVar.signal.distinct.changes
+            // Capture the external value at the moment the form changes. If extVar
+            // is modified between that moment and the debounce firing (e.g., a project
+            // switch), the stale form value must NOT overwrite the new project's state.
+            .map((l: L) => (l, extVar.now(): E))
             .debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)
             .withCurrentValueOf(extVar)
             .collect {
-                case (l, e) if localToExtSyncCond(l, e) => locToExt(l)
+                case (l, extAtChange, eNow) if extAtChange == eNow && localToExtSyncCond(l, eNow) => locToExt(l)
             } --> extVar.writer
 
         val syncExtToLocal = extVar.signal.distinct.changes
@@ -622,6 +626,19 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                     }
                 )
 
+                // Override actualAirIntakePipeShape with reactive select from sibling field
+                val fcWithOverride = fc.withFieldOverride[Firebox.Door15aFirebox_Catalog](
+                    "actualAirIntakePipeShape", // TODO: make this type safe using zio schema or similar type-level helper lib ?
+                    (pv: Var[Firebox.Door15aFirebox_Catalog]) =>
+                        FormDerivation.selectFromSiblingField[Firebox.Door15aFirebox_Catalog, PipeShape] (
+                            parentVar  = pv,
+                            getOptions = _.expectedAirIntakePipeShapes.toSeq,
+                            getCurrent = _.actualAirIntakePipeShape,
+                            setCurrent = (p, a) => p.copy(actualAirIntakePipeShape = a),
+                            label      = Some(I18N.firebox.door_15a_firebox.actual_air_intake_pipe_shape)
+                        )(using PipeShape.show_PipeShape, renderer)
+                )
+
                 div(
                     binders,
                     button                (
@@ -629,7 +646,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
                         I18N_UI.catalog.select_from_catalog,
                         onClick --> { _ => modal.open() }
                     ),
-                    autoDerivedForm.render(v, fc),
+                    autoDerivedForm.render(v, fcWithOverride),
                     modal.node
                 )
         .withFieldName(I18N.firebox_names.door_15a_firebox)

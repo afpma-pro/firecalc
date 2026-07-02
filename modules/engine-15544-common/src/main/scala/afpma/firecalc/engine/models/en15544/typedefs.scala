@@ -13,8 +13,6 @@ import afpma.firecalc.engine.OTypedQtyD
 import afpma.firecalc.engine.OTypedQtyDPretty
 import afpma.firecalc.engine.OTypedTempD
 import afpma.firecalc.engine.models.CheckableConstraint
-import afpma.firecalc.engine.models.TermConstraint.ValidatedResult
-import afpma.firecalc.engine.models.TermConstraintError
 import afpma.firecalc.engine.models.TermDef
 import afpma.firecalc.engine.models.TermDefDetails
 import afpma.firecalc.engine.models.gtypedefs.*
@@ -25,8 +23,6 @@ import cats.data.ValidatedNel
 
 import coulomb.*
 import coulomb.policy.standard.given
-
-import io.taig.babel.Locale
 
 object typedefs:
 
@@ -474,39 +470,36 @@ object typedefs:
             def asList: List[CheckableConstraint[?]] =
                 Tuple.fromProductTyped(cc).toList
 
-            def checkAndReturnVNelError: ValidatedNel[TermConstraintError[?], Unit] =
+            def checkFireboxConstraints: ValidatedNel[InvalidFireboxConstraint, Unit] =
                 import cats.implicits.catsSyntaxValidatedId
+                import afpma.firecalc.engine.models.TermConstraint.ValidatedResult.foldToErrDeep
+                import afpma.firecalc.engine.standard.InvalidFireboxConstraint
                 val outputs = List(
-                    cc.t_n.vresultOption.flatMap                        (_.showInvalidConstraintErrors),
-                    cc.m_B.vresultOption.flatMap                        (_.showInvalidConstraintErrors),
-                    cc.m_B_min.vresultOption.flatMap                    (_.showInvalidConstraintErrors),
-                    cc.glass_area.vresultOption.flatMap                 (_.showInvalidConstraintErrors),
-                    cc.fireboxDimensions_Base.vresultOption.flatMap     (_.showInvalidConstraintErrors),
-                    cc.h_br.vresultOption.flatMap                       (_.showInvalidConstraintErrors),
-                    cc.λ.vresultOption.flatMap                          (_.showInvalidConstraintErrors),
-                    cc.η.vresultOption.flatMap                          (_.showInvalidConstraintErrors),
-                    cc.height_of_lowest_opening.vresultOption.flatMap   (_.showInvalidConstraintErrors),
-                    cc.firebox_glass_surface_ratio.vresultOption.flatMap(_.showInvalidConstraintErrors)
-                ).flatten.map(_.toList).flatten
+                    // TODO: t_n (night temperature / stove storage period) is a StoveConstraint, not a
+                    // FireboxConstraint. It should be reported in the StoveParamsUI panel with the same
+                    // error reporting mechanism (circle-x marker + tooltip) that other panels use. For
+                    // now it is grouped under checkFireboxConstraints and wraps as
+                    // InvalidFireboxConstraint so it appears in the Firebox panel status header. Move to
+                    // StoveParamsUI when that panel gets error reporting.
+                    cc.t_n.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse       (Nil),
+                    cc.m_B.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse       (Nil),
+                    cc.m_B_min.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse   (Nil),
+                    cc.glass_area.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse(Nil),
+                    cc.fireboxDimensions_Base.vresultOption
+                        .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
+                        .getOrElse                                                                            (Nil),
+                    cc.h_br.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse      (Nil),
+                    cc.λ.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse         (Nil),
+                    cc.η.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse         (Nil),
+                    cc.height_of_lowest_opening.vresultOption
+                        .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
+                        .getOrElse                                                                            (Nil),
+                    cc.firebox_glass_surface_ratio.vresultOption
+                        .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
+                        .getOrElse                                                                            (Nil)
+                ).flatten
                 if (outputs.size > 0)
                     NonEmptyList.fromListUnsafe(outputs).invalid
                 else ().validNel
-
-            def checkAndReturnVNelInvalidConstraint: Locale ?=> ValidatedNel[InvalidConstraint, Unit] =
-                import cats.implicits.catsSyntaxValidatedId
-                import afpma.firecalc.engine.models.TermConstraint.ValidatedResult.foldToErr
-                val outputs = List(
-                    cc.t_n.vresultOption.flatMap                        (_.foldToErr),
-                    cc.m_B.vresultOption.flatMap                        (_.foldToErr),
-                    cc.m_B_min.vresultOption.flatMap                    (_.foldToErr),
-                    cc.glass_area.vresultOption.flatMap                 (_.foldToErr),
-                    cc.fireboxDimensions_Base.vresultOption.flatMap     (_.foldToErr),
-                    cc.h_br.vresultOption.flatMap                       (_.foldToErr),
-                    cc.λ.vresultOption.flatMap                          (_.foldToErr),
-                    cc.η.vresultOption.flatMap                          (_.foldToErr),
-                    cc.height_of_lowest_opening.vresultOption.flatMap   (_.foldToErr),
-                    cc.firebox_glass_surface_ratio.vresultOption.flatMap(_.foldToErr)
-                ).flatten.flatten
-                if (outputs.size > 0) NonEmptyList.fromListUnsafe(outputs).invalid else ().validNel
 
 end typedefs

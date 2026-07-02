@@ -51,7 +51,11 @@ trait IncrementalBuilderTestFixture:
         extension         (a         : TestPipeElDescr  )
             def innerShape(oPrevShape: Option[PipeShape]): Option[PositionOp[PipeShape]] = None
 
-    case class TestState(geometry: Option[PipeShape])
+    case class TestState(
+        geometry    : Option[PipeShape] = None,
+        roughness   : Option[Length]    = None,
+        materialized: Boolean           = true
+    )
 
     abstract class TestBuilderBase(
         override val pt: FluePipeT

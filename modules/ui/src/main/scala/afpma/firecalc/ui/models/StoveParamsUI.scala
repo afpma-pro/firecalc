@@ -74,12 +74,13 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
         ConditionalFor(_.sizing_method == SizingMethod.NominalHeatOutput, _.nominal_heat_output)
 
     // Engine-computed values used as activation defaults when switching sizing method.
-    // Since results_en15544_strict_sig is debounced, at switch time it still holds the
-    // previous computation — giving us the derived value to carry over seamlessly.
+    // We use the raw debounced signal (no staleness check) so that the previous
+    // computation's derived values carry over seamlessly when switching sizing methods
+    // within the same project. The staleness-checked signal is used for error display.
     private val computedMbSignal: Signal[Option[QtyD[Kilogram]]]    =
-        results_en15544_strict_sig.map(_.toOption.map(_.m_B))
+        results_en15544_strict_raw_sig.map(_.toOption.map(_.m_B))
     private val computedPnSignal: Signal[Option[QtyD[Kilo * Watt]]] =
-        results_en15544_strict_sig.map(_.toOption.map(_.P_n))
+        results_en15544_strict_raw_sig.map(_.toOption.map(_.P_n))
 
     given form_option_mB: Form[Option[QtyD[Kilogram]]] =
         import vv.kilogram.valid_whenStrictlyPositive

@@ -78,6 +78,13 @@ trait FormRenderer:
         optionalField: OptionalField
     )                          (using ValidateVar[Option[A]]): HtmlElement
 
+    /** Select with reactive options derived from a Signal. */
+    def selectRequiredReactive[A: Show](
+        v         : Var[A],
+        label     : Option[String],
+        optionsSig: Signal[Seq[A]]
+    ): HtmlElement
+
     // =========
     // Numeric with unit display
 

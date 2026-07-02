@@ -24,11 +24,18 @@ object PipeChainGeneric:
         initialFrame: Option[PipeFrame] = None
     ): Vector[SlotBuildResult] =
         val initialSeed = PipeBuildSeed.fromFrame(initialFrame)
+        // Track whether any prior slot failed — downstream slots get upstreamFailure=true
+        // so the UI can show ErrorsInOtherSectionType instead of spurious cascading errors.
         slots
-            .foldLeft((Vector.empty[SlotBuildResult], initialSeed)):
-                case ((results, seed), slot) =>
-                    val result = buildSlot(slot, seed)
-                    (results :+ result, result.nextSeed)
+            .foldLeft(((Vector.empty[SlotBuildResult], false), initialSeed)):
+                case (((results, failedUpstream), seed), slot) =>
+                    val result         = buildSlot(slot, seed)
+                    val resultWithFlag =
+                        if failedUpstream then result.copy(upstreamFailure = true)
+                        else result
+                    val newFailed      = failedUpstream || result.pipe.isInvalid
+                    ((results :+ resultWithFlag, newFailed), result.nextSeed)
+            ._1
             ._1
 
     private def buildSlot(

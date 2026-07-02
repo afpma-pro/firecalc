@@ -243,14 +243,18 @@ make dev-web-ui-run
 ---
 
 ### `make dev-web-ui-build`
-Build web UI for development (static files).
+Build web UI for development (static files, single-file output).
 
 ```bash
 make dev-web-ui-build
 ```
 
-**Output:** `web/dist-app/`  
-**Use case:** Build once before running `make dev-electron-app-run`
+**Output:** `web/dist-app/app/index.html` (all JS/CSS inlined) + static assets (icons, fonts, images)
+**Plugin:** `vite-plugin-singlefile` — gated by `SINGLE_FILE=1` env var (set only by this target)
+**Use case:** Shareable `file://` build — open `index.html` directly in browser, no server needed
+
+> **Note:** Staging and production builds (`staging-web-ui-build`, `prod-web-ui-build`) produce
+> standard separate JS/CSS files — the single-file plugin is **not** active for those environments.
 
 ---
 

@@ -11,6 +11,8 @@ import cats.data.Validated
 import cats.data.NonEmptyList
 
 import com.raquo.airstream.core.Signal
+import com.raquo.airstream.state.Var
+import com.raquo.laminar.api.L.HtmlElement
 
 // Test sealed trait for Defaultable derivation — must be top-level for Scala.js magnolia
 sealed trait TestColor
@@ -325,6 +327,52 @@ object FormCoreSpec extends TestSuite:
             test("fresh default-like config still counts as default-like") {
                 val fresh = FormConfig(fieldName = None)
                 assert(fresh.isDefaultLike)
+            }
+
+            test("withFieldOverride stores and retrieves override") {
+                val dummyFn: Var[Int] => FormRenderer ?=> HtmlElement = _ => throw new Exception("test stub")
+                val fc          = FormConfig.default.withFieldOverride[Int]("myField", dummyFn)
+                val overrideOpt = fc.fieldOverride("myField")
+                assert(overrideOpt.isDefined)
+                // Verify the ClassTag is captured
+                val (tag, _) = overrideOpt.get
+                assert(tag.runtimeClass == classOf[Int])
+            }
+
+            test("fieldOverride returns None for missing key") {
+                val fc = FormConfig.default
+                assert(fc.fieldOverride("nonExistent").isEmpty)
+            }
+
+            test("withFieldOverride isDefaultLike returns false") {
+                val dummyFn: Var[Int] => FormRenderer ?=> HtmlElement = _ => throw new Exception("test stub")
+                val fc = FormConfig.default.withFieldOverride[Int]("myField", dummyFn)
+                assert(!fc.isDefaultLike)
+            }
+
+            test("withFieldOverride preserves other fields") {
+                val dummyFn: Var[Int] => FormRenderer ?=> HtmlElement = _ => throw new Exception("test stub")
+                val fc = FormConfig.default
+                    .withFieldName("Test Form")
+                    .withFieldOverride[Int]("myField", dummyFn)
+                assert(fc.fieldName == Some("Test Form"))
+                assert(fc.fieldOverride("myField").isDefined)
+            }
+
+            test("multiple withFieldOverride entries coexist") {
+                val fn1: Var[Int] => FormRenderer ?=> HtmlElement    = _ => throw new Exception("stub")
+                val fn2: Var[String] => FormRenderer ?=> HtmlElement = _ => throw new Exception("stub")
+                val fc = FormConfig.default
+                    .withFieldOverride[Int]("fieldA", fn1)
+                    .withFieldOverride[String]("fieldB", fn2)
+                assert(fc.fieldOverride("fieldA").isDefined)
+                assert(fc.fieldOverride("fieldB").isDefined)
+                assert(fc.fieldOverride("fieldC").isEmpty  )
+                // Verify ClassTags
+                val (tagA, _) = fc.fieldOverride("fieldA").get
+                val (tagB, _) = fc.fieldOverride("fieldB").get
+                assert(tagA.runtimeClass == classOf[Int]   )
+                assert(tagB.runtimeClass == classOf[String])
             }
         }
 

@@ -26,9 +26,10 @@ import scala.util.Success
  * tree-walk from the `dto` module.
  *
  * Returns:
- *   - `Some(forbidden)` if a forbidden DTO instance is found — the caller
- *     (`PurchaseServiceImpl.createPurchaseIntent`) raises `ForbiddenDtoException`
- *     with `forbidden.getClass.getSimpleName` before any database side effect.
+ *   - `Some((forbidden, elementIndex))` if a forbidden DTO instance is found —
+ *     the caller (`PurchaseServiceImpl.createPurchaseIntent`) raises
+ *     `ForbiddenDtoException` with the type name and element index before any
+ *     database side effect.
  *   - `None` if no forbidden DTO is found, OR if the metadata is absent / not a
  *     `FileDescriptionWithContent`, OR if decode/migrate fails, OR if the
  *     decoded value is not the latest `FireCalcYAML` version. Decode errors
@@ -37,16 +38,16 @@ import scala.util.Success
  */
 object MetadataForbiddenDtoChecker:
 
-    def findForbidden(metadata: ProductMetadata): Option[IsBackendForbidden] =
+    def findForbidden(metadata: ProductMetadata): Option[(IsBackendForbidden, Int)] =
         metadata match
             case fdc: FileDescriptionWithContent =>
                 findForbiddenInBase64Yaml(fdc.content)
 
-    private def findForbiddenInBase64Yaml(base64Yaml: String): Option[IsBackendForbidden] =
+    private def findForbiddenInBase64Yaml(base64Yaml: String): Option[(IsBackendForbidden, Int)] =
         for
-            yaml      <- Base64StringDecoder.decodeToString(base64Yaml).toOption
-            fc        <- FireCalcYAMLMigrations.decodeAndMigrateTry(yaml) match
+            yaml  <- Base64StringDecoder.decodeToString(base64Yaml).toOption
+            fc    <- FireCalcYAMLMigrations.decodeAndMigrateTry(yaml) match
                 case Success(fc: FireCalcYAML) => Some(fc)
                 case _                         => None
-            forbidden <- BackendForbiddenDtoChecker.findForbidden(fc).headOption
-        yield forbidden
+            found <- BackendForbiddenDtoChecker.findForbidden(fc).headOption
+        yield (found.dto, found.elementIndex)

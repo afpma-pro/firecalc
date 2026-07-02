@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.SetThermalPipeProp_13384.*
 import afpma.firecalc.dto.all.ThermalChannelTopologyOp_13384.*
+import afpma.firecalc.dto.all.AddThermalPipeElement_13384.*
 import afpma.firecalc.dto.common.PipeLocation.given
 import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.given
 
@@ -52,5 +53,11 @@ class ThermalPropertyShow_13384(using DisplayUnits, Locale):
     given Show[SetPipeLocation]                               = Show.show(s => s.pipe_location.show)
     given Show[SetDuctType]                                   = Show.show(s => s.duct.show)
     given Show[SetNumberOfFlows]                              = Show.show(s => s.n_flows.show)
+
+    // Split/Merge — compact summary for element rendering
+    given Show[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
+        Show.show(s => s"${s.name} → ${showPipeShape.show(s.newInnerShape)}")
+    given Show[MergeTwoFlowsIntoSingleWith90DegTurn]     =
+        Show.show(s => s"${s.name} → ${showPipeShape.show(s.newInnerShape)}")
 
 end ThermalPropertyShow_13384

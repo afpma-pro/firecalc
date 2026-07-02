@@ -7,6 +7,7 @@ package afpma.firecalc.dto.v7
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.domain.IsBackendForbidden
+import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
 
 /**
  * Pure tree-walk that collects every backend-forbidden DTO instance present in a
@@ -36,18 +37,23 @@ import afpma.firecalc.domain.IsBackendForbidden
  */
 object BackendForbiddenDtoChecker:
 
-    /** All backend-forbidden DTO instances found in the project, or `Nil` if none. */
-    def findForbidden(fc: FireCalcYAML): List[IsBackendForbidden] =
-        val fromAirIntake   = fc.air_intake_pipes.descr.flatMap(walkFlowOnly13384).toList
+    /**
+     * All backend-forbidden DTO instances found in the project, or `Nil` if none.
+     * Each result carries the 0-based index of the descriptor element in its sequence.
+     */
+    def findForbidden(fc: FireCalcYAML): List[ForbiddenDtoFound] =
+        val fromAirIntake   = fc.air_intake_pipes.descr.zipWithIndex.flatMap { case (descr, idx) =>
+            walkFlowOnly13384(descr, idx)
+        }.toList
         val fromPostFirebox = fc.post_firebox_pipes.slots.flatMap {
             case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        =>
-                descr.flatMap(walkFlowOnly15544).toList
+                descr.zipWithIndex.flatMap { case (d, idx) => walkFlowOnly15544(d, idx) }.toList
             case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) =>
-                descr.flatMap(walkThermal13384).toList
+                descr.zipWithIndex.flatMap { case (d, idx) => walkThermal13384(d, idx) }.toList
             case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
-                descr.flatMap(walkThermal13384).toList
+                descr.zipWithIndex.flatMap { case (d, idx) => walkThermal13384(d, idx) }.toList
             case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     =>
-                descr.flatMap(walkThermal13384).toList
+                descr.zipWithIndex.flatMap { case (d, idx) => walkThermal13384(d, idx) }.toList
             case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
                 Nil
         }.toList
@@ -57,32 +63,39 @@ object BackendForbiddenDtoChecker:
     // Recurses into SetPropertiesInBatch.props and LinedFlue.liner/casing
     // (each a SetPropertiesInBatch), since the forbidden variant may be nested
     // there if a dev hand-crafts it inside a lined-flue batch.
-    private def walkThermal13384(descr: ThermalPipeDescr_13384_V4): List[IsBackendForbidden] =
+    // The elementIndex tracks the position of the top-level descriptor, so
+    // nested finds still point to the containing element.
+    private def walkThermal13384(descr: ThermalPipeDescr_13384_V4, idx: Int): List[ForbiddenDtoFound] =
         descr match
             case SetThermalPipeProp_13384_V4.SetPropertiesInBatch(_, props, _) =>
-                props.flatMap(walkThermalSingleProp).toList
+                props.flatMap(sp => walkThermalSingleProp(sp, idx)).toList
             case SetThermalPipeProp_13384_V4.LinedFlue(_, liner, _, casing)    =>
-                walkThermal13384(liner) ++ walkThermal13384(casing)
+                walkThermal13384(liner, idx) ++ walkThermal13384(casing, idx)
             case sp: SetThermalPipeProp_13384_V4.SetSingleProp =>
-                walkThermalSingleProp(sp)
+                walkThermalSingleProp(sp, idx)
+            case f: IsBackendForbidden =>
+                List(ForbiddenDtoFound(f, idx))
             case _                                                             =>
                 Nil
 
-    private def walkThermalSingleProp(prop: SetThermalPipeProp_13384_V4.SetSingleProp): List[IsBackendForbidden] =
+    private def walkThermalSingleProp(
+        prop: SetThermalPipeProp_13384_V4.SetSingleProp,
+        idx : Int
+    ): List[ForbiddenDtoFound] =
         prop match
-            case f: IsBackendForbidden => List(f)
+            case f: IsBackendForbidden => List(ForbiddenDtoFound(f, idx))
             case _ => Nil
 
     // ── FlowOnly 13384 ─────────────────────────────────────────────────────
     // No SetPropertiesInBatch/LinedFlue in this family — flat prop trait.
-    private def walkFlowOnly13384(descr: FlowOnlyPipeDescr_13384_V4): List[IsBackendForbidden] =
+    private def walkFlowOnly13384(descr: FlowOnlyPipeDescr_13384_V4, idx: Int): List[ForbiddenDtoFound] =
         descr match
-            case f: IsBackendForbidden => List(f)
+            case f: IsBackendForbidden => List(ForbiddenDtoFound(f, idx))
             case _ => Nil
 
     // ── FlowOnly 15544 ─────────────────────────────────────────────────────
     // No SetPropertiesInBatch/LinedFlue in this family — flat prop trait.
-    private def walkFlowOnly15544(descr: FlowOnlyPipeDescr_15544_V4): List[IsBackendForbidden] =
+    private def walkFlowOnly15544(descr: FlowOnlyPipeDescr_15544_V4, idx: Int): List[ForbiddenDtoFound] =
         descr match
-            case f: IsBackendForbidden => List(f)
+            case f: IsBackendForbidden => List(ForbiddenDtoFound(f, idx))
             case _ => Nil

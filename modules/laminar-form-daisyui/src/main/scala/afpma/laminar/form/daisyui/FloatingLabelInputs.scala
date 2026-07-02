@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter
 import cats.data.*
 import cats.data.Validated.Valid
 
+import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
@@ -361,3 +362,30 @@ trait FloatingLabelInputs:
                         span(lbl)
                     )
                 case None      => selectNode
+
+    case class LabelledSelectInputReactive[A](
+        selectedVar    : Var[A],
+        optionsSig     : Signal[Seq[A]],
+        show           : A => String,
+        makeId         : A => String,
+        labelStart     : Option[String] = None,
+        disabledOptions: Signal[Set[A]] = Var(Set.empty[A]).signal
+    ) extends Component:
+        def node: HtmlElement =
+            val reactSelect = SelectAndOptionsOnlyReactive(
+                selectedVar           = selectedVar,
+                labelAsDisabledOption = None, // label handled by floating-label wrapper
+                optionsSig            = optionsSig,
+                show                  = show,
+                makeId                = makeId,
+                selectCls             = "select select-bordered w-full",
+                disabledOptions       = disabledOptions
+            ).node
+            labelStart match
+                case Some(lbl) =>
+                    L.label(
+                        cls := "floating-label",
+                        reactSelect,
+                        span(lbl)
+                    )
+                case None      => reactSelect

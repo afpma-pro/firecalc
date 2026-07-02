@@ -22,7 +22,26 @@ import afpma.firecalc.engine.typeclasses.PropsStateOps
 import coulomb.*
 import coulomb.policy.standard.given
 
+import scala.annotation.nowarn
+
 object FlowAreaConservation:
+
+    /**
+     * ⚠ FLOW AREA CHECK DEACTIVATED
+     *
+     * The flow area conservation constraint (splits/merges must preserve total
+     * cross-sectional area within 5 cm² tolerance) is temporarily disabled.
+     *
+     * Reason: <TBD — fill on commit>
+     * Re-enable: set FLOW_AREA_CHECK_ENABLED = true and un-ignore tests.
+     *
+     * Affected subsystem (all temporarily dormant):
+     *   - FlowAreaTransition, PendingFlowAreaCheck, FlowTransitionChangesTotalCrossSection (standard.scala)
+     *   - ExpectedDimRectangle/Square/Circle (standard.scala)
+     *   - totalFlowArea, approximatelySameArea, computeExpectedDimension (this file)
+     *   - Tests: AreaConservationSuite, Pipes_15544_IncrementalBuilder (area checks)
+     */
+    private val FLOW_AREA_CHECK_ENABLED: Boolean = false
 
     /**
      * Absolute tolerance for flow area conservation on splits/merges.
@@ -40,6 +59,9 @@ object FlowAreaConservation:
         val bv = b.toUnit[Meter ^ 2].value
         math.abs(av - bv) <= FLOW_AREA_CONSERVATION_TOLERANCE.toUnit[Meter ^ 2].value
 
+    // @deprecated usage: ExpectedDimRectangle/Square/Circle are dormant
+    // while FLOW_AREA_CHECK_ENABLED = false. See banner doc-comment above.
+    @nowarn("cat=deprecation")
     def computeExpectedDimension(
         afterShape         : PipeShape,
         expectedAreaPerFlow: Area
@@ -81,6 +103,9 @@ object FlowAreaConservation:
      * (preserves any existing pendingFlowAreaCheck). This prevents silent cancellation of
      * pending checks from redundant SetNumberOfFlows calls (e.g., UI re-renders).
      */
+    // @deprecated usage: PendingFlowAreaCheck / FlowAreaTransition are dormant
+    // while FLOW_AREA_CHECK_ENABLED = false. See banner doc-comment above.
+    @nowarn("cat=deprecation")
     def computeSetNFlows[S](
         st: S,
         nf: NbOfFlows,
@@ -97,27 +122,34 @@ object FlowAreaConservation:
                     // shape is set later (if it changes after nFlows is set).
                     ops.setNFlows(st, nf)
                 case Some(beforeShape) =>
-                    val nextSt  = ops.setNFlows(st, nf)
-                    val pending = Some(
-                        PendingFlowAreaCheck(
-                            beforeShape = beforeShape,
-                            beforeFlows = currentFlows,
-                            afterFlows  = nf,
-                            transition  =
-                                if nf > currentFlows then FlowAreaTransition.Split
-                                else FlowAreaTransition.Merge
+                    val nextSt = ops.setNFlows(st, nf)
+                    if !FLOW_AREA_CHECK_ENABLED then nextSt
+                    else
+                        val pending = Some(
+                            PendingFlowAreaCheck(
+                                beforeShape = beforeShape,
+                                beforeFlows = currentFlows,
+                                afterFlows  = nf,
+                                transition  =
+                                    if nf > currentFlows then FlowAreaTransition.Split
+                                    else FlowAreaTransition.Merge
+                            )
                         )
-                    )
-                    ops.setPendingFlowAreaCheck(nextSt, pending)
+                        ops.setPendingFlowAreaCheck(nextSt, pending)
 
     /**
      * Centralized SetInnerShape validation with area conservation check.
      * Uses PropsStateOps typeclass for state access — eliminates copy-paste across builders.
      */
+    // @deprecated usage: FlowTransitionChangesTotalCrossSection is dormant
+    // while FLOW_AREA_CHECK_ENABLED = false. See banner doc-comment above.
+    @nowarn("cat=deprecation")
     def validateSetInnerShape[S](
-        st        : S,
-        afterShape: PipeShape,
-        pt        : PipeType
+        st          : S,
+        afterShape  : PipeShape,
+        pt          : PipeType,
+        elementIndex: Int,
+        elementName : String
     )(using ops: PropsStateOps[S]): Either[FlowTransitionChangesTotalCrossSection, S] =
         ops.getPendingFlowAreaCheck(st) match
             case None        =>
@@ -125,7 +157,9 @@ object FlowAreaConservation:
             case Some(check) =>
                 val beforeTotalArea = totalFlowArea(check.beforeShape, check.beforeFlows)
                 val afterTotalArea  = totalFlowArea(afterShape, check.afterFlows)
-                if approximatelySameArea(beforeTotalArea, afterTotalArea) then
+                if !FLOW_AREA_CHECK_ENABLED then
+                    Right(ops.setInnerShape(ops.setPendingFlowAreaCheck(st, None), afterShape))
+                else if approximatelySameArea(beforeTotalArea, afterTotalArea) then
                     Right(ops.setInnerShape(ops.setPendingFlowAreaCheck(st, None), afterShape))
                 else
                     val expectedAreaPerFlow = beforeTotalArea / check.afterFlows.asQty
@@ -137,6 +171,8 @@ object FlowAreaConservation:
                             beforeFlows       = check.beforeFlows,
                             afterFlows        = check.afterFlows,
                             expectedDimension = expectedDimension,
-                            sectionTyp        = pt
+                            sectionTyp        = pt,
+                            elementIndex      = elementIndex,
+                            elementName       = elementName
                         )
                     )

@@ -96,3 +96,74 @@ trait SelectInputs:
                 getById               = _ => a,
                 asDisabled            = asDisabled
             )
+
+    // =========================================================================
+    // Reactive options variant — options come from a Signal[Seq[A]]
+    // =========================================================================
+
+    final case class SelectAndOptionsOnlyReactive[A](
+        selectedVar          : Var[A],
+        labelAsDisabledOption: Option[String],
+        optionsSig           : Signal[Seq[A]],
+        show                 : A => String,
+        makeId               : A => String,
+        selectCls            : String         = "select",
+        disabledOptions      : Signal[Set[A]] = Var(Set.empty[A]).signal
+    ) extends Component:
+
+        // Reactive lookup: Map[id -> A] derived from current options.
+        // Held in a Var so it can be read synchronously at onChange time,
+        // avoiding the need for withCurrentValueOf on EventProcessor.
+        // Signal.now() is protected in Airstream, so we start with empty
+        // and the binder populates it synchronously on node attachment.
+        private val lookupSig       : Signal[Map[String, A]] =
+            optionsSig.map(_.map(o => makeId(o) -> o).toMap)
+        private val currentLookupVar: Var[Map[String, A]]    = Var(Map.empty)
+
+        val node = select(
+            cls := selectCls,
+            // Disable when no options available
+            disabled <-- optionsSig.map(_.isEmpty),
+            // Keep the Var in sync with the reactive lookup
+            lookupSig --> currentLookupVar.writer,
+            // Current selection drives the value attribute
+            value <-- selectedVar.signal.map(makeId),
+            // On change: resolve clicked id through the current lookup.
+            // Only accepts ids present in the current options (rejects stale).
+            onChange.mapToValue
+                .collect { case id =>
+                    currentLookupVar.now().get(id)
+                }
+                .collect { case Some(a) => a } --> selectedVar.writer,
+            // Disabled label option
+            labelAsDisabledOption.map(l => option(l, value := l, disabled := true)),
+            // Reactive options — re-renders on optionsSig changes
+            children <-- optionsSig.map: opts =>
+                if opts.isEmpty then Seq(option("(no options)", disabled := true, value := ""))
+                else
+                    opts.map: o =>
+                        option(
+                            show(o),
+                            value := makeId(o),
+                            defaultSelected <-- selectedVar.signal.map(sv => makeId(sv) == makeId(o)),
+                            disabled <-- disabledOptions.map(_.exists(d => makeId(d) == makeId(o)))
+                        )
+        )
+
+    object SelectAndOptionsOnlyReactive:
+        def fromShow[A: Show](
+            selectedVar          : Var[A],
+            labelAsDisabledOption: Option[String],
+            optionsSig           : Signal[Seq[A]],
+            selectCls            : String         = "select",
+            disabledOptions      : Signal[Set[A]] = Var(Set.empty[A]).signal
+        ): SelectAndOptionsOnlyReactive[A] =
+            SelectAndOptionsOnlyReactive(
+                selectedVar,
+                labelAsDisabledOption,
+                optionsSig,
+                Show[A].show,
+                Show[A].show,
+                selectCls,
+                disabledOptions
+            )

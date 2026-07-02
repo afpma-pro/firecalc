@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
 import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
+import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
 
 import afpma.firecalc.ui.displayUnits
 
@@ -34,5 +35,11 @@ class FlowOnlyPropertyShow_15544(using DisplayUnits, Locale):
     given Show[SetRoughness]                                  = Show.show(s => s.roughness.showP)
     given Show[SetMaterial]                                   = Show.show(s => s.material.show)
     given Show[SetNumberOfFlows]                              = Show.show(s => s.n_flows.show)
+
+    // Split/Merge — compact summary for element rendering
+    given Show[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
+        Show.show(s => s"${s.name} → ${showPipeShape.show(s.newInnerShape)}")
+    given Show[MergeTwoFlowsIntoSingleWith90DegTurn]     =
+        Show.show(s => s"${s.name} → ${showPipeShape.show(s.newInnerShape)}")
 
 end FlowOnlyPropertyShow_15544

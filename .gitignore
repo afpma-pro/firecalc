@@ -33,6 +33,9 @@ web/landing/out/
 deployment/
 modules/*/configs/*.yaml
 modules/*/samples/*.pdf
+
+# Reference project PDF outputs (track .txt, ignore .pdf)
+modules/engine-validation/reference-outputs/**/*.pdf
 modules/*/samples/*.typ
 modules/*/samples/*.png
 modules/*/samples/*.jpg
