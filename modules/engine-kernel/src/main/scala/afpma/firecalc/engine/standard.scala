@@ -993,9 +993,13 @@ object standard {
         sectionTyp        : PipeType,
         directionChangeRef: String
     ) extends PrerequisiteNotMet
-    case class FlowSplitForbiddenOnAscendingPipe(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
+    case class SplitReflectedBranchAscends(
+        sectionTyp: PipeType,
+        elementRef: String
+    ) extends PrerequisiteNotMet
+    case class SplitBranchesCollinear(
+        sectionTyp: PipeType,
+        elementRef: String
     ) extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
@@ -1024,9 +1028,13 @@ object standard {
                     .flow_merge_requires_length_bearing_section_before_direction_change(
                         e.directionChangeRef
                     )
-            case e: FlowSplitForbiddenOnAscendingPipe                          =>
-                I18N.incremental_validation.prerequisites.flow_split_forbidden_on_ascending_pipe(
-                    e.directionChangeRef
+            case e: SplitReflectedBranchAscends                                =>
+                I18N.incremental_validation.prerequisites.split_reflected_branch_ascends(
+                    e.elementRef
+                )
+            case e: SplitBranchesCollinear                                     =>
+                I18N.incremental_validation.prerequisites.split_branches_collinear(
+                    e.elementRef
                 )
 
     // Conflict errors

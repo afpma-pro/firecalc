@@ -209,22 +209,22 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
         descr.toFullDescr().isValid shouldBe true
     }
 
-    it should "still enforce ascending pipe constraint on split" in {
+    it should "allow SetNumberOfFlows on ascending pipe when no split element follows" in {
+        // The old blanket "no splits on ascending pipes" rule is replaced by geometry-based
+        // validation that requires a split element with branch direction. Without a split
+        // element, SetNumberOfFlows is a valid flow-count change regardless of direction.
         given FluePipeT = FluePipeT
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
             .withInitialDirection(ascendingDir)
         val descr       = builder.define(
-            SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
-            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
+            SetFlowOnlyPipeProp_13384.SetInnerShape(PipeShape.Circle(20.cm)),
+            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
         )
         val result      = descr.toFullDescr()
-        result.isValid shouldBe false
-        val errors      = result.toEither.left.toOption.get
-        errors.head shouldBe a[FlowSplitForbiddenOnAscendingPipe]
+        if result.isValid then succeed
+        else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
 
     it should "reject merge 2→1 when shape is set but not materialized" in {

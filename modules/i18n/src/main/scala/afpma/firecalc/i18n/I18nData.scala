@@ -1031,7 +1031,8 @@ object I18nData:
             flow_split_requires_inner_shape_before_direction_change           : StringFormat1,
             flow_merge_requires_inner_shape_before_direction_change           : StringFormat1,
             flow_merge_requires_length_bearing_section_before_direction_change: StringFormat1,
-            flow_split_forbidden_on_ascending_pipe                            : StringFormat1
+            split_reflected_branch_ascends                                    : StringFormat1,
+            split_branches_collinear                                          : StringFormat1
         )
 
         case class Conflicts(

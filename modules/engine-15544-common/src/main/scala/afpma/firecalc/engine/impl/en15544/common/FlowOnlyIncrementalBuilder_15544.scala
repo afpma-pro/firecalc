@@ -431,11 +431,19 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                     case SetMaterial(lm)                                      =>
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows(nf) =>
+                        val branchDirOpt = convStep.findNextAddElement.flatMap: (_, ae) =>
+                            ae match
+                                case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                                    sm.absDir.map(fd =>
+                                        val (az, el) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                        Vec3.fromAzimuthElevation(az, el)
+                                    )
+                                case _ => None
                         vState.andThen { st =>
                             stateOps
                                 .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
                                 .andThen { _ =>
-                                    validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
+                                    validateSplitNotOnAscending(st, nf, IdIncr(idIncr), branchDirOpt).andThen(_ =>
                                         FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
                                     )
                                 }

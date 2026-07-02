@@ -21,7 +21,10 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
 
     // ── EN 13384 Flow-Only ──────────────────────────────────────────────
 
-    "Flow split on ascending pipe (EN 13384 flow-only)" should "be forbidden" in {
+    "Flow split on ascending pipe (EN 13384 flow-only)" should "allow SetNumberOfFlows without split element" in {
+        // The old blanket FlowSplitForbiddenOnAscendingPipe is replaced by geometry-based
+        // validation that requires a split element with branch direction.
+        // SetNumberOfFlows without a split element is a valid flow-count change.
         given FluePipeT = FluePipeT
         val builder     = FlowOnlyIncrementalBuilder_13384
             .makeFor[FluePipeT]
@@ -29,51 +32,6 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
                 PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Up
-                )
-            )
-        val descr = builder.define(
-            SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
-            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
-        )
-        val result = descr.toFullDescr()
-        result.isValid shouldBe false
-        val errors = result.toEither.left.toOption.get
-        errors.head shouldBe a[FlowSplitForbiddenOnAscendingPipe]
-    }
-
-    it should "be allowed on descending pipe" in {
-        given FluePipeT = FluePipeT
-        val builder     = FlowOnlyIncrementalBuilder_13384
-            .makeFor[FluePipeT]
-            .withInitialDirection(
-                PipeInitialDirection    (
-                    azimuth     = AzimuthDirection.Front,
-                    inclination = InclinationDirection.Down
-                )
-            )
-        val descr = builder.define(
-            SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
-            SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm              ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("init", 0.1.meters),
-            FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
-            AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
-        )
-        val result = descr.toFullDescr()
-        if result.isValid then succeed
-        else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
-    }
-
-    it should "be allowed on horizontal pipe" in {
-        given FluePipeT = FluePipeT
-        val builder     = FlowOnlyIncrementalBuilder_13384
-            .makeFor[FluePipeT]
-            .withInitialDirection(
-                PipeInitialDirection    (
-                    azimuth     = AzimuthDirection.Front,
-                    inclination = InclinationDirection.Horizontal
                 )
             )
         val descr = builder.define(
@@ -128,7 +86,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
 
     // ── EN 13384 Thermal ───────────────────────────────────────────────
 
-    "Flow split on ascending pipe (EN 13384 thermal)" should "be forbidden" in {
+    "Flow split on ascending pipe (EN 13384 thermal)" should "allow SetNumberOfFlows without split element" in {
         given FluePipeT = FluePipeT
         val builder     = ThermalIncrementalBuilder_13384
             .makeFor[FluePipeT]
@@ -136,57 +94,6 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
                 PipeInitialDirection    (
                     azimuth     = AzimuthDirection.Front,
                     inclination = InclinationDirection.Up
-                )
-            )
-        val descr = builder.define(
-            SetThermalPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)                              ),
-            SetThermalPipeProp_13384.SetRoughness        (1.mm                          ),
-            SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
-            SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
-            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
-            ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
-            AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
-        )
-        val result = descr.toFullDescr()
-        result.isValid shouldBe false
-        val errors = result.toEither.left.toOption.get
-        errors.head shouldBe a[FlowSplitForbiddenOnAscendingPipe]
-    }
-
-    it should "be allowed on descending pipe" in {
-        given FluePipeT = FluePipeT
-        val builder     = ThermalIncrementalBuilder_13384
-            .makeFor[FluePipeT]
-            .withInitialDirection(
-                PipeInitialDirection    (
-                    azimuth     = AzimuthDirection.Front,
-                    inclination = InclinationDirection.Down
-                )
-            )
-        val descr = builder.define(
-            SetThermalPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)                              ),
-            SetThermalPipeProp_13384.SetRoughness        (1.mm                          ),
-            SetThermalPipeProp_13384.SetMaterial           (afpma.firecalc.dto.v3.Material_13384_V2.WeldedSteel()),
-            SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
-            SetThermalPipeProp_13384.SetPipeLocation     (PipeLocation.HeatedArea       ),
-            AddThermalPipeElement_13384.AddSectionSlopped("init", 0.1.meters            ),
-            ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
-            AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
-        )
-        val result = descr.toFullDescr()
-        if result.isValid then succeed
-        else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
-    }
-
-    it should "be allowed on horizontal pipe" in {
-        given FluePipeT = FluePipeT
-        val builder     = ThermalIncrementalBuilder_13384
-            .makeFor[FluePipeT]
-            .withInitialDirection(
-                PipeInitialDirection    (
-                    azimuth     = AzimuthDirection.Front,
-                    inclination = InclinationDirection.Horizontal
                 )
             )
         val descr = builder.define(

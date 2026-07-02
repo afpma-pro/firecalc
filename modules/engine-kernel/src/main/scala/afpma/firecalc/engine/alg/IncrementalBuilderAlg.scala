@@ -23,7 +23,6 @@ import afpma.firecalc.engine.standard.FlowMergeRequiresLengthBearingSectionBefor
 import afpma.firecalc.engine.standard.FlowSplitRequiresInnerShapeBeforeDirectionChange
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
-import afpma.firecalc.engine.standard.FlowSplitForbiddenOnAscendingPipe
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.*
@@ -316,35 +315,41 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows = 1.flow
 
     /**
-     * Validates that a flow split is not attempted on an ascending pipe.
+     * Validates split geometry: the reflected second branch must not ascend.
      * Reads current flows + frame through the abstract-PropsState projections,
      * so all three builders share one implementation. Merge is always allowed.
      *
-     * `+Z` is up (gravity): ascending ⇔ direction.z > 0.
+     * `+Z` is up (gravity): ascending ⇔ reflectedBranchDirection.z > 0.
+     *
+     * @param state current props state
+     * @param newNFlows the new flow count after this operation
+     * @param idIncr descriptor index for error messages
+     * @param splitBranchDirection first-branch direction from a split element, or None if no split element follows
      */
     protected def validateSplitNotOnAscending(
-        state    : PropsState,
-        newNFlows: NbOfFlows,
-        idIncr   : IdIncr
+        state               : PropsState,
+        newNFlows           : NbOfFlows,
+        idIncr              : IdIncr,
+        splitBranchDirection: Option[Vec3]
     ): ValidatedResult[Unit] =
-        if (
-            splitOnAscending(
-                currentNFlows = currentNFlowsFromPropsState(state),
-                newNFlows     = newNFlows,
-                direction     = currentFrameFromPropsState(state).map(_.direction)
-            )
-        )
-            FlowSplitForbiddenOnAscendingPipe(pt, s"#$idIncr").invalidNel
+        val isSplit = newNFlows > currentNFlowsFromPropsState(state)
+        if isSplit && splitBranchDirection.isDefined then
+            // Only validate geometry when a split element with branch direction is present.
+            // `SetNumberOfFlows` without a split element is a valid DSL operation.
+            currentFrameFromPropsState(state).map(_.direction) match
+                case Some(incomingDir) =>
+                    SplitMergeValidator.validateSplit (
+                        incomingDirection  = incomingDir,
+                        branchOneDirection = splitBranchDirection,
+                        sectionTyp         = pt,
+                        elementRef         = s"#$idIncr"
+                    )
+                case None              =>
+                    // No frame direction — cannot validate geometry, allow through.
+                    ().validNel
         else
+            // Not a split, no split element, or merge — always allowed.
             ().validNel
-
-    /** Pure decision: true iff this transition is a forbidden ascending split. */
-    private[engine] def splitOnAscending(
-        currentNFlows: NbOfFlows,
-        newNFlows    : NbOfFlows,
-        direction    : Option[Vec3]
-    ): Boolean =
-        newNFlows > currentNFlows && direction.exists(_.z > 0)
 
     /**
      * Hook for post-build validation. Called after all incremental descriptions have been
