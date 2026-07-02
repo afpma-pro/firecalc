@@ -809,21 +809,34 @@ abstract class EN15544_V_2023_Common_Application
     export en15544_typedefs.*
 
     def validateFluePipeShape(): ValidatedNel[FluePipeInvalidGeometryRatio, Unit] =
-        // Collect all PipeShape configurations from flue-region slots (FlueSlot + ThermalFlueSlot).
+        // Collect all PipeShape configurations from flue-region slots (FlueSlot + ThermalFlueSlot),
+        // preserving the original descriptor index and element name.
         // Both SetInnerShape prop instructions and AddSectionShapeChange elements can introduce a
         // Rectangle shape that must satisfy the 1:4 aspect-ratio constraint.
-        val flueRegionShapes: Seq[PipeShape] =
+        type ShapeInfo = (PipeShape, Int, String) // (shape, descrIndex, elementName)
+        // Resolve SetInnerShape label once (no Locale in validation context — fall back to EN)
+
+        val setInnerShapeLabel =
+            // given Locale = Locales.en
+            // I18N.set_prop.SetInnerShape
+            ""
+        val flueRegionShapes: Seq[ShapeInfo] =
             en15544.incrInputs.postFirebox.slots.flatMap:
                 case PostFireboxPipeSlot.FlueSlot(descr)        =>
-                    descr.collect:
-                        case SetFlowOnlyPipeProp_15544.SetInnerShape(shape)                 => shape
-                        case AddFlowOnlyPipeElement_15544.AddSectionShapeChange(_, toShape) => toShape
+                    descr.zipWithIndex.flatMap:
+                        case (SetFlowOnlyPipeProp_15544.SetInnerShape(shape), idx                   ) =>
+                            Some((shape, idx, setInnerShapeLabel))
+                        case (AddFlowOnlyPipeElement_15544.AddSectionShapeChange(name, toShape), idx) =>
+                            Some((toShape, idx, name))
+                        case _ => None
                 case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
-                    descr.collect:
-                        case SetThermalPipeProp_13384.SetInnerShape(shape) => shape
+                    descr.zipWithIndex.flatMap:
+                        case (SetThermalPipeProp_13384.SetInnerShape(shape), idx) =>
+                            Some((shape, idx, setInnerShapeLabel))
+                        case _ => None
                 case _                                          => Seq.empty
         val checks =
-            flueRegionShapes.zipWithIndex.map: (shape, idx) =>
+            flueRegionShapes.map: (shape, descrIdx, elementName) =>
                 shape match
                     case rect @ PipeShape.Rectangle(_, _) =>
                         val (rmin, rmax) = (1.0, 4.0)
@@ -833,9 +846,9 @@ abstract class EN15544_V_2023_Common_Application
                             .leftMap: ratio =>
                                 NonEmptyList.one(
                                     FluePipeInvalidGeometryRatio(
-                                        idx,
+                                        descrIdx,
                                         FluePipeT,
-                                        "SetInnerShape",
+                                        elementName,
                                         ratio,
                                         rmin,
                                         rmax
