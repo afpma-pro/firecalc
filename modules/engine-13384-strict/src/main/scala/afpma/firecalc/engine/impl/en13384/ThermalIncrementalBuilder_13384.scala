@@ -422,7 +422,11 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
-        val nextElemName = convStep.findNextAddElement.map(_._2.name).getOrElse("?")
+        // Use the AddElement's idIncr for elementIndex in errors — it is the physical
+        // element that the pre-element ops target, so the error points to the element
+        // the user sees (and can fix) rather than the preceding SetInnerShape row.
+        val (nextElemIdIncr, nextElemName) =
+            convStep.findNextAddElement.map(idOp => (idOp._1, idOp._2.name)).getOrElse((-1, "?"))
 
         def updateVNelState(
             vState  : ValidatedNel[IncrementalValidation_Error, PropsState],
@@ -436,11 +440,12 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 g     : PipeShape
             ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                 vState.andThen { st =>
-                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, idIncr, elemName).andThen { _ =>
-                        FlowAreaConservation
-                            .validateSetInnerShape(st, g, pt, idIncr, elemName)(using stateOps)
-                            .toValidatedNel
-                            .map(s => stateOps.setInnerShape(s, g))
+                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, elemName).andThen {
+                        _ =>
+                            FlowAreaConservation
+                                .validateSetInnerShape(st, g, pt, nextElemIdIncr, elemName)(using stateOps)
+                                .toValidatedNel
+                                .map(s => stateOps.setInnerShape(s, g))
                     }
                 }
             atom match
@@ -497,7 +502,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
                             stateOps
-                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, idIncr, nextElemName)
+                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
                                 .andThen { _ =>
                                     validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
                                         FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel

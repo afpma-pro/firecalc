@@ -392,7 +392,11 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
         propsState: PropsState,
         convStep  : ConversionStep
     ): ValidatedResult[PropsState] =
-        val nextElemName = convStep.findNextAddElement.map(_._2.name).getOrElse("?")
+        // Use the AddElement's idIncr for elementIndex in errors — it is the physical
+        // element that the pre-element ops target, so the error points to the element
+        // the user sees (and can fix) rather than the preceding SetInnerShape row.
+        val (nextElemIdIncr, nextElemName) =
+            convStep.findNextAddElement.map(idOp => (idOp._1, idOp._2.name)).getOrElse((-1, "?"))
         convStep.allPreElementOpsUntilNextAddElement
             .foldLeft(propsState.validNel) { case (vState, (idIncr, op)) =>
                 def applyInnerShapeSet(
@@ -400,13 +404,14 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                     g     : PipeShape
                 ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                     vState.andThen { st =>
-                        stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, idIncr, nextElemName).andThen {
-                            _ =>
+                        stateOps
+                            .validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, nextElemName)
+                            .andThen { _ =>
                                 FlowAreaConservation
-                                    .validateSetInnerShape(st, g, pt, idIncr, nextElemName)(using stateOps)
+                                    .validateSetInnerShape(st, g, pt, nextElemIdIncr, nextElemName)(using stateOps)
                                     .toValidatedNel
                                     .map(s => stateOps.setInnerShape(s, g))
-                        }
+                            }
                     }
                 op match
                     case SetInnerShape(g)                                     =>
@@ -423,7 +428,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                     case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
                             stateOps
-                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, idIncr, nextElemName)
+                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
                                 .andThen { _ =>
                                     validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
                                         FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel

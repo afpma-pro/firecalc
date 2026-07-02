@@ -73,7 +73,7 @@ object IsBackendForbidden:
         dto.forbiddenKind match
             case SetsNumberOfFlowsKind         =>
                 I18N.forbidden_dto.set_number_of_flows(
-                    I18N.set_prop.SetNumberOfFlows,
+                    I18N.set_prop.SetNumberOfFlows_fieldName,
                     I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
                     I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn
                 )
@@ -88,5 +88,5 @@ object IsBackendForbidden:
      */
     given ShowUsingLocale[ForbiddenDtoFound] = showUsingLocale: (found: ForbiddenDtoFound) =>
         val base   = Show[IsBackendForbidden].show(found.dto)
-        val suffix = I18N.forbidden_dto.element_at((found.elementIndex + 1).toString)
+        val suffix = I18N.forbidden_dto.element_at(found.elementIndex.toString)
         base + suffix
