@@ -20,6 +20,7 @@ import afpma.firecalc.engine.models.PipeResult.PipeResultFromSections
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.isDirectionChange
 import afpma.firecalc.engine.models.isSectionGeometryChange
+import afpma.firecalc.engine.models.isSplitMergeTurn
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.MecaFlu_Error.UnexpectedThrowable
 
@@ -511,7 +512,10 @@ object GraphDataConverter:
             // Suppress the two co-located points of zero-length SectionGeometryChange entries.
             // Accumulators above have already absorbed its singular pressure loss (pu), so the
             // next section's start point carries the correct cumulative pressure.
-            if section.isSectionGeometryChange then Vector.empty
+            // Also suppress SplitMerge90: zero-length elements that change n_flows produce
+            // velocity discontinuities at the same x-position (previous section's v_end uses
+            // the old flow count, following section's v_start uses the new count).
+            if section.isSectionGeometryChange || section.isSplitMergeTurn then Vector.empty
             else Vector(startPoint, endPoint)
         }
 

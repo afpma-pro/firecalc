@@ -20,6 +20,7 @@ import afpma.firecalc.domain.IsDirectionChange
 import afpma.firecalc.domain.IsPressureDiff
 import afpma.firecalc.domain.IsSectionGeometryChange
 import afpma.firecalc.domain.IsSingularFlowResistance
+import afpma.firecalc.domain.IsSplitMergeTurn
 import afpma.firecalc.domain.IsZeroLengthPipeElement
 
 import afpma.firecalc.engine.models.*
@@ -305,7 +306,8 @@ object ThermalPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg:
         override val angleN2       : Option[QtyD[Degree]] = None,
         override val effectiveShape: PipeShape
     ) extends DirectionChange(90.degrees, angleN2, effectiveShape)
-        with IsSingularFlowResistance derives Show
+        with IsSingularFlowResistance
+        with IsSplitMergeTurn derives Show
 
     sealed abstract class SectionGeometryChange(
         val from: PipeShape.Circle,

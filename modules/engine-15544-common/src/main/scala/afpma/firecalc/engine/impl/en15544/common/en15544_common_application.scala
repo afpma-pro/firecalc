@@ -858,12 +858,15 @@ abstract class EN15544_V_2023_Common_Application
                 // Start-only, end-only, and both-ends failures collapse into a single
                 // FlueGasVelocityError whose `position` field tells the user which
                 // boundary(ies) fell outside the admissible range.
-                // Zero-length cross-section-change elements are skipped: their boundary
-                // velocities duplicate the adjacent straight sections (already validated),
-                // and under multi-flow (n_flows > 1) the redundant check can flag
-                // spurious violations.
+                // Zero-length elements are skipped: their boundary velocities duplicate
+                // the adjacent straight sections (already validated), and under multi-flow
+                // (n_flows > 1) the redundant check can flag spurious violations.
+                // This covers both SectionGeometryChange (shape transition) and
+                // SplitMerge90 (flow count transition — 1 flow splits into 2 or merges
+                // back to 1), both of which produce velocity discontinuities at zero
+                // length that are already validated via the preceding/following sections.
                 pr.elements
-                    .filterNot(_.isSectionGeometryChange)
+                    .filterNot(psr => psr.isSectionGeometryChange || psr.isSplitMergeTurn)
                     .flatMap: psr =>
                         val startBad = outOfFlueGasVelocityRange(psr.v_start)
                         val endBad   = outOfFlueGasVelocityRange(psr.v_end)
