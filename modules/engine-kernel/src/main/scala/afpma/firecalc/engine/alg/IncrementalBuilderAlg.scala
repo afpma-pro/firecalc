@@ -7,20 +7,10 @@ package afpma.firecalc.engine.alg
 
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
-import afpma.firecalc.domain.{
-    IsDirectionChange,
-    IsLengthBearingPipeElement,
-    IsSplitMergeTurn,
-    SetsInnerShape,
-    SetsNumberOfFlows
-}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
-import afpma.firecalc.engine.standard.FlowMergeRequiresInnerShapeBeforeDirectionChange
-import afpma.firecalc.engine.standard.FlowMergeRequiresLengthBearingSectionBeforeDirectionChange
-import afpma.firecalc.engine.standard.FlowSplitRequiresInnerShapeBeforeDirectionChange
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
@@ -109,6 +99,14 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      */
     protected def isTrailingAllowed(preOp: PreElementOp): Boolean = false
 
+    /**
+     * Returns true if the next AddElement in the conversion step is a
+     * SplitSingleFlowIntoTwoFlowsWith90DegTurn. Used by the Path 1 redundancy
+     * guard to skip split geometry validation when Path 2 will handle it.
+     * Default: false (no split awareness).
+     */
+    protected def nextAddElementIsSplit(convStep: ConversionStep): Boolean = false
+
     type ValidatedResult[A]    = ValidatedNel[IncrementalValidation_Error, A]
     type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[IncrementalValidation_Error, A]
 
@@ -187,104 +185,12 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             opsLeft = ops
         )
 
-    private enum FlowTransState:
-        case None
-        case SplitNeedsInnerShape
-        case MergeNeedsInnerShapeThenSection(shapeSeen: Boolean)
-
-    private enum FlowEvent:
-        case FlowCountSet(nFlows: NbOfFlows)
-        case InnerShapeSet
-        case DirectionChange(ref: String)
-        case LengthBearing
-
-    private case class FlowTransAcc(
-        nFlows        : NbOfFlows,
-        state         : FlowTransState,
-        errorsReversed: List[IncrementalValidation_Error]
-    )
-
-    private def addElementRef(idIncr: IdIncr, addElement: AddElement): String =
-        s"'${addElement.name}' (#$idIncr)"
-
-    private def flowEvents(idIncr: IdIncr, descr: IncrDescr): List[FlowEvent] =
-        descr match
-            case sp: SetProp      =>
-                sp match
-                    case flowCount: SetsNumberOfFlows => List(FlowEvent.FlowCountSet(flowCount.n_flows))
-                    case _        : SetsInnerShape    => List(FlowEvent.InnerShapeSet)
-                    case _ => Nil
-            case op: PreElementOp =>
-                op match
-                    case flowCount: SetsNumberOfFlows => List(FlowEvent.FlowCountSet(flowCount.n_flows))
-                    case _        : SetsInnerShape    => List(FlowEvent.InnerShapeSet)
-                    case _ => Nil
-            case ae: AddElement   =>
-                ae match
-                    // Split/Merge types emit 3 events in specific order.
-                    // MUST appear before generic IsDirectionChange arm, otherwise only 1 event is emitted.
-                    case sm: (IsSplitMergeTurn & SetsNumberOfFlows) =>
-                        List(
-                            FlowEvent.DirectionChange(addElementRef(idIncr, ae)),
-                            FlowEvent.FlowCountSet(sm.n_flows),
-                            FlowEvent.InnerShapeSet
-                        )
-                    // Direction changes are zero-length operations; if a descriptor ever carries both markers,
-                    // the direction-change requirement is the safer interpretation for validation.
-                    case _ : IsDirectionChange                      => List(FlowEvent.DirectionChange(addElementRef(idIncr, ae)))
-                    case _ : IsLengthBearingPipeElement             => List(FlowEvent.LengthBearing)
-                    case _ => Nil
-
-    private def applyFlowEvent(acc: FlowTransAcc, event: FlowEvent): FlowTransAcc =
-        event match
-            case FlowEvent.FlowCountSet(next) if next > acc.nFlows =>
-                acc.copy(nFlows = next, state = FlowTransState.SplitNeedsInnerShape)
-            case FlowEvent.FlowCountSet(next) if next < acc.nFlows =>
-                acc.copy(nFlows = next, state = FlowTransState.MergeNeedsInnerShapeThenSection(false))
-            case FlowEvent.FlowCountSet(_)                         =>
-                acc
-            case FlowEvent.InnerShapeSet                           =>
-                acc.state match
-                    case FlowTransState.SplitNeedsInnerShape                   =>
-                        acc.copy(state = FlowTransState.None)
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(false) =>
-                        acc.copy(state = FlowTransState.MergeNeedsInnerShapeThenSection(true))
-                    case _                                                     => acc
-            case FlowEvent.DirectionChange(ref)                    =>
-                val errorOpt = acc.state match
-                    case FlowTransState.SplitNeedsInnerShape                   =>
-                        Some(FlowSplitRequiresInnerShapeBeforeDirectionChange(pt, ref))
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(false) =>
-                        Some(FlowMergeRequiresInnerShapeBeforeDirectionChange(pt, ref))
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(true)  =>
-                        Some(FlowMergeRequiresLengthBearingSectionBeforeDirectionChange(pt, ref))
-                    case FlowTransState.None                                   => None
-                errorOpt.fold(acc)(error => acc.copy(errorsReversed = error :: acc.errorsReversed))
-            case FlowEvent.LengthBearing                           =>
-                acc.state match
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(true) =>
-                        acc.copy(state = FlowTransState.None)
-                    case _                                                    => acc
-
-    private def validateFlowTransitions(
-        incrDescrs   : Vector[Id_IncrDescr],
-        initialNFlows: NbOfFlows
-    ): ValidatedResult[Unit] =
-        val acc = incrDescrs.foldLeft(FlowTransAcc(initialNFlows, FlowTransState.None, Nil)):
-            case (current, (idIncr, descr)) =>
-                flowEvents(idIncr, descr).foldLeft(current)((acc, e) => applyFlowEvent(acc, e))
-
-        NonEmptyList.fromList(acc.errorsReversed.reverse) match
-            case Some(errors) => errors.invalid[Unit]
-            case None         => ().validNel
-
     private def buildFrom(
         piDescr: PipeIncrDescr,
         seed   : PipeBuildSeed
     ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, PipeBuildSeed)] =
         val iListIncrDescr = piDescr.listIncrDescr()
         validateBoundaryElements(iListIncrDescr) *>
-            validateFlowTransitions(iListIncrDescr, seed.nFlows) *>
             foldFromInit(piDescr, iListIncrDescr, seed)
                 .andThen: (ids, fd, finalState) =>
                     postBuildValidation(iListIncrDescr, finalState) *>
@@ -325,30 +231,31 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      * @param newNFlows the new flow count after this operation
      * @param idIncr descriptor index for error messages
      * @param splitBranchDirection first-branch direction from a split element, or None if no split element follows
+     * @param isSplitElement whether this is a physical split element (false for SetNumberOfFlows without split element)
      */
     protected def validateSplitNotOnAscending(
         state               : PropsState,
         newNFlows           : NbOfFlows,
         idIncr              : IdIncr,
-        splitBranchDirection: Option[Vec3]
+        splitBranchDirection: Option[Vec3],
+        isSplitElement      : Boolean = true
     ): ValidatedResult[Unit] =
         val isSplit = newNFlows > currentNFlowsFromPropsState(state)
-        if isSplit && splitBranchDirection.isDefined then
-            // Only validate geometry when a split element with branch direction is present.
-            // `SetNumberOfFlows` without a split element is a valid DSL operation.
+        if isSplit then
             currentFrameFromPropsState(state).map(_.direction) match
                 case Some(incomingDir) =>
                     SplitMergeValidator.validateSplit (
                         incomingDirection  = incomingDir,
                         branchOneDirection = splitBranchDirection,
                         sectionTyp         = pt,
-                        elementRef         = s"#$idIncr"
+                        elementRef         = s"#$idIncr",
+                        isSplitElement     = isSplitElement
                     )
                 case None              =>
                     // No frame direction — cannot validate geometry, allow through.
                     ().validNel
         else
-            // Not a split, no split element, or merge — always allowed.
+            // Not a split, or merge — always allowed.
             ().validNel
 
     /**

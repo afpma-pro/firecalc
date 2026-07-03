@@ -35,19 +35,24 @@ object SplitMergeValidator:
      * @param branchOneDirection direction of the first outgoing branch (unit), or None if collinear
      * @param sectionTyp pipe type for error messages
      * @param elementRef human-readable reference (e.g. "#42")
+     * @param isSplitElement whether this is a physical split element (false for SetNumberOfFlows without split element)
      * @return valid if the split geometry is acceptable, invalid otherwise
      */
     def validateSplit(
         incomingDirection : Vec3,
         branchOneDirection: Option[Vec3],
         sectionTyp        : PipeType,
-        elementRef        : String
+        elementRef        : String,
+        isSplitElement    : Boolean = true
     ): ValidatedNel[IncrementalValidation_Error, Unit] =
         branchOneDirection match
-            case None     =>
+            case None if !isSplitElement =>
+                // SetNumberOfFlows without a split element — no geometry to validate.
+                ().validNel
+            case None                    =>
                 // No branch direction — collinear with incoming, not a real split.
                 SplitBranchesCollinear(sectionTyp, elementRef).invalidNel
-            case Some(o1) =>
+            case Some(o1)                =>
                 SplitMergeTwoHelper.safe(incomingDirection, o1, Vec3(0, 0, 0)) match
                     case Left(_)       =>
                         // Collinear — straight continuation, not a real split.

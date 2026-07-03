@@ -981,18 +981,6 @@ object standard {
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
     case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
     case class GeometryWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
-    case class FlowSplitRequiresInnerShapeBeforeDirectionChange(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
-    ) extends PrerequisiteNotMet
-    case class FlowMergeRequiresInnerShapeBeforeDirectionChange(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
-    ) extends PrerequisiteNotMet
-    case class FlowMergeRequiresLengthBearingSectionBeforeDirectionChange(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
-    ) extends PrerequisiteNotMet
     case class SplitReflectedBranchAscends(
         sectionTyp: PipeType,
         elementRef: String
@@ -1004,35 +992,22 @@ object standard {
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
-            case _: ThicknessRequiresInnerGeometry                             =>
+            case _: ThicknessRequiresInnerGeometry         =>
                 I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
-            case _: LayerRequiresSectionGeometry                               =>
+            case _: LayerRequiresSectionGeometry           =>
                 I18N.incremental_validation.prerequisites.layer_requires_section_geometry
-            case _: LayersRequireInnerShape                                    => I18N.incremental_validation.prerequisites.layers_require_inner_shape
-            case _: DirectionChangeRequiresSectionGeometry                     =>
+            case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
+            case _: DirectionChangeRequiresSectionGeometry =>
                 I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
-            case _: FinalDirWithoutInitialDirection                            =>
+            case _: FinalDirWithoutInitialDirection        =>
                 I18N.incremental_validation.prerequisites.final_dir_without_initial_direction
-            case _: GeometryWithoutInitialDirection                            =>
+            case _: GeometryWithoutInitialDirection        =>
                 I18N.incremental_validation.prerequisites.geometry_without_initial_direction
-            case e: FlowSplitRequiresInnerShapeBeforeDirectionChange           =>
-                I18N.incremental_validation.prerequisites.flow_split_requires_inner_shape_before_direction_change(
-                    e.directionChangeRef
-                )
-            case e: FlowMergeRequiresInnerShapeBeforeDirectionChange           =>
-                I18N.incremental_validation.prerequisites.flow_merge_requires_inner_shape_before_direction_change(
-                    e.directionChangeRef
-                )
-            case e: FlowMergeRequiresLengthBearingSectionBeforeDirectionChange =>
-                I18N.incremental_validation.prerequisites
-                    .flow_merge_requires_length_bearing_section_before_direction_change(
-                        e.directionChangeRef
-                    )
-            case e: SplitReflectedBranchAscends                                =>
+            case e: SplitReflectedBranchAscends            =>
                 I18N.incremental_validation.prerequisites.split_reflected_branch_ascends(
                     e.elementRef
                 )
-            case e: SplitBranchesCollinear                                     =>
+            case e: SplitBranchesCollinear                 =>
                 I18N.incremental_validation.prerequisites.split_branches_collinear(
                     e.elementRef
                 )

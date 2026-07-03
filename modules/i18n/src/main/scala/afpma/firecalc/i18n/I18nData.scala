@@ -1022,17 +1022,14 @@ object I18nData:
         )
 
         case class Prerequisites(
-            thickness_requires_inner_geometry                                 : String,
-            layer_requires_section_geometry                                   : String,
-            layers_require_inner_shape                                        : String,
-            direction_change_requires_section_geometry                        : String,
-            final_dir_without_initial_direction                               : String,
-            geometry_without_initial_direction                                : String,
-            flow_split_requires_inner_shape_before_direction_change           : StringFormat1,
-            flow_merge_requires_inner_shape_before_direction_change           : StringFormat1,
-            flow_merge_requires_length_bearing_section_before_direction_change: StringFormat1,
-            split_reflected_branch_ascends                                    : StringFormat1,
-            split_branches_collinear                                          : StringFormat1
+            thickness_requires_inner_geometry         : String,
+            layer_requires_section_geometry           : String,
+            layers_require_inner_shape                : String,
+            direction_change_requires_section_geometry: String,
+            final_dir_without_initial_direction       : String,
+            geometry_without_initial_direction        : String,
+            split_reflected_branch_ascends            : StringFormat1,
+            split_branches_collinear                  : StringFormat1
         )
 
         case class Conflicts(
