@@ -12,9 +12,9 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.domain.SetsInnerShape
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator}

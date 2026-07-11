@@ -6,8 +6,8 @@
 package afpma.firecalc.engine.impl.en13384
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.standard.*

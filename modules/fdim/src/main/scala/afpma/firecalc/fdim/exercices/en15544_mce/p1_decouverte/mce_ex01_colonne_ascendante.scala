@@ -8,9 +8,9 @@ package afpma.firecalc.fdim.exercices.en15544_mce.p1_decouverte
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.api.v0_2024_10_mce
 import afpma.firecalc.engine.models

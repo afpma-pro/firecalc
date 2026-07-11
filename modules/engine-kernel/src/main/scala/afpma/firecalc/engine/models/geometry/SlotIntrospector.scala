@@ -6,8 +6,8 @@
 package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.dto.common.PipeShape
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4

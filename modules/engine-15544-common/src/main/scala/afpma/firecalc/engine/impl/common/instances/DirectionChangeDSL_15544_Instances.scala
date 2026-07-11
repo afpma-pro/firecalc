@@ -8,7 +8,7 @@ package afpma.firecalc.engine.impl.common.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.domain.AbsoluteDirection
 
 import afpma.firecalc.engine.typeclasses.DirectionChangeDSL_15544
 

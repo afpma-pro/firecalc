@@ -5,7 +5,7 @@
 package afpma.firecalc.engine.impl.common
 
 import afpma.firecalc.dto.common.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*

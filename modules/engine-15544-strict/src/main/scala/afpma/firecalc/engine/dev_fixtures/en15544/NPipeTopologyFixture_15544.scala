@@ -8,9 +8,9 @@ package afpma.firecalc.engine.dev_fixtures.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4 as FP4
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as EP4
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4

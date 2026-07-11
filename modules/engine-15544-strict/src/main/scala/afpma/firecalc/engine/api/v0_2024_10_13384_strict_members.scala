@@ -7,8 +7,8 @@ package afpma.firecalc.engine.api
 
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.engine.impl.en13384.EN13384_FlowOnlyAirIntake_Assembly

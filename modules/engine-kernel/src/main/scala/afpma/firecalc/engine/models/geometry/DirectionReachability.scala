@@ -8,7 +8,7 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.domain.AbsoluteDirection
 
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 

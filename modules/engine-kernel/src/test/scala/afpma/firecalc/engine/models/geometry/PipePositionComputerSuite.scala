@@ -14,9 +14,9 @@ import afpma.firecalc.dto.common.PipeShape.Circle
 import afpma.firecalc.dto.common.PipeShape.Rectangle
 import afpma.firecalc.dto.common.PipeShape.Square
 import afpma.firecalc.dto.common.Position3D
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.domain.AirDistributionBox
 import afpma.firecalc.domain.FireboxCoordinateSystem
