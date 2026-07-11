@@ -7,7 +7,7 @@ package afpma.firecalc.ui.panels
 
 import afpma.firecalc.domain.IsBackendForbidden
 import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
-import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.models.{ElementPredicates, PipeType}
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
 import afpma.firecalc.engine.standard.ResultsNotComputed
@@ -16,7 +16,9 @@ import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 import afpma.firecalc.engine.standard.InvalidConstraint
 import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.i18n.ShowUsingLocale
+import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
+import io.taig.babel.Locale
 
 import cats.data.*
 import cats.data.Validated.Valid
@@ -32,14 +34,25 @@ object PanelStatusHelper:
     sealed trait PanelWarning
 
     object PanelWarning:
-        case object DirectionIncompatible extends PanelWarning
-        case object AirIntakePipeMissing  extends PanelWarning
+        case object DirectionIncompatible           extends PanelWarning
+        case object AirIntakePipeMissing            extends PanelWarning
+        case object FireboxSplitDirectionOverridden extends PanelWarning
 
     /** CSS text class name for warnings. */
     def textClsNameForWarnings: String = "text-warning"
 
     /** CSS tooltip style class name for warnings. */
     def tooltipStyleClsNameForWarnings: String = "tooltip-warning"
+
+    /** Resolve tooltip text for a PanelWarning variant. */
+    def tooltipTextForWarning(w: PanelWarning)(using Locale): String =
+        w match
+            case PanelWarning.DirectionIncompatible           =>
+                I18N.direction_badge.direction_incompatible_warning
+            case PanelWarning.AirIntakePipeMissing            =>
+                I18N.firebox.air_intake_pipe_missing_warning
+            case PanelWarning.FireboxSplitDirectionOverridden =>
+                I18N.direction_badge.firebox_split_direction_overridden_warning
 
     // ── PanelError ADT ─────────────────────────────────────────────
 
@@ -84,6 +97,35 @@ object PanelStatusHelper:
                         frames.get(idx).exists(frame => isIncompatible(idx, elem, frame))
                     if anyBad then PanelWarning.DirectionIncompatible.invalidNel
                     else ().validNel
+
+    /**
+     * Pure predicate: returns a warning when `slotIndex == 0` and the first
+     * real element (skipping property ops) is a split.
+     */
+    def fireboxSplitWarning[E](
+        slotIndex : Int,
+        elems     : Seq[E],
+        isSplit   : E => Boolean,
+        isProperty: E => Boolean
+    ): ValidatedNel[PanelWarning, Unit] =
+        if slotIndex != 0 then ().validNel
+        else
+            ElementPredicates.startsWith(elems, isProperty, isSplit) match
+                case true  => PanelWarning.FireboxSplitDirectionOverridden.invalidNel
+                case false => ().validNel
+
+    /**
+     * Build a firebox split direction override warning signal.
+     * Fires when slotIndex == 0 and the first real element (skipping property ops) is a split.
+     */
+    def fireboxSplitWarningSignal[E](
+        slotIndex  : Int,
+        elemsSignal: Signal[Seq[E]],
+        isSplit    : E => Boolean,
+        isProperty : E => Boolean
+    ): Signal[ValidatedNel[PanelWarning, Unit]] =
+        if slotIndex != 0 then Signal.fromValue(().validNel                                                        )
+        else elemsSignal.map                   (elems => fireboxSplitWarning(slotIndex, elems, isSplit, isProperty))
 
     private def clsNameForErrors(errs: NonEmptyList[MCalc_Error])(prefix: String): String =
         val isWarning = errs.toList.forall:

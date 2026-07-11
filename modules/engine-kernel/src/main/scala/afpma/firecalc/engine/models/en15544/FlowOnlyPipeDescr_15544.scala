@@ -139,18 +139,11 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
      * with a 90-degree turn.
      *
      * @param nFlows number of flows after the split/merge
-     * @param zeta   legacy field; retained for compatibility but no longer used as fallback.
-     *               The actual zeta is resolved by position in the pipe chain:
-     *               - Start (first element after firebox): 0.0
-     *               - Mid-chain: FWindow neighbor-dependent computation (~1.4)
-     *               - End (FWindow fails): 1.4 (CoefficientOfFlowResistance.splitMerge90Zeta)
-     * @param offset offset from the junction point
      * @param angleN2 optional second angle
      * @param effectiveShape pipe shape at the direction change
      */
     case class SplitMerge90(
         nFlows                     : NbOfFlows,
-        offset                     : Length               = 0.meters,
         override val angleN2       : Option[QtyD[Degree]] = None,
         override val effectiveShape: PipeShape
     ) extends DirectionChange(90.degrees, angleN2, effectiveShape)

@@ -28,7 +28,7 @@ import org.scalatest.matchers.should.Matchers
  *   - Splits with ascending reflected branch (forbidden)
  *   - Splits with horizontal/descending reflected branch (allowed)
  *   - Splits with collinear branch direction (forbidden)
- *   - Merges (always allowed)
+ *   - Merges (direction always allowed; position validated in postBuildValidation)
  */
 class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
     given FluePipeT = FluePipeT
@@ -227,7 +227,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         descr.toFullDescr().toEither.left.toOption.get.exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
     }
     // ── Split as first element (no preceding section) ──────────────────
-    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element (flow-only)" should "be accepted and produce SplitMerge90 with offset=0 and nFlows=2" in {
+    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element (flow-only)" should "be accepted and produce SplitMerge90 with nFlows=2" in {
         val builder = makeFlowOnlyBuilder(horizontalDir)
         val descr   = builder.define(
             (flowOnlySetup ++ Seq(
@@ -242,12 +242,11 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val (_, pfd) = descr.toFullDescr().toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.SplitMerge90 =>
-                sm.offset.to_m.value shouldBe 0.0
                 sm.nFlows shouldBe 2.flows
             case other => fail(s"Expected SplitMerge90 but got ${other.getClass.getSimpleName}")
     }
 
-    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element (thermal)" should "be accepted and produce SplitMerge90 with offset=0 and nFlows=2" in {
+    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element (thermal)" should "be accepted and produce SplitMerge90 with nFlows=2" in {
         val builder = makeThermalBuilder(horizontalDir)
         val descr   = builder.define(
             (thermalSetup ++ Seq(
@@ -262,12 +261,11 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val (_, pfd) = descr.toFullDescr().toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SplitMerge90 =>
-                sm.offset.to_m.value shouldBe 0.0
                 sm.nFlows shouldBe 2.flows
             case other => fail(s"Expected SplitMerge90 but got ${other.getClass.getSimpleName}")
     }
     // ── Split as first element — ascending pipe (flow-only) ────────────
-    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element on ascending pipe (flow-only)" should "be accepted and produce SplitMerge90 with offset=0 and nFlows=2" in {
+    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element on ascending pipe (flow-only)" should "be accepted and produce SplitMerge90 with nFlows=2" in {
         val builder = makeFlowOnlyBuilder(ascendingDir)
         val descr   = builder.define(
             (flowOnlySetup ++ Seq(
@@ -282,13 +280,12 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val (_, pfd) = descr.toFullDescr().toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.SplitMerge90 =>
-                sm.offset.to_m.value shouldBe 0.0
                 sm.nFlows shouldBe 2.flows
             case other => fail(s"Expected SplitMerge90 but got ${other.getClass.getSimpleName}")
     }
 
     // ── Split as first element — horizontal pipe (thermal) ─────────────
-    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element on horizontal pipe (thermal)" should "be accepted and produce SplitMerge90 with offset=0 and nFlows=2" in {
+    "SplitSingleFlowIntoTwoFlowsWith90DegTurn as first element on horizontal pipe (thermal)" should "be accepted and produce SplitMerge90 with nFlows=2" in {
         val builder = makeThermalBuilder(horizontalDir)
         val descr   = builder.define(
             (thermalSetup ++ Seq(
@@ -303,7 +300,6 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val (_, pfd) = descr.toFullDescr().toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SplitMerge90 =>
-                sm.offset.to_m.value shouldBe 0.0
                 sm.nFlows shouldBe 2.flows
             case other => fail(s"Expected SplitMerge90 but got ${other.getClass.getSimpleName}")
     }

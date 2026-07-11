@@ -18,6 +18,7 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.domain.AirDistributionBox
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -49,7 +50,7 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
     val topZ       = 0.52
 
     // Standard air distribution box dimensions
-    val adBoxZBottom = AirDistributionBox.Z_BOTTOM // -0.20
+    val adBoxZBottom = AirDistributionBox.CenterZ  // -0.20
     val adBoxZHeight = AirDistributionBox.Z_HEIGHT // 0.20
 
     // Standard pipe shape: circle 20cm diameter
@@ -346,13 +347,14 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
         )
         val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
 
-        val pos = PipePositionComputer.computeAirIntakeFinalAuto(
+        val pos = AirIntakeReplay.computeAirIntakeFinalAuto(
             descr,
             initialDir,
             boxXWidth,
             boxYDepth,
             adBoxZBottom,
-            adBoxZHeight
+            adBoxZHeight,
+            innerShapeOpt = Some(Circle(0.2.meters))
         )
 
         // After replay from Origin: final point = (0, 2, 0), final direction = Rear
@@ -379,13 +381,14 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
         )
         val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
 
-        val pos = PipePositionComputer.computeAirIntakeFinalAuto(
+        val pos = AirIntakeReplay.computeAirIntakeFinalAuto(
             descr,
             initialDir,
             boxXWidth,
             boxYDepth,
             adBoxZBottom,
-            adBoxZHeight
+            adBoxZHeight,
+            innerShapeOpt = Some(Circle(0.2.meters))
         )
 
         // After replay: final point = (0, 2, 1), final direction = Up
@@ -400,15 +403,16 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
 
     it should "return box surface position for empty descriptor sequence" in {
         val initialDir = PipeInitialDirection.default
-        val pos        = PipePositionComputer.computeAirIntakeFinalAuto(
+        val pos        = AirIntakeReplay.computeAirIntakeFinalAuto(
             Seq.empty,
             initialDir,
             boxXWidth,
             boxYDepth,
             adBoxZBottom,
-            adBoxZHeight
+            adBoxZHeight,
+            innerShapeOpt = None
         )
-        assertApprox(pos.x.value, 0.0, "x should be 0"                                    )
+        assertApprox(pos.x.value, 0.0, "x should be 0")
         assertApprox(pos.y.value, 0.0, "y should be 0"                                    )
         assertApprox(pos.z.value, adBoxZBottom + adBoxZHeight, "z should be at top of box")
     }

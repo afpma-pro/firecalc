@@ -194,11 +194,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             // Build a pipe with: SplitMerge90, StraightSection, CoudeCourbe90
             val elements: Vector[NamedPipeElDescrG[FlowOnlyPipeDescr_13384.PipeElDescr]] = Vector(
                 NamedPipeElDescrG(
-                    PipeIdx                             (0                                  ),
+                    PipeIdx                             (0                        ),
                     FluePipeT,
                     "split-merge-1",
-                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), 0.meters, None, shape),
-                    NbOfFlows                           (1                                  )
+                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), None, shape),
+                    NbOfFlows                           (1                        )
                 ),
                 NamedPipeElDescrG(
                     PipeIdx                                (1                                   ),
@@ -240,11 +240,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     NbOfFlows                            (1                                            )
                 ),
                 NamedPipeElDescrG(
-                    PipeIdx                             (1                                  ),
+                    PipeIdx                             (1                        ),
                     FluePipeT,
                     "split-merge-1",
-                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), 0.meters, None, shape),
-                    NbOfFlows                           (1                                  )
+                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), None, shape),
+                    NbOfFlows                           (1                        )
                 ),
                 NamedPipeElDescrG(
                     PipeIdx                                (2                                   ),
@@ -281,11 +281,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     NbOfFlows                              (1                                   )
                 ),
                 NamedPipeElDescrG(
-                    PipeIdx                             (1                                  ),
+                    PipeIdx                             (1                        ),
                     FluePipeT,
                     "split-merge-1",
-                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), 0.meters, None, shape),
-                    NbOfFlows                           (1                                  )
+                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), None, shape),
+                    NbOfFlows                           (1                        )
                 )
             )
 
@@ -338,11 +338,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             // Construct a rogue SplitMerge90 not in the pipe chain
             val rogueSplit: NamedPipeElDescrG[FlowOnlyPipeDescr_13384.DirectionChange] =
                 NamedPipeElDescrG(
-                    PipeIdx                             (99                                 ),
+                    PipeIdx                             (99                       ),
                     FluePipeT,
                     "rogue-split-merge",
-                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), 0.meters, None, shape),
-                    NbOfFlows                           (1                                  )
+                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), None, shape),
+                    NbOfFlows                           (1                        )
                 )
             // Querying with a SplitMerge90 not in the pipe should return an error
             val result = chainAwareDfc.dynamicFrictionCoeff(rogueSplit)
@@ -359,11 +359,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             // idx==0 and lastIdx==0, so `case 0` matches before `case lastIdx`.
             val elements: Vector[NamedPipeElDescrG[FlowOnlyPipeDescr_13384.PipeElDescr]] = Vector(
                 NamedPipeElDescrG(
-                    PipeIdx                             (0                                  ),
+                    PipeIdx                             (0                        ),
                     FluePipeT,
                     "split-merge-only",
-                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), 0.meters, None, shape),
-                    NbOfFlows                           (1                                  )
+                    FlowOnlyPipeDescr_13384.SplitMerge90(NbOfFlows(1), None, shape),
+                    NbOfFlows                           (1                        )
                 )
             )
 
@@ -409,6 +409,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     "coude-courbe-1",
                     elements(0).el match {
                         case dc: FlowOnlyPipeDescr_13384.DirectionChange => dc
+                        case _ => throw AssertionError("expected DirectionChange at index 0")
                     },
                     NbOfFlows(1)
                 )

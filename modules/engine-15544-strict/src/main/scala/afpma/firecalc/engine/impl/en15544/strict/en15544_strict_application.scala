@@ -43,6 +43,7 @@ import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
+import afpma.firecalc.domain.FireboxCoordinateSystem
 
 object EN15544_Strict_Application:
     def make(
@@ -315,17 +316,24 @@ sealed abstract class EN15544_Strict_Application(
                     en15544.en13384_heatingAppliance_massFlows
                 )
 
-                val initialSeed =
-                    FireboxSplitFrame.resolveInitialSeed(
-                        flueRegionSlots.head,
-                        PipeBuildSeed.fromFrame(en15544.incrInputs.postFirebox.initialDirection.map(toPipeFrame))
-                    )
+                val dims = en15544.firebox.dimensions.base match
+                    case afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions.Base.Squared(width, depth) =>
+                        (width.value, depth.value, en15544.firebox.dimensions.height.value)
+
+                val seed = PipeBuildSeed.withPositions(
+                    slots        = flueRegionSlots,
+                    initialFrame = en15544.incrInputs.postFirebox.initialDirection.map(toPipeFrame),
+                    fbWidth      = dims._1,
+                    fbDepth      = dims._2,
+                    fbHeight     = dims._3,
+                    fbBottomZ    = FireboxCoordinateSystem.FireboxBaseCenterZ
+                )
 
                 // Build PipeSlot for each flue region slot, threading descriptor seed through
                 // the fold accumulator (no mutable state).
                 val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
                     flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
-                        Validated.validNel((Vector.empty, initialSeed))
+                        Validated.validNel((Vector.empty, seed))
                     ) { (accV, slot) =>
                         accV.andThen { case (acc, seed) =>
                             slot match
@@ -469,7 +477,7 @@ sealed abstract class EN15544_Strict_Application(
                                 case Some(descr) =>
                                     val flueResult = FluePipe_Module_15544.incremental
                                         .define(descr*)
-                                        .toFullDescrWithSeed(initialSeed)
+                                        .toFullDescrWithSeed(seed)
                                     val fdResult: FluePipe_Module_15544.FullDescrResult =
                                         flueResult.map((ids, fd, _) => (ids, fd))
                                     FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match
