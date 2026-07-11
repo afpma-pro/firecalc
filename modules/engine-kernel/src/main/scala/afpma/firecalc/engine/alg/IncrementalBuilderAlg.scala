@@ -8,7 +8,7 @@ package afpma.firecalc.engine.alg
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.{PipeFrame, SplitMergeTwoHelper}
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
 import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
@@ -175,13 +175,9 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         ops    : Vector[Id_IncrDescr],
         seed   : PipeBuildSeed
     ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
-        val iPropsState0    = mkInitPropsState(piDescr)
-        val iPropsState1    = applyExternalNFlows(iPropsState0, seed.nFlows)
-        val iPropsState2    = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
-        val branchOneOffset = (seed.startPoint, seed.slot0FireboxSplitPosition) match
-            case (Some(sp), Some(splitPos)) => SplitMergeTwoHelper.computeBranchOneOffset(sp, splitPos)
-            case _ => 0.0
-        val iPropsState     = applyExternalBranchOneOffset(iPropsState2, branchOneOffset)
+        val iPropsState0 = mkInitPropsState(piDescr)
+        val iPropsState1 = applyExternalNFlows(iPropsState0, seed.nFlows)
+        val iPropsState  = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
         buildIncrDescr(
             mkInitPipeFullDescr(piDescr),
             IdsMapping.empty,
@@ -198,15 +194,13 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         validateBoundaryElements(iListIncrDescr) *>
             foldFromInit(piDescr, iListIncrDescr, seed)
                 .andThen: (ids, fd, finalState) =>
-                    postBuildValidation(iListIncrDescr, finalState, seed) *>
+                    postBuildValidation(iListIncrDescr, finalState) *>
                         (ids, fd, nextSeedFromFinalState(seed, finalState)).validNel
 
     private def nextSeedFromFinalState(seed: PipeBuildSeed, finalState: PropsState): PipeBuildSeed =
-        PipeBuildSeed                    (
-            frame                     = currentFrameFromPropsState(finalState).orElse(seed.frame),
-            nFlows                    = currentNFlowsFromPropsState(finalState),
-            startPoint                = seed.startPoint,
-            slot0FireboxSplitPosition = seed.slot0FireboxSplitPosition
+        PipeBuildSeed (
+            frame  = currentFrameFromPropsState(finalState).orElse(seed.frame),
+            nFlows = currentNFlowsFromPropsState(finalState)
         )
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
@@ -228,43 +222,37 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows = 1.flow
 
     /**
-     * Validates split geometry: the second branch must not ascend.
+     * Validates split geometry: the reflected second branch must not ascend.
      * Reads current flows + frame through the abstract-PropsState projections,
      * so all three builders share one implementation. Merge is always allowed.
      *
-     * `+Z` is up (gravity): ascending ⇔ branchTwoDirection.z > 0.
+     * `+Z` is up (gravity): ascending ⇔ reflectedBranchDirection.z > 0.
      *
      * @param state current props state
      * @param newNFlows the new flow count after this operation
      * @param idIncr descriptor index for error messages
      * @param elementName human-readable element name for error messages
      * @param splitBranchDirection first-branch direction from a split element, or None if no split element follows
-     * @param splitPosition 3D position where the split occurs
-     * @param branchOneStartPosition 3D start position of branch one
      * @param isSplitElement whether this is a physical split element (false for SetNumberOfFlows without split element)
      */
     protected def validateSplitNotOnAscending(
-        state                 : PropsState,
-        newNFlows             : NbOfFlows,
-        idIncr                : IdIncr,
-        elementName           : String,
-        splitBranchDirection  : Option[Vec3],
-        splitPosition         : Vec3,
-        branchOneStartPosition: Vec3,
-        isSplitElement        : Boolean = true
+        state               : PropsState,
+        newNFlows           : NbOfFlows,
+        idIncr              : IdIncr,
+        elementName         : String,
+        splitBranchDirection: Option[Vec3],
+        isSplitElement      : Boolean = true
     ): ValidatedResult[Unit] =
         val isSplit = newNFlows > currentNFlowsFromPropsState(state)
         if isSplit then
             currentFrameFromPropsState(state).map(_.direction) match
                 case Some(incomingDir)      =>
-                    SplitMerge90Validator.validateSplit     (
-                        incomingDirection      = incomingDir,
-                        branchOneDirection     = splitBranchDirection,
-                        splitPosition          = splitPosition,
-                        branchOneStartPosition = branchOneStartPosition,
-                        sectionTyp             = pt,
-                        elementRef             = s"'$elementName' (#$idIncr)",
-                        isSplitElement         = isSplitElement
+                    SplitMerge90Validator.validateSplit (
+                        incomingDirection  = incomingDir,
+                        branchOneDirection = splitBranchDirection,
+                        sectionTyp         = pt,
+                        elementRef         = s"'$elementName' (#$idIncr)",
+                        isSplitElement     = isSplitElement
                     )
                 case None if isSplitElement =>
                     GeometryWithoutInitialDirection(pt).invalidNel
@@ -282,8 +270,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      */
     protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
-        finalState: PropsState,
-        seed      : PipeBuildSeed
+        finalState: PropsState
     ): ValidatedResult[Unit] = ().validNel
 
     /**
@@ -296,8 +283,6 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState = s
 
     protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState = s
-
-    protected def applyExternalBranchOneOffset(s: PropsState, offset: Double): PropsState = s
 
     extension (propsState: PropsState) {
 

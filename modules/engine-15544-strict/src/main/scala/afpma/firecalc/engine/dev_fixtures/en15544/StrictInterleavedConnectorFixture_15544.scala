@@ -154,7 +154,7 @@ object StrictInterleavedConnectorFixture_15544
     // computed via Thermal 13384 inside the flue region).
     //
     // Topology:
-    //   Slot 0 — FlueSlot: horizontal exit + 90° turn upward + short vertical section
+    //   Slot 0 — FlueSlot: horizontal exit + 90° turn upward (flow-only)
     //   Slot 1 — ConnectorSlot: interleaved connector in flue region (thermal)
     //   Slot 2 — FlueSlot: ascending vertical column (flow-only, LAST flue)
     //   Slot 3 — ConnectorSlot: standard connector after flue region (thermal)
@@ -173,8 +173,7 @@ object StrictInterleavedConnectorFixture_15544
                     addSharpAngle_90deg (
                         "F1-virage 90 deg (-> Haut)",
                         AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
-                    ),
-                    addSectionVertical  ("F1-colonne courte", 10.cm)
+                    )
                 )
             )
         val slot1 =

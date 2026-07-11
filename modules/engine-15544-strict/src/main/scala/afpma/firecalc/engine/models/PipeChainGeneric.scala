@@ -5,12 +5,10 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.engine.models.FireboxSplitFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 
 import cats.data.Validated
 
@@ -27,19 +25,11 @@ object PipeChainGeneric:
         slots       : Seq[PostFireboxPipeDescrSlot_V7],
         initialFrame: Option[PipeFrame] = None
     ): Vector[SlotBuildResult] =
-        build(slots, initialFrame, None, None)
-
-    def build(
-        slots                    : Seq[PostFireboxPipeDescrSlot_V7],
-        initialFrame             : Option[PipeFrame],
-        startPoint               : Option[Vec3],
-        slot0FireboxSplitPosition: Option[Vec3]
-    ): Vector[SlotBuildResult] =
         val initialSeed = slots.headOption match
             case Some(firstSlot) =>
-                val defaultSeed = PipeBuildSeed(initialFrame, NbOfFlows(1), startPoint, slot0FireboxSplitPosition)
+                val defaultSeed = PipeBuildSeed.fromFrame(initialFrame)
                 FireboxSplitFrame.resolveInitialSeed(PostFireboxPipeSlot.fromDto(firstSlot), defaultSeed)
-            case None            => PipeBuildSeed(initialFrame, NbOfFlows(1), startPoint, slot0FireboxSplitPosition)
+            case None            => PipeBuildSeed.fromFrame(initialFrame)
         // Track whether any prior slot failed — downstream slots get upstreamFailure=true
         // so the UI can show ErrorsInOtherSectionType instead of spurious cascading errors.
         slots

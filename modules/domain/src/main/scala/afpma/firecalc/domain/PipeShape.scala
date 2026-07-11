@@ -120,13 +120,6 @@ object PipeShape:
         else
             PipeShape.Rectangle(a, b)
 
-    /**
-     * Defensive fallback for position computation when inner shape is absent.
-     * 200 mm circle — the most common pipe size in this domain.
-     * Only fires on invalid input; ElementFactory validates InnerGeometryMustBeSet downstream.
-     */
-    val InnerShapeFallbackCompute: PipeShape = Circle(0.2.m)
-
     @Transl(I(_.terms.pipe_shape.circle))
     case class Circle(
         @Transl(I(_.terms.diameter))
