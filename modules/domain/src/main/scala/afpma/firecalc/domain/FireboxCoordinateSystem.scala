@@ -13,9 +13,9 @@ package afpma.firecalc.domain
  * the coordinate system is explicit rather than implicit via literal zeros.
  */
 object FireboxCoordinateSystem:
-    val FireboxBaseCenterX: Double = 100.0
-    val FireboxBaseCenterY: Double = 100.0
-    val FireboxBaseCenterZ: Double = 100.0
+    val FireboxBaseCenterX: Double = 0.0
+    val FireboxBaseCenterY: Double = 0.0
+    val FireboxBaseCenterZ: Double = 0.0
 
     /**
      * Threshold for verticality check: sin(elevation) > 0.99 ⟺ within ~8° of vertical.

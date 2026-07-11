@@ -7,26 +7,32 @@ package afpma.firecalc.engine.alg
 
 import java.nio.charset.StandardCharsets
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
-import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.{
-    SplitSingleFlowIntoTwoFlowsWith90DegTurn,
-    MergeTwoFlowsIntoSingleWith90DegTurn
-}
 import afpma.firecalc.dto.common.PipeShape
+import afpma.firecalc.dto.v4.AbsoluteDirection
+import afpma.firecalc.dto.v4.AzimuthDirection
+import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.MergeTwoFlowsIntoSingleWith90DegTurn
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn
+
+import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.models.FluePipe_Module_15544
 import afpma.firecalc.engine.models.PipeBuildSeed
-import afpma.firecalc.engine.models.geometry.{PipeFrame, PositionTracker, SplitMergeTwoHelper, SymmetryPlaneConfig}
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PositionTracker
+import afpma.firecalc.engine.models.geometry.SplitMergeTwoHelper
+import afpma.firecalc.engine.models.geometry.SymmetryPlaneConfig
 import afpma.firecalc.engine.standard.MergeBranchTipNotAtMergePosition
-import afpma.firecalc.engine.api.FireCalcYAML_Loader
-import afpma.firecalc.units.Vec3
 
+import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterX
+import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterY
+import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterZ
 import io.circe.yaml.scalayaml.parser as yamlParser
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
@@ -355,13 +361,13 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
             //   x = FireboxBaseCenterX + width/2 = 100 + 0.22 = 100.22 (right face)
             //   y = FireboxBaseCenterY = 100 (centered in Y)
             //   z = FireboxBaseCenterZ + height - innerHeight/2 = 100 + 0.52 - 0.09 = 100.43 (top-aligned)
-            val expectedX = 100.0 + 0.44 / 2.0        // 100.22
-            val expectedY = 100.0                     // centered
-            val expectedZ = 100.0 + 0.52 - 0.18 / 2.0 // 100.43
+            val expectedX = FireboxBaseCenterX + 0.44 / 2.0        // 0.22
+            val expectedY = FireboxBaseCenterY                     // centered
+            val expectedZ = FireboxBaseCenterZ + 0.52 - 0.18 / 2.0 // 0.43
 
-            assertApprox(pos.x.value, expectedX, "x should be at right face (100.22)")
-            assertApprox(pos.y.value, expectedY, "y should be centered (100.0)"      )
-            assertApprox(pos.z.value, expectedZ, "z should be top-aligned (100.43)"  )
+            assertApprox(pos.x.value, expectedX, "x should be at right face (0.22)")
+            assertApprox(pos.y.value, expectedY, "y should be centered (0.0)"      )
+            assertApprox(pos.z.value, expectedZ, "z should be top-aligned (0.43)"  )
         }
     }
 }

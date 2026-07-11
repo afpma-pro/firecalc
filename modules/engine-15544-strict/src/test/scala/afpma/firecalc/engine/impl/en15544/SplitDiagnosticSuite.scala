@@ -38,48 +38,48 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
     "Test 1" should "allow split with horizontal reflected branch on horizontal pipe" in {
         val incrDescr = withInitialDirection(horizontalDir).define(
             setup ++ Seq(
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("preSplit", 1.meters),
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("preSplit", 1.meters ),
                 AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
                     "split",
                     newInnerShape = PipeShape.Circle(9.cm),
                     absDir        = Some(horizontalBranchDir)
-                )
+                ),
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("postSplit", 1.meters)
             )*
         )
         val result    = incrDescr.toFullDescr()
-        println(s"Test 1 result: $result")
         result.isValid shouldBe true
     }
 
     "Test 2" should "allow merge with absDir on ascending pipe" in {
         val incrDescr = withInitialDirection(ascendingDir).define(
             setup ++ Seq(
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                   ("preMerge", 1.meters),
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                   ("preMerge", 1.meters ),
                 AddFlowOnlyPipeElement_15544.MergeTwoFlowsIntoSingleWith90DegTurn(
                     "merge",
                     newInnerShape = PipeShape.Circle(15.cm),
                     absDir        = Some(horizontalBranchDir)
-                )
+                ),
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                   ("postMerge", 1.meters)
             )*
         )
         val result    = incrDescr.toFullDescr()
-        println(s"Test 2 result: $result")
         result.isValid shouldBe true
     }
 
     "Test 3" should "allow split with horizontal branch on ascending pipe" in {
         val incrDescr = withInitialDirection(ascendingDir).define(
             setup ++ Seq(
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("preSplit", 1.meters),
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("preSplit", 1.meters ),
                 AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
                     "split",
                     newInnerShape = PipeShape.Circle(9.cm),
                     absDir        = Some(horizontalBranchDir)
-                )
+                ),
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("postSplit", 1.meters)
             )*
         )
         val result    = incrDescr.toFullDescr()
-        println(s"Test 3 result: $result")
         result.isValid shouldBe true
     }
 }
