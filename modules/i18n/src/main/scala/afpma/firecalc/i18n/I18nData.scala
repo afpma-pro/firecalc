@@ -97,37 +97,38 @@ final case class I18nData(
 object I18nData:
 
     case class DirectionBadge(
-        label                         : String,
-        tooltip_direction             : String,
-        tooltip_azimuth               : StringFormat1,
-        tooltip_elevation             : StringFormat1,
-        tooltip_roll                  : StringFormat1,
-        tooltip_convention_up         : String,
-        tooltip_convention_horizontal : String,
-        tooltip_convention_down       : String,
-        cardinal_up                   : String,
-        cardinal_down                 : String,
-        cardinal_rear                 : String,
-        cardinal_front                : String,
-        cardinal_right                : String,
-        cardinal_left                 : String,
-        cardinal_rear_right           : String,
-        cardinal_front_right          : String,
-        cardinal_front_left           : String,
-        cardinal_rear_left            : String,
-        relative_left                 : String,
-        relative_right                : String,
-        relative_up                   : String,
-        relative_down                 : String,
-        relative_theta                : String,
-        relative_dir_label            : String,
-        abs_dir_label                 : String,
-        direction_incompatible_warning: String,
-        cardinal_horizontal           : String,
-        custom_btn                    : String,
-        custom_dialog_title           : String,
-        custom_option                 : StringFormat1,
-        az_el                         : StringFormat2
+        label                                     : String,
+        tooltip_direction                         : String,
+        tooltip_azimuth                           : StringFormat1,
+        tooltip_elevation                         : StringFormat1,
+        tooltip_roll                              : StringFormat1,
+        tooltip_convention_up                     : String,
+        tooltip_convention_horizontal             : String,
+        tooltip_convention_down                   : String,
+        cardinal_up                               : String,
+        cardinal_down                             : String,
+        cardinal_rear                             : String,
+        cardinal_front                            : String,
+        cardinal_right                            : String,
+        cardinal_left                             : String,
+        cardinal_rear_right                       : String,
+        cardinal_front_right                      : String,
+        cardinal_front_left                       : String,
+        cardinal_rear_left                        : String,
+        relative_left                             : String,
+        relative_right                            : String,
+        relative_up                               : String,
+        relative_down                             : String,
+        relative_theta                            : String,
+        relative_dir_label                        : String,
+        abs_dir_label                             : String,
+        direction_incompatible_warning            : String,
+        firebox_split_direction_overridden_warning: String,
+        cardinal_horizontal                       : String,
+        custom_btn                                : String,
+        custom_dialog_title                       : String,
+        custom_option                             : StringFormat1,
+        az_el                                     : StringFormat2
     )
 
     case class AddElement(
@@ -855,7 +856,11 @@ object I18nData:
         _self                                   : String,
         SplitSingleFlowIntoTwoFlowsWith90DegTurn: String,
         MergeTwoFlowsIntoSingleWith90DegTurn    : String,
-        newInnerShape                           : String
+        newInnerShape                           : String,
+        symmetryPlaneAbsDir                     : String,
+        collinearVectors                        : String,
+        absDirVertical                          : String,
+        offset                                  : String
     )
 
     case class TechnicalSpecficiations(
@@ -1029,7 +1034,10 @@ object I18nData:
             final_dir_without_initial_direction       : String,
             geometry_without_initial_direction        : String,
             split_reflected_branch_ascends            : StringFormat1,
-            split_branches_collinear                  : StringFormat1
+            split_branches_collinear                  : StringFormat1,
+            split_branches_not_opposite               : StringFormat2,
+            merge_branch_tip_not_at_merge_position    : StringFormat2,
+            symmetry_plane_abs_dir_vertical           : StringFormat1
         )
 
         case class Conflicts(
@@ -1111,7 +1119,9 @@ object I18nData:
         two_successive_direction_change_not_allowed     : StringFormat2,
         two_successive_straight_section_not_allowed     : StringFormat2,
         holes_should_not_happen                         : StringFormat1,
-        flue_pipe_length_below_minimum                  : StringFormat2
+        flue_pipe_length_below_minimum                  : StringFormat2,
+        direction_change_not_in_pipe_chain              : StringFormat2,
+        split_merge_90_at_end_of_chain                  : StringFormat2
     )
 
     case class TestReportI18n(

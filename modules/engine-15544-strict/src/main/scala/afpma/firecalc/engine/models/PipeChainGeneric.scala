@@ -6,6 +6,8 @@
 package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.engine.models.FireboxSplitFrame
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PipeFrame
 
 import cats.data.Validated
@@ -23,7 +25,11 @@ object PipeChainGeneric:
         slots       : Seq[PostFireboxPipeDescrSlot_V7],
         initialFrame: Option[PipeFrame] = None
     ): Vector[SlotBuildResult] =
-        val initialSeed = PipeBuildSeed.fromFrame(initialFrame)
+        val initialSeed = slots.headOption match
+            case Some(firstSlot) =>
+                val defaultSeed = PipeBuildSeed.fromFrame(initialFrame)
+                FireboxSplitFrame.resolveInitialSeed(PostFireboxPipeSlot.fromDto(firstSlot), defaultSeed)
+            case None            => PipeBuildSeed.fromFrame(initialFrame)
         // Track whether any prior slot failed — downstream slots get upstreamFailure=true
         // so the UI can show ErrorsInOtherSectionType instead of spurious cascading errors.
         slots

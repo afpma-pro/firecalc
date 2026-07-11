@@ -22,6 +22,12 @@ object PositionTracker:
     private sealed trait PipeCommand
     private case class CmdSetInnerShape(shape: PipeShape)                                  extends PipeCommand
     private case class CmdDirectionChange(absDir: Option[AbsoluteDirection], angle: Angle) extends PipeCommand
+    private case class CmdSplitMerge90(
+        absDir             : Option[AbsoluteDirection],
+        isSplit            : Boolean,
+        name               : String,
+        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+    ) extends PipeCommand
     private case class CmdSectionVertical(elevGain: Length)                                extends PipeCommand
     private case class CmdSectionHorizontal(horizLen: Length)                              extends PipeCommand
     private case class CmdSectionSlopped(length: Length)                                   extends PipeCommand
@@ -33,10 +39,12 @@ object PositionTracker:
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
         elem match
             case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle)  )
-            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
-            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
-            case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
+            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                Seq(CmdSplitMerge90(sm.absDir, false, sm.name, sm.symmetryPlaneAbsDir))
+            case AddSectionVertical(_, elevGain) => Seq(CmdSectionVertical(elevGain))
             case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
             case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
             case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
@@ -48,10 +56,12 @@ object PositionTracker:
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         elem match
             case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle)  )
-            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
-            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
-            case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
+            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                Seq(CmdSplitMerge90(sm.absDir, false, sm.name, sm.symmetryPlaneAbsDir))
+            case AddSectionVertical(_, elevGain) => Seq(CmdSectionVertical(elevGain))
             case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
             case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
             case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
@@ -68,9 +78,11 @@ object PositionTracker:
             case LinedFlue(_, liner, _, _)         =>
                 liner.props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
             case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
-            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
-            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     => Seq(CmdDirectionChange(sm.absDir, 90.degrees))
-            case AddSectionVertical(_, elevGain)                                => Seq(CmdSectionVertical(elevGain)  )
+            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
+                Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
+            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
+                Seq(CmdSplitMerge90(sm.absDir, false, sm.name, sm.symmetryPlaneAbsDir))
+            case AddSectionVertical(_, elevGain) => Seq(CmdSectionVertical(elevGain))
             case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
             case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
             case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
@@ -83,10 +95,11 @@ object PositionTracker:
         initialDirection        : PipeInitialDirection,
         externalFrame           : Option[PipeFrame],
         startPoint              : Vec3,
-        currentInnerShapeInitial: Option[PipeShape] = None
+        currentInnerShapeInitial: Option[PipeShape],
+        splitPosition           : Option[Vec3]
     ): PipePositionResult =
 
-        var frame            : Option[PipeFrame] = externalFrame.orElse(
+        var frame             : Option[PipeFrame] = externalFrame.orElse(
             Some(
                 PipeFrame.initial(
                     Vec3.fromAzimuthElevation(
@@ -96,16 +109,19 @@ object PositionTracker:
                 )
             )
         )
-        var currentPosition  : Vec3              = startPoint
-        var currentInnerShape: Option[PipeShape] = currentInnerShapeInitial
+        var currentPosition   : Vec3              = startPoint
+        var currentInnerShape : Option[PipeShape] = currentInnerShapeInitial
+        var firstSplitConsumed: Boolean           = false
         val segments = Seq.newBuilder[PipeSegmentPosition]
+        val splitMergePositions = Seq.newBuilder[SplitMergePosition]
+        val positionErrors = Vector.newBuilder[String]
 
         for (elem, idx) <- elems.zipWithIndex do
             for (cmd) <- map(elem) do
                 cmd match
-                    case CmdSetInnerShape(shape)           =>
+                    case CmdSetInnerShape(shape)                                     =>
                         currentInnerShape = Some(shape)
-                    case CmdDirectionChange(absDir, angle) =>
+                    case CmdDirectionChange(absDir, angle)                           =>
                         for
                             f  <- frame
                             fd <- absDir
@@ -113,6 +129,33 @@ object PositionTracker:
                             val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                             val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
                             frame = Some(f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec))
+                    case CmdSplitMerge90(absDir, isSplit, name, symmetryPlaneAbsDir) =>
+                        frame.foreach: f =>
+                            val frameAfter =
+                                absDir match
+                                    case Some(fd) =>
+                                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                        f.applyBendForFinalDir(90.0, targetVec)
+                                    case None     => f
+                            SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
+                                case Right(config) =>
+                                    val pos =
+                                        if isSplit && !firstSplitConsumed && splitPosition.isDefined then
+                                            firstSplitConsumed = true
+                                            splitPosition.get
+                                        else currentPosition
+                                    splitMergePositions += SplitMergePosition(
+                                        idx,
+                                        pos,
+                                        f,
+                                        frameAfter.direction,
+                                        isSplit,
+                                        config
+                                    )
+                                    frame = Some(frameAfter)
+                                case Left(_)       =>
+                                    positionErrors += name
                     case c: (CmdSectionVertical | CmdSectionHorizontal) =>
                         val l          = c match
                             case CmdSectionVertical(eg)   => eg.toUnit[Meter].value
@@ -156,9 +199,15 @@ object PositionTracker:
                             frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                         )
                         currentPosition = endPt
-                    case CmdNoOp                           => ()
+                    case CmdNoOp                                                     => ()
 
-        PipePositionResult(segments.result(), currentPosition, frame)
+        PipePositionResult(
+            segments.result           (),
+            currentPosition,
+            frame,
+            splitMergePositions.result(),
+            positionErrors.result     ()
+        )
 
     private def runPipeline[T](
         elems           : Seq[T],
@@ -166,6 +215,7 @@ object PositionTracker:
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
         finalPoint      : Option[Vec3],
+        splitPosition   : Option[Vec3],
         map             : T => Seq[PipeCommand]
     ): PipePositionResult =
         val result = computeGenericPipePositions(
@@ -173,7 +223,9 @@ object PositionTracker:
             map,
             initialDirection,
             externalFrame,
-            startPoint
+            startPoint,
+            currentInnerShapeInitial = None,
+            splitPosition            = splitPosition
         )
         applyFinalTranslate(result, finalPoint)
 
@@ -190,7 +242,8 @@ object PositionTracker:
         initialDirection: PipeInitialDirection,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
-        finalPoint      : Option[Vec3] = None
+        finalPoint      : Option[Vec3] = None,
+        splitPosition   : Option[Vec3] = None
     ): PipePositionResult =
 
         runPipeline(
@@ -199,6 +252,7 @@ object PositionTracker:
             externalFrame,
             startPoint,
             finalPoint,
+            splitPosition,
             mapFlowOnly13384
         )
 
@@ -207,7 +261,8 @@ object PositionTracker:
         initialDirection: PipeInitialDirection,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
-        finalPoint      : Option[Vec3] = None
+        finalPoint      : Option[Vec3] = None,
+        splitPosition   : Option[Vec3] = None
     ): PipePositionResult =
 
         runPipeline(
@@ -216,6 +271,7 @@ object PositionTracker:
             externalFrame,
             startPoint,
             finalPoint,
+            splitPosition,
             mapFlowOnly15544
         )
 
@@ -224,7 +280,8 @@ object PositionTracker:
         initialDirection: PipeInitialDirection,
         externalFrame   : Option[PipeFrame],
         startPoint      : Vec3,
-        finalPoint      : Option[Vec3] = None
+        finalPoint      : Option[Vec3] = None,
+        splitPosition   : Option[Vec3] = None
     ): PipePositionResult =
 
         runPipeline(
@@ -233,6 +290,7 @@ object PositionTracker:
             externalFrame,
             startPoint,
             finalPoint,
+            splitPosition,
             mapThermal13384
         )
 

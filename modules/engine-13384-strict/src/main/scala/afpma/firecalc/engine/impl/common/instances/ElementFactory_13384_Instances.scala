@@ -7,10 +7,12 @@ package afpma.firecalc.engine.impl.common.instances
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
@@ -26,8 +28,6 @@ import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
-import coulomb.syntax.*
-import afpma.firecalc.units.Vec3
 
 object ElementFactory_13384_Instances:
 
@@ -225,7 +225,6 @@ object ElementFactory_13384_Instances:
         dirBeforePreviousDC: Option[Vec3]      = None,
         currentFrame       : Option[PipeFrame] = None
     )
-
     given flowOnlyDirectionChange13384: ElementFactory[
         AddFlowOnlyPipeElement_13384.AddDirectionChange,
         FlowOnlyPipeDescr_13384.DirectionChange,
@@ -247,12 +246,12 @@ object ElementFactory_13384_Instances:
                     )
                 )
 
-            // Compute angleN2 from direction tracking if available
-            val angleN2: Option[QtyD[Degree]] =
-                (ctx.dirBeforePreviousDC, ctx.currentFrame) match
-                    case (Some(dirBefore), Some(frame)) =>
-                        Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
-                    case _ => None
+            val angleN2 = FramedBuilderSupport.computeAngleN2(
+                ctx.dirBeforePreviousDC,
+                ctx.currentFrame,
+                op.absDir,
+                op.angle.value
+            )
 
             (vDh, vLd).mapN { (dh: QtyD[Meter], ld: QtyD[Meter]) =>
                 val effectiveShape = ctx.innerShape.get
@@ -383,12 +382,12 @@ object ElementFactory_13384_Instances:
                     )
                 )
 
-            // Compute angleN2 from direction tracking if available
-            val angleN2: Option[QtyD[Degree]] =
-                (ctx.dirBeforePreviousDC, ctx.currentFrame) match
-                    case (Some(dirBefore), Some(frame)) =>
-                        Some(dirBefore.angleTo(frame.direction).withUnit[Degree])
-                    case _ => None
+            val angleN2 = FramedBuilderSupport.computeAngleN2(
+                ctx.dirBeforePreviousDC,
+                ctx.currentFrame,
+                op.absDir,
+                op.angle.value
+            )
 
             (vDh, vLd).mapN { (dh: QtyD[Meter], ld: QtyD[Meter]) =>
                 val effectiveShape = ctx.innerShape.get

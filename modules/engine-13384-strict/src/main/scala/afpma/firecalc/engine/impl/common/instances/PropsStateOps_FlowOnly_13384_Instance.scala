@@ -35,6 +35,8 @@ object PropsStateOps_FlowOnly_13384_Instance:
         initialFrame        : Option[PipeFrame]            = None,
         currentFrame        : Option[PipeFrame]            = None,
         dirBeforePreviousDC : Option[Vec3]                 = None,
+        currentPosition     : Vec3                         = Vec3(0, 0, 0),
+        branchOneOffset     : Double                       = 0.0,
         pendingFlowAreaCheck: Option[PendingFlowAreaCheck] = None
     )
 

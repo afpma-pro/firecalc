@@ -33,6 +33,9 @@ import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
+import afpma.firecalc.engine.models.geometry.PipePositionComputer
+import afpma.firecalc.domain.FireboxCoordinateSystem
+import afpma.firecalc.dto.common.toVec3
 
 import scala.annotation.nowarn
 
@@ -399,15 +402,57 @@ abstract class EN15544_MCE_Application(
                         )
 
                         val initialSeed =
-                            PipeBuildSeed.fromFrame(
-                                en15544_mce.incrInputs.postFirebox.initialDirection.map(toPipeFrame)
+                            FireboxSplitFrame.resolveInitialSeed(
+                                flueRegionSlots.head,
+                                PipeBuildSeed.fromFrame(
+                                    en15544_mce.incrInputs.postFirebox.initialDirection.map(toPipeFrame)
+                                )
                             )
+
+                        // Compute positions for postBuildValidation
+                        val firstShape = PipePositionComputer
+                            .firstInnerShapeInEngine(flueRegionSlots)
+                            .getOrElse(PipePositionComputer.DefaultPipeShape)
+
+                        val slot0FireboxSplitPosOpt =
+                            if initialSeed.nFlows.unwrap > 1 then
+                                PipePositionComputer.findFirstSplitDirEngine(flueRegionSlots).map { absDir =>
+                                    PipePositionComputer.computeSplitPosition(
+                                        FireboxCoordinateSystem.FireboxBaseCenterZ,
+                                        en15544_mce.firebox.dimensions.height.value,
+                                        PipePositionComputer.innerHeight(firstShape),
+                                        absDir
+                                    )
+                                }
+                            else None
+                        val branchOneStartOpt       =
+                            if initialSeed.nFlows.unwrap > 1 then
+                                en15544_mce.firebox.dimensions.base match
+                                    case afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions.Base
+                                            .Squared(width, depth) =>
+                                        PipePositionComputer.findFirstSplitDirEngine(flueRegionSlots).map { absDir =>
+                                            PipePositionComputer
+                                                .computeBranchStartAfterSplit    (
+                                                    absDir     = absDir,
+                                                    boxXWidth  = width.value,
+                                                    boxYDepth  = depth.value,
+                                                    boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
+                                                    boxZHeight = en15544_mce.firebox.dimensions.height.value,
+                                                    innerShape = firstShape
+                                                )
+                                                .toVec3
+                                        }
+                            else None
+                        val seedWithPositions       = initialSeed.copy(
+                            startPoint                = branchOneStartOpt,
+                            slot0FireboxSplitPosition = slot0FireboxSplitPosOpt
+                        )
 
                         // Build a PipeSlot for each flue region slot, threading descriptor seed
                         // through the fold accumulator (no mutable state).
                         val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
                             flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
-                                Validated.validNel((Vector.empty, initialSeed))
+                                Validated.validNel((Vector.empty, seedWithPositions))
                             ) { (accV, slot) =>
                                 accV.andThen { case (acc, seed) =>
                                     slot match

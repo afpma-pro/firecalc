@@ -637,7 +637,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
 
     // ── Ascending pipe split (geometry-based validation) ────────────────
     // The old blanket FlowSplitForbiddenOnAscendingPipe is replaced by
-    // SplitMergeValidator which only validates when a split element with
+    // SplitMerge90Validator which only validates when a split element with
     // branch direction is present. SetNumberOfFlows without a split element
     // is a valid flow-count change regardless of pipe direction.
 

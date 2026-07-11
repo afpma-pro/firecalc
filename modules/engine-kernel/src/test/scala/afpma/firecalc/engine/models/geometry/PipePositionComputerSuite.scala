@@ -18,6 +18,7 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.domain.AirDistributionBox
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -49,7 +50,7 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
     val topZ       = 0.52
 
     // Standard air distribution box dimensions
-    val adBoxZBottom = AirDistributionBox.Z_BOTTOM // -0.20
+    val adBoxZBottom = AirDistributionBox.CenterZ  // -0.20
     val adBoxZHeight = AirDistributionBox.Z_HEIGHT // 0.20
 
     // Standard pipe shape: circle 20cm diameter

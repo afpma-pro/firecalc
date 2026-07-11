@@ -210,8 +210,10 @@ private[dynfrict] final case class FWindow(
 
     def makeChecks: Either[FluePipeShapeSequenceError, FWindow] =
         for
-            _ <- check(!(nm3.isEmpty && nm2.isEmpty && nm1.isEmpty))(CanNotStartWithADirectionChange(curr.name))
-            _ <- check(!(nm1.isDefined && np1.isEmpty))             (CanNotEndWithADirectionChange(curr.name)  )
+            _ <- check(!(nm3.isEmpty && nm2.isEmpty && nm1.isEmpty))(
+                CanNotStartWithADirectionChange(curr.name)
+            )
+            _ <- check(!(nm1.isDefined && np1.isEmpty))             (CanNotEndWithADirectionChange(curr.name))
 
             _ <- check(!(nm3.isDirectionChange && nm2.isDirectionChange))(
                 TwoSuccessDirectionChangeNotAllowed(nm3.unsafePipeName, nm2.unsafePipeName)

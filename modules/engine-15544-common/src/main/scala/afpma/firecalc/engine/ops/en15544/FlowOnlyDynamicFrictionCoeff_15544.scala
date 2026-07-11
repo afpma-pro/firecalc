@@ -33,13 +33,13 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
     def whenRegularFor(pd: en15544_pipedescr.NotPressureDiff): DynamicFrictionCoeffOp.Result =
         import regular.given
         pd match
+            case x: en15544_pipedescr.DirectionChange        => x.dynamicFrictionCoeff
             case x: en15544_pipedescr.SingularFlowResistance => x.dynamicFrictionCoeff
             case en15544_pipedescr.SectionGeometryChange(from, to) =>
                 // See RQ_002
                 dynamicFrictionCoeff_13384.thermalSectionGeometryChange.dynamicFrictionCoeff(
                     SectionGeometryChange_13384.make(from.area, to.area)
                 )
-            case x: en15544_pipedescr.DirectionChange => x.dynamicFrictionCoeff
             case _: en15544_pipedescr.StraightSection => DynamicFrictionCoeffOp.zero
 
     private object regular:

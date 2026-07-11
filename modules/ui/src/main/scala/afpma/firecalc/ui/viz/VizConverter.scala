@@ -16,7 +16,7 @@ import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PipeSegmentPosition
 import afpma.firecalc.units.Vec3
 
-import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
+import afpma.firecalc.domain.AirDistributionBox
 
 import afpma.firecalc.filaire.ChimneyEndCapDefaults
 import afpma.firecalc.filaire.FilaireTypes.*
@@ -138,9 +138,13 @@ object VizConverter:
      * @param depthCm  firebox depth in cm (Front-Rear axis)
      */
     def airDistribToLine(widthCm: Double, depthCm: Double, displayName: Option[String] = None): FireCalcFilaireLine =
-        val heightCm = AIR_DISTRIB_HEIGHT_M * 100.0
+        val heightCm = AirDistributionBox.Z_HEIGHT * 100.0
         FireCalcFilaireLine     (
-            origin      = Origin(0.0, 0.0, -heightCm),
+            origin      = Origin(
+                AirDistributionBox.CenterX * 100.0,
+                AirDistributionBox.CenterY * 100.0,
+                AirDistributionBox.CenterZ * 100.0
+            ),
             direction   = Vector(0.0, 0.0, 1.0),
             length      = Length(heightCm),
             color       = AirDistribColor,

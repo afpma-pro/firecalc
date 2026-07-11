@@ -7,7 +7,9 @@ package afpma.firecalc.engine.ops.en15544.dynfrict
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp
@@ -17,6 +19,7 @@ import afpma.firecalc.engine.ops.en15544.dynfrict.*
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionGeometryChange
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.TwoSuccessDirectionChangeNotAllowed
+import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.DevError
 
 import cats.data.*
 import cats.data.Validated.Invalid
@@ -156,11 +159,40 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                         case _: StraightSection => false
                 .map(_._1)
 
-    private def computeCoeffForDirectionChange(ndc: NamedPipeElDescrG[DirectionChange]): DynamicFrictionCoeffOp.Result =
+    /**
+     * Resolve zeta for SplitMerge90 based on position in the compressed pipe chain.
+     *
+     * - Start (index 0): zeta = 0.0 (EN 15544 does not count the first turn between
+     *   firebox and first flue pipe; same applies for split output)
+     * - All other positions: FWindow neighbor-dependent computation via localComputeCoeff.
+     *   FWindow handles missing neighbors (end-of-chain) with Option fields;
+     *   if FWindow rejects the configuration (e.g., CanNotEndWithADirectionChange),
+     *   the error bubbles up as a ValidatedNel invalid.
+     */
+    private def resolveSplitMerge90Zeta(
+        ndc: NamedPipeElDescrG[DirectionChange]
+    ): DynamicFrictionCoeffOp.Result =
         findLocalCmprssdIdx(ndc) match
-            case Valid(Some(ridx)) => localComputeCoeff(ridx)
-            case Valid(None)       => throw new IllegalStateException(s"DEV ERROR: ${ndc.name} not found in local struct")
+            case Valid(Some(ridx)) =>
+                vcompressed match
+                    case Valid(compressed) =>
+                        val idx = ridx.unwrap
+                        if idx == 0 then (0.0.unitless: ζ).validNel[SingularFlowResistanceCoeffErrorI]
+                        else localComputeCoeff(ridx)
+                    case i @ Invalid(_)    => i // unreachable — findLocalCmprssdIdx propagates vcompressed validity
+            case Valid(None)       =>
+                DirectionChangeNotInPipeChain(ndc.typ, ndc.fullRef).invalidNel
             case i @ Invalid(_)    => i
+
+    private def computeCoeffForDirectionChange(ndc: NamedPipeElDescrG[DirectionChange]): DynamicFrictionCoeffOp.Result =
+        ndc.el match
+            case _: SplitMerge90 => resolveSplitMerge90Zeta(ndc)
+            case _ =>
+                findLocalCmprssdIdx(ndc) match
+                    case Valid(Some(ridx)) => localComputeCoeff(ridx)
+                    case Valid(None)       =>
+                        DirectionChangeNotInPipeChain(ndc.typ, ndc.fullRef).invalidNel
+                    case i @ Invalid(_)    => i
 
     extension (a: NamedPipeElDescrG[DirectionChange])
         def dynamicFrictionCoeff: Result =
@@ -183,11 +215,10 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                     .map: r =>
                         (r.typ, extractNeeded(r)) match
                             case (sectionTyp, Named(_, _: StraightSection)       ) =>
-                                // FluePipeShapeSequenceError("getFWindow can only be called on a DirectionChange").invalidNel
-                                throw new IllegalStateException("getFWindow can only be called on a DirectionChange")
+                                DevError("getFWindow can only be called on a DirectionChange").invalidNel
                             case (sectionTyp, ndc @ Named(_, dc: DirectionChange)) =>
                                 (sectionTyp, ndc.copy(t = dc)).validNel
-                    .getOrElse(throw new IllegalStateException("dev error : missing in index in local struct"))
+                    .getOrElse(DevError("dev error: missing index in local struct").invalidNel)
 
                 vcenter
                     .andThen:

@@ -632,6 +632,7 @@ object standard {
         case class TwoSuccessStraightSectionNotAllowed(pipeName1: String, pipeName2: String)
             extends FluePipeShapeSequenceError
         case class HolesShouldNotHappen(holeAfterPipeName: String)   extends FluePipeShapeSequenceError
+        case class DevError(msg: String)                             extends FluePipeShapeSequenceError
 
         // ShowUsingLocale for formula errors (delegates to i18n)
         given ShowUsingLocale[FluePipeShapeSequenceError] = showUsingLocale:
@@ -647,6 +648,7 @@ object standard {
                 I18N.en15544_errors.two_successive_straight_section_not_allowed(n1, n2)
             case HolesShouldNotHappen(h)                        =>
                 I18N.en15544_errors.holes_should_not_happen(h)
+            case DevError(m)                                    => m
 
         // given Show[FluePipeShapeSequenceError] = Show.show(x => s"FLUE PIPE DESCR ERROR: ${x.msg}")
 
@@ -743,6 +745,38 @@ object standard {
                 sectionTyp
             )
     }
+
+    /**
+     * A DirectionChange element was passed to a chain-aware DFC but its (PipeIdx, PipeType)
+     * key was not found in the chain's ordinal map.
+     */
+    case class DirectionChangeNotInPipeChain(
+        sectionTyp: PipeType,
+        elementRef: String
+    ) extends SingularFlowResistanceCoeffErrorI
+
+    given show_DirectionChangeNotInPipeChain: ShowUsingLocale[DirectionChangeNotInPipeChain] =
+        showUsingLocale: e =>
+            I18N.en15544_errors.direction_change_not_in_pipe_chain(
+                e.sectionTyp.show,
+                e.elementRef
+            )
+
+    /**
+     * SplitMerge90 at the end of a pipe chain is not permitted.
+     * It must appear at the first element (zeta=0.0) or mid-chain (zeta=1.4).
+     */
+    case class SplitMerge90AtEndOfChain(
+        sectionTyp: PipeType,
+        elementRef: String
+    ) extends SingularFlowResistanceCoeffErrorI
+
+    given show_SplitMerge90AtEndOfChain: ShowUsingLocale[SplitMerge90AtEndOfChain] =
+        showUsingLocale: e =>
+            I18N.en15544_errors.split_merge_90_at_end_of_chain(
+                e.sectionTyp.show,
+                e.elementRef
+            )
 
     // InvalidPressureRequirement
 
@@ -882,6 +916,8 @@ object standard {
                 I18N.mecaflu.errors.missing_upstream_seed_values(reason)
             case ComputationError(err, _)                           => err.show
             case x: SingularFlowResistanceCoeffError => x.show
+            case x: DirectionChangeNotInPipeChain    => x.show
+            case x: SplitMerge90AtEndOfChain         => x.show
             case x: FluePipeShapeSequenceError       => x.show
 
     // Incremental Builder Validation Errors
@@ -989,6 +1025,20 @@ object standard {
         sectionTyp: PipeType,
         elementRef: String
     ) extends PrerequisiteNotMet
+    case class SplitBranchesNotOpposite(
+        sectionTyp    : PipeType,
+        elementRef    : String,
+        branchAngleDeg: Double
+    ) extends PrerequisiteNotMet
+    case class MergeBranchTipNotAtMergePosition(
+        sectionTyp: PipeType,
+        elementRef: String,
+        distanceMm: Double
+    ) extends PrerequisiteNotMet
+    case class SymmetryPlaneAbsDirVertical(
+        sectionTyp: PipeType,
+        elementRef: String
+    ) extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
@@ -1009,6 +1059,20 @@ object standard {
                 )
             case e: SplitBranchesCollinear                 =>
                 I18N.incremental_validation.prerequisites.split_branches_collinear(
+                    e.elementRef
+                )
+            case e: SplitBranchesNotOpposite               =>
+                I18N.incremental_validation.prerequisites.split_branches_not_opposite(
+                    e.elementRef,
+                    f"${e.branchAngleDeg}%.1f"
+                )
+            case e: MergeBranchTipNotAtMergePosition       =>
+                I18N.incremental_validation.prerequisites.merge_branch_tip_not_at_merge_position(
+                    e.elementRef,
+                    f"${e.distanceMm}%.2f"
+                )
+            case e: SymmetryPlaneAbsDirVertical            =>
+                I18N.incremental_validation.prerequisites.symmetry_plane_abs_dir_vertical(
                     e.elementRef
                 )
 

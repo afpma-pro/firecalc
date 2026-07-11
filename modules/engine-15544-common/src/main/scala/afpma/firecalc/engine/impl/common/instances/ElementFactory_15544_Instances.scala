@@ -7,11 +7,12 @@ package afpma.firecalc.engine.impl.common.instances
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
 
+import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
 import afpma.firecalc.engine.models.geometry.*
@@ -25,8 +26,6 @@ import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
-import coulomb.syntax.*
-import afpma.firecalc.units.Vec3
 
 object ElementFactory_15544_Instances:
 
@@ -134,20 +133,12 @@ object ElementFactory_15544_Instances:
                 _.geometry,
                 DirectionChangeRequiresSectionGeometry(ctx.pipeType)
             ).map { effectiveShape =>
-                // angleN2 = angle between direction BEFORE the previous bend and direction AFTER the current bend.
-                // The factory runs before updateStateAfterConversionStep, so currentFrame still holds
-                // the pre-bend frame. We must apply the current bend here to get the post-bend direction.
-                val computedAngleN2: Option[QtyD[Degree]] =
-                    (ctx.dirBeforePreviousDC, ctx.currentFrame, op.absDir) match
-                        case (Some(dirBefore), Some(frame), Some(fd)) =>
-                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                            val targetVec     = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                            val postBendFrame = frame.applyBendForFinalDir(
-                                op.angle.toUnit[Degree].value,
-                                targetVec
-                            )
-                            Some(dirBefore.angleTo(postBendFrame.direction).withUnit[Degree])
-                        case _ => None
+                val computedAngleN2 = FramedBuilderSupport.computeAngleN2(
+                    ctx.dirBeforePreviousDC,
+                    ctx.currentFrame,
+                    op.absDir,
+                    op.angle.value
+                )
 
                 op match
                     case AddFlowOnlyPipeElement_15544.AddSharpeAngle_0_to_180(_, angle, _) =>

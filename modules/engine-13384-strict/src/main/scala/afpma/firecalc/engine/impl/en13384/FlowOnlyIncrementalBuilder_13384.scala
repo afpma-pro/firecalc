@@ -12,7 +12,7 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 import afpma.firecalc.engine.FlowAreaConservation
-import afpma.firecalc.engine.alg.IncrementalBuilderAlg
+import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator}
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -25,13 +25,14 @@ import afpma.firecalc.engine.impl.common.instances.PropsStateOps_FlowOnly_13384_
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.{PipeFrame, PositionTracker}
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
 import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
+import afpma.firecalc.engine.standard.SymmetryPlaneAbsDirVertical
 import afpma.firecalc.engine.typeclasses.*
 import cats.data.*
 import cats.syntax.all.*
@@ -89,7 +90,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
     ): Boolean =
         addElement match
             case _: AddDirectionChange                       => true
-            case _: SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+            case _: SplitSingleFlowIntoTwoFlowsWith90DegTurn => false
             case _: MergeTwoFlowsIntoSingleWith90DegTurn     => true
             case _ => false
 
@@ -196,7 +197,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
-        finalState: PropsState
+        finalState: PropsState,
+        seed      : PipeBuildSeed
     ): ValidatedResult[Unit] =
         val hasGeometry = incrDescrs.exists:
             case (_, _: AddElement) => true
@@ -209,7 +211,19 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                 case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
                 case _ => false
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
-            else ().validNel
+            else
+                val posResult       = PositionTracker.computeFlowOnly13384(
+                    incrDescrs.map(_._2).toSeq,
+                    PipeInitialDirection.default,
+                    finalState.initialFrame,
+                    seed.startPoint.getOrElse(Vec3(0, 0, 0)),
+                    splitPosition = seed.slot0FireboxSplitPosition
+                )
+                val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+                val positionErrors: ValidatedResult[Unit] =
+                    if posResult.errors.isEmpty then ().validNel
+                    else posResult.errors.map(e => SymmetryPlaneAbsDirVertical(pt, e).invalidNel).sequence.map(_ => ())
+                (mergeValidation |+| positionErrors).as(())
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
@@ -247,19 +261,29 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
             // BEFORE the split/merge (state update runs in `updateStateAfterConversionStep`),
             // so `prevInnerGeomO == currentShapeO` → no SectionGeometryChange inserted.
             case op: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
-                val dc = SplitMerge90(
+                val angleN2 = FramedBuilderSupport.computeAngleN2(
+                    st.dirBeforePreviousDC,
+                    st.currentFrame,
+                    op.absDir,
+                    90.0
+                )
+                val dc      = SplitMerge90(
                     nFlows         = 2.flows,
-                    zeta           = CoefficientOfFlowResistance.splitMerge90Zeta,
-                    angleN2        = None,
+                    angleN2        = angleN2,
                     effectiveShape = op.newInnerShape
                 )
                 dc.validNel
 
             case op: MergeTwoFlowsIntoSingleWith90DegTurn =>
-                val dc = SplitMerge90(
+                val angleN2 = FramedBuilderSupport.computeAngleN2(
+                    st.dirBeforePreviousDC,
+                    st.currentFrame,
+                    op.absDir,
+                    90.0
+                )
+                val dc      = SplitMerge90(
                     nFlows         = 1.flow,
-                    zeta           = CoefficientOfFlowResistance.splitMerge90Zeta,
-                    angleN2        = None,
+                    angleN2        = angleN2,
                     effectiveShape = op.newInnerShape
                 )
                 dc.validNel
@@ -360,7 +384,23 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                     Vec3.fromAzimuthElevation(az, el)
                 }
                 val elemId = convStep.findNextAddElement.map(_._1).getOrElse(-1)
-                validateSplitNotOnAscending(propsState, 2.flows, IdIncr(elemId), branchDirOpt).andThen { _ =>
+                val branchOneStartPos = branchDirOpt
+                    .map(dir => propsState.currentPosition + dir.normalized * propsState.branchOneOffset)
+                    .getOrElse(propsState.currentPosition)
+                val splitValid        = branchDirOpt
+                    .map { _ =>
+                        validateSplitNotOnAscending(
+                            propsState,
+                            2.flows,
+                            IdIncr(elemId),
+                            op.name,
+                            branchDirOpt,
+                            propsState.currentPosition,
+                            branchOneStartPos
+                        )
+                    }
+                    .getOrElse(().validNel)
+                splitValid.andThen { _ =>
                     propsState.currentFrame match
                         case Some(frame) =>
                             val targetVec = branchDirOpt.getOrElse(frame.direction)
@@ -435,21 +475,22 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
+                            val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
                             stateOps
                                 .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
-                                .andThen { _ =>
-                                    FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
-                                }
                                 .andThen { _ =>
                                     if !nextAddElementIsSplit(convStep) then
                                         validateSplitNotOnAscending(
                                             st,
                                             nf,
                                             IdIncr(nextElemIdIncr),
+                                            nextElemName,
                                             None,
+                                            st.currentPosition,
+                                            st.currentPosition,
                                             isSplitElement = false
-                                        ).map(_ => st)
-                                    else st.validNel[IncrementalValidation_Error]
+                                        ).map(_ => updatedSt)
+                                    else updatedSt.validNel[IncrementalValidation_Error]
                                 }
                         }
             }
