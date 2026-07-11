@@ -237,7 +237,7 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
 
         val pipe  = result.toOption.get
         val table = formatFullDescrAsTable(pipe)
-        SnapshotAssert.assertMatches(table, snapshotPath("version1_combustion_air.txt"))
+        SnapshotAssert.assertMatches(table, snapshotPath("version1_combustion_air.md"))
     }
 
     "Ecolabeled V2 combustion-air pipe FullDescr" in {
@@ -247,7 +247,7 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
 
         val pipe  = result.toOption.get
         val table = formatFullDescrAsTable(pipe)
-        SnapshotAssert.assertMatches(table, snapshotPath("version2_combustion_air.txt"))
+        SnapshotAssert.assertMatches(table, snapshotPath("version2_combustion_air.md"))
     }
 
 end EcolabeledCombustionAirPipeFullDescrSuite

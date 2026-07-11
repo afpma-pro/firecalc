@@ -32,17 +32,19 @@ case class PipeSegmentPosition(
 /**
  * Position of a split or merge element in the pipe geometry.
  *
- * @param elementIndex  Index in the incremental descriptor sequence
- * @param position      Absolute XYZ position where the split/merge occurs (in meters)
- * @param frame         PipeFrame at this point (direction is the flow direction)
- * @param isSplit       true for split, false for merge
+ * @param elementIndex       Index in the incremental descriptor sequence
+ * @param position           Absolute XYZ position where the split/merge occurs (in meters)
+ * @param frame              PipeFrame BEFORE the element (direction is the incoming flow direction)
+ * @param branchOneDirection Direction of the first outgoing branch after a split (for merges, meaningless — populated as outgoing direction)
+ * @param isSplit            true for split, false for merge
  */
 case class SplitMergePosition(
-    elementIndex: Int,
-    position    : Vec3,
-    frame       : PipeFrame,
-    frameAfter  : PipeFrame,
-    isSplit     : Boolean
+    elementIndex       : Int,
+    position           : Vec3,
+    frame              : PipeFrame,
+    branchOneDirection : Vec3,
+    isSplit            : Boolean,
+    symmetryPlaneConfig: SymmetryPlaneConfig
 )
 
 /**
@@ -52,18 +54,25 @@ case class SplitMergePosition(
  * @param finalPoint  XYZ end of the last segment (equals startPoint if no segments)
  * @param finalFrame  PipeFrame after the last element (None if no frame was ever set)
  * @param splitMergePositions  Positions of split and merge elements
+ * @param errors       Element refs that failed validation (e.g., symmetryPlaneAbsDir vertical)
  */
 case class PipePositionResult(
     segments           : Seq[PipeSegmentPosition],
     finalPoint         : Vec3,
     finalFrame         : Option[PipeFrame],
-    splitMergePositions: Seq[SplitMergePosition] = Seq.empty
+    splitMergePositions: Seq[SplitMergePosition] = Seq.empty,
+    errors             : Vector[String]          = Vector.empty
 ):
-    /** Translate all spatial positions by the given offset vector. */
+    /**
+     * Translate all spatial positions by the given offset vector.
+     * Note: `frame` inside `SplitMergePosition` is NOT translated because
+     * `PipeFrame` is directional only (flow direction + upRef); it carries no spatial state.
+     */
     def translate(offset: Vec3): PipePositionResult =
         PipePositionResult(
             segments.map           (s => s.copy(startPoint = s.startPoint + offset, endPoint = s.endPoint + offset)),
             finalPoint + offset,
             finalFrame,
-            splitMergePositions.map(s => s.copy(position = s.position + offset)                                    )
+            splitMergePositions.map(s => s.copy(position = s.position + offset)                                    ),
+            errors
         )

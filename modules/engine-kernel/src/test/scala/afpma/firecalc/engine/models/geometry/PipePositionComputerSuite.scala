@@ -18,6 +18,8 @@ import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
+import afpma.firecalc.domain.AirDistributionBox
+import afpma.firecalc.domain.FireboxCoordinateSystem
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -49,7 +51,7 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
     val topZ       = 0.52
 
     // Standard air distribution box dimensions
-    val adBoxZBottom = AirDistributionBox.Z_BOTTOM // -0.20
+    val adBoxZBottom = AirDistributionBox.CenterZ  // -0.20
     val adBoxZHeight = AirDistributionBox.Z_HEIGHT // 0.20
 
     // Standard pipe shape: circle 20cm diameter
@@ -68,24 +70,13 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             standardShape
         )
         // Right face: x = width/2 = 0.33, y = 0, z = topZ - innerHeight/2 = 0.52 - 0.1 = 0.42
-        assertApprox(pos.x.value, boxXWidth / 2.0, "x should be at right face")
-        assertApprox(pos.y.value, 0.0, "y should be centered"                 )
-        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned" )
-    }
-
-    it should "place exit at left face center for Left direction" in {
-        val dir = PipeInitialDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
-        val pos = PipePositionComputer.computePostFireboxStart(
-            dir,
-            boxXWidth,
-            boxYDepth,
-            boxZBottom,
-            boxZHeight,
-            standardShape
+        assertApprox(
+            pos.x.value,
+            FireboxCoordinateSystem.FireboxBaseCenterX + boxXWidth / 2.0,
+            "x should be at right face"
         )
-        assertApprox(pos.x.value, -boxXWidth / 2.0, "x should be at left face")
-        assertApprox(pos.y.value, 0.0, "y should be centered"                 )
-        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned" )
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned"                       )
     }
 
     it should "place exit at rear face center for Rear direction" in {
@@ -98,9 +89,33 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, 0.0, "x should be centered"                )
-        assertApprox(pos.y.value, boxYDepth / 2.0, "y should be at rear face")
-        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned")
+        // Rear face: x = center, y = depth/2, z = topZ - innerHeight/2
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY + boxYDepth / 2.0,
+            "y should be at rear face"
+        )
+        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned"                       )
+    }
+
+    it should "place exit at left face center for Left direction" in {
+        val dir = PipeInitialDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
+        val pos = PipePositionComputer.computePostFireboxStart(
+            dir,
+            boxXWidth,
+            boxYDepth,
+            boxZBottom,
+            boxZHeight,
+            standardShape
+        )
+        assertApprox(
+            pos.x.value,
+            FireboxCoordinateSystem.FireboxBaseCenterX - boxXWidth / 2.0,
+            "x should be at left face"
+        )
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned"                       )
     }
 
     it should "place exit at front face center for Front direction" in {
@@ -113,9 +128,13 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, 0.0, "x should be centered"                  )
-        assertApprox(pos.y.value, -boxYDepth / 2.0, "y should be at front face")
-        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned"  )
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY - boxYDepth / 2.0,
+            "y should be at front face"
+        )
+        assertApprox(pos.z.value, topZ - 0.2 / 2.0, "z should be top-aligned"                       )
     }
 
     it should "place exit at center of top face for Up direction" in {
@@ -128,9 +147,9 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, 0.0, "x should be centered"    )
-        assertApprox(pos.y.value, 0.0, "y should be centered"    )
-        assertApprox(pos.z.value, topZ, "z should be at top face")
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, topZ, "z should be at top face"                                   )
     }
 
     it should "place exit at center of top face for Down direction" in {
@@ -143,9 +162,9 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, 0.0, "x should be centered"    )
-        assertApprox(pos.y.value, 0.0, "y should be centered"    )
-        assertApprox(pos.z.value, topZ, "z should be at top face")
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, topZ, "z should be at top face"                                   )
     }
 
     // ── computePostFireboxStart: diagonal directions ──────────────────────────
@@ -163,8 +182,16 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, boxXWidth / 2.0, "x should be at right face"        )
-        assertApprox(pos.y.value, boxYDepth / 2.0, "y should be at rear face (corner)")
+        assertApprox(
+            pos.x.value,
+            FireboxCoordinateSystem.FireboxBaseCenterX + boxXWidth / 2.0,
+            "x should be at right face"
+        )
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY + boxYDepth / 2.0,
+            "y should be at rear face (corner)"
+        )
     }
 
     // ── computePostFireboxStart: different box dimensions ─────────────────────
@@ -180,7 +207,11 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, wideWidth / 2.0, "x should be at right face of wide box")
+        assertApprox(
+            pos.x.value,
+            FireboxCoordinateSystem.FireboxBaseCenterX + wideWidth / 2.0,
+            "x should be at right face of wide box"
+        )
     }
 
     it should "move boundary correctly for deep box" in {
@@ -194,7 +225,11 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             boxZHeight,
             standardShape
         )
-        assertApprox(pos.y.value, deepDepth / 2.0, "y should be at rear face of deep box")
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY + deepDepth / 2.0,
+            "y should be at rear face of deep box"
+        )
     }
 
     it should "move boundary correctly for tall box" in {
@@ -245,9 +280,9 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             adBoxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, 0.0, "x should be centered"               )
-        assertApprox(pos.y.value, 0.0, "y should be centered"               )
-        assertApprox(pos.z.value, adBoxZBottom, "z should be at bottom face")
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, adBoxZBottom, "z should be at bottom face"                        )
     }
 
     it should "place entry at top center for Down direction" in {
@@ -259,9 +294,9 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             adBoxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, 0.0, "x should be centered"                           )
-        assertApprox(pos.y.value, 0.0, "y should be centered"                           )
-        assertApprox(pos.z.value, adBoxZBottom + adBoxZHeight, "z should be at top face")
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, adBoxZBottom + adBoxZHeight, "z should be at top face"            )
     }
 
     it should "place entry at left face for Right direction (pipe enters from left, flows right toward center)" in {
@@ -274,9 +309,13 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             standardShape
         )
         // Ray from center in -Right = Left direction hits left face
-        assertApprox(pos.x.value, -boxXWidth / 2.0, "x should be at left face"          )
-        assertApprox(pos.y.value, 0.0, "y should be centered"                           )
-        assertApprox(pos.z.value, adBoxZBottom + 0.2 / 2.0, "z should be bottom-aligned")
+        assertApprox(
+            pos.x.value,
+            FireboxCoordinateSystem.FireboxBaseCenterX - boxXWidth / 2.0,
+            "x should be at left face"
+        )
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be centered")
+        assertApprox(pos.z.value, adBoxZBottom + 0.2 / 2.0, "z should be bottom-aligned"            )
     }
 
     it should "place entry at front face for Rear direction (pipe enters from front, flows rear toward center)" in {
@@ -289,9 +328,13 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             standardShape
         )
         // Ray from center in -Rear = Front direction hits front face
-        assertApprox(pos.x.value, 0.0, "x should be centered"                           )
-        assertApprox(pos.y.value, -boxYDepth / 2.0, "y should be at front face"         )
-        assertApprox(pos.z.value, adBoxZBottom + 0.2 / 2.0, "z should be bottom-aligned")
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be centered")
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY - boxYDepth / 2.0,
+            "y should be at front face"
+        )
+        assertApprox(pos.z.value, adBoxZBottom + 0.2 / 2.0, "z should be bottom-aligned"            )
     }
 
     // ── computeAirIntakeConnection: diagonal directions ────────────────────
@@ -309,8 +352,16 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
             adBoxZHeight,
             standardShape
         )
-        assertApprox(pos.x.value, -boxXWidth / 2.0, "x should be at left face (corner)" )
-        assertApprox(pos.y.value, -boxYDepth / 2.0, "y should be at front face (corner)")
+        assertApprox(
+            pos.x.value,
+            FireboxCoordinateSystem.FireboxBaseCenterX - boxXWidth / 2.0,
+            "x should be at left face (corner)"
+        )
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY - boxYDepth / 2.0,
+            "y should be at front face (corner)"
+        )
     }
 
     // ── computeAirIntakeConnection: Z within box bounds ──────────────────────
@@ -335,7 +386,7 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
 
     // ── computeAirIntakeFinalAuto: single-section ────────────────────────────
 
-    "computeAirIntakeFinalAuto" should "compute correct offset for single horizontal section" in {
+    "computeAirIntakeFinalAuto" should "compute correct start position for single horizontal section" in {
         import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
 
@@ -346,27 +397,36 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
         )
         val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
 
-        val pos = PipePositionComputer.computeAirIntakeFinalAuto(
+        val pos = AirIntakeReplay.computeAirIntakeFinalAuto(
             descr,
             initialDir,
             boxXWidth,
             boxYDepth,
             adBoxZBottom,
-            adBoxZHeight
+            adBoxZHeight,
+            innerShapeOpt = Some(Circle(0.2.meters))
         )
 
-        // After replay from Origin: final point = (0, 2, 0), final direction = Rear
+        // After replay from Origin: final point = (FireboxBaseCenterX, FireboxBaseCenterY+2, FireboxBaseCenterZ)
         // Target connection (Rear direction): ray from center in -Rear=Front hits front face
-        // x=0, y=-boxYDepth/2, z=adBoxZBottom+0.2/2
-        // Offset = target - rawFinal = (0, -boxYDepth/2 - 2, adBoxZBottom + 0.1)
-        assertApprox(pos.x.value, 0.0, "x offset should be 0"                                        )
-        assertApprox(pos.y.value, -boxYDepth / 2.0 - 2.0, "y offset should compensate for 2m section")
-        assertApprox(pos.z.value, adBoxZBottom + 0.1, "z offset should be bottom-aligned"            )
+        // x=FireboxBaseCenterX, y=FireboxBaseCenterY-boxYDepth/2, z=adBoxZBottom+0.2/2
+        // Absolute start = origin + (target - rawFinal)
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be at center")
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY - boxYDepth / 2.0 - 2.0,
+            "y should compensate for 2m section"
+        )
+        assertApprox(
+            pos.z.value,
+            adBoxZBottom + 0.1,
+            "z should be bottom-aligned"
+        )
     }
 
     // ── computeAirIntakeFinalAuto: multi-section ─────────────────────────────
 
-    it should "compute correct offset for multi-section sequence" in {
+    it should "compute correct start position for multi-section sequence" in {
         import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
 
@@ -379,38 +439,48 @@ class PipePositionComputerSuite extends AnyFlatSpec with Matchers:
         )
         val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
 
-        val pos = PipePositionComputer.computeAirIntakeFinalAuto(
+        val pos = AirIntakeReplay.computeAirIntakeFinalAuto(
             descr,
             initialDir,
             boxXWidth,
             boxYDepth,
             adBoxZBottom,
-            adBoxZHeight
+            adBoxZHeight,
+            innerShapeOpt = Some(Circle(0.2.meters))
         )
 
-        // After replay: final point = (0, 2, 1), final direction = Up
-        // Target connection (Up direction): x=0, y=0, z=adBoxZBottom
-        // Offset = target - rawFinal = (0, -2, adBoxZBottom - 1)
-        assertApprox(pos.x.value, 0.0, "x offset should be 0"                                     )
-        assertApprox(pos.y.value, -2.0, "y offset should compensate for 2m horizontal"            )
-        assertApprox(pos.z.value, adBoxZBottom - 1.0, "z offset should compensate for 1m vertical")
+        // After replay: final point = (FireboxBaseCenterX, FireboxBaseCenterY+2, FireboxBaseCenterZ+1)
+        // Target connection (Up direction): x=FireboxBaseCenterX, y=FireboxBaseCenterY, z=adBoxZBottom
+        // Absolute start = origin + (target - rawFinal)
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be at center")
+        assertApprox(
+            pos.y.value,
+            FireboxCoordinateSystem.FireboxBaseCenterY - 2.0,
+            "y should compensate for 2m horizontal"
+        )
+        assertApprox(
+            pos.z.value,
+            adBoxZBottom - 1.0,
+            "z should compensate for 1m vertical"
+        )
     }
 
     // ── computeAirIntakeFinalAuto: empty descriptor sequence ──────────────────
 
     it should "return box surface position for empty descriptor sequence" in {
         val initialDir = PipeInitialDirection.default
-        val pos        = PipePositionComputer.computeAirIntakeFinalAuto(
+        val pos        = AirIntakeReplay.computeAirIntakeFinalAuto(
             Seq.empty,
             initialDir,
             boxXWidth,
             boxYDepth,
             adBoxZBottom,
-            adBoxZHeight
+            adBoxZHeight,
+            innerShapeOpt = None
         )
-        assertApprox(pos.x.value, 0.0, "x should be 0"                                    )
-        assertApprox(pos.y.value, 0.0, "y should be 0"                                    )
-        assertApprox(pos.z.value, adBoxZBottom + adBoxZHeight, "z should be at top of box")
+        assertApprox(pos.x.value, FireboxCoordinateSystem.FireboxBaseCenterX, "x should be 0")
+        assertApprox(pos.y.value, FireboxCoordinateSystem.FireboxBaseCenterY, "y should be 0")
+        assertApprox(pos.z.value, adBoxZBottom + adBoxZHeight, "z should be at top of box"   )
     }
 
 end PipePositionComputerSuite

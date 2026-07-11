@@ -664,7 +664,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(100.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val slot1Result = slot1Descr.toFullDescrWithSeed(PipeBuildSeed.default)
+        val slot1Result = slot1Descr.toFullDescrWithSeed(PipeBuildSeed(None, NbOfFlows(1), None, None))
         slot1Result.isValid shouldBe true
         val nextSeed    = slot1Result.toEither.toOption.get._3
         // Seed carries only frame and nFlows — no shapeMaterialized
@@ -680,7 +680,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSectionSlopped("s1", 1.meters)
         )
         // Simulate slot 2: starts fresh, no shape set yet
-        val seed    = PipeBuildSeed(None, NbOfFlows(1))
+        val seed    = PipeBuildSeed(None, NbOfFlows(1), None, None)
         val result  = descr.toFullDescrWithSeed(seed)
         // First SetInnerShape accepted because geometry=None ("First Shape" exception)
         result.isValid shouldBe true
@@ -696,7 +696,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSectionSlopped("s1", 1.meters)
         )
         // New slot: starts fresh
-        val seed    = PipeBuildSeed(None, NbOfFlows(1))
+        val seed    = PipeBuildSeed(None, NbOfFlows(1), None, None)
         val result  = descr.toFullDescrWithSeed(seed)
         // First SetInnerShape accepted (geometry=None), second rejected (shapeMaterialized=false, geometry defined)
         result.isValid shouldBe false
@@ -712,7 +712,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarDirectionChange("bend"        ),
             GrammarSectionSlopped ("s1", 1.meters)
         )
-        val seed    = PipeBuildSeed(None, NbOfFlows(1))
+        val seed    = PipeBuildSeed(None, NbOfFlows(1), None, None)
         val result  = descr.toFullDescrWithSeed(seed)
         // AddDirectionChange rejected because no geometry
         result.isValid shouldBe false
@@ -729,7 +729,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarDirectionChange("bend"        ),
             GrammarSectionSlopped ("s1", 1.meters)
         )
-        val seed    = PipeBuildSeed(None, NbOfFlows(1))
+        val seed    = PipeBuildSeed(None, NbOfFlows(1), None, None)
         val result  = descr.toFullDescrWithSeed(seed)
         // AddDirectionChange rejected because shape not materialized
         result.isValid shouldBe false
@@ -746,7 +746,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSectionSlopped ("s1", 1.meters),
             GrammarDirectionChange("bend"        )
         )
-        val seed    = PipeBuildSeed(None, NbOfFlows(1))
+        val seed    = PipeBuildSeed(None, NbOfFlows(1), None, None)
         val result  = descr.toFullDescrWithSeed(seed)
         // Accepted: shape was materialized before the bend
         result.isValid shouldBe true

@@ -68,6 +68,7 @@ export interface VizConfig {
   labelAxisUp?: string // label for the up axis in the orientation gizmo (default 'up')
   labelAxisRight?: string // label for the right axis in the orientation gizmo (default 'right')
   _annotationsOverride?: boolean // when set, overrides computed annotationsVisible (used to persist toggle state)
+  labelWebGLError?: string // error message when WebGL context creation fails
 }
 
 export interface FilaireVizHandle {
@@ -853,11 +854,37 @@ export function initFilaireViz(
   // Measure container size, fall back to config values, fall back to defaults
   const containerWidth = container.clientWidth || config.canvasWidth || 750
   const containerHeight = container.clientHeight || config.canvasHeight || 600
-
-  const renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setSize(containerWidth, containerHeight)
-  renderer.setClearColor(new THREE.Color(config.backgroundColor))
-  container.appendChild(renderer.domElement)
+  let renderer: THREE.WebGLRenderer
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true })
+    renderer.setSize(containerWidth, containerHeight)
+    renderer.setClearColor(new THREE.Color(config.backgroundColor))
+    container.appendChild(renderer.domElement)
+  } catch (err) {
+    console.error('WebGL context creation failed:', err)
+    const msg = config.labelWebGLError ?? '3D visualization is not available. Please try a browser with WebGL support (Chrome, Firefox, Edge).'
+    const errorDiv = document.createElement('div')
+    errorDiv.className = 'flex items-center justify-center h-full p-4'
+    errorDiv.innerHTML = `
+      <div class="alert alert-warning max-w-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>${msg}</span>
+      </div>
+    `
+    container.appendChild(errorDiv)
+    return {
+      dispose: () => {
+        if (errorDiv.parentNode) {
+          errorDiv.parentNode.removeChild(errorDiv)
+        }
+      },
+      getCameraState: () => undefined,
+      getDisplayType: () => '',
+      getAnnotationsVisible: () => false,
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Watermark
@@ -1000,15 +1027,13 @@ export function initFilaireViz(
     camera.position.set(cs.position[0], cs.position[1], cs.position[2])
     camera.up.set(cs.up[0], cs.up[1], cs.up[2])
     controls.target.set(cs.target[0], cs.target[1], cs.target[2])
-    camera.lookAt(controls.target)
-    controls.update()
   } else {
     camera.position.copy(defaultCameraPos)
     camera.up.copy(defaultCameraUp)
-    camera.lookAt(defaultTarget)
     controls.target.copy(defaultTarget)
-    controls.update()
   }
+  camera.lookAt(controls.target)
+  controls.update()
 
   // Clamp dolly range so pan sensitivity remains usable at deep zoom.
   // Pan speed scales with camera-to-target distance; setting the floor at

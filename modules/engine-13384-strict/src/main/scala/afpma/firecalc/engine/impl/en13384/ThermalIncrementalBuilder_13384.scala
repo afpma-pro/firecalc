@@ -17,7 +17,7 @@ import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.FlowAreaConservation
-import afpma.firecalc.engine.alg.IncrementalBuilderAlg
+import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator}
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -30,7 +30,7 @@ import afpma.firecalc.engine.impl.common.instances.PropsStateOps_Thermal_13384_I
 import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.given
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
-import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.{PipeFrame, PositionTracker}
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
@@ -218,9 +218,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
-        finalState: PropsState
+        finalState: PropsState,
+        seed      : PipeBuildSeed
     ): ValidatedResult[Unit] =
-        // Run existing validations first
         val hasGeometry = incrDescrs.exists:
             case (_, _: AddElement) => true
             case _ => false
@@ -233,52 +233,18 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 case _ => false
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
             else
-                // Validate merge positions
-                validateMergePositions(incrDescrs, finalState)
-
-    /** Validate that all merge elements have their branch tip at the correct merge position. */
-    private def validateMergePositions(
-        incrDescrs: Vector[Id_IncrDescr],
-        finalState: PropsState
-    ): ValidatedResult[Unit] =
-        import afpma.firecalc.engine.models.geometry.{PositionTracker, SplitMergePosition}
-        import afpma.firecalc.engine.alg.SplitMerge90Validator
-
-        val elems         = incrDescrs.map(_._2).toSeq
-        val externalFrame = finalState.initialFrame
-        if externalFrame.isEmpty then return ().validNel
-
-        val posResult = PositionTracker.computeThermal13384(
-            elems,
-            PipeInitialDirection.default,
-            externalFrame,
-            Vec3(0, 0, 0)
-        )
-
-        val splitStack       = scala.collection.mutable.ListBuffer.empty[SplitMergePosition]
-        val mergeValidations = Vector.newBuilder[ValidatedResult[Unit]]
-
-        for smPos <- posResult.splitMergePositions do
-            if smPos.isSplit then splitStack += smPos
-            else
-                splitStack.reverseIterator
-                    .find(_.isSplit)
-                    .foreach: split =>
-                        splitStack.remove(splitStack.length - 1)
-                        val branchTipPos = smPos.position
-                        val incomingDir  = split.frame.direction
-                        val splitPos     = split.position
-                        val elementRef   = s"#${smPos.elementIndex}"
-
-                        mergeValidations += SplitMerge90Validator.validateMergePosition(
-                            incomingDir,
-                            splitPos,
-                            branchTipPos,
-                            pt,
-                            elementRef
-                        )
-
-        mergeValidations.result().sequence.map(_ => ())
+                val posResult       = PositionTracker.computeThermal13384(
+                    incrDescrs.map(_._2).toSeq,
+                    PipeInitialDirection.default,
+                    finalState.initialFrame,
+                    seed.startPoint.getOrElse(Vec3(0, 0, 0)),
+                    splitPosition = seed.slot0FireboxSplitPosition
+                )
+                val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+                val positionErrors: ValidatedResult[Unit] =
+                    if posResult.errors.isEmpty then ().validNel
+                    else posResult.errors.map(e => SymmetryPlaneAbsDirVertical(pt, e).invalidNel).sequence.map(_ => ())
+                (mergeValidation |+| positionErrors).as(())
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
@@ -447,9 +413,20 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                     Vec3.fromAzimuthElevation(az, el)
                 }
                 val elemId = convStep.findNextAddElement.map(_._1).getOrElse(-1)
-                val splitValid = branchDirOpt
+                val branchOneStartPos = branchDirOpt
+                    .map(dir => propsState.currentPosition + dir.normalized * propsState.branchOneOffset)
+                    .getOrElse(propsState.currentPosition)
+                val splitValid        = branchDirOpt
                     .map { _ =>
-                        validateSplitNotOnAscending(propsState, 2.flows, IdIncr(elemId), op.name, branchDirOpt)
+                        validateSplitNotOnAscending(
+                            propsState,
+                            2.flows,
+                            IdIncr(elemId),
+                            op.name,
+                            branchDirOpt,
+                            propsState.currentPosition,
+                            branchOneStartPos
+                        )
                     }
                     .getOrElse(().validNel)
                 splitValid.andThen { _ =>
@@ -583,6 +560,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                                             IdIncr(nextElemIdIncr),
                                             nextElemName,
                                             None,
+                                            st.currentPosition,
+                                            st.currentPosition,
                                             isSplitElement = false
                                         ).map(_ => updatedSt)
                                     else updatedSt.validNel[IncrementalValidation_Error]

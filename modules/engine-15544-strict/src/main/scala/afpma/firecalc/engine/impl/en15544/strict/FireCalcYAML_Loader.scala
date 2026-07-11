@@ -18,20 +18,27 @@ import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
-import afpma.firecalc.engine.models.geometry.AirDistributionBox
 import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
+import afpma.firecalc.engine.models.geometry.AirIntakeReplay
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipePositionComputer
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PostFireboxStartPositionMode
+import afpma.firecalc.engine.models.geometry.SlotIntrospector
 import afpma.firecalc.engine.standard.*
 
 import cats.data.NonEmptyList
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.syntax.all.*
+import afpma.firecalc.units.coulombutils.*
+
+import coulomb.*
 
 import scala.util.*
+
+import afpma.firecalc.domain.AirDistributionBox
+import afpma.firecalc.domain.FireboxCoordinateSystem
 
 case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
     self =>
@@ -80,8 +87,31 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             )
         )
 
+    private val fb: Firebox_15544 =
+        import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
+        summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
+
+    val engineSlots = PostFireboxPipeSlot.fromDto(cleanFramedPostFireboxPipes.slots)
+    val dims        = fb.dimensions.base match
+        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
+            (width.value, depth.value, fb.dimensions.height.value)
+
+    val seed = PipeBuildSeed.withPositions(
+        slots        = engineSlots,
+        initialFrame = Some(cleanInitialPipeFrame),
+        fbWidth      = dims._1,
+        fbDepth      = dims._2,
+        fbHeight     = dims._3,
+        fbBottomZ    = FireboxCoordinateSystem.FireboxBaseCenterZ
+    )
+
     val slotBuildResults: Vector[SlotBuildResult] =
-        PipeChainGeneric.build(cleanFramedPostFireboxPipes.slots, Some(cleanInitialPipeFrame))
+        PipeChainGeneric.build(
+            cleanFramedPostFireboxPipes.slots,
+            seed.frame,
+            seed.startPoint,
+            seed.slot0FireboxSplitPosition
+        )
 
     import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
     import afpma.firecalc.engine.ops.generic.{PipeSlot, PostFireboxPipeChain}
@@ -146,81 +176,59 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             }.toVector
         )
 
-    // EN15544 Strict
-
-    private val fb: Firebox_15544 =
-        import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
-        summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
-
     /** Resolve Auto/Manual post-firebox position to a concrete Position3D. */
     private def resolvePostFireboxPosition: Option[Position3D] =
         cleanFramedPostFireboxPipes.initialPosition match
             case PostFireboxStartPosition.Manual(pos) => Some(pos)
             case PostFireboxStartPosition.Auto        =>
-                val firstShape = PipePositionComputer
-                    .firstInnerShapeIn(cleanFramedPostFireboxPipes.slots)
-                    .getOrElse(PipePositionComputer.DefaultPipeShape)
-
-                PipePositionComputer.findFirstSplitDir(cleanFramedPostFireboxPipes.slots) match
-                    case Some(absDir) =>
-                        fb.dimensions.base match
-                            case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
-                                Some(
-                                    PipePositionComputer.computeBranchStartAfterSplit    (
-                                        absDir     = absDir,
-                                        boxXWidth  = width.value,
-                                        boxYDepth  = depth.value,
-                                        boxZBottom = 0.0,
-                                        boxZHeight = fb.dimensions.height.value,
-                                        innerShape = firstShape
-                                    )
+                if SlotIntrospector.leadingElementIsSplit(engineSlots                                 ) then
+                    // Leading element is a split — use the already-computed branch start
+                    seed.startPoint.map                  (vec => Position3D(vec.x.m, vec.y.m, vec.z.m))
+                else
+                    // No split at first element — compute post-firebox start from initial direction
+                    val firstShape = SlotIntrospector
+                        .firstInnerShapeIn(engineSlots)
+                        .getOrElse(PipeShape.InnerShapeFallbackCompute)
+                    fb.dimensions.base match
+                        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
+                            Some(
+                                PipePositionComputer.computePostFireboxStart (
+                                    direction  = cleanFramedPostFireboxPipes.initialDirection,
+                                    boxXWidth  = width.value,
+                                    boxYDepth  = depth.value,
+                                    boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
+                                    boxZHeight = fb.dimensions.height.value,
+                                    innerShape = firstShape
                                 )
-                    case None         =>
-                        fb.dimensions.base match
-                            case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
-                                Some(
-                                    PipePositionComputer.computePostFireboxStart (
-                                        direction  = cleanFramedPostFireboxPipes.initialDirection,
-                                        boxXWidth  = width.value,
-                                        boxYDepth  = depth.value,
-                                        boxZBottom = 0.0,
-                                        boxZHeight = fb.dimensions.height.value,
-                                        innerShape = firstShape
-                                    )
-                                )
+                            )
 
     /** Resolve Auto/Manual air intake position to a concrete Position3D. */
     private def resolveAirIntakePosition: Option[Position3D] =
         import afpma.firecalc.dto.v7.AirIntakePosition
         if fcProj.air_intake_pipes.descr.isEmpty then None
         else
+            val replayResult  = AirIntakeReplay.replayAirIntakeFromOrigin(
+                fcProj.air_intake_pipes.descr,
+                fcProj.air_intake_pipes.initialDir
+            )
+            val innerShapeOpt = replayResult.segments.lastOption.flatMap(_.innerShape)
+
             fcProj.air_intake_pipes.position match
-                case AirIntakePosition.InitialManual(pos) => Some(pos)
-                case AirIntakePosition.FinalManual(pos)   => Some(pos)
-                case AirIntakePosition.InitialAuto        =>
+                case AirIntakePosition.InitialManual(pos)                        => Some(pos)
+                case AirIntakePosition.FinalManual(pos)                          => Some(pos)
+                case AirIntakePosition.InitialAuto | AirIntakePosition.FinalAuto =>
+                    // Geometrically identical — the distinction is purely a migration label for V3 descriptors.
                     fb.dimensions.base match
                         case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
                             Some(
-                                PipePositionComputer.computeAirIntakeFinalAuto     (
-                                    descr      = fcProj.air_intake_pipes.descr,
-                                    initialDir = fcProj.air_intake_pipes.initialDir,
-                                    boxXWidth  = width.value,
-                                    boxYDepth  = depth.value,
-                                    boxZBottom = AirDistributionBox.Z_BOTTOM,
-                                    boxZHeight = AirDistributionBox.Z_HEIGHT
-                                )
-                            )
-                case AirIntakePosition.FinalAuto          =>
-                    fb.dimensions.base match
-                        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
-                            Some(
-                                PipePositionComputer.computeAirIntakeFinalAuto     (
-                                    descr      = fcProj.air_intake_pipes.descr,
-                                    initialDir = fcProj.air_intake_pipes.initialDir,
-                                    boxXWidth  = width.value,
-                                    boxYDepth  = depth.value,
-                                    boxZBottom = AirDistributionBox.Z_BOTTOM,
-                                    boxZHeight = AirDistributionBox.Z_HEIGHT
+                                AirIntakeReplay.computeAirIntakeFinalAuto        (
+                                    descr         = fcProj.air_intake_pipes.descr,
+                                    initialDir    = fcProj.air_intake_pipes.initialDir,
+                                    boxXWidth     = width.value,
+                                    boxYDepth     = depth.value,
+                                    boxZBottom    = AirDistributionBox.CenterZ,
+                                    boxZHeight    = AirDistributionBox.Z_HEIGHT,
+                                    innerShapeOpt = innerShapeOpt
                                 )
                             )
 

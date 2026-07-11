@@ -8,6 +8,7 @@ package afpma.firecalc.dto.v7
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.domain.{
+    AbsoluteDirection,
     IsBackendForbidden,
     IsDirectionChange,
     IsLengthBearingPipeElement,
@@ -195,11 +196,13 @@ object AddFlowOnlyPipeElement_15544_V4:
     @Transl(I(_.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn))
     case class SplitSingleFlowIntoTwoFlowsWith90DegTurn(
         @Transl(I(_.terms.name))
-        name         : String,
+        name               : String,
         @Transl(I(_.terms.absolute_direction))
-        absDir       : Option[AbsoluteDirection] = None,
+        absDir             : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape: PipeShape
+        newInnerShape      : PipeShape,
+        @Transl(I(_.split_merge.symmetryPlaneAbsDir))
+        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends AddFlowOnlyPipeElement_15544_V4
         with SetsNumberOfFlows
         with SetsInnerShape
@@ -212,11 +215,13 @@ object AddFlowOnlyPipeElement_15544_V4:
     @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
     case class MergeTwoFlowsIntoSingleWith90DegTurn(
         @Transl(I(_.terms.name))
-        name         : String,
+        name               : String,
         @Transl(I(_.terms.absolute_direction))
-        absDir       : Option[AbsoluteDirection] = None,
+        absDir             : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape: PipeShape
+        newInnerShape      : PipeShape,
+        @Transl(I(_.split_merge.symmetryPlaneAbsDir))
+        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends AddFlowOnlyPipeElement_15544_V4
         with SetsNumberOfFlows
         with SetsInnerShape

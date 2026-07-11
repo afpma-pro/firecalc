@@ -328,4 +328,38 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         assertVec3Approx(result.segments.head.endPoint, expectedEnd)
         assertVec3Approx(result.finalPoint, expectedEnd            )
     }
+
+    // ── Test 13: Vertical symmetryPlaneAbsDir produces error ─────
+
+    it should "produce error in PipePositionResult.errors when symmetryPlaneAbsDir is vertical" in {
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
+        // symmetryPlaneAbsDir pointing straight Up (no azimuth) with vertical incoming
+        // should produce an error in the result
+        val initialDir     = PipeInitialDirection.default
+        val splitPos       = Vec3(0, 0, 0.62)
+        val verticalAbsDir = AbsoluteDirection(None, InclinationDirection.Up) // straight Up, no azimuth
+        val elems          = Seq(
+            SplitSingleFlowIntoTwoFlowsWith90DegTurn               (
+                name                = "test-split-vertical-absdir",
+                absDir              = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
+                newInnerShape       = PipeShape.Circle(18.cm),
+                symmetryPlaneAbsDir = Some(verticalAbsDir)
+            ),
+            AddSectionSlopped                                      ("sortie de foyer", 0.3.meters)
+        )
+        val externalFrame  = Some(PipeFrame.initial(Vec3.Up))
+        val result         = PositionTracker.computeFlowOnly15544(
+            elems,
+            initialDir,
+            externalFrame,
+            splitPos
+        )
+
+        // The split should have been skipped (no splitMergePosition added)
+        result.splitMergePositions shouldBe empty
+
+        // The error should contain the element name
+        result.errors should contain("test-split-vertical-absdir")
+        result.errors.size shouldBe 1
+    }
 end PositionTrackerSuite

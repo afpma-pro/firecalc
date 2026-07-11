@@ -211,5 +211,6 @@ object FilaireLinesViz:
             labelAnnotations       = optStrToJs(config.labelAnnotations),
             labelAxisRear          = optStrToJs(config.labelAxisRear),
             labelAxisUp            = optStrToJs(config.labelAxisUp),
-            labelAxisRight         = optStrToJs(config.labelAxisRight)
+            labelAxisRight         = optStrToJs(config.labelAxisRight),
+            labelWebGLError        = optStrToJs(config.labelWebGLError)
         )

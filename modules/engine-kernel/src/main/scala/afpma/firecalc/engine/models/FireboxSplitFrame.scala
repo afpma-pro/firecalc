@@ -10,6 +10,7 @@ import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
 import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
+import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
@@ -51,18 +52,49 @@ object FireboxSplitFrame:
         firstSlot  : PostFireboxPipeSlot,
         defaultSeed: PipeBuildSeed
     ): PipeBuildSeed =
-        if startsWithSplit(firstSlot) then defaultSeed.copy(frame = Some(UpFrame), nFlows = NbOfFlows(2))
+        if isLeadingSplit(firstSlot) then defaultSeed.copy(frame = Some(UpFrame), nFlows = NbOfFlows(2))
         else defaultSeed
 
     /**
-     * Check if the first element of the slot's descriptors is a split.
+     * Check if this slot uses flow-only (EN 15544) descriptors.
      *
-     * Returns true for FlueSlot (FlowOnly), ThermalFlueSlot, ConnectorSlot, and ChimneySlot
-     * when the first descriptor is a split. ConnectorSlot/ChimneySlot are included defensively:
-     * post-firebox topology grammar allows ConnectorSlot as first, and ChimneySlot is excluded
-     * by topology rules but not the concern of this helper.
+     * @return true for `FlueSlot`, false for thermal slots and `NoFlueSlot`
      */
-    private def startsWithSplit(slot: PostFireboxPipeSlot): Boolean =
+    def isFlowOnlySlot(slot: PostFireboxPipeSlot): Boolean =
+        slot match
+            case PostFireboxPipeSlot.FlueSlot(_) => true
+            case _                               => false
+
+    /**
+     * Check if this slot uses thermal (EN 13384) descriptors.
+     *
+     * @return true for `ThermalFlueSlot`, `ConnectorSlot`, `ChimneySlot`; false otherwise
+     */
+    def isThermalSlot(slot: PostFireboxPipeSlot): Boolean =
+        slot match
+            case PostFireboxPipeSlot.ThermalFlueSlot(_) => true
+            case PostFireboxPipeSlot.ConnectorSlot(_)   => true
+            case PostFireboxPipeSlot.ChimneySlot(_)     => true
+            case _                                      => false
+
+    private def isThermalSplit(d: Seq[ThermalPipeDescr_13384_V4]): Boolean =
+        ElementPredicates.startsWith(
+            d,
+            isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
+            predicate  = {
+                case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
+                case _ => false
+            }
+        )
+
+    /**
+     * Check if the first non-property element of this slot is a split.
+     *
+     * Property elements (SetInnerShape, SetRoughness, etc.) are skipped.
+     *
+     * @return true if the leading element is a SplitSingleFlowIntoTwoFlowsWith90DegTurn
+     */
+    def isLeadingSplit(slot: PostFireboxPipeSlot): Boolean =
         slot match
             case PostFireboxPipeSlot.FlueSlot(descr)    =>
                 ElementPredicates.startsWith(
@@ -73,32 +105,8 @@ object FireboxSplitFrame:
                         case _ => false
                     }
                 )
-            case PostFireboxPipeSlot.ThermalFlueSlot(d) =>
-                ElementPredicates.startsWith(
-                    d,
-                    isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
-            case PostFireboxPipeSlot.ConnectorSlot(d)   =>
-                ElementPredicates.startsWith(
-                    d,
-                    isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
-            case PostFireboxPipeSlot.ChimneySlot(d)     =>
-                ElementPredicates.startsWith(
-                    d,
-                    isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
+            case PostFireboxPipeSlot.ThermalFlueSlot(d) => isThermalSplit(d)
+            case PostFireboxPipeSlot.ConnectorSlot(d)   => isThermalSplit(d)
+            case PostFireboxPipeSlot.ChimneySlot(d)     => isThermalSplit(d)
             case PostFireboxPipeSlot.NoFlueSlot         => false
 end FireboxSplitFrame

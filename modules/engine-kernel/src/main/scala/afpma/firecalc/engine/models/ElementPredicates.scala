@@ -14,7 +14,7 @@ package afpma.firecalc.engine.models
  * skipped so the first *real* element is inspected.
  *
  * Used by:
- *   - `FireboxSplitFrame.startsWithSplit` (engine-kernel)
+ *   - `FireboxSplitFrame.isLeadingSplit` (engine-kernel)
  *   - `PanelStatusHelper.fireboxSplitWarning` (ui)
  */
 object ElementPredicates:

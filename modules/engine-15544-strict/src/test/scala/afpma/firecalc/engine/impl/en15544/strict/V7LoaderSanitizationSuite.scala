@@ -15,7 +15,8 @@ import afpma.firecalc.dto.v7.AirIntakePosition
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
-import afpma.firecalc.engine.models.geometry.AirDistributionBox
+import afpma.firecalc.domain.AirDistributionBox
+import afpma.firecalc.domain.FireboxCoordinateSystem
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -174,11 +175,11 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             pos shouldBe defined
             val resolved = pos.get
             // x = -halfWidth = -0.33/2 = -0.165
-            (math.abs(resolved.x.value - (-0.165)) < 1e-6) shouldBe true
+            (math.abs(resolved.x.value - (FireboxCoordinateSystem.FireboxBaseCenterX - 0.165)) < 1e-6) shouldBe true
             // y = 0 (Left is pure -X)
-            (math.abs(resolved.y.value - 0.0) < 1e-6     ) shouldBe true
-            // z = fireboxHeight - innerHeight/2 = 0.52 - 0.12/2 = 0.46
-            (math.abs(resolved.z.value - 0.46) < 1e-6    ) shouldBe true
+            (math.abs(resolved.y.value - FireboxCoordinateSystem.FireboxBaseCenterY) < 1e-6          ) shouldBe true
+            // z = fireboxHeight - innerHeight/2 = 0.52 - 0.12/2 = 0.46 (relative to FireboxBaseCenterZ)
+            (math.abs(resolved.z.value - (FireboxCoordinateSystem.FireboxBaseCenterZ + 0.46)) < 1e-6 ) shouldBe true
         }
 
         // ── airIntakeInitialPosition ─────────────────────────────────────
@@ -235,12 +236,16 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             pos shouldBe defined
 
             val resolved = pos.get
+            // Air intake resolved position is an OFFSET (target - rawFinal), not an absolute position.
+            // Both replay start and connection point use FireboxBaseCenterX/Y, so X offset cancels to 0.
             // x = 0 (Rear is pure +Y)
-            (math.abs(resolved.x.value - 0.0) < 1e-6                                ) shouldBe true
+            (math.abs(resolved.x.value - 0.0) < 1e-6           ) shouldBe true
             // y = -depth/2 - 2.0 = -0.165 - 2.0 = -2.165
-            (math.abs(resolved.y.value - (-0.165 - 2.0)) < 1e-6                     ) shouldBe true
-            // z = adBoxZBottom + 0.1 = -0.20 + 0.1 = -0.10
-            (math.abs(resolved.z.value - (AirDistributionBox.Z_BOTTOM + 0.1)) < 1e-6) shouldBe true
+            (math.abs(resolved.y.value - (-0.165 - 2.0)) < 1e-6) shouldBe true
+            // z = connectionZ - rawFinalZ = (AirDistributionBox.CenterZ + 0.1) - FireboxBaseCenterZ = -0.1 - 100 = -100.1
+            (math.abs(
+                resolved.z.value - (AirDistributionBox.CenterZ + 0.1 - FireboxCoordinateSystem.FireboxBaseCenterZ)
+            ) < 1e-6                                           ) shouldBe true
         }
 
         "airIntakeInitialPosition resolves FinalAuto same as InitialAuto" in {
@@ -268,10 +273,12 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             val pos    = loader.stoveProjectDescr_EN15544_Strict.en15544_incrInputs.airIntake.resolvedPosition
             pos shouldBe defined
 
-            // Should match InitialAuto result
-            (math.abs(pos.get.x.value - 0.0) < 1e-6                                ) shouldBe true
-            (math.abs(pos.get.y.value - (-0.165 - 2.0)) < 1e-6                     ) shouldBe true
-            (math.abs(pos.get.z.value - (AirDistributionBox.Z_BOTTOM + 0.1)) < 1e-6) shouldBe true
+            // Should match InitialAuto result (offset, not absolute)
+            (math.abs(pos.get.x.value - 0.0) < 1e-6           ) shouldBe true
+            (math.abs(pos.get.y.value - (-0.165 - 2.0)) < 1e-6) shouldBe true
+            (math.abs(
+                pos.get.z.value - (AirDistributionBox.CenterZ + 0.1 - FireboxCoordinateSystem.FireboxBaseCenterZ)
+            ) < 1e-6                                          ) shouldBe true
         }
 
         "airIntakeInitialPosition returns Manual position as-is" in {

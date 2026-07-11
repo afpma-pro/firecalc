@@ -857,6 +857,9 @@ object I18nData:
         SplitSingleFlowIntoTwoFlowsWith90DegTurn: String,
         MergeTwoFlowsIntoSingleWith90DegTurn    : String,
         newInnerShape                           : String,
+        symmetryPlaneAbsDir                     : String,
+        collinearVectors                        : String,
+        absDirVertical                          : String,
         offset                                  : String
     )
 
@@ -1033,7 +1036,8 @@ object I18nData:
             split_reflected_branch_ascends            : StringFormat1,
             split_branches_collinear                  : StringFormat1,
             split_branches_not_opposite               : StringFormat2,
-            merge_branch_tip_not_at_merge_position    : StringFormat2
+            merge_branch_tip_not_at_merge_position    : StringFormat2,
+            symmetry_plane_abs_dir_vertical           : StringFormat1
         )
 
         case class Conflicts(

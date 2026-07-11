@@ -151,8 +151,8 @@ trait VizConfigJS extends js.Object:
     var labelViewMode         : js.UndefOr[String]
     var labelAnnotations      : js.UndefOr[String]
     var labelAxisRear         : js.UndefOr[String]
-    var labelAxisUp           : js.UndefOr[String]
     var labelAxisRight        : js.UndefOr[String]
+    var labelWebGLError       : js.UndefOr[String]
 
 object VizConfigJS:
     def apply(
@@ -177,7 +177,8 @@ object VizConfigJS:
         labelAnnotations      : js.UndefOr[String]           = js.undefined,
         labelAxisRear         : js.UndefOr[String]           = js.undefined,
         labelAxisUp           : js.UndefOr[String]           = js.undefined,
-        labelAxisRight        : js.UndefOr[String]           = js.undefined
+        labelAxisRight        : js.UndefOr[String]           = js.undefined,
+        labelWebGLError       : js.UndefOr[String]           = js.undefined
     ): VizConfigJS =
         js.Dynamic
             .literal           (
@@ -202,7 +203,8 @@ object VizConfigJS:
                 labelAnnotations       = labelAnnotations,
                 labelAxisRear          = labelAxisRear,
                 labelAxisUp            = labelAxisUp,
-                labelAxisRight         = labelAxisRight
+                labelAxisRight         = labelAxisRight,
+                labelWebGLError        = labelWebGLError
             )
             .asInstanceOf[VizConfigJS]
 
