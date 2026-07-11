@@ -8,8 +8,7 @@ package afpma.firecalc.engine.models
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
-import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
-import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
+import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
@@ -65,40 +64,20 @@ object FireboxSplitFrame:
     private def startsWithSplit(slot: PostFireboxPipeSlot): Boolean =
         slot match
             case PostFireboxPipeSlot.FlueSlot(descr)    =>
-                ElementPredicates.startsWith(
-                    descr,
-                    isProperty = { case _: SetFlowOnlyPipeProp_15544_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddFlowOnlyPipeElement_15544_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
-            case PostFireboxPipeSlot.ThermalFlueSlot(d) =>
-                ElementPredicates.startsWith(
-                    d,
-                    isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
-            case PostFireboxPipeSlot.ConnectorSlot(d)   =>
-                ElementPredicates.startsWith(
-                    d,
-                    isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
-            case PostFireboxPipeSlot.ChimneySlot(d)     =>
-                ElementPredicates.startsWith(
-                    d,
-                    isProperty = { case _: SetThermalPipeProp_13384_V4 => true; case _ => false },
-                    predicate  = {
-                        case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true;
-                        case _ => false
-                    }
-                )
+                descr.headOption.exists {
+                    case _: AddFlowOnlyPipeElement_15544_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+                    case _ => false
+                }
+            case PostFireboxPipeSlot.ThermalFlueSlot(d) => startsWithThermalSplit(d)
+            case PostFireboxPipeSlot.ConnectorSlot(d)   => startsWithThermalSplit(d)
+            case PostFireboxPipeSlot.ChimneySlot(d)     => startsWithThermalSplit(d)
             case PostFireboxPipeSlot.NoFlueSlot         => false
+
+    private def startsWithThermalSplit(
+        descr: Seq[ThermalPipeDescr_13384_V4]
+    ): Boolean =
+        descr.headOption.exists {
+            case _: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+            case _ => false
+        }
 end FireboxSplitFrame

@@ -1030,15 +1030,6 @@ object standard {
         elementRef    : String,
         branchAngleDeg: Double
     ) extends PrerequisiteNotMet
-    case class MergeBranchTipNotAtMergePosition(
-        sectionTyp: PipeType,
-        elementRef: String,
-        distanceMm: Double
-    ) extends PrerequisiteNotMet
-    case class SymmetryPlaneAbsDirVertical(
-        sectionTyp: PipeType,
-        elementRef: String
-    ) extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
@@ -1065,15 +1056,6 @@ object standard {
                 I18N.incremental_validation.prerequisites.split_branches_not_opposite(
                     e.elementRef,
                     f"${e.branchAngleDeg}%.1f"
-                )
-            case e: MergeBranchTipNotAtMergePosition       =>
-                I18N.incremental_validation.prerequisites.merge_branch_tip_not_at_merge_position(
-                    e.elementRef,
-                    f"${e.distanceMm}%.2f"
-                )
-            case e: SymmetryPlaneAbsDirVertical            =>
-                I18N.incremental_validation.prerequisites.symmetry_plane_abs_dir_vertical(
-                    e.elementRef
                 )
 
     // Conflict errors

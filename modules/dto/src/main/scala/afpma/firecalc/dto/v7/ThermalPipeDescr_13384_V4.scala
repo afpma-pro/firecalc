@@ -398,13 +398,13 @@ object AddThermalPipeElement_13384_V4:
     @Transl(I(_.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn))
     case class SplitSingleFlowIntoTwoFlowsWith90DegTurn(
         @Transl(I(_.terms.name))
-        name               : String,
+        name         : String,
         @Transl(I(_.terms.absolute_direction))
-        absDir             : Option[AbsoluteDirection] = None,
+        absDir       : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape      : PipeShape,
-        @Transl(I(_.split_merge.symmetryPlaneAbsDir))
-        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        newInnerShape: PipeShape,
+        @Transl(I(_.split_merge.offset))
+        offset       : Length                    = 0.meters
     ) extends AddThermalPipeElement_13384_V4
         with SetsNumberOfFlows
         with SetsInnerShape
@@ -417,13 +417,11 @@ object AddThermalPipeElement_13384_V4:
     @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
     case class MergeTwoFlowsIntoSingleWith90DegTurn(
         @Transl(I(_.terms.name))
-        name               : String,
+        name         : String,
         @Transl(I(_.terms.absolute_direction))
-        absDir             : Option[AbsoluteDirection] = None,
+        absDir       : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape      : PipeShape,
-        @Transl(I(_.split_merge.symmetryPlaneAbsDir))
-        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        newInnerShape: PipeShape
     ) extends AddThermalPipeElement_13384_V4
         with SetsNumberOfFlows
         with SetsInnerShape

@@ -43,9 +43,6 @@ import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
-import afpma.firecalc.engine.models.geometry.PipePositionComputer
-import afpma.firecalc.domain.FireboxCoordinateSystem
-import afpma.firecalc.dto.common.toVec3
 
 object EN15544_Strict_Application:
     def make(
@@ -324,50 +321,11 @@ sealed abstract class EN15544_Strict_Application(
                         PipeBuildSeed.fromFrame(en15544.incrInputs.postFirebox.initialDirection.map(toPipeFrame))
                     )
 
-                // Compute positions for postBuildValidation
-                val firstShape = PipePositionComputer
-                    .firstInnerShapeInEngine(flueRegionSlots)
-                    .getOrElse(PipePositionComputer.DefaultPipeShape)
-
-                val slot0FireboxSplitPosOpt =
-                    if initialSeed.nFlows.unwrap > 1 then
-                        PipePositionComputer.findFirstSplitDirEngine(flueRegionSlots).map { absDir =>
-                            PipePositionComputer.computeSplitPosition(
-                                FireboxCoordinateSystem.FireboxBaseCenterZ,
-                                en15544.firebox.dimensions.height.value,
-                                PipePositionComputer.innerHeight(firstShape),
-                                absDir
-                            )
-                        }
-                    else None
-                val branchOneStartOpt       =
-                    if initialSeed.nFlows.unwrap > 1 then
-                        en15544.firebox.dimensions.base match
-                            case afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions.Base
-                                    .Squared(width, depth) =>
-                                PipePositionComputer.findFirstSplitDirEngine(flueRegionSlots).map { absDir =>
-                                    PipePositionComputer
-                                        .computeBranchStartAfterSplit    (
-                                            absDir     = absDir,
-                                            boxXWidth  = width.value,
-                                            boxYDepth  = depth.value,
-                                            boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
-                                            boxZHeight = en15544.firebox.dimensions.height.value,
-                                            innerShape = firstShape
-                                        )
-                                        .toVec3
-                                }
-                    else None
-                val seedWithPositions       = initialSeed.copy(
-                    startPoint                = branchOneStartOpt,
-                    slot0FireboxSplitPosition = slot0FireboxSplitPosOpt
-                )
-
                 // Build PipeSlot for each flue region slot, threading descriptor seed through
                 // the fold accumulator (no mutable state).
                 val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
                     flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
-                        Validated.validNel((Vector.empty, seedWithPositions))
+                        Validated.validNel((Vector.empty, initialSeed))
                     ) { (accV, slot) =>
                         accV.andThen { case (acc, seed) =>
                             slot match

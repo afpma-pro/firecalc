@@ -244,6 +244,7 @@ object FlowOnlyPipeDescr_13384 extends afpma.firecalc.engine.models.PipeDescrAlg
 
     case class SplitMerge90(
         nFlows                     : NbOfFlows,
+        offset                     : Length               = 0.meters,
         override val angleN2       : Option[QtyD[Degree]] = None,
         override val effectiveShape: PipeShape
     ) extends DirectionChange(90.degrees, angleN2, effectiveShape)

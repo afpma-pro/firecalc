@@ -15,7 +15,7 @@ import afpma.firecalc.dto.v7.AirIntakePosition
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
-import afpma.firecalc.domain.AirDistributionBox
+import afpma.firecalc.engine.models.geometry.AirDistributionBox
 
 import io.taig.babel.Languages
 import io.taig.babel.Locale
@@ -236,11 +236,11 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
 
             val resolved = pos.get
             // x = 0 (Rear is pure +Y)
-            (math.abs(resolved.x.value - 0.0) < 1e-6                               ) shouldBe true
+            (math.abs(resolved.x.value - 0.0) < 1e-6                                ) shouldBe true
             // y = -depth/2 - 2.0 = -0.165 - 2.0 = -2.165
-            (math.abs(resolved.y.value - (-0.165 - 2.0)) < 1e-6                    ) shouldBe true
+            (math.abs(resolved.y.value - (-0.165 - 2.0)) < 1e-6                     ) shouldBe true
             // z = adBoxZBottom + 0.1 = -0.20 + 0.1 = -0.10
-            (math.abs(resolved.z.value - (AirDistributionBox.CenterZ + 0.1)) < 1e-6) shouldBe true
+            (math.abs(resolved.z.value - (AirDistributionBox.Z_BOTTOM + 0.1)) < 1e-6) shouldBe true
         }
 
         "airIntakeInitialPosition resolves FinalAuto same as InitialAuto" in {
@@ -269,9 +269,9 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
             pos shouldBe defined
 
             // Should match InitialAuto result
-            (math.abs(pos.get.x.value - 0.0) < 1e-6                               ) shouldBe true
-            (math.abs(pos.get.y.value - (-0.165 - 2.0)) < 1e-6                    ) shouldBe true
-            (math.abs(pos.get.z.value - (AirDistributionBox.CenterZ + 0.1)) < 1e-6) shouldBe true
+            (math.abs(pos.get.x.value - 0.0) < 1e-6                                ) shouldBe true
+            (math.abs(pos.get.y.value - (-0.165 - 2.0)) < 1e-6                     ) shouldBe true
+            (math.abs(pos.get.z.value - (AirDistributionBox.Z_BOTTOM + 0.1)) < 1e-6) shouldBe true
         }
 
         "airIntakeInitialPosition returns Manual position as-is" in {

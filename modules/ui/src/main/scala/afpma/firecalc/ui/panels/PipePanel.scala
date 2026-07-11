@@ -697,15 +697,14 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     /** Warning icon element: `circle-alert` with tooltip when invalid, invisible span when valid. */
     def warningIcon =
         warningVnelSig.map:
-            case Validated.Invalid(warnings) =>
-                val tooltipText = PanelStatusHelper.tooltipTextForWarning(warnings.head)(using loc)
+            case Validated.Invalid(_) =>
                 DaisyUITooltip (
-                    ttContent  = p(cls := "text-xs", tooltipText),
+                    ttContent  = p(cls := "text-xs", I18N.direction_badge.direction_incompatible_warning),
                     element    = span(cls := "text-primary", lucide.`circle-alert`),
                     ttStyle    = PanelStatusHelper.tooltipStyleClsNameForWarnings,
                     ttPosition = "tooltip-bottom"
                 ).node
-            case Validated.Valid(_)          => span(cls := "invisible")
+            case Validated.Valid(_)   => span(cls := "invisible")
 
     protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
         statusIcon

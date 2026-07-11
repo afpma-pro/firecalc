@@ -7,13 +7,10 @@ package afpma.firecalc.engine.models
 
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 
 final case class PipeBuildSeed(
-    frame                    : Option[PipeFrame],
-    nFlows                   : NbOfFlows,
-    startPoint               : Option[Vec3] = None,
-    slot0FireboxSplitPosition: Option[Vec3] = None
+    frame : Option[PipeFrame],
+    nFlows: NbOfFlows
 )
 
 object PipeBuildSeed:
@@ -21,6 +18,7 @@ object PipeBuildSeed:
 
     def fromFrame(frame: Option[PipeFrame]): PipeBuildSeed =
         PipeBuildSeed(frame, NbOfFlows(1))
+
 final case class BuiltPipe[A](
     value   : A,
     nextSeed: PipeBuildSeed

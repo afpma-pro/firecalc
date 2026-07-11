@@ -53,35 +53,7 @@ def watchI18nSources(i18nModules: String*): Seq[Setting[_]] = Seq(
 /**
  * Helper function to generate i18n source files from HOCON conf files.
  *
- * Reads each supported language's .conf file and emits a Scala source file
- * (`files.scala`) containing the raw HOCON text as string constants. The
- * i18n runtime (babel-loader) then parses those strings at class load time.
- *
- * === JVM 64 KB String Literal Limit ===
- *
- * The JVM rejects string literals > 65 535 UTF-16 code units. Our French
- * conf file exceeds this limit (~66 KB). To work around it:
- *
- *  1. The content is split into chunks of ≤ 60 000 chars each.
- *  2. Chunks are split on LINE boundaries (not byte boundaries) so that
- *     HOCON quoted strings are never cut in half — a split mid-string would
- *     produce an unbalanced `"` in the generated Scala source, causing both
- *     a Scala compile error AND a HOCON parse error at runtime.
- *  3. Each chunk is emitted as a private `val <lang>_partN: String = """..."""`.
- *  4. The public `val <lang>: String` is the concatenation of all parts.
- *
- * === String Concatenation (not s-interpolation) ===
- *
- * The generated Scala source contains triple-quoted strings (`"""..."""`)
- * that themselves embed literal `"""` sequences (the HOCON content).
- * Using `s"""..."""` interpolation would require escaping those inner
- * triple-quotes as `\"\"\"`, which the Scala parser consumes as the
- * closing delimiter — breaking the string boundary.
- *
- * To avoid this trap, the generator builds output via plain string
- * concatenation (`"..." + content + "..."`) rather than `s"""..."""`.
- *
- * @param moduleName  The i18n module name (e.g., "i18n", "ui-i18n")
+ * @param moduleName The i18n module name (e.g., "i18n", "ui-i18n")
  * @param packagePath The package path for the generated file (e.g., Seq("afpma", "firecalc", "i18n"))
  * @return Source generator task
  */
@@ -89,6 +61,7 @@ def i18nSourceGenerator(moduleName: String, packagePath: Seq[String]): Def.Initi
     val cachedFun = FileFunction.cached(
         streams.value.cacheDirectory / "i18n"
     ) { (in: Set[File]) =>
+        // Read all language files with explicit UTF-8 encoding
         val langContents = SUPPORTED_LANGUAGES_IDS.map { lang =>
             val langFile = in.find(_.getName == s"$lang.conf").get
             lang -> Source.fromFile(langFile, "UTF-8").getLines().mkString("\n")
@@ -100,60 +73,38 @@ def i18nSourceGenerator(moduleName: String, packagePath: Seq[String]): Def.Initi
         val packageName = packagePath.mkString(".")
         val i18nFile    = (Compile / sourceManaged).value / packagePath.mkString("/") / "files.scala"
 
+        // Generate val declarations for each language
         val langVals = SUPPORTED_LANGUAGES_IDS
             .map { lang =>
-                val content      = langContents(lang)
-                val lines        = content.split("\n", -1)
-                val chunks       = new scala.collection.mutable.ArrayBuffer[String]
-                var currentChunk = new StringBuilder
-                var currentSize  = 0
-                val maxChunkSize = 60000
-                for (line <- lines) {
-                    if (currentSize > 0) {
-                        if (currentSize + line.length + 1 > maxChunkSize) {
-                            chunks += currentChunk.toString()
-                            currentChunk = new StringBuilder
-                            currentSize  = 0
-                        } else {
-                            currentChunk.append("\n")
-                            currentSize += 1
-                        }
-                    }
-                    currentChunk.append(line)
-                    currentSize += line.length
-                }
-                if (currentSize > 0) chunks += currentChunk.toString()
-                val chunkList = chunks.toList
-                if (chunkList.size <= 1) {
-                    "  val " + lang + ": String =\n" +
-                        "    \"\"\"\n" + content + "\n\"\"\"\n"
-                } else {
-                    val chunkDecls = chunkList.zipWithIndex
-                        .map { case (chunk, idx) =>
-                            "  private val " + lang + "_part" + idx + ": String =\n" +
-                                "    \"\"\"\n" + chunk + "\n\"\"\"\n"
-                        }
-                        .mkString("\n")
-                    val joinExpr   = chunkList.zipWithIndex
-                        .map { case (_, idx) =>
-                            "files." + lang + "_part" + idx
-                        }
-                        .mkString(" +\n    ")
-                    chunkDecls + "\n  val " + lang + ": String = " + joinExpr + "\n"
-                }
+                s"""  val $lang: String =
+         |    \"\"\"
+         |${langContents(lang)}
+         |\"\"\"
+         |""".stripMargin
             }
             .mkString("\n")
 
+        // Generate configs map entries
         val configsMap = SUPPORTED_LANGUAGES_IDS
             .map { lang =>
-                "\"" + lang + "\" -> files." + lang
+                s""""$lang" -> files.$lang"""
             }
             .mkString(",\n  ")
 
         IO.write(
             i18nFile,
-            "package " + packageName + "\n\nobject files {\n\n" +
-                langVals + "}\n\nval configs = Map(\n  " + configsMap + "\n)\n"
+            s"""
+      |package $packageName
+      |
+      |object files {
+      |
+      |$langVals
+      |}
+      |
+      |val configs = Map(
+      |  $configsMap
+      |)
+      |""".stripMargin
         )
         Set     (i18nFile)
     }

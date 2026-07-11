@@ -9,7 +9,6 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.dto.v4.AbsoluteDirection
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
@@ -290,76 +289,4 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         assertApprox(connResult.finalPoint.z, 1.0, "z")
     }
 
-    // ── Test 12: SplitMerge90 without offset (computed at call sites) ─────
-
-    it should "not advance position by offset for SplitMerge90 (offset computed at call sites)" in {
-        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
-        // The offset field was removed from the DTO. The branch start position
-        // is now computed at call sites (Variables.scala, FireCalcYAML_Loader.scala)
-        // using PipePositionComputer.computeBranchStartAfterSplit.
-        // PositionTracker no longer advances by offset for SplitMerge90.
-        val initialDir    = PipeInitialDirection.default
-        val splitPos      = Vec3(0, 0, 0.62)
-        val elems         = Seq(
-            SplitSingleFlowIntoTwoFlowsWith90DegTurn         (
-                name          = "split",
-                absDir        = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
-                newInnerShape = PipeShape.Circle(18.cm)
-            ),
-            AddSectionSlopped                                ("sortie de foyer", 0.3.meters)
-        )
-        val externalFrame = Some(PipeFrame.initial(Vec3.Up))
-        val result        = PositionTracker.computeFlowOnly15544(
-            elems,
-            initialDir,
-            externalFrame,
-            splitPos
-        )
-
-        // PositionTracker does not advance by offset anymore.
-        // The segment starts at the split position and goes along the branch direction.
-        result.segments.size shouldBe 1
-        assertVec3Approx(result.segments.head.startPoint, splitPos)
-
-        // After the 90° bend (Up → Front), the horizontal section goes along Front direction.
-        // The frame direction after the bend is Front (horizontal).
-        // AddSectionSlopped follows the frame, so it goes 0.3m in the Front direction.
-        val expectedEnd = splitPos + Vec3.Front * 0.3
-        assertVec3Approx(result.segments.head.endPoint, expectedEnd)
-        assertVec3Approx(result.finalPoint, expectedEnd            )
-    }
-
-    // ── Test 13: Vertical symmetryPlaneAbsDir produces error ─────
-
-    it should "produce error in PipePositionResult.errors when symmetryPlaneAbsDir is vertical" in {
-        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
-        // symmetryPlaneAbsDir pointing straight Up (no azimuth) with vertical incoming
-        // should produce an error in the result
-        val initialDir     = PipeInitialDirection.default
-        val splitPos       = Vec3(0, 0, 0.62)
-        val verticalAbsDir = AbsoluteDirection(None, InclinationDirection.Up) // straight Up, no azimuth
-        val elems          = Seq(
-            SplitSingleFlowIntoTwoFlowsWith90DegTurn               (
-                name                = "test-split-vertical-absdir",
-                absDir              = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
-                newInnerShape       = PipeShape.Circle(18.cm),
-                symmetryPlaneAbsDir = Some(verticalAbsDir)
-            ),
-            AddSectionSlopped                                      ("sortie de foyer", 0.3.meters)
-        )
-        val externalFrame  = Some(PipeFrame.initial(Vec3.Up))
-        val result         = PositionTracker.computeFlowOnly15544(
-            elems,
-            initialDir,
-            externalFrame,
-            splitPos
-        )
-
-        // The split should have been skipped (no splitMergePosition added)
-        result.splitMergePositions shouldBe empty
-
-        // The error should contain the element name
-        result.errors should contain("test-split-vertical-absdir")
-        result.errors.size shouldBe 1
-    }
 end PositionTrackerSuite

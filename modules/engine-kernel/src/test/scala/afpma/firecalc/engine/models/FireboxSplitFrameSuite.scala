@@ -9,10 +9,8 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
-import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
-import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4
-import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4
 import afpma.firecalc.dto.all.NbOfFlows
+import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
@@ -51,13 +49,6 @@ class FireboxSplitFrameSuite extends AnyFlatSpec with Matchers:
             name   = "section",
             length = 1.0.meters
         )
-
-    // Property descriptors
-    val flowOnlyProp =
-        SetFlowOnlyPipeProp_15544_V4.SetInnerShape(PipeShape.Circle(0.1.meters))
-
-    val thermalProp =
-        SetThermalPipeProp_13384_V4.SetInnerShape(PipeShape.Circle(0.1.meters))
 
     "resolveInitialSeed" should "set seed direction to Up when FlueSlot starts with split" in {
         val slot   = PostFireboxPipeSlot.FlueSlot(Seq(flowOnlySplit))
@@ -127,24 +118,6 @@ class FireboxSplitFrameSuite extends AnyFlatSpec with Matchers:
         val result = FireboxSplitFrame.resolveInitialSeed(slot, defaultSeed)
 
         result shouldBe defaultSeed
-    }
-
-    it should "set seed direction to Up when FlueSlot has property then split" in {
-        val slot   = PostFireboxPipeSlot.FlueSlot(Seq(flowOnlyProp, flowOnlySplit))
-        val result = FireboxSplitFrame.resolveInitialSeed(slot, defaultSeed)
-
-        result.frame.isDefined should be(true)
-        result.frame.get.direction shouldBe Vec3.Up
-        result.nFlows shouldBe NbOfFlows(2)
-    }
-
-    it should "set seed direction to Up when ThermalFlueSlot has property then split" in {
-        val slot   = PostFireboxPipeSlot.ThermalFlueSlot(Seq(thermalProp, thermalSplit))
-        val result = FireboxSplitFrame.resolveInitialSeed(slot, defaultSeed)
-
-        result.frame.isDefined should be(true)
-        result.frame.get.direction shouldBe Vec3.Up
-        result.nFlows shouldBe NbOfFlows(2)
     }
 
 end FireboxSplitFrameSuite

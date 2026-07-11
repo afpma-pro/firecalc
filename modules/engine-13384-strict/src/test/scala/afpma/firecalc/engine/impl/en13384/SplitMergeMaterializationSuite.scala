@@ -115,6 +115,7 @@ class SplitMergeMaterializationSuite extends AnyFlatSpec with Matchers:
                 newInnerShape = PipeShape.Circle(9.cm),
                 absDir        = None
             ),
+            AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters      ),
             AddFlowOnlyPipeElement_13384.MergeTwoFlowsIntoSingleWith90DegTurn    (
                 "merge",
                 newInnerShape = PipeShape.Circle(18.cm),

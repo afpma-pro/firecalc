@@ -18,8 +18,7 @@ import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
-import afpma.firecalc.domain.AirDistributionBox
-import afpma.firecalc.domain.FireboxCoordinateSystem
+import afpma.firecalc.engine.models.geometry.AirDistributionBox
 import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipePositionComputer
@@ -158,37 +157,20 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         cleanFramedPostFireboxPipes.initialPosition match
             case PostFireboxStartPosition.Manual(pos) => Some(pos)
             case PostFireboxStartPosition.Auto        =>
-                val firstShape = PipePositionComputer
-                    .firstInnerShapeIn(cleanFramedPostFireboxPipes.slots)
-                    .getOrElse(PipePositionComputer.DefaultPipeShape)
-
-                PipePositionComputer.findFirstSplitDir(cleanFramedPostFireboxPipes.slots) match
-                    case Some(absDir) =>
-                        fb.dimensions.base match
-                            case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
-                                Some(
-                                    PipePositionComputer.computeBranchStartAfterSplit    (
-                                        absDir     = absDir,
-                                        boxXWidth  = width.value,
-                                        boxYDepth  = depth.value,
-                                        boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
-                                        boxZHeight = fb.dimensions.height.value,
-                                        innerShape = firstShape
-                                    )
+                PipePositionComputer.firstInnerShapeIn(cleanFramedPostFireboxPipes.slots).flatMap { shape =>
+                    fb.dimensions.base match
+                        case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
+                            Some(
+                                PipePositionComputer.computePostFireboxStart (
+                                    direction  = cleanFramedPostFireboxPipes.initialDirection,
+                                    boxXWidth  = width.value,
+                                    boxYDepth  = depth.value,
+                                    boxZBottom = 0.0,
+                                    boxZHeight = fb.dimensions.height.value,
+                                    innerShape = shape
                                 )
-                    case None         =>
-                        fb.dimensions.base match
-                            case afpma.firecalc.engine.models.en15544.std.Dimensions.Base.Squared(width, depth) =>
-                                Some(
-                                    PipePositionComputer.computePostFireboxStart (
-                                        direction  = cleanFramedPostFireboxPipes.initialDirection,
-                                        boxXWidth  = width.value,
-                                        boxYDepth  = depth.value,
-                                        boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
-                                        boxZHeight = fb.dimensions.height.value,
-                                        innerShape = firstShape
-                                    )
-                                )
+                            )
+                }
 
     /** Resolve Auto/Manual air intake position to a concrete Position3D. */
     private def resolveAirIntakePosition: Option[Position3D] =
@@ -207,7 +189,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                                     initialDir = fcProj.air_intake_pipes.initialDir,
                                     boxXWidth  = width.value,
                                     boxYDepth  = depth.value,
-                                    boxZBottom = AirDistributionBox.CenterZ,
+                                    boxZBottom = AirDistributionBox.Z_BOTTOM,
                                     boxZHeight = AirDistributionBox.Z_HEIGHT
                                 )
                             )
@@ -220,7 +202,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                                     initialDir = fcProj.air_intake_pipes.initialDir,
                                     boxXWidth  = width.value,
                                     boxYDepth  = depth.value,
-                                    boxZBottom = AirDistributionBox.CenterZ,
+                                    boxZBottom = AirDistributionBox.Z_BOTTOM,
                                     boxZHeight = AirDistributionBox.Z_HEIGHT
                                 )
                             )

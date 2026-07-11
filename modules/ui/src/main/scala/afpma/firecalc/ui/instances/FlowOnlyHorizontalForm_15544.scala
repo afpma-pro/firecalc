@@ -161,6 +161,7 @@ class FlowOnlyHorizontalForm_15544(using DisplayUnits, Locale):
 
     given horizontal_form_SplitSingleFlowIntoTwoFlowsWith90DegTurn: Form[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
         import defaultable.pipeShapeInner
+        import defaultable.qty_d.meter.zero
         given Defaultable[Option[AbsoluteDirection]]                = Defaultable(None)
         given ValidateVar[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
             ValidateVarCommonInstances.valid_always
