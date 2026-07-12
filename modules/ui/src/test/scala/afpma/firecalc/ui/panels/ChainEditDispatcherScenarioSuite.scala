@@ -18,6 +18,7 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PipeChainRotation
 import afpma.firecalc.units.Vec3
 
 import afpma.firecalc.ui.models.EngineState
@@ -258,6 +259,103 @@ class ChainEditDispatcherScenarioSuite extends AnyFreeSpec with Matchers:
 
         val edit = ChainEditDispatcher.detectEdit(oldSlots, newSlots)
         edit `shouldBe` None
+    }
+
+    // ── Scenario 7: computeInitialDirRotation happy path ──
+
+    "scenario 7: initial direction change rotates downstream pins" in {
+        val bend  = AddSharpeAngle_0_to_180(
+            "bend",
+            90.degrees,
+            Some(AbsoluteDirection(Some(AzimuthDirection.Right), InclinationDirection.Horizontal))
+        )
+        val slots = Seq(FlueSlot(Seq(bend)))
+
+        val result = ChainEditDispatcher.computeInitialDirRotation(
+            slotsBaseline       = slots,
+            oldDir              = Vec3.Rear,
+            newDir              = Vec3.Front,
+            lastDispatcherWrite = None
+        )
+
+        result shouldBe defined
+        val rotated     = result.get
+        val rotatedBend = rotated match
+            case Seq(FlueSlot(descr)) => descr.head.asInstanceOf[AddSharpeAngle_0_to_180]
+            case _                    => fail("expected FlueSlot with one element")
+
+        // Azimuth rotated 180°: Right → Left
+        rotatedBend.absDir.get.azimuth shouldBe Some(AzimuthDirection.Left)
+        // Inclination unchanged
+        rotatedBend.absDir.get.inclination shouldBe InclinationDirection.Horizontal
+    }
+
+    // ── Scenario 8: trivial rotation ──
+
+    "scenario 8: trivial direction change (angle ≈ 0) returns None" in {
+        val bend  = AddSharpeAngle_0_to_180(
+            "bend",
+            90.degrees,
+            Some(AbsoluteDirection(Some(AzimuthDirection.Right), InclinationDirection.Horizontal))
+        )
+        val slots = Seq(FlueSlot(Seq(bend)))
+
+        val result = ChainEditDispatcher.computeInitialDirRotation(
+            slotsBaseline       = slots,
+            oldDir              = Vec3(0, 0, 1),
+            newDir              = Vec3(0, 0, 1),
+            lastDispatcherWrite = None
+        )
+
+        result shouldBe None
+    }
+
+    // ── Scenario 9: echo suppression ──
+
+    "scenario 9: echo suppression absorbs direction change when baseline equals last dispatcher write" in {
+        val bend  = AddSharpeAngle_0_to_180(
+            "bend",
+            90.degrees,
+            Some(AbsoluteDirection(Some(AzimuthDirection.Right), InclinationDirection.Horizontal))
+        )
+        val slots = Seq(FlueSlot(Seq(bend)))
+
+        val result = ChainEditDispatcher.computeInitialDirRotation(
+            slotsBaseline       = slots,
+            oldDir              = Vec3.Rear,
+            newDir              = Vec3.Front,
+            lastDispatcherWrite = Some(slots)
+        )
+
+        result shouldBe None
+        // Prove it's echo suppression, not trivial rotation
+        val (_, angleRad) = PipeChainRotation.rotationBetween(Vec3.Rear, Vec3.Front)
+        angleRad shouldBe (math.Pi +- 0.001)
+    }
+
+    // ── Scenario 10: no pinned elements ──
+
+    "scenario 10: direction change with no pinned elements returns unchanged slots" in {
+        val bend  = AddSharpeAngle_0_to_180("bend", 90.degrees, None)
+        val slots = Seq(FlueSlot(Seq(bend)))
+
+        val result = ChainEditDispatcher.computeInitialDirRotation(
+            slotsBaseline       = slots,
+            oldDir              = Vec3.Rear,
+            newDir              = Vec3.Front,
+            lastDispatcherWrite = None
+        )
+
+        result shouldBe defined
+        val rotated     = result.get
+        val rotatedBend = rotated match
+            case Seq(FlueSlot(descr)) => descr.head.asInstanceOf[AddSharpeAngle_0_to_180]
+            case _                    => fail("expected FlueSlot with one element")
+
+        // Bend absDir still None
+        rotatedBend.absDir shouldBe None
+        // Slots structurally equal to input
+        rotated shouldBe slots
     }
 
 end ChainEditDispatcherScenarioSuite

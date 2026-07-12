@@ -120,7 +120,53 @@ object ChainEditDispatcher:
                 strategy match
                     case RigidRotation => rigidRotateDownstream(preEdit, posed, edit.coord, initialFrame)
 
-    // ── Detection entry point ──────────────────────────────────────────
+    /**
+     * Rotate every pinned `absDir` in the entire chain by the rigid rotation
+     * from `oldDir` to `newDir`.
+     *
+     * Used when the user changes `post_firebox_pipes.initialDirection`: the
+     * chain's entry frame changed, so every downstream absolute direction must
+     * be rotated to preserve the relative shape.
+     *
+     * @param slots   current slot sequence (structurally unchanged)
+     * @param oldDir  Vec3 of the old initial direction
+     * @param newDir  Vec3 of the new initial direction
+     * @return slots with all downstream pins rotated
+     */
+    def rotateAllPins(
+        slots : Seq[PostFireboxPipeDescrSlot_V7],
+        oldDir: Vec3,
+        newDir: Vec3
+    ): Seq[PostFireboxPipeDescrSlot_V7] =
+        val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
+        rotateDownstream(slots, startSlotIdx = 0, startElemLb = -1, axis, angleRad)
+
+    /**
+     * Pure decision function for initial-direction changes.
+     *
+     * Returns `None` when dispatch should be skipped (trivial rotation or echo suppression).
+     * Returns `Some(rewritten)` when the handler should write the rotated slots.
+     *
+     * The handler (`PostFireboxPipePanels.handleInitialDirChange`) is responsible for:
+     * - Converting `PipeInitialDirection` → `Vec3` before calling this method.
+     * - Updating `prevBaseline.initialDir` regardless of the result.
+     * - Writing the result to `postFireboxSlots_var` only on `Some`.
+     */
+    def computeInitialDirRotation(
+        slotsBaseline      : Seq[PostFireboxPipeDescrSlot_V7],
+        oldDir             : Vec3,
+        newDir             : Vec3,
+        lastDispatcherWrite: Option[Seq[PostFireboxPipeDescrSlot_V7]]
+    ): Option[Seq[PostFireboxPipeDescrSlot_V7]] =
+        // Early exit 1: trivial rotation
+        val (_, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
+        if math.abs(angleRad) < 1e-9 then return None
+
+        // Early exit 2: echo suppression
+        if lastDispatcherWrite.exists(_ == slotsBaseline) then return None
+
+        // Happy path: rotate all pins
+        Some(rotateAllPins(slotsBaseline, oldDir, newDir))
 
     /**
      * Detect a single edit between old and new slot sequences.
