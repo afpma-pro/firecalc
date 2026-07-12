@@ -13,6 +13,7 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator}
+import afpma.firecalc.engine.alg.en13384.IncrementalBuilderAlg_13384
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -42,11 +43,17 @@ import scala.reflect.*
 import com.softwaremill.quicklens.*
 import afpma.firecalc.units.Vec3
 
-trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with FramedBuilderSupport:
+trait FlowOnlyIncrementalBuilder_13384
+    extends IncrementalBuilderAlg
+    with IncrementalBuilderAlg_13384[FlowOnlyPropsState_13384]
+    with FramedBuilderSupport:
 
     import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.*
     import AddFlowOnlyPipeElement_13384.*
     import SetFlowOnlyPipeProp_13384.*
+    override protected type SplitDTO  = SplitSingleFlowIntoTwoFlowsWith90DegTurn
+    override protected type MergeDTO  = MergeTwoFlowsIntoSingleWith90DegTurn
+    override protected type StateOpsT = PropsStateOps[PropsState]
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.hasInnerShapeAtPos
@@ -103,13 +110,8 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
             case _: MergeTwoFlowsIntoSingleWith90DegTurn     => true
             case _ => false
 
-    override protected def isTrailingAllowed(preOp: PreElementOp)         : Boolean =
+    override protected def isTrailingAllowed(preOp: PreElementOp): Boolean =
         false
-    override protected def nextAddElementIsSplit(convStep: ConversionStep): Boolean =
-        convStep.findNextAddElement.exists {
-            case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
-            case _ => false
-        }
 
     override type PT <: PipeType_EN13384
 
@@ -119,8 +121,18 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
 
     // ========== PropsState via Typeclass ==========
 
-    override protected type PropsState = FlowOnlyPropsState_13384
-    private val stateOps = summon[PropsStateOps[PropsState]]
+    protected val stateOps = summon[PropsStateOps[PropsState]]
+
+    override protected def mkSplitMerge90Descr(
+        nFlows         : NbOfFlows,
+        angleN2        : Option[QtyD[Degree]],
+        shape          : PipeShape
+    ): PipeElDescr =
+        SplitMerge90(
+            nFlows         = nFlows,
+            angleN2        = angleN2,
+            effectiveShape = shape
+        )
 
     given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
 
@@ -261,32 +273,10 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
             // BEFORE the split/merge (state update runs in `updateStateAfterConversionStep`),
             // so `prevInnerGeomO == currentShapeO` → no SectionGeometryChange inserted.
             case op: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
-                val angleN2 = FramedBuilderSupport.computeAngleN2(
-                    st.dirBeforePreviousDC,
-                    st.currentFrame,
-                    op.absDir,
-                    90.0
-                )
-                val dc      = SplitMerge90(
-                    nFlows         = 2.flows,
-                    angleN2        = angleN2,
-                    effectiveShape = op.newInnerShape
-                )
-                dc.validNel
+                mkSplitMerge90(st, op.absDir, 2.flows, op.newInnerShape)
 
             case op: MergeTwoFlowsIntoSingleWith90DegTurn =>
-                val angleN2 = FramedBuilderSupport.computeAngleN2(
-                    st.dirBeforePreviousDC,
-                    st.currentFrame,
-                    op.absDir,
-                    90.0
-                )
-                val dc      = SplitMerge90(
-                    nFlows         = 1.flow,
-                    angleN2        = angleN2,
-                    effectiveShape = op.newInnerShape
-                )
-                dc.validNel
+                mkSplitMerge90(st, op.absDir, 1.flow, op.newInnerShape)
 
             case op: AddDirectionChange =>
                 stateOps
@@ -379,58 +369,9 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                             case None        => propsState.validNel
                     case None     => propsState.validNel
             case Some(op: SplitSingleFlowIntoTwoFlowsWith90DegTurn) =>
-                val branchDirOpt: Option[Vec3] = op.absDir.map { fd =>
-                    val (az, el) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                    Vec3.fromAzimuthElevation(az, el)
-                }
-                val elemId = convStep.findNextAddElement.map(_._1).getOrElse(-1)
-                val branchOneStartPos = branchDirOpt
-                    .map(dir => propsState.currentPosition + dir.normalized * propsState.branchOneOffset)
-                    .getOrElse(propsState.currentPosition)
-                val splitValid        = branchDirOpt
-                    .map { _ =>
-                        validateSplitNotOnAscending(
-                            propsState,
-                            2.flows,
-                            IdIncr(elemId),
-                            op.name,
-                            branchDirOpt,
-                            propsState.currentPosition,
-                            branchOneStartPos
-                        )
-                    }
-                    .getOrElse(().validNel)
-                splitValid.andThen { _ =>
-                    propsState.currentFrame match
-                        case Some(frame) =>
-                            val targetVec = branchDirOpt.getOrElse(frame.direction)
-                            val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
-                            propsState.copy(
-                                dirBeforePreviousDC = Some(frame.direction),
-                                currentFrame        = Some(newFrame)
-                            )
-                        case None        => propsState
-                    stateOps
-                        .setNFlows(stateOps.setInnerShape(propsState, op.newInnerShape), 2.flows)
-                        .validNel
-                }
+                handleSplitStateUpdate(propsState, op, op.absDir, op.newInnerShape, op.name, convStep)
             case Some(op: MergeTwoFlowsIntoSingleWith90DegTurn)     =>
-                val frameUpdate = op.absDir match
-                    case Some(fd) =>
-                        propsState.currentFrame match
-                            case Some(frame) =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                )
-                            case None        => propsState
-                    case None     => propsState
-                stateOps
-                    .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 1.flow)
-                    .validNel
+                handleMergeStateUpdate(propsState, op, op.absDir, op.newInnerShape)
             case Some(_ @AddFlowResistance(_, _, _))                => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))                     => propsState.validNel
             case Some(op: AddSectionChange)                         =>
@@ -475,23 +416,7 @@ trait FlowOnlyIncrementalBuilder_13384 extends IncrementalBuilderAlg with Framed
                         vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                     case FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
-                            val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
-                            stateOps
-                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
-                                .andThen { _ =>
-                                    if !nextAddElementIsSplit(convStep) then
-                                        validateSplitNotOnAscending(
-                                            st,
-                                            nf,
-                                            IdIncr(nextElemIdIncr),
-                                            nextElemName,
-                                            None,
-                                            st.currentPosition,
-                                            st.currentPosition,
-                                            isSplitElement = false
-                                        ).map(_ => updatedSt)
-                                    else updatedSt.validNel[IncrementalValidation_Error]
-                                }
+                            handleSetNumberOfFlows(st, nf, convStep, nextElemIdIncr, nextElemName)
                         }
             }
 
