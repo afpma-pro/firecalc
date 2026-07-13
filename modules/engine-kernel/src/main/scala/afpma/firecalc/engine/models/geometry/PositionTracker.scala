@@ -37,7 +37,6 @@ object PositionTracker:
         symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends PipeCommand
     private case class CmdSection(length: Length, defaultDir: Vec3 = Vec3.Rear)            extends PipeCommand
-    private case class CmdSectionSlopped(length: Length)                                   extends PipeCommand
     private case class CmdSectionSloppedForceManual(length: Length, elevGain: Length)      extends PipeCommand
     private case object CmdNoOp                                                            extends PipeCommand
 
@@ -136,7 +135,7 @@ object PositionTracker:
                 val (newState, outputs) = result.getOrElse((state, TrackingOutputs.empty))
                 (newState, outputs)
 
-            case CmdSection(length, defaultDir) =>
+            case CmdSection(length, defaultDir)                 =>
                 val l       = length.toUnit[Meter].value
                 val base    = state.frame.map(_.direction).getOrElse(defaultDir)
                 val dir     = if l < 0 then base * -1.0 else base
@@ -153,25 +152,6 @@ object PositionTracker:
                     frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
                 )
                 (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
-
-            case CmdSectionSlopped(length) =>
-                val l       = length.toUnit[Meter].value
-                val eg      = state.frame.map(f => l * f.direction.z).getOrElse(0.0)
-                val hDist   = math.sqrt(math.max(0.0, l * l - eg * eg))
-                val disp    = horizontalDirection(state.frame) * hDist + Vec3(0, 0, eg)
-                val dir     = disp.normalized
-                val endPt   = state.currentPosition + disp
-                val segment = PipeSegmentPosition(
-                    elementIndex = idx,
-                    startPoint   = state.currentPosition,
-                    endPoint     = endPt,
-                    direction    = dir,
-                    length       = l,
-                    innerShape   = state.currentInnerShape,
-                    frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                )
-                (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
-
             case CmdSectionSloppedForceManual(length, elevGain) =>
                 val l       = length.toUnit[Meter].value
                 val eg      = elevGain.toUnit[Meter].value
