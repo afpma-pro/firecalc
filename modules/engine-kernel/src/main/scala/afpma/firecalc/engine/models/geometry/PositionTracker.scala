@@ -34,6 +34,149 @@ object PositionTracker:
     private case class CmdSectionSloppedForceManual(length: Length, elevGain: Length)      extends PipeCommand
     private case object CmdNoOp                                                            extends PipeCommand
 
+    /** Immutable accumulator for pipe position tracking. */
+    private case class TrackerState(
+        frame             : Option[PipeFrame],
+        currentPosition   : Vec3,
+        currentInnerShape : Option[PipeShape],
+        firstSplitConsumed: Boolean
+    )
+
+    /** Collected outputs from processing commands. */
+    private case class TrackingOutputs(
+        segments     : Seq[PipeSegmentPosition],
+        splitMergePos: Seq[SplitMergePosition],
+        errors       : Vector[String]
+    )
+
+    private object TrackingOutputs:
+        val empty: TrackingOutputs = TrackingOutputs(Nil, Nil, Vector.empty)
+
+        extension (t: TrackingOutputs)
+            def combineWith(other: TrackingOutputs): TrackingOutputs =
+                TrackingOutputs(
+                    t.segments ++ other.segments,
+                    t.splitMergePos ++ other.splitMergePos,
+                    t.errors ++ other.errors
+                )
+            def isEmpty                            : Boolean         = t.segments.isEmpty && t.splitMergePos.isEmpty && t.errors.isEmpty
+
+    /** Pure function: process one command, return new state + outputs. */
+    private def processCommand(
+        cmd          : PipeCommand,
+        state        : TrackerState,
+        idx          : Int,
+        splitPosition: Option[Vec3]
+    ): (TrackerState, TrackingOutputs) =
+        cmd match
+            case CmdSetInnerShape(shape) =>
+                (state.copy(currentInnerShape = Some(shape)), TrackingOutputs.empty)
+
+            case CmdDirectionChange(absDir, angle) =>
+                val newFrame =
+                    for
+                        f  <- state.frame
+                        fd <- absDir
+                    yield
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                        f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec)
+                (state.copy(frame = newFrame.orElse(state.frame)), TrackingOutputs.empty)
+
+            case CmdSplitMerge90(absDir, isSplit, name, symmetryPlaneAbsDir) =>
+                val result = state.frame.map: f =>
+                    val frameAfter           =
+                        absDir match
+                            case Some(fd) =>
+                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                                if f.isReachable      (targetVec, 90.0) then f.applyBendForFinalDir(90.0, targetVec)
+                                else PipeFrame.initial(targetVec      )
+                            case None     =>
+                                val defaultBranch = f.direction.cross(Vec3.Up)
+                                if defaultBranch.norm > 1e-9 then f.applyBendForFinalDir(90.0, defaultBranch.normalized)
+                                else f.applyBendForFinalDir                             (90.0, Vec3.Rear               )
+                    val (smPos, frameResult) =
+                        SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
+                            case Right(config) =>
+                                val pos =
+                                    if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
+                                        splitPosition.get
+                                    else state.currentPosition
+                                (
+                                    SplitMergePosition(
+                                        idx,
+                                        pos,
+                                        f,
+                                        frameAfter.direction,
+                                        isSplit,
+                                        config
+                                    ),
+                                    frameAfter
+                                )
+                            case Left(_)       =>
+                                (null, f)
+                    (smPos, frameResult) match
+                        case (null, _        ) =>
+                            (state.copy(frame = Some(f)), TrackingOutputs(Nil, Nil, Vector(name)))
+                        case (smPos, newFrame) =>
+                            val newState =
+                                if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
+                                    state.copy (frame = Some(newFrame), firstSplitConsumed = true)
+                                else state.copy(frame = Some(newFrame)                           )
+                            (newState, TrackingOutputs(Nil, Seq(smPos), Vector.empty))
+
+                val (newState, outputs) = result.getOrElse((state, TrackingOutputs.empty))
+                (newState, outputs)
+
+            case c: (CmdSectionVertical | CmdSectionHorizontal) =>
+                val l          = c match
+                    case CmdSectionVertical(eg)   => eg.toUnit[Meter].value
+                    case CmdSectionHorizontal(hl) => hl.toUnit[Meter].value
+                val defaultDir = c match
+                    case CmdSectionVertical(_)   => Vec3.Up
+                    case CmdSectionHorizontal(_) => Vec3.Rear
+                val base       = state.frame.map(_.direction).getOrElse(defaultDir)
+                val dir        = if l < 0 then base * -1.0 else base
+                val dist       = math.abs(l)
+                val disp       = dir * dist
+                val endPt      = state.currentPosition + disp
+                val segment    = PipeSegmentPosition(
+                    elementIndex = idx,
+                    startPoint   = state.currentPosition,
+                    endPoint     = endPt,
+                    direction    = dir,
+                    length       = dist,
+                    innerShape   = state.currentInnerShape,
+                    frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                )
+                (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
+
+            case c: (CmdSectionSlopped | CmdSectionSloppedForceManual) =>
+                val l       = c match
+                    case CmdSectionSlopped(len)               => len.toUnit[Meter].value
+                    case CmdSectionSloppedForceManual(len, _) => len.toUnit[Meter].value
+                val eg      = c match
+                    case CmdSectionSlopped(_)                    => state.frame.map(f => l * f.direction.z).getOrElse(0.0)
+                    case CmdSectionSloppedForceManual(_, egGain) => egGain.toUnit[Meter].value
+                val hDist   = math.sqrt(math.max(0.0, l * l - eg * eg))
+                val disp    = horizontalDirection(state.frame) * hDist + Vec3(0, 0, eg)
+                val dir     = disp.normalized
+                val endPt   = state.currentPosition + disp
+                val segment = PipeSegmentPosition(
+                    elementIndex = idx,
+                    startPoint   = state.currentPosition,
+                    endPoint     = endPt,
+                    direction    = dir,
+                    length       = l,
+                    innerShape   = state.currentInnerShape,
+                    frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                )
+                (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
+
+            case CmdNoOp =>
+                (state, TrackingOutputs.empty)
+
     private def mapFlowOnly13384(elem: FlowOnlyPipeDescr_13384): Seq[PipeCommand] =
         import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
@@ -72,12 +215,12 @@ object PositionTracker:
         import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
         import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
         elem match
-            case SetInnerShape(shape)              => Seq(CmdSetInnerShape(shape))
             case SetPropertiesInBatch(_, props, _) =>
                 props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
             case LinedFlue(_, liner, _, _)         =>
                 liner.props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
-            case dc: AddDirectionChange => Seq(CmdDirectionChange(dc.absDir, dc.angle))
+            case SetInnerShape(shape)              => Seq(CmdSetInnerShape(shape))
+            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle))
             case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
                 Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
             case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
@@ -98,120 +241,37 @@ object PositionTracker:
         currentInnerShapeInitial: Option[PipeShape],
         splitPosition           : Option[Vec3]
     ): PipePositionResult =
-
-        var frame             : Option[PipeFrame] = externalFrame.orElse(
-            Some(
-                PipeFrame.initial(
-                    Vec3.fromAzimuthElevation(
-                        initialDirection.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0                         ),
-                        InclinationDirection.toDegrees                                    (initialDirection.inclination)
+        val initialState = TrackerState(
+            frame              = externalFrame.orElse(
+                Some(
+                    PipeFrame.initial(
+                        Vec3.fromAzimuthElevation(
+                            initialDirection.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0                         ),
+                            InclinationDirection.toDegrees                                    (initialDirection.inclination)
+                        )
                     )
                 )
-            )
+            ),
+            currentPosition    = startPoint,
+            currentInnerShape  = currentInnerShapeInitial,
+            firstSplitConsumed = false
         )
-        var currentPosition   : Vec3              = startPoint
-        var currentInnerShape : Option[PipeShape] = currentInnerShapeInitial
-        var firstSplitConsumed: Boolean           = false
-        val segments = Seq.newBuilder[PipeSegmentPosition]
-        val splitMergePositions = Seq.newBuilder[SplitMergePosition]
-        val positionErrors = Vector.newBuilder[String]
 
-        for (elem, idx) <- elems.zipWithIndex do
-            for (cmd) <- map(elem) do
-                cmd match
-                    case CmdSetInnerShape(shape)                                     =>
-                        currentInnerShape = Some(shape)
-                    case CmdDirectionChange(absDir, angle)                           =>
-                        for
-                            f  <- frame
-                            fd <- absDir
-                        do
-                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                            frame = Some(f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec))
-                    case CmdSplitMerge90(absDir, isSplit, name, symmetryPlaneAbsDir) =>
-                        frame.foreach: f =>
-                            val frameAfter =
-                                absDir match
-                                    case Some(fd) =>
-                                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                        if f.isReachable      (targetVec, 90.0) then f.applyBendForFinalDir(90.0, targetVec)
-                                        else PipeFrame.initial(targetVec      )
-                                    case None     =>
-                                        val defaultBranch = f.direction.cross(Vec3.Up)
-                                        if defaultBranch.norm > 1e-9 then
-                                            f.applyBendForFinalDir (90.0, defaultBranch.normalized)
-                                        else f.applyBendForFinalDir(90.0, Vec3.Rear               )
-                            SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
-                                case Right(config) =>
-                                    val pos =
-                                        if isSplit && !firstSplitConsumed && splitPosition.isDefined then
-                                            firstSplitConsumed = true
-                                            splitPosition.get
-                                        else currentPosition
-                                    splitMergePositions += SplitMergePosition(
-                                        idx,
-                                        pos,
-                                        f,
-                                        frameAfter.direction,
-                                        isSplit,
-                                        config
-                                    )
-                                    frame = Some(frameAfter)
-                                case Left(_)       =>
-                                    positionErrors += name
-                    case c: (CmdSectionVertical | CmdSectionHorizontal) =>
-                        val l          = c match
-                            case CmdSectionVertical(eg)   => eg.toUnit[Meter].value
-                            case CmdSectionHorizontal(hl) => hl.toUnit[Meter].value
-                        val defaultDir = c match
-                            case CmdSectionVertical(_)   => Vec3.Up
-                            case CmdSectionHorizontal(_) => Vec3.Rear
-                        val base       = frame.map(_.direction).getOrElse(defaultDir)
-                        val dir        = if l < 0 then base * -1.0 else base
-                        val dist       = math.abs(l)
-                        val disp       = dir * dist
-                        val endPt      = currentPosition + disp
-                        segments += PipeSegmentPosition(
-                            elementIndex = idx,
-                            startPoint   = currentPosition,
-                            endPoint     = endPt,
-                            direction    = dir,
-                            length       = dist,
-                            innerShape   = currentInnerShape,
-                            frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                        )
-                        currentPosition = endPt
-                    case c: (CmdSectionSlopped | CmdSectionSloppedForceManual) =>
-                        val l     = c match
-                            case CmdSectionSlopped(len)               => len.toUnit[Meter].value
-                            case CmdSectionSloppedForceManual(len, _) => len.toUnit[Meter].value
-                        val eg    = c match
-                            case CmdSectionSlopped(_)                    => frame.map(f => l * f.direction.z).getOrElse(0.0)
-                            case CmdSectionSloppedForceManual(_, egGain) => egGain.toUnit[Meter].value
-                        val hDist = math.sqrt(math.max(0.0, l * l - eg * eg))
-                        val disp  = horizontalDirection(frame) * hDist + Vec3(0, 0, eg)
-                        val dir   = disp.normalized
-                        val endPt = currentPosition + disp
-                        segments += PipeSegmentPosition(
-                            elementIndex = idx,
-                            startPoint   = currentPosition,
-                            endPoint     = endPt,
-                            direction    = dir,
-                            length       = l,
-                            innerShape   = currentInnerShape,
-                            frame        = frame.getOrElse(PipeFrame.initial(Vec3.Rear))
-                        )
-                        currentPosition = endPt
-                    case CmdNoOp                                                     => ()
+        val commandsWithIdx = elems.zipWithIndex.flatMap: (elem, idx) =>
+            map(elem).map(cmd => (idx, cmd))
+
+        val (finalState, allOutputs) = commandsWithIdx.foldLeft((initialState, TrackingOutputs.empty)): (acc, pair) =>
+            val (state, accOutputs) = acc
+            val (idx, cmd         ) = pair
+            val (newState, outputs) = processCommand(cmd, state, idx, splitPosition)
+            (newState, accOutputs.combineWith(outputs))
 
         PipePositionResult(
-            segments.result           (),
-            currentPosition,
-            frame,
-            splitMergePositions.result(),
-            positionErrors.result     ()
+            allOutputs.segments,
+            finalState.currentPosition,
+            finalState.frame,
+            allOutputs.splitMergePos,
+            allOutputs.errors
         )
 
     private def runPipeline[T](
