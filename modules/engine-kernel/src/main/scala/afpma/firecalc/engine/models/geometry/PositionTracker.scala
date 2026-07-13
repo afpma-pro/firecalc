@@ -177,15 +177,15 @@ object PositionTracker:
         case e: HasSplitMergeData =>
             Seq(
                 CmdSplitMerge90(
-                    e.smAbsDir,
+                    e.absDir,
                     isSplit = e.n_flows == 2,
-                    name    = e.smName,
-                    e.smSymmetryPlaneAbsDir
+                    name    = e.name,
+                    e.symmetryPlaneAbsDir
                 )
             )
 
         case e: HasDirectionChangeData =>
-            Seq(CmdDirectionChange(e.dcAbsDir, e.dcAngle))
+            Seq(CmdDirectionChange(e.absDir, e.angle))
 
         case e: HasInnerShapeValue =>
             Seq(CmdSetInnerShape(e.innerShapeValue))

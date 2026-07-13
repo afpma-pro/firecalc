@@ -242,16 +242,13 @@ object AddThermalPipeElement_13384_V4:
 
     sealed abstract class AddDirectionChange(
         @Transl(I(_.terms.name))
-        val name  : String,
+        val name           : String,
         @Transl(I(_.terms.angle))
-        val angle : Angle,
+        val angle          : Angle,
         @Transl(I(_.terms.absolute_direction))
-        val absDir: Option[AbsoluteDirection] = None
+        override val absDir: Option[AbsoluteDirection] = None
     ) extends AddThermalPipeElement_13384_V4
-        with HasDirectionChangeData {
-        def dcAngle           = angle
-        override def dcAbsDir = absDir
-    }
+        with HasDirectionChangeData
 
     @Transl(I(_.add_element.AddAngleAdjustable))
     case class AddAngleAdjustable(
@@ -417,13 +414,13 @@ object AddThermalPipeElement_13384_V4:
     @Transl(I(_.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn))
     case class SplitSingleFlowIntoTwoFlowsWith90DegTurn(
         @Transl(I(_.terms.name))
-        name               : String,
+        name                            : String,
         @Transl(I(_.terms.absolute_direction))
-        absDir             : Option[AbsoluteDirection] = None,
+        override val absDir             : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape      : PipeShape,
+        newInnerShape                   : PipeShape,
         @Transl(I(_.split_merge.symmetryPlaneAbsDir))
-        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        override val symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends AddThermalPipeElement_13384_V4
         with SetsNumberOfFlows
         with SetsInnerShape
@@ -433,24 +430,19 @@ object AddThermalPipeElement_13384_V4:
         with HasSplitMergeData
         with HasDirectionChangeData {
         def n_flows: NbOfFlows = 2
-        def smName                         = name
-        override def smAbsDir              = absDir
-        def smNewInnerShape                = newInnerShape
-        override def smSymmetryPlaneAbsDir = symmetryPlaneAbsDir
-        def dcAngle                        = 90.degrees
-        override def dcAbsDir              = absDir
+        def angle  : Angle     = 90.degrees
     }
 
     @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
     case class MergeTwoFlowsIntoSingleWith90DegTurn(
         @Transl(I(_.terms.name))
-        name               : String,
+        name                            : String,
         @Transl(I(_.terms.absolute_direction))
-        absDir             : Option[AbsoluteDirection] = None,
+        override val absDir             : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape      : PipeShape,
+        newInnerShape                   : PipeShape,
         @Transl(I(_.split_merge.symmetryPlaneAbsDir))
-        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        override val symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends AddThermalPipeElement_13384_V4
         with SetsNumberOfFlows
         with SetsInnerShape
@@ -460,12 +452,7 @@ object AddThermalPipeElement_13384_V4:
         with HasSplitMergeData
         with HasDirectionChangeData {
         def n_flows: NbOfFlows = 1
-        def smName                         = name
-        override def smAbsDir              = absDir
-        def smNewInnerShape                = newInnerShape
-        override def smSymmetryPlaneAbsDir = symmetryPlaneAbsDir
-        def dcAngle                        = 90.degrees
-        override def dcAbsDir              = absDir
+        def angle  : Angle     = 90.degrees
     }
 
 extension (descrs: Seq[ThermalPipeDescr_13384_V4])

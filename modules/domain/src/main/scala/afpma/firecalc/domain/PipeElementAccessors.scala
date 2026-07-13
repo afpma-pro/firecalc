@@ -13,18 +13,18 @@ import afpma.firecalc.units.coulombutils.*
  * DTOs mix this in to expose `angle` and `absDir` without reflection.
  */
 trait HasDirectionChangeData extends IsDirectionChange:
-    def dcAngle : Angle
-    def dcAbsDir: Option[AbsoluteDirection] = None
+    def angle : Angle
+    def absDir: Option[AbsoluteDirection] = None
 
 /**
  * Typed accessor for split/merge elements.
  * `n_flows` from `SetsNumberOfFlows` already distinguishes split (2) vs merge (1).
  */
 trait HasSplitMergeData extends IsSplitMergeTurn with SetsNumberOfFlows:
-    def smName               : String
-    def smAbsDir             : Option[AbsoluteDirection] = None
-    def smNewInnerShape      : PipeShape
-    def smSymmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+    def name               : String
+    def absDir             : Option[AbsoluteDirection] = None
+    def newInnerShape      : PipeShape
+    def symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
 
 /**
  * Typed accessor for length-bearing section elements.
