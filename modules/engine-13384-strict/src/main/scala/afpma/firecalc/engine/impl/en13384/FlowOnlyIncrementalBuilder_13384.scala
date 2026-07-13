@@ -143,7 +143,7 @@ trait FlowOnlyIncrementalBuilder_13384
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[QtyD[Meter]] =
             val nextAddSectionsOps =
-                convStep.allRemainingOps
+                convStep.nextStepOps
                     .map(_._2)
                     .flatMap(op => typeTestAddElement.unapply(op))
             nextAddSectionsOps.headOption.flatMap:

@@ -221,16 +221,18 @@ trait FlowOnlyIncrementalBuilder_15544
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[Length] =
-            convStep.nextOpIfAddElement
-                .map(_._2)
-                .flatMap:
-                    case _ @AddSectionSlopped(_, l)                            => l.some
-                    case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
-                    case _ @AddSectionHorizontal(_, l)                         => l.some
-                    case _ @AddSectionVertical(_, l)                           => l.some
-                    case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff |
-                            SplitSingleFlowIntoTwoFlowsWith90DegTurn | MergeTwoFlowsIntoSingleWith90DegTurn) =>
-                        None
+            convStep.nextStepOps.headOption.flatMap:
+                case (_, op) =>
+                    op match
+                        case _ @AddSectionSlopped(_, l)                            => l.some
+                        case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
+                        case _ @AddSectionHorizontal(_, l)                         => l.some
+                        case _ @AddSectionVertical(_, l)                           => l.some
+                        case _: (AddSectionShapeChange | AddDirectionChange | AddFlowResistance | AddPressureDiff |
+                                SplitSingleFlowIntoTwoFlowsWith90DegTurn | MergeTwoFlowsIntoSingleWith90DegTurn |
+                                SetInnerShape | SetInnerShapePreventSectionGeometryChangeAuto | SetRoughness |
+                                SetMaterial | FlowOnlyChannelTopologyOp_15544.SetNumberOfFlows) =>
+                            None
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
