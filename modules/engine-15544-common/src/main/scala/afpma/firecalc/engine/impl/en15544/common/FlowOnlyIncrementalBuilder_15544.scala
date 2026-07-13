@@ -15,6 +15,7 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
+import afpma.firecalc.engine.alg.en15544.IncrementalBuilderAlg_15544
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -49,10 +50,17 @@ import scala.reflect.*
 
 import com.softwaremill.quicklens.*
 
-trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with FramedBuilderSupport:
+trait FlowOnlyIncrementalBuilder_15544
+    extends IncrementalBuilderAlg
+    with IncrementalBuilderAlg_15544[FlowOnlyPropsState_15544]
+    with FramedBuilderSupport:
 
     import AddFlowOnlyPipeElement_15544.*
     import SetFlowOnlyPipeProp_15544.*
+
+    override protected type SplitDTO  = SplitSingleFlowIntoTwoFlowsWith90DegTurn
+    override protected type MergeDTO  = MergeTwoFlowsIntoSingleWith90DegTurn
+    override protected type StateOpsT = PropsStateOps[PropsState]
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.hasInnerShapeAtPos
@@ -128,7 +136,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
     // ========== PropsState via Typeclass ==========
 
     override protected type PropsState = FlowOnlyPropsState_15544
-    private val stateOps = summon[PropsStateOps[PropsState]]
+    protected val stateOps = summon[PropsStateOps[PropsState]]
 
     given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
 
@@ -387,58 +395,9 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                             case None        => propsState.validNel
                     case None     => propsState.validNel
             case Some(op: SplitSingleFlowIntoTwoFlowsWith90DegTurn) =>
-                val branchDirOpt: Option[Vec3] = op.absDir.map { fd =>
-                    val (az, el) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                    Vec3.fromAzimuthElevation(az, el)
-                }
-                propsState.currentFrame match
-                    case Some(frame) =>
-                        val targetVec = branchDirOpt.getOrElse {
-                            val perp = frame.direction.cross(Vec3.Up)
-                            if perp.norm > 1e-9 then perp.normalized else Vec3.Rear
-                        }
-                        val newFrame  = if frame.isReachable(targetVec, 90.0) then
-                            frame.applyBendForFinalDir(90.0, targetVec)
-                        else PipeFrame.initial        (targetVec      )
-                        propsState.copy(
-                            dirBeforePreviousDC = Some(frame.direction),
-                            currentFrame        = Some(newFrame)
-                        )
-                    case None        => propsState
-                stateOps
-                    .setNFlows(stateOps.setInnerShape(propsState, op.newInnerShape), 2.flows)
-                    .validNel
+                handleSplitStateUpdate(propsState, op, op.absDir, op.newInnerShape, op.name, convStep)
             case Some(op: MergeTwoFlowsIntoSingleWith90DegTurn)     =>
-                val frameUpdate = op.absDir match
-                    case Some(fd) =>
-                        propsState.currentFrame match
-                            case Some(frame) =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                val newFrame  = if frame.isReachable(targetVec, 90.0) then
-                                    frame.applyBendForFinalDir(90.0, targetVec)
-                                else PipeFrame.initial        (targetVec      )
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                )
-                            case None        => propsState
-                    case None     =>
-                        propsState.currentFrame match
-                            case Some(frame) =>
-                                val perp      = frame.direction.cross(Vec3.Up)
-                                val targetVec = if perp.norm > 1e-9 then perp.normalized else Vec3.Rear
-                                val newFrame  = if frame.isReachable(targetVec, 90.0) then
-                                    frame.applyBendForFinalDir(90.0, targetVec)
-                                else PipeFrame.initial        (targetVec      )
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                )
-                            case None        => propsState
-                stateOps
-                    .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 1.flow)
-                    .validNel
+                handleMergeStateUpdate(propsState, op, op.absDir, op.newInnerShape)
             case Some(_ @AddFlowResistance(_, _, _))                => propsState.validNel
             case Some(_ @AddPressureDiff(_, _))                     => propsState.validNel
             case Some(obj: AddSectionShapeChange)                   =>
@@ -489,6 +448,13 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                                 .map(_ => updatedSt)
                         }
             }
+
+    override protected def mkSplitMerge90Descr(
+        nFlows : NbOfFlows,
+        angleN2: Option[QtyD[Degree]],
+        shape  : PipeShape
+    ): PipeElDescr =
+        SplitMerge90(nFlows = nFlows, angleN2 = angleN2, effectiveShape = shape)
 
     // Minimal ElementFactory object required by trait - delegates to typeclass instances
     object ElementFactory extends ElementFactoryModule
