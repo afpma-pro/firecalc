@@ -61,7 +61,7 @@ object FluePipe_Module_13384
         externalInitialFrame: Option[PipeFrame] = None
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
         val (fdResult, seedV) =
-            mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None, None))
+            mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))
         (fdResult, seedV.map(_.frame))
 
     def mkPipeFromIncrDescrWithSeed(

@@ -191,11 +191,10 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                         (ids, fd, nextSeedFromFinalState(seed, finalState)).validNel
 
     private def nextSeedFromFinalState(seed: PipeBuildSeed, finalState: PropsState): PipeBuildSeed =
-        PipeBuildSeed                    (
-            frame                     = currentFrameFromPropsState(finalState).orElse(seed.frame),
-            nFlows                    = currentNFlowsFromPropsState(finalState),
-            startPoint                = seed.startPoint,
-            slot0FireboxSplitPosition = seed.slot0FireboxSplitPosition
+        PipeBuildSeed          (
+            frame           = currentFrameFromPropsState(finalState).orElse(seed.frame),
+            nFlows          = currentNFlowsFromPropsState(finalState),
+            positionContext = seed.positionContext
         )
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr

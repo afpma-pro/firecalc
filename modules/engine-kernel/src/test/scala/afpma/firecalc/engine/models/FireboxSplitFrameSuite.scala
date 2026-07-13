@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.*
 class FireboxSplitFrameSuite extends AnyFlatSpec with Matchers:
 
     // Default seed with Vec3.Rear direction so we can verify direction changes to Up
-    val defaultSeed = PipeBuildSeed(Some(PipeFrame.initial(Vec3.Rear)), NbOfFlows(1), None, None)
+    val defaultSeed = PipeBuildSeed(Some(PipeFrame.initial(Vec3.Rear)), NbOfFlows(1), None)
 
     // Minimal split descriptors for FlueSlot and ThermalFlueSlot
     val flowOnlySplit =

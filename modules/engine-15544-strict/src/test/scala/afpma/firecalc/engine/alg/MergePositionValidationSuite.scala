@@ -194,7 +194,7 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
 
         "should accept merge when branch tip is on the split plane" in {
             val upFrame = PipeFrame.initial(Vec3.Up)
-            val seed    = PipeBuildSeed(Some(upFrame), NbOfFlows(1), None, None)
+            val seed    = PipeBuildSeed(Some(upFrame), NbOfFlows(1), None)
 
             val p = builder.define(
                 SplitSingleFlowIntoTwoFlowsWith90DegTurn            (
@@ -245,7 +245,7 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
 
         "should reject merge when branch tip moves off the split plane" in {
             val upFrame = PipeFrame.initial(Vec3.Up)
-            val seed    = PipeBuildSeed(Some(upFrame), NbOfFlows(1), None, None)
+            val seed    = PipeBuildSeed(Some(upFrame), NbOfFlows(1), None)
 
             // Same geometry as above but with a longer Front section
             // that moves the branch tip off the symmetry plane Π (XZ plane, Y=0).

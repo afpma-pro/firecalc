@@ -240,8 +240,8 @@ trait ThermalIncrementalBuilder_13384
                     incrDescrs.map(_._2).toSeq,
                     PipeInitialDirection.default,
                     finalState.initialFrame,
-                    seed.startPoint.getOrElse(Vec3(0, 0, 0)),
-                    splitPosition = seed.slot0FireboxSplitPosition
+                    seed.positionContext.flatMap(_.startPoint).getOrElse(Vec3(0, 0, 0)),
+                    splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
                 )
                 val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
                 val splits          = posResult.splitMergePositions.filter(_.isSplit)

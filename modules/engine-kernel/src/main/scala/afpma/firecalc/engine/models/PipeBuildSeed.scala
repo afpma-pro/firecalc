@@ -11,18 +11,26 @@ import afpma.firecalc.engine.models.geometry.SlotIntrospector.SplitQueryResult
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.units.Vec3
 
-final case class PipeBuildSeed(
-    frame                    : Option[PipeFrame],
-    nFlows                   : NbOfFlows,
+/**
+ * Position tracking context for post-firebox pipe chains with splits.
+ * Only populated when nFlows > 1 and geometry validation is active.
+ */
+final case class PipePositionContext(
     startPoint               : Option[Vec3] = None,
     slot0FireboxSplitPosition: Option[Vec3] = None
 )
 
+final case class PipeBuildSeed(
+    frame          : Option[PipeFrame],
+    nFlows         : NbOfFlows,
+    positionContext: Option[PipePositionContext] = None
+)
+
 object PipeBuildSeed:
-    val default: PipeBuildSeed = PipeBuildSeed(None, NbOfFlows(1))
+    val default: PipeBuildSeed = PipeBuildSeed(None, NbOfFlows(1), None)
 
     def fromFrame(frame: Option[PipeFrame]): PipeBuildSeed =
-        PipeBuildSeed(frame, NbOfFlows(1))
+        PipeBuildSeed(frame, NbOfFlows(1), None)
 
     /**
      * Build a PipeBuildSeed with position tracking for a post-firebox chain.
@@ -51,9 +59,9 @@ object PipeBuildSeed:
         fbBottomZ    : Double,
         fallbackShape: PipeShape = PipeShape.InnerShapeFallbackCompute
     ): PipeBuildSeed =
-        if slots.isEmpty then return PipeBuildSeed(initialFrame, NbOfFlows(1), None, None)
+        if slots.isEmpty then return PipeBuildSeed(initialFrame, NbOfFlows(1), None)
 
-        val defaultSeed = PipeBuildSeed(initialFrame, NbOfFlows(1), None, None)
+        val defaultSeed = PipeBuildSeed(initialFrame, NbOfFlows(1), None)
         val initialSeed = FireboxSplitFrame.resolveInitialSeed(slots.head, defaultSeed)
 
         if initialSeed.nFlows.unwrap > 1 then
@@ -69,13 +77,13 @@ object PipeBuildSeed:
 
             absDirOpt match
                 case Some(absDir) =>
-                    val splitPos                   = PipePositionComputer.computeSplitPosition(
+                    val splitPos    = PipePositionComputer.computeSplitPosition(
                         fbBottomZ,
                         fbHeight,
                         innerH,
                         absDir
                     )
-                    val branchStart                = PipePositionComputer
+                    val branchStart = PipePositionComputer
                         .computeBranchStartAfterSplit(
                             absDir,
                             fbWidth,
@@ -86,8 +94,12 @@ object PipeBuildSeed:
                         )
                         .toVec3
                     initialSeed.copy(
-                        startPoint                = Some(branchStart),
-                        slot0FireboxSplitPosition = Some(splitPos)
+                        positionContext = Some(
+                            PipePositionContext               (
+                                startPoint                = Some(branchStart),
+                                slot0FireboxSplitPosition = Some(splitPos)
+                            )
+                        )
                     )
                 case None         => initialSeed
         else initialSeed

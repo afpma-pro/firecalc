@@ -51,7 +51,7 @@ object PipeChain_15544_Strict:
         import FluePipe_Module_15544.FullDescrResult.given
         import FluePipe_Module_15544.toFullDescrWithSeed
         // Flue pipe → capture final frame
-        val initialSeed    = PipeBuildSeed(flueInitialFrame, NbOfFlows(1), None, None)
+        val initialSeed    = PipeBuildSeed(flueInitialFrame, NbOfFlows(1), None)
         val flueResult     = FluePipe_Module_15544.incremental
             .define(d.flue*)
             .toFullDescrWithSeed(initialSeed)

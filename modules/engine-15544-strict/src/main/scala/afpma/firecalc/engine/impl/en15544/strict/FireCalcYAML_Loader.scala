@@ -109,8 +109,8 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         PipeChainGeneric.build(
             cleanFramedPostFireboxPipes.slots,
             seed.frame,
-            seed.startPoint,
-            seed.slot0FireboxSplitPosition
+            seed.positionContext.flatMap(_.startPoint               ),
+            seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
         )
 
     import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
@@ -181,9 +181,9 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         cleanFramedPostFireboxPipes.initialPosition match
             case PostFireboxStartPosition.Manual(pos) => Some(pos)
             case PostFireboxStartPosition.Auto        =>
-                if SlotIntrospector.leadingElementIsSplit(engineSlots                                 ) then
+                if SlotIntrospector.leadingElementIsSplit         (engineSlots                                 ) then
                     // Leading element is a split — use the already-computed branch start
-                    seed.startPoint.map                  (vec => Position3D(vec.x.m, vec.y.m, vec.z.m))
+                    seed.positionContext.flatMap(_.startPoint).map(vec => Position3D(vec.x.m, vec.y.m, vec.z.m))
                 else
                     // No split at first element — compute post-firebox start from initial direction
                     val firstShape = SlotIntrospector
