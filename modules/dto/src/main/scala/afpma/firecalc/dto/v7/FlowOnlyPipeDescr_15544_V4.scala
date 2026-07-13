@@ -9,9 +9,13 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.domain.{
     AbsoluteDirection,
+    HasDirectionChangeData,
+    HasInnerShapeValue,
+    HasSectionElevation,
+    HasSectionLength,
+    HasSplitMergeData,
     IsBackendForbidden,
     IsDirectionChange,
-    IsLengthBearingPipeElement,
     IsPressureDiff,
     IsSectionGeometryChange,
     IsSingularFlowResistance,
@@ -42,9 +46,10 @@ object SetFlowOnlyPipeProp_15544_V4:
         @Transl(I(_.terms.pipe_shape._self))
         shape: PipeShape
     ) extends SetFlowOnlyPipeProp_15544_V4
-        with SetsInnerShape
+        with HasInnerShapeValue
         with IsBackendForbidden {
-        def forbiddenKind = IsBackendForbidden.SetsInnerShapePreventAutoKind
+        def innerShapeValue = shape
+        def forbiddenKind   = IsBackendForbidden.SetsInnerShapePreventAutoKind
     }
 
     @Transl(I(_.set_prop.SetInnerShape))
@@ -52,7 +57,9 @@ object SetFlowOnlyPipeProp_15544_V4:
         @Transl(I(_.terms.pipe_shape._self))
         shape: PipeShape
     ) extends SetFlowOnlyPipeProp_15544_V4
-        with SetsInnerShape
+        with HasInnerShapeValue {
+        def innerShapeValue = shape
+    }
 
     @Transl(I(_.set_prop.SetRoughness))
     case class SetRoughness(
@@ -92,7 +99,9 @@ object AddFlowOnlyPipeElement_15544_V4:
         @Transl(I(_.terms.length))
         length: Length
     ) extends AddFlowOnlyPipeElement_15544_V4
-        with IsLengthBearingPipeElement
+        with HasSectionLength {
+        def sectionLength = length
+    }
 
     @Transl(I(_.add_element.AddSectionSlopped))
     case class AddSectionSloppedForceManualElevationGain(
@@ -103,7 +112,10 @@ object AddFlowOnlyPipeElement_15544_V4:
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_15544_V4
-        with IsLengthBearingPipeElement
+        with HasSectionElevation {
+        def sectionLength        = length
+        def sectionElevationGain = elevation_gain
+    }
 
     /**
      * Legacy section type — treated as `AddSectionSlopped(name, length = horizontal_length)` by the engine.
@@ -118,7 +130,9 @@ object AddFlowOnlyPipeElement_15544_V4:
         @Transl(I(_.terms.horizontal_length))
         horizontal_length: Length
     ) extends AddFlowOnlyPipeElement_15544_V4
-        with IsLengthBearingPipeElement
+        with HasSectionLength {
+        def sectionLength = horizontal_length
+    }
 
     /**
      * Legacy section type — treated as `AddSectionSlopped(name, length = elevation_gain)` by the engine.
@@ -133,7 +147,9 @@ object AddFlowOnlyPipeElement_15544_V4:
         @Transl(I(_.terms.elevation_gain))
         elevation_gain: Length
     ) extends AddFlowOnlyPipeElement_15544_V4
-        with IsLengthBearingPipeElement
+        with HasSectionLength {
+        def sectionLength = elevation_gain
+    }
 
     @Transl(I(_.add_element.add_direction_change_element))
     sealed abstract class AddDirectionChange(
@@ -144,7 +160,10 @@ object AddFlowOnlyPipeElement_15544_V4:
         @Transl(I(_.terms.absolute_direction))
         val absDir       : Option[AbsoluteDirection] = None
     ) extends AddFlowOnlyPipeElement_15544_V4
-        with IsDirectionChange
+        with HasDirectionChangeData {
+        def dcAngle           = angle
+        override def dcAbsDir = absDir
+    }
 
     @Transl(I(_.add_element.AddSharpeAngle_0_to_180))
     case class AddSharpeAngle_0_to_180(
@@ -208,8 +227,16 @@ object AddFlowOnlyPipeElement_15544_V4:
         with SetsInnerShape
         with IsDirectionChange
         with IsSingularFlowResistance
-        with IsSplitMergeTurn {
+        with IsSplitMergeTurn
+        with HasSplitMergeData
+        with HasDirectionChangeData {
         def n_flows: NbOfFlows = 2
+        def smName                         = name
+        override def smAbsDir              = absDir
+        def smNewInnerShape                = newInnerShape
+        override def smSymmetryPlaneAbsDir = symmetryPlaneAbsDir
+        def dcAngle                        = 90.degrees
+        override def dcAbsDir              = absDir
     }
 
     @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
@@ -227,6 +254,14 @@ object AddFlowOnlyPipeElement_15544_V4:
         with SetsInnerShape
         with IsDirectionChange
         with IsSingularFlowResistance
-        with IsSplitMergeTurn {
+        with IsSplitMergeTurn
+        with HasSplitMergeData
+        with HasDirectionChangeData {
         def n_flows: NbOfFlows = 1
+        def smName                         = name
+        override def smAbsDir              = absDir
+        def smNewInnerShape                = newInnerShape
+        override def smSymmetryPlaneAbsDir = symmetryPlaneAbsDir
+        def dcAngle                        = 90.degrees
+        override def dcAbsDir              = absDir
     }

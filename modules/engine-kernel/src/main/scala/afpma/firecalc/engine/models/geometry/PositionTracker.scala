@@ -9,7 +9,17 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.{AbsoluteDirection, AzimuthDirection, InclinationDirection, IsSplitMergeTurn}
+import afpma.firecalc.domain.{
+    AbsoluteDirection,
+    AzimuthDirection,
+    HasDirectionChangeData,
+    HasInnerShapeValue,
+    HasSectionElevation,
+    HasSectionLength,
+    HasSplitMergeData,
+    InclinationDirection
+}
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.{LinedFlue, SetPropertiesInBatch}
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -26,8 +36,7 @@ object PositionTracker:
         name               : String,
         symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends PipeCommand
-    private case class CmdSectionVertical(elevGain: Length)                                extends PipeCommand
-    private case class CmdSectionHorizontal(horizLen: Length)                              extends PipeCommand
+    private case class CmdSection(length: Length, defaultDir: Vec3 = Vec3.Rear)            extends PipeCommand
     private case class CmdSectionSlopped(length: Length)                                   extends PipeCommand
     private case class CmdSectionSloppedForceManual(length: Length, elevGain: Length)      extends PipeCommand
     private case object CmdNoOp                                                            extends PipeCommand
@@ -127,19 +136,14 @@ object PositionTracker:
                 val (newState, outputs) = result.getOrElse((state, TrackingOutputs.empty))
                 (newState, outputs)
 
-            case c: (CmdSectionVertical | CmdSectionHorizontal) =>
-                val l          = c match
-                    case CmdSectionVertical(eg)   => eg.toUnit[Meter].value
-                    case CmdSectionHorizontal(hl) => hl.toUnit[Meter].value
-                val defaultDir = c match
-                    case CmdSectionVertical(_)   => Vec3.Up
-                    case CmdSectionHorizontal(_) => Vec3.Rear
-                val base       = state.frame.map(_.direction).getOrElse(defaultDir)
-                val dir        = if l < 0 then base * -1.0 else base
-                val dist       = math.abs(l)
-                val disp       = dir * dist
-                val endPt      = state.currentPosition + disp
-                val segment    = PipeSegmentPosition(
+            case CmdSection(length, defaultDir) =>
+                val l       = length.toUnit[Meter].value
+                val base    = state.frame.map(_.direction).getOrElse(defaultDir)
+                val dir     = if l < 0 then base * -1.0 else base
+                val dist    = math.abs(l)
+                val disp    = dir * dist
+                val endPt   = state.currentPosition + disp
+                val segment = PipeSegmentPosition(
                     elementIndex = idx,
                     startPoint   = state.currentPosition,
                     endPoint     = endPt,
@@ -150,13 +154,27 @@ object PositionTracker:
                 )
                 (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
 
-            case c: (CmdSectionSlopped | CmdSectionSloppedForceManual) =>
-                val l       = c match
-                    case CmdSectionSlopped(len)               => len.toUnit[Meter].value
-                    case CmdSectionSloppedForceManual(len, _) => len.toUnit[Meter].value
-                val eg      = c match
-                    case CmdSectionSlopped(_)                    => state.frame.map(f => l * f.direction.z).getOrElse(0.0)
-                    case CmdSectionSloppedForceManual(_, egGain) => egGain.toUnit[Meter].value
+            case CmdSectionSlopped(length) =>
+                val l       = length.toUnit[Meter].value
+                val eg      = state.frame.map(f => l * f.direction.z).getOrElse(0.0)
+                val hDist   = math.sqrt(math.max(0.0, l * l - eg * eg))
+                val disp    = horizontalDirection(state.frame) * hDist + Vec3(0, 0, eg)
+                val dir     = disp.normalized
+                val endPt   = state.currentPosition + disp
+                val segment = PipeSegmentPosition(
+                    elementIndex = idx,
+                    startPoint   = state.currentPosition,
+                    endPoint     = endPt,
+                    direction    = dir,
+                    length       = l,
+                    innerShape   = state.currentInnerShape,
+                    frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                )
+                (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
+
+            case CmdSectionSloppedForceManual(length, elevGain) =>
+                val l       = length.toUnit[Meter].value
+                val eg      = elevGain.toUnit[Meter].value
                 val hDist   = math.sqrt(math.max(0.0, l * l - eg * eg))
                 val disp    = horizontalDirection(state.frame) * hDist + Vec3(0, 0, eg)
                 val dir     = disp.normalized
@@ -175,68 +193,37 @@ object PositionTracker:
             case CmdNoOp =>
                 (state, TrackingOutputs.empty)
 
-    /* Maps the 8 common cases shared by all three descriptor families.
+    /**
+     * Maps DTO elements to pipe commands using typed accessor traits.
      *
-     * The DTO case classes have the same names but live in different packages
-     * (13384_V4 vs 15544_V4 vs Thermal_13384_V4), so we can't share a single
-     * pattern-match. Instead we:
-     * - Match on domain marker trait IsSplitMergeTurn (shared across packages),
-     *   using productElement for field access since the trait is a marker.
-     * - Use runtime class-name matching + productElement for structurally
-     *   identical case classes (AddDirectionChange subclasses, SetInnerShape,
-     *   AddSection*) whose field order is guaranteed identical across packages.
-     *   AddDirectionChange subclasses are detected via superclass chain check.
+     * All three v7 DTO families (FlowOnlyPipeDescr_13384_V4, FlowOnlyPipeDescr_15544_V4,
+     * ThermalPipeDescr_13384_V4) mix in the same accessor traits from `domain`, so a
+     * single pattern-match covers all families. No reflection, no casts, no string matching.
      */
     private def mapCommon(elem: Any): Seq[PipeCommand] = elem match
-        // IsSplitMergeTurn: shared marker trait; fields via productElement
-        //   (product indices: 0=name, 1=absDir, 2=newInnerShape, 3=symmetryPlaneAbsDir)
-        case _: IsSplitMergeTurn =>
-            val p       = elem.asInstanceOf[Product]
-            val absDir  = p.productElement(1).asInstanceOf[Option[AbsoluteDirection]]
-            val symDir  = p.productElement(3).asInstanceOf[Option[AbsoluteDirection]]
-            val isSplit = elem.getClass.getSimpleName.startsWith("Split")
-            Seq(CmdSplitMerge90(absDir, isSplit, p.productElement(0).asInstanceOf[String], symDir))
-
-        // AddDirectionChange subclasses: check superclass chain for "AddDirectionChange"
-        //   (product indices: 0=name, 1=angle, 2=absDir)
-        case e if isAddDirectionChange(e) =>
-            val p = e.asInstanceOf[Product]
+        case e: HasSplitMergeData =>
             Seq(
-                CmdDirectionChange(
-                    p.productElement(2).asInstanceOf[Option[AbsoluteDirection]],
-                    p.productElement(1).asInstanceOf[Angle]
+                CmdSplitMerge90(
+                    e.smAbsDir,
+                    isSplit = e.n_flows == 2,
+                    name    = e.smName,
+                    e.smSymmetryPlaneAbsDir
                 )
             )
 
-        // SetInnerShape + AddSection*: same simple name across packages
-        case _ if elem.getClass.getSimpleName == "SetInnerShape"                             =>
-            Seq(CmdSetInnerShape(elem.asInstanceOf[Product].productElement(0).asInstanceOf[PipeShape]))
-        case _ if elem.getClass.getSimpleName == "AddSectionVertical"                        =>
-            Seq(CmdSectionVertical(elem.asInstanceOf[Product].productElement(1).asInstanceOf[Length]))
-        case _ if elem.getClass.getSimpleName == "AddSectionHorizontal"                      =>
-            Seq(CmdSectionHorizontal(elem.asInstanceOf[Product].productElement(1).asInstanceOf[Length]))
-        case _ if elem.getClass.getSimpleName == "AddSectionSlopped"                         =>
-            Seq(CmdSectionSlopped(elem.asInstanceOf[Product].productElement(1).asInstanceOf[Length]))
-        case _ if elem.getClass.getSimpleName == "AddSectionSloppedForceManualElevationGain" =>
-            val p = elem.asInstanceOf[Product]
-            Seq(
-                CmdSectionSloppedForceManual(
-                    p.productElement(1).asInstanceOf[Length],
-                    p.productElement(2).asInstanceOf[Length]
-                )
-            )
-        case _                                                                               => Seq(CmdNoOp)
+        case e: HasDirectionChangeData =>
+            Seq(CmdDirectionChange(e.dcAbsDir, e.dcAngle))
 
-    // Check if elem extends AddDirectionChange by walking the superclass chain.
-    // AddDirectionChange is a sealed abstract class in each DTO package;
-    // its subclasses (AddAngleAdjustable, AddSharpeAngle_*, AddSmoothCurve_*, etc.)
-    // have different simple names but share the same superclass.
-    private def isAddDirectionChange(e: Any): Boolean =
-        var c: Class[?] = e.getClass
-        while c != null && c != classOf[Object] do
-            if c.getSimpleName == "AddDirectionChange" then return true
-            c = c.getSuperclass
-        false
+        case e: HasInnerShapeValue =>
+            Seq(CmdSetInnerShape(e.innerShapeValue))
+
+        case e: HasSectionElevation =>
+            Seq(CmdSectionSloppedForceManual(e.sectionLength, e.sectionElevationGain))
+
+        case e: HasSectionLength =>
+            Seq(CmdSection(e.sectionLength, Vec3.Rear))
+
+        case _ => Seq(CmdNoOp)
 
     private def mapFlowOnly13384(elem: FlowOnlyPipeDescr_13384): Seq[PipeCommand] =
         mapCommon(elem)
@@ -245,12 +232,11 @@ object PositionTracker:
         mapCommon(elem)
 
     private def mapThermal13384(elem: ThermalPipeDescr_13384): Seq[PipeCommand] =
-        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
         elem match
             case SetPropertiesInBatch(_, props, _) =>
-                props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
+                props.collect { case e: HasInnerShapeValue => CmdSetInnerShape(e.innerShapeValue) }.toSeq
             case LinedFlue(_, liner, _, _)         =>
-                liner.props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
+                liner.props.collect { case e: HasInnerShapeValue => CmdSetInnerShape(e.innerShapeValue) }.toSeq
             case _                                 => mapCommon(elem)
 
     private def computeGenericPipePositions[T](
