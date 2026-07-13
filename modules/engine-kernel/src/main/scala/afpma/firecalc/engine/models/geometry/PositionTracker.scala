@@ -36,7 +36,7 @@ object PositionTracker:
         name               : String,
         symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
     ) extends PipeCommand
-    private case class CmdSection(length: Length, defaultDir: Vec3 = Vec3.Rear)            extends PipeCommand
+    private case class CmdSection(length: Length)                                          extends PipeCommand
     private case class CmdSectionSloppedForceManual(length: Length, elevGain: Length)      extends PipeCommand
     private case object CmdNoOp                                                            extends PipeCommand
 
@@ -135,9 +135,11 @@ object PositionTracker:
                 val (newState, outputs) = result.getOrElse((state, TrackingOutputs.empty))
                 (newState, outputs)
 
-            case CmdSection(length, defaultDir)                 =>
+            case CmdSection(length)                             =>
                 val l       = length.toUnit[Meter].value
-                val base    = state.frame.map(_.direction).getOrElse(defaultDir)
+                // Invariant: state.frame is always Some (initialized from initialDirection or externalFrame,
+                // and preserved by every processCommand branch). Vec3.Rear is a fallback for unreachable code.
+                val base    = state.frame.map(_.direction).getOrElse(Vec3.Rear)
                 val dir     = if l < 0 then base * -1.0 else base
                 val dist    = math.abs(l)
                 val disp    = dir * dist
@@ -201,7 +203,7 @@ object PositionTracker:
             Seq(CmdSectionSloppedForceManual(e.sectionLength, e.sectionElevationGain))
 
         case e: HasSectionLength =>
-            Seq(CmdSection(e.sectionLength, Vec3.Rear))
+            Seq(CmdSection(e.sectionLength))
 
         case _ => Seq(CmdNoOp)
 
