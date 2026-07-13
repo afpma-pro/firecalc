@@ -198,12 +198,6 @@ object PositionTracker:
 
         case _ => Seq(CmdNoOp)
 
-    private def mapFlowOnly13384(elem: FlowOnlyPipeDescr_13384): Seq[PipeCommand] =
-        mapCommon(elem)
-
-    private def mapFlowOnly15544(elem: FlowOnlyPipeDescr_15544): Seq[PipeCommand] =
-        mapCommon(elem)
-
     private def mapThermal13384(elem: ThermalPipeDescr_13384): Seq[PipeCommand] =
         elem match
             case SetPropertiesInBatch(_, props, _) =>
@@ -296,7 +290,7 @@ object PositionTracker:
             startPoint,
             finalPoint,
             splitPosition,
-            mapFlowOnly13384
+            (elem: FlowOnlyPipeDescr_13384) => mapCommon(elem)
         )
 
     def computeFlowOnly15544(
@@ -315,7 +309,7 @@ object PositionTracker:
             startPoint,
             finalPoint,
             splitPosition,
-            mapFlowOnly15544
+            (elem: FlowOnlyPipeDescr_15544) => mapCommon(elem)
         )
 
     def computeThermal13384(
