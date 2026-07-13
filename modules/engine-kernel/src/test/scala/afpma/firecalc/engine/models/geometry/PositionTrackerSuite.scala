@@ -13,6 +13,8 @@ import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
+import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.WithoutAirSpace_V2
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
@@ -361,5 +363,60 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         // The error should contain the element name
         result.errors should contain("test-split-vertical-absdir")
         result.errors.size shouldBe 1
+    }
+
+    // ── Test 14: Thermal SetPropertiesInBatch extracts inner shape ─────
+
+    "PositionTracker.computeThermal13384" should "extract SetInnerShape from SetPropertiesInBatch props" in {
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
+        val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+        val elems      = Seq[ThermalPipeDescr_13384](
+            SetPropertiesInBatch(
+                batch_name = "batch",
+                props      = Seq(
+                    SetInnerShape(PipeShape.Circle(18.cm))
+                )
+            ),
+            AddSectionVertical  ("v", 1.0.meters)
+        )
+        val result     = PositionTracker.computeThermal13384(
+            elems,
+            initialDir,
+            None,
+            Vec3(0, 0, 0)
+        )
+        result.segments.size `shouldBe` 1
+        assertVec3Approx(result.finalPoint, Vec3(0, 0, 1))
+        // Inner shape from SetPropertiesInBatch should propagate into the segment
+        result.segments.head.innerShape shouldBe Some(PipeShape.Circle(18.cm))
+    }
+
+    // ── Test 15: Thermal LinedFlue extracts inner shape from liner ──────────
+
+    it should "extract SetInnerShape from LinedFlue liner props" in {
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
+        import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.WithoutAirSpace_V2
+        val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+        val liner      = SetPropertiesInBatch(
+            batch_name = "liner",
+            props      = Seq(SetInnerShape(PipeShape.Circle(20.cm)))
+        )
+        val casing     = SetPropertiesInBatch(batch_name = "casing", props = Seq.empty)
+        val elems      = Seq[ThermalPipeDescr_13384](
+            LinedFlue         ("lined", liner, WithoutAirSpace_V2, casing),
+            AddSectionVertical("v", 2.0.meters                           )
+        )
+        val result     = PositionTracker.computeThermal13384(
+            elems,
+            initialDir,
+            None,
+            Vec3(0, 0, 0)
+        )
+        result.segments.size `shouldBe` 1
+        assertVec3Approx(result.finalPoint, Vec3(0, 0, 2))
+        // Inner shape from LinedFlue liner should propagate into the segment
+        result.segments.head.innerShape shouldBe Some(PipeShape.Circle(20.cm))
     }
 end PositionTrackerSuite
