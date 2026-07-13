@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
-import scala.io.Source
 import I18nGenerator._
+import scala.io.Source
 import org.scalajs.linker.interface.ModuleSplitStyle
 import sbtassembly.MergeStrategy
 
@@ -664,16 +664,9 @@ lazy val i18n = crossProject(JVMPlatform, JSPlatform)
         // i18n
         libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
         libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0",
-
-        // Make Bloop/Metals watch the i18n conf files for changes
-        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-            file(s"modules/i18n/src/main/resources/i18n/$lang.conf")
-        },
-
-        // Generate Scala source files from HOCON conf files
-        Compile / sourceGenerators += i18nSourceGenerator("i18n", Seq("afpma", "firecalc", "i18n"))
+        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0"
     )
+    .settings(I18nBuild.moduleSettings("i18n", Seq("afpma", "firecalc", "i18n")): _*)
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .dependsOn(i18n_utils)
 
@@ -1121,19 +1114,9 @@ lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
         libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0",
 
         // DirectionBadge has 30 fields — bump inline limit to prevent deriveDecoder overflow
-        scalacOptions += "-Xmax-inlines:48",
-
-        // Make Bloop/Metals watch the i18n conf files for changes
-        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-            file(s"modules/ui-i18n/src/main/resources/i18n/$lang.conf")
-        },
-
-        // Generate Scala source files from HOCON conf files
-        Compile / sourceGenerators += i18nSourceGenerator("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n"))
-
-        // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
-        // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+        scalacOptions += "-Xmax-inlines:48"
     )
+    .settings(I18nBuild.moduleSettings("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n")): _*)
     .dependsOn(i18n_utils)
     .jsConfigure(
         _.enablePlugins(ScalaJSPlugin)
@@ -1151,21 +1134,10 @@ lazy val payments_shared_i18n = crossProject(JSPlatform, JVMPlatform)
         name                                    := "firecalc-payments-shared-i18n",
         version                                 := payments_base_version,
         libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0",
-
-        // Make Bloop/Metals watch the i18n conf files for changes
-        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-            file(s"modules/payments-shared-i18n/src/main/resources/i18n/$lang.conf")
-        },
-
-        // Generate Scala source files from HOCON conf files
-        Compile / sourceGenerators += i18nSourceGenerator(
-            "payments-shared-i18n",
-            Seq("afpma", "firecalc", "payments", "shared", "i18n")
-        )
-
-        // scalaJSLinkerConfig ~= { _.withSourceMap(false) },
-        // scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
+        libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0"
+    )
+    .settings(
+        I18nBuild.moduleSettings("payments-shared-i18n", Seq("afpma", "firecalc", "payments", "shared", "i18n")): _*
     )
     .dependsOn(i18n_utils)
     .jsConfigure(
@@ -1220,16 +1192,9 @@ lazy val payments_i18n = (project in file("modules/payments-i18n"))
         name                                   := "firecalc-payments-i18n",
         version                                := payments_version,
         libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0",
-
-        // Make Bloop/Metals watch the i18n conf files for changes
-        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-            file(s"modules/payments-i18n/src/main/resources/i18n/$lang.conf")
-        },
-
-        // Generate Scala source files from HOCON conf files
-        Compile / sourceGenerators += i18nSourceGenerator("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n"))
+        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0"
     )
+    .settings(I18nBuild.moduleSettings("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n")): _*)
     .dependsOn(i18n_utils.jvm)
 //   .jsConfigure(
 //     _.enablePlugins(ScalaJSPlugin)
@@ -1244,16 +1209,9 @@ lazy val invoices_i18n = (project in file("modules/invoices-i18n"))
         name                                   := "firecalc-invoices-i18n",
         version                                := payments_version,
         libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0",
-
-        // Make Bloop/Metals watch the i18n conf files for changes
-        Compile / watchSources ++= SUPPORTED_LANGUAGES_IDS.map { lang =>
-            file(s"modules/invoices-i18n/src/main/resources/i18n/$lang.conf")
-        },
-
-        // Generate Scala source files from HOCON conf files
-        Compile / sourceGenerators += i18nSourceGenerator("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n"))
+        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0"
     )
+    .settings(I18nBuild.moduleSettings("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n")): _*)
     .dependsOn(i18n_utils.jvm)
 
 lazy val reports = (project in file("modules/reports"))

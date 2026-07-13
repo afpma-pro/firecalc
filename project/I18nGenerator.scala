@@ -80,28 +80,24 @@ object I18nGenerator {
 
             val langVals = SUPPORTED_LANGUAGES_IDS
                 .map { lang =>
-                    val content      = langContents(lang)
-                    val lines        = content.split("\n", -1)
-                    val chunks       = new scala.collection.mutable.ArrayBuffer[String]
-                    var currentChunk = new StringBuilder
-                    var currentSize  = 0
-                    val maxChunkSize = 60000
-                    for (line <- lines) {
-                        if (currentSize > 0) {
-                            if (currentSize + line.length + 1 > maxChunkSize) {
-                                chunks += currentChunk.toString()
-                                currentChunk = new StringBuilder
-                                currentSize  = 0
-                            } else {
-                                currentChunk.append("\n")
-                                currentSize += 1
-                            }
+                    val content             = langContents(lang)
+                    val lines               = content.split("\n", -1)
+                    val maxChunkSize        = 60000
+                    val (chunks, buf, size) = lines.foldLeft(
+                        (Vector.empty[String], new StringBuilder, 0)
+                    ) { case ((chunks, b, sz), line) =>
+                        if        (sz > 0 && sz + line.length + 1 > maxChunkSize) {
+                            val newBuf = new StringBuilder; newBuf.append(line)
+                            (chunks :+ b.toString(), newBuf, line.length)
+                        } else if (sz > 0                                       ) {
+                            b.append("\n").append(line)
+                            (chunks, b, sz + 1 + line.length)
+                        } else {
+                            b.append(line)
+                            (chunks, b, line.length)
                         }
-                        currentChunk.append(line)
-                        currentSize += line.length
                     }
-                    if (currentSize > 0) chunks += currentChunk.toString()
-                    val chunkList = chunks.toList
+                    val chunkList           = if (size > 0) (chunks :+ buf.toString()).toList else chunks.toList
                     if (chunkList.size <= 1) {
                         "  val " + lang + ": String =\n" +
                             "    \"\"\"\n" + content + "\n\"\"\"\n"
