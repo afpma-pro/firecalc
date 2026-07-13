@@ -42,7 +42,7 @@ object PositionTracker:
 
     /** Immutable accumulator for pipe position tracking. */
     private case class TrackerState(
-        frame             : Option[PipeFrame],
+        frame             : PipeFrame,
         currentPosition   : Vec3,
         currentInnerShape : Option[PipeShape],
         firstSplitConsumed: Boolean
@@ -79,67 +79,58 @@ object PositionTracker:
                 (state.copy(currentInnerShape = Some(shape)), TrackingOutputs.empty)
 
             case CmdDirectionChange(absDir, angle) =>
-                val newFrame =
-                    for
-                        f  <- state.frame
-                        fd <- absDir
-                    yield
-                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                        val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                        f.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec)
-                (state.copy(frame = newFrame.orElse(state.frame)), TrackingOutputs.empty)
+                val newFrame = absDir.map: fd =>
+                    val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                    val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                    state.frame.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec)
+                (state.copy(frame = newFrame.getOrElse(state.frame)), TrackingOutputs.empty)
 
             case CmdSplitMerge90(absDir, isSplit, name, symmetryPlaneAbsDir) =>
-                val result = state.frame.map: f =>
-                    val frameAfter           =
-                        absDir match
-                            case Some(fd) =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                if f.isReachable      (targetVec, 90.0) then f.applyBendForFinalDir(90.0, targetVec)
-                                else PipeFrame.initial(targetVec      )
-                            case None     =>
-                                val defaultBranch = f.direction.cross(Vec3.Up)
-                                if defaultBranch.norm > 1e-9 then f.applyBendForFinalDir(90.0, defaultBranch.normalized)
-                                else f.applyBendForFinalDir                             (90.0, Vec3.Rear               )
-                    val (smPos, frameResult) =
-                        SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
-                            case Right(config) =>
-                                val pos =
-                                    if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
-                                        splitPosition.get
-                                    else state.currentPosition
-                                (
-                                    SplitMergePosition(
-                                        idx,
-                                        pos,
-                                        f,
-                                        frameAfter.direction,
-                                        isSplit,
-                                        config
-                                    ),
-                                    frameAfter
-                                )
-                            case Left(_)       =>
-                                (null, f)
-                    (smPos, frameResult) match
-                        case (null, _        ) =>
-                            (state.copy(frame = Some(f)), TrackingOutputs(Nil, Nil, Vector(name)))
-                        case (smPos, newFrame) =>
-                            val newState =
+                val f                    = state.frame
+                val frameAfter           =
+                    absDir match
+                        case Some(fd) =>
+                            val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
+                            val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                            if f.isReachable      (targetVec, 90.0) then f.applyBendForFinalDir(90.0, targetVec)
+                            else PipeFrame.initial(targetVec      )
+                        case None     =>
+                            val defaultBranch = f.direction.cross(Vec3.Up)
+                            if defaultBranch.norm > 1e-9 then f.applyBendForFinalDir(90.0, defaultBranch.normalized)
+                            else f.applyBendForFinalDir                             (90.0, Vec3.Rear               )
+                val (smPos, frameResult) =
+                    SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
+                        case Right(config) =>
+                            val pos =
                                 if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
-                                    state.copy (frame = Some(newFrame), firstSplitConsumed = true)
-                                else state.copy(frame = Some(newFrame)                           )
-                            (newState, TrackingOutputs(Nil, Seq(smPos), Vector.empty))
-
-                val (newState, outputs) = result.getOrElse((state, TrackingOutputs.empty))
-                (newState, outputs)
+                                    splitPosition.get
+                                else state.currentPosition
+                            (
+                                SplitMergePosition(
+                                    idx,
+                                    pos,
+                                    f,
+                                    frameAfter.direction,
+                                    isSplit,
+                                    config
+                                ),
+                                frameAfter
+                            )
+                        case Left(_)       =>
+                            (null, f)
+                (smPos, frameResult) match
+                    case (null, f2       ) =>
+                        (state.copy(frame = f2), TrackingOutputs(Nil, Nil, Vector(name)))
+                    case (smPos, newFrame) =>
+                        val newState =
+                            if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
+                                state.copy (frame = newFrame, firstSplitConsumed = true)
+                            else state.copy(frame = newFrame                           )
+                        (newState, TrackingOutputs(Nil, Seq(smPos), Vector.empty))
 
             case CmdSection(length)                             =>
                 val l       = length.toUnit[Meter].value
-                // Invariant: state.frame is always Some (initialized from initialDirection or externalFrame,
-                // and preserved by every processCommand branch). Vec3.Rear is a fallback for unreachable code.
-                val base    = state.frame.map(_.direction).getOrElse(Vec3.Rear)
+                val base    = state.frame.direction
                 val dir     = if l < 0 then base * -1.0 else base
                 val dist    = math.abs(l)
                 val disp    = dir * dist
@@ -151,7 +142,7 @@ object PositionTracker:
                     direction    = dir,
                     length       = dist,
                     innerShape   = state.currentInnerShape,
-                    frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                    frame        = state.frame
                 )
                 (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
             case CmdSectionSloppedForceManual(length, elevGain) =>
@@ -168,7 +159,7 @@ object PositionTracker:
                     direction    = dir,
                     length       = l,
                     innerShape   = state.currentInnerShape,
-                    frame        = state.frame.getOrElse(PipeFrame.initial(Vec3.Rear))
+                    frame        = state.frame
                 )
                 (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
 
@@ -231,13 +222,11 @@ object PositionTracker:
         splitPosition           : Option[Vec3]
     ): PipePositionResult =
         val initialState = TrackerState(
-            frame              = externalFrame.orElse(
-                Some(
-                    PipeFrame.initial(
-                        Vec3.fromAzimuthElevation(
-                            initialDirection.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0                         ),
-                            InclinationDirection.toDegrees                                    (initialDirection.inclination)
-                        )
+            frame              = externalFrame.getOrElse(
+                PipeFrame.initial(
+                    Vec3.fromAzimuthElevation(
+                        initialDirection.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0                         ),
+                        InclinationDirection.toDegrees                                    (initialDirection.inclination)
                     )
                 )
             ),
@@ -258,7 +247,7 @@ object PositionTracker:
         PipePositionResult(
             allOutputs.segments,
             finalState.currentPosition,
-            finalState.frame,
+            Some(finalState.frame),
             allOutputs.splitMergePos,
             allOutputs.errors
         )
@@ -348,11 +337,8 @@ object PositionTracker:
             mapThermal13384
         )
 
-    private def horizontalDirection(frame: Option[PipeFrame]): Vec3 =
-        frame match
-            case Some(f) =>
-                val d     = f.direction
-                val horiz = Vec3(d.x, d.y, 0.0)
-                if horiz.norm < 1e-9 then Vec3.Rear
-                else horiz.normalized
-            case None    => Vec3.Rear
+    private def horizontalDirection(frame: PipeFrame): Vec3 =
+        val d     = frame.direction
+        val horiz = Vec3(d.x, d.y, 0.0)
+        if horiz.norm < 1e-9 then Vec3.Rear
+        else horiz.normalized
