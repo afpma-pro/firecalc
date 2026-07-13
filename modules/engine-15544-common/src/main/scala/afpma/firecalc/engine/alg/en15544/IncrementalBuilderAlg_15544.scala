@@ -19,10 +19,8 @@ import afpma.firecalc.engine.typeclasses.PropsStateOps
 import cats.syntax.all.*
 
 import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.IsSplitMergeTurn
 import afpma.firecalc.domain.NbOfFlows
 import afpma.firecalc.domain.PipeShape
-import afpma.firecalc.domain.SetsNumberOfFlows
 import afpma.firecalc.engine.models.geometry.PipeFrame
 
 /**
@@ -200,13 +198,4 @@ trait IncrementalBuilderAlg_15544[PS] {
             .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
             .map(_ => updatedSt)
 
-    // -----------------------------------------------------------------------
-    // Site 4: Split detection
-    // -----------------------------------------------------------------------
-
-    override protected def nextAddElementIsSplit(convStep: ConversionStep): Boolean =
-        convStep.findNextAddElement.exists {
-            case (_, elem: (IsSplitMergeTurn & SetsNumberOfFlows)) if elem.n_flows == 2.flows => true
-            case _ => false
-        }
 }

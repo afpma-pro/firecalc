@@ -119,13 +119,8 @@ trait FlowOnlyIncrementalBuilder_15544
             case _: MergeTwoFlowsIntoSingleWith90DegTurn     => true
             case _ => false
 
-    override protected def isTrailingAllowed(preOp: PreElementOp)         : Boolean =
+    override protected def isTrailingAllowed(preOp: PreElementOp): Boolean =
         false
-    override protected def nextAddElementIsSplit(convStep: ConversionStep): Boolean =
-        convStep.findNextAddElement.exists {
-            case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
-            case _ => false
-        }
 
     override type PT <: PipeType_EN15544
 

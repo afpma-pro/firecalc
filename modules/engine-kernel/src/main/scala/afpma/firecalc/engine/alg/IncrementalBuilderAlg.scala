@@ -100,14 +100,6 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
      */
     protected def isTrailingAllowed(preOp: PreElementOp): Boolean = false
 
-    /**
-     * Returns true if the next AddElement in the conversion step is a
-     * SplitSingleFlowIntoTwoFlowsWith90DegTurn. Used by the Path 1 redundancy
-     * guard to skip split geometry validation when Path 2 will handle it.
-     * Default: false (no split awareness).
-     */
-    protected def nextAddElementIsSplit(convStep: ConversionStep): Boolean = false
-
     type ValidatedResult[A]    = ValidatedNel[IncrementalValidation_Error, A]
     type CtxValidatedResult[A] = PropsState ?=> ValidatedNel[IncrementalValidation_Error, A]
 
