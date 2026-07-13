@@ -50,13 +50,13 @@ object PositionTracker:
 
     /** Collected outputs from processing commands. */
     private case class TrackingOutputs(
-        segments     : Seq[PipeSegmentPosition],
-        splitMergePos: Seq[SplitMergePosition],
+        segments     : Vector[PipeSegmentPosition],
+        splitMergePos: Vector[SplitMergePosition],
         errors       : Vector[String]
     )
 
     private object TrackingOutputs:
-        val empty: TrackingOutputs = TrackingOutputs(Nil, Nil, Vector.empty)
+        val empty: TrackingOutputs = TrackingOutputs(Vector.empty, Vector.empty, Vector.empty)
 
         extension (t: TrackingOutputs)
             def combineWith(other: TrackingOutputs): TrackingOutputs =
@@ -120,13 +120,13 @@ object PositionTracker:
                             (null, f)
                 (smPos, frameResult) match
                     case (null, f2       ) =>
-                        (state.copy(frame = f2), TrackingOutputs(Nil, Nil, Vector(name)))
+                        (state.copy(frame = f2), TrackingOutputs(Vector.empty, Vector.empty, Vector(name)))
                     case (smPos, newFrame) =>
                         val newState =
                             if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
                                 state.copy (frame = newFrame, firstSplitConsumed = true)
                             else state.copy(frame = newFrame                           )
-                        (newState, TrackingOutputs(Nil, Seq(smPos), Vector.empty))
+                        (newState, TrackingOutputs(Vector.empty, Vector(smPos), Vector.empty))
 
             case CmdSection(length)                             =>
                 val l       = length.toUnit[Meter].value
@@ -144,7 +144,7 @@ object PositionTracker:
                     innerShape   = state.currentInnerShape,
                     frame        = state.frame
                 )
-                (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
+                (state.copy(currentPosition = endPt), TrackingOutputs(Vector(segment), Vector.empty, Vector.empty))
             case CmdSectionSloppedForceManual(length, elevGain) =>
                 val l       = length.toUnit[Meter].value
                 val eg      = elevGain.toUnit[Meter].value
@@ -161,7 +161,7 @@ object PositionTracker:
                     innerShape   = state.currentInnerShape,
                     frame        = state.frame
                 )
-                (state.copy(currentPosition = endPt), TrackingOutputs(Seq(segment), Nil, Vector.empty))
+                (state.copy(currentPosition = endPt), TrackingOutputs(Vector(segment), Vector.empty, Vector.empty))
 
             case CmdNoOp =>
                 (state, TrackingOutputs.empty)
