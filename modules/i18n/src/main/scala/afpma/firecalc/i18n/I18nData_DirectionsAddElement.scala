@@ -13,7 +13,7 @@ import io.taig.babel.StringFormat5
 import io.taig.babel.StringFormat6
 import io.taig.babel.StringFormat7
 
-object I18nData_Common1:
+object I18nData_DirectionsAddElement:
 
     case class DirectionBadge(
         label                                     : String,
@@ -233,7 +233,7 @@ object I18nData_Common1:
         number_of_parallel_flows: String,
         number_of_segments      : String,
         outer_shape             : String,
-        pipe_shape              : I18nData_Common2.PipeShape,
+        pipe_shape              : I18nData_NamesTypes.PipeShape,
         pressure_difference     : String,
         radius                  : String,
         roll                    : String,

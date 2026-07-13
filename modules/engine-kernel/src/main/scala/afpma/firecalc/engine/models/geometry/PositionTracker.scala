@@ -9,9 +9,7 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
+import afpma.firecalc.domain.{AbsoluteDirection, AzimuthDirection, InclinationDirection, IsSplitMergeTurn}
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -177,60 +175,83 @@ object PositionTracker:
             case CmdNoOp =>
                 (state, TrackingOutputs.empty)
 
+    /* Maps the 8 common cases shared by all three descriptor families.
+     *
+     * The DTO case classes have the same names but live in different packages
+     * (13384_V4 vs 15544_V4 vs Thermal_13384_V4), so we can't share a single
+     * pattern-match. Instead we:
+     * - Match on domain marker trait IsSplitMergeTurn (shared across packages),
+     *   using productElement for field access since the trait is a marker.
+     * - Use runtime class-name matching + productElement for structurally
+     *   identical case classes (AddDirectionChange subclasses, SetInnerShape,
+     *   AddSection*) whose field order is guaranteed identical across packages.
+     *   AddDirectionChange subclasses are detected via superclass chain check.
+     */
+    private def mapCommon(elem: Any): Seq[PipeCommand] = elem match
+        // IsSplitMergeTurn: shared marker trait; fields via productElement
+        //   (product indices: 0=name, 1=absDir, 2=newInnerShape, 3=symmetryPlaneAbsDir)
+        case _: IsSplitMergeTurn =>
+            val p       = elem.asInstanceOf[Product]
+            val absDir  = p.productElement(1).asInstanceOf[Option[AbsoluteDirection]]
+            val symDir  = p.productElement(3).asInstanceOf[Option[AbsoluteDirection]]
+            val isSplit = elem.getClass.getSimpleName.startsWith("Split")
+            Seq(CmdSplitMerge90(absDir, isSplit, p.productElement(0).asInstanceOf[String], symDir))
+
+        // AddDirectionChange subclasses: check superclass chain for "AddDirectionChange"
+        //   (product indices: 0=name, 1=angle, 2=absDir)
+        case e if isAddDirectionChange(e) =>
+            val p = e.asInstanceOf[Product]
+            Seq(
+                CmdDirectionChange(
+                    p.productElement(2).asInstanceOf[Option[AbsoluteDirection]],
+                    p.productElement(1).asInstanceOf[Angle]
+                )
+            )
+
+        // SetInnerShape + AddSection*: same simple name across packages
+        case _ if elem.getClass.getSimpleName == "SetInnerShape"                             =>
+            Seq(CmdSetInnerShape(elem.asInstanceOf[Product].productElement(0).asInstanceOf[PipeShape]))
+        case _ if elem.getClass.getSimpleName == "AddSectionVertical"                        =>
+            Seq(CmdSectionVertical(elem.asInstanceOf[Product].productElement(1).asInstanceOf[Length]))
+        case _ if elem.getClass.getSimpleName == "AddSectionHorizontal"                      =>
+            Seq(CmdSectionHorizontal(elem.asInstanceOf[Product].productElement(1).asInstanceOf[Length]))
+        case _ if elem.getClass.getSimpleName == "AddSectionSlopped"                         =>
+            Seq(CmdSectionSlopped(elem.asInstanceOf[Product].productElement(1).asInstanceOf[Length]))
+        case _ if elem.getClass.getSimpleName == "AddSectionSloppedForceManualElevationGain" =>
+            val p = elem.asInstanceOf[Product]
+            Seq(
+                CmdSectionSloppedForceManual(
+                    p.productElement(1).asInstanceOf[Length],
+                    p.productElement(2).asInstanceOf[Length]
+                )
+            )
+        case _                                                                               => Seq(CmdNoOp)
+
+    // Check if elem extends AddDirectionChange by walking the superclass chain.
+    // AddDirectionChange is a sealed abstract class in each DTO package;
+    // its subclasses (AddAngleAdjustable, AddSharpeAngle_*, AddSmoothCurve_*, etc.)
+    // have different simple names but share the same superclass.
+    private def isAddDirectionChange(e: Any): Boolean =
+        var c: Class[?] = e.getClass
+        while c != null && c != classOf[Object] do
+            if c.getSimpleName == "AddDirectionChange" then return true
+            c = c.getSuperclass
+        false
+
     private def mapFlowOnly13384(elem: FlowOnlyPipeDescr_13384): Seq[PipeCommand] =
-        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_13384_V4.*
-        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_13384_V4.*
-        elem match
-            case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle))
-            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
-                Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
-            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
-                Seq(CmdSplitMerge90(sm.absDir, false, sm.name, sm.symmetryPlaneAbsDir))
-            case AddSectionVertical(_, elevGain) => Seq(CmdSectionVertical(elevGain))
-            case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
-            case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
-            case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                Seq(CmdSectionSloppedForceManual(length, elevGain))
-            case _                                                              => Seq(CmdNoOp)
+        mapCommon(elem)
 
     private def mapFlowOnly15544(elem: FlowOnlyPipeDescr_15544): Seq[PipeCommand] =
-        import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4.*
-        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
-        elem match
-            case SetInnerShape(shape) => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle))
-            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
-                Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
-            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
-                Seq(CmdSplitMerge90(sm.absDir, false, sm.name, sm.symmetryPlaneAbsDir))
-            case AddSectionVertical(_, elevGain) => Seq(CmdSectionVertical(elevGain))
-            case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
-            case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
-            case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                Seq(CmdSectionSloppedForceManual(length, elevGain))
-            case _                                                              => Seq(CmdNoOp)
+        mapCommon(elem)
 
     private def mapThermal13384(elem: ThermalPipeDescr_13384): Seq[PipeCommand] =
         import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
-        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
         elem match
             case SetPropertiesInBatch(_, props, _) =>
                 props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
             case LinedFlue(_, liner, _, _)         =>
                 liner.props.collect { case SetInnerShape(shape) => CmdSetInnerShape(shape) }.toSeq
-            case SetInnerShape(shape)              => Seq(CmdSetInnerShape(shape))
-            case dc: AddDirectionChange                       => Seq(CmdDirectionChange(dc.absDir, dc.angle))
-            case sm: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
-                Seq(CmdSplitMerge90(sm.absDir, true, sm.name, sm.symmetryPlaneAbsDir))
-            case sm: MergeTwoFlowsIntoSingleWith90DegTurn     =>
-                Seq(CmdSplitMerge90(sm.absDir, false, sm.name, sm.symmetryPlaneAbsDir))
-            case AddSectionVertical(_, elevGain) => Seq(CmdSectionVertical(elevGain))
-            case AddSectionHorizontal(_, horizLen)                              => Seq(CmdSectionHorizontal(horizLen))
-            case AddSectionSlopped(_, length)                                   => Seq(CmdSectionSlopped(length)     )
-            case AddSectionSloppedForceManualElevationGain(_, length, elevGain) =>
-                Seq(CmdSectionSloppedForceManual(length, elevGain))
-            case _                                                              => Seq(CmdNoOp)
+            case _                                 => mapCommon(elem)
 
     private def computeGenericPipePositions[T](
         elems                   : Seq[T],

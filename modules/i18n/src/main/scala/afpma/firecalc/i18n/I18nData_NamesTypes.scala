@@ -8,7 +8,7 @@ package afpma.firecalc.i18n
 import io.taig.babel.StringFormat1
 import io.taig.babel.StringFormat2
 
-object I18nData_Common2:
+object I18nData_NamesTypes:
 
     case class FireboxNames(
         traditional      : String,

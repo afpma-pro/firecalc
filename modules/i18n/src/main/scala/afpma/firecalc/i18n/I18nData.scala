@@ -88,49 +88,49 @@ final case class I18nData(
 
 object I18nData:
 
-    // ── Common1 (flat types) ─────────────────────────────────────────
-    type DirectionBadge          = I18nData_Common1.DirectionBadge
-    type AddElement              = I18nData_Common1.AddElement
-    type Address                 = I18nData_Common1.Address
-    type AppendLayerDescr        = I18nData_Common1.AppendLayerDescr
-    type Customer                = I18nData_Common1.Customer
-    type Errors                  = I18nData_Common1.Errors
-    type Headers                 = I18nData_Common1.Headers
-    type HeatOutputReduced       = I18nData_Common1.HeatOutputReduced
-    type Panels                  = I18nData_Common1.Panels
-    type SplitMerge              = I18nData_Common1.SplitMerge
-    type TechnicalSpecficiations = I18nData_Common1.TechnicalSpecficiations
-    type Terms                   = I18nData_Common1.Terms
+    // ── Directions, AddElement, UI labels ────────────────────────────
+    type DirectionBadge          = I18nData_DirectionsAddElement.DirectionBadge
+    type AddElement              = I18nData_DirectionsAddElement.AddElement
+    type Address                 = I18nData_DirectionsAddElement.Address
+    type AppendLayerDescr        = I18nData_DirectionsAddElement.AppendLayerDescr
+    type Customer                = I18nData_DirectionsAddElement.Customer
+    type Errors                  = I18nData_DirectionsAddElement.Errors
+    type Headers                 = I18nData_DirectionsAddElement.Headers
+    type HeatOutputReduced       = I18nData_DirectionsAddElement.HeatOutputReduced
+    type Panels                  = I18nData_DirectionsAddElement.Panels
+    type SplitMerge              = I18nData_DirectionsAddElement.SplitMerge
+    type TechnicalSpecficiations = I18nData_DirectionsAddElement.TechnicalSpecficiations
+    type Terms                   = I18nData_DirectionsAddElement.Terms
 
-    // ── Common2 (flat types) ─────────────────────────────────────────
-    type FireboxNames                 = I18nData_Common2.FireboxNames
-    type PolluantNames                = I18nData_Common2.PolluantNames
-    type FacingType                   = I18nData_Common2.FacingType
-    type EmissionsAndEfficiencyValues = I18nData_Common2.EmissionsAndEfficiencyValues
-    type PipeShape                    = I18nData_Common2.PipeShape
-    type PipeLocation                 = I18nData_Common2.PipeLocation
-    type PipeType                     = I18nData_Common2.PipeType
-    type ProjectDescription           = I18nData_Common2.ProjectDescription
-    type LocalRegulations             = I18nData_Common2.LocalRegulations
-    type MinLoad                      = I18nData_Common2.MinLoad
-    type TypeOfAppliance              = I18nData_Common2.TypeOfAppliance
-    type TypeOfLoad                   = I18nData_Common2.TypeOfLoad
-    type Units                        = I18nData_Common2.Units
-    type AreaHeatingStatus            = I18nData_Common2.AreaHeatingStatus
+    // ── Domain names and type labels ─────────────────────────────────
+    type FireboxNames                 = I18nData_NamesTypes.FireboxNames
+    type PolluantNames                = I18nData_NamesTypes.PolluantNames
+    type FacingType                   = I18nData_NamesTypes.FacingType
+    type EmissionsAndEfficiencyValues = I18nData_NamesTypes.EmissionsAndEfficiencyValues
+    type PipeShape                    = I18nData_NamesTypes.PipeShape
+    type PipeLocation                 = I18nData_NamesTypes.PipeLocation
+    type PipeType                     = I18nData_NamesTypes.PipeType
+    type ProjectDescription           = I18nData_NamesTypes.ProjectDescription
+    type LocalRegulations             = I18nData_NamesTypes.LocalRegulations
+    type MinLoad                      = I18nData_NamesTypes.MinLoad
+    type TypeOfAppliance              = I18nData_NamesTypes.TypeOfAppliance
+    type TypeOfLoad                   = I18nData_NamesTypes.TypeOfLoad
+    type Units                        = I18nData_NamesTypes.Units
+    type AreaHeatingStatus            = I18nData_NamesTypes.AreaHeatingStatus
 
-    // ── Common3 (flat types) ─────────────────────────────────────────
-    type BuilderErrors         = I18nData_Common3.BuilderErrors
-    type ForbiddenDto          = I18nData_Common3.ForbiddenDto
-    type TopologyErrors        = I18nData_Common3.TopologyErrors
-    type EN16510               = I18nData_Common3.EN16510
-    type Warnings              = I18nData_Common3.Warnings
-    type TestReportI18n        = I18nData_Common3.TestReportI18n
-    type TestEmissionValueI18n = I18nData_Common3.TestEmissionValueI18n
-    type EmissionValuesI18n    = I18nData_Common3.EmissionValuesI18n
-    type CountryNames          = I18nData_Common3.CountryNames
-    type MecaFlu               = I18nData_Common3.MecaFlu
-    type MecaFlu_Errors        = I18nData_Common3.MecaFlu_Errors
-    type EN15544_Errors        = I18nData_Common3.EN15544_Errors
+    // ── Error messages and warnings ──────────────────────────────────
+    type BuilderErrors         = I18nData_ErrorsWarnings.BuilderErrors
+    type ForbiddenDto          = I18nData_ErrorsWarnings.ForbiddenDto
+    type TopologyErrors        = I18nData_ErrorsWarnings.TopologyErrors
+    type EN16510               = I18nData_ErrorsWarnings.EN16510
+    type Warnings              = I18nData_ErrorsWarnings.Warnings
+    type TestReportI18n        = I18nData_ErrorsWarnings.TestReportI18n
+    type TestEmissionValueI18n = I18nData_ErrorsWarnings.TestEmissionValueI18n
+    type EmissionValuesI18n    = I18nData_ErrorsWarnings.EmissionValuesI18n
+    type CountryNames          = I18nData_ErrorsWarnings.CountryNames
+    type MecaFlu               = I18nData_ErrorsWarnings.MecaFlu
+    type MecaFlu_Errors        = I18nData_ErrorsWarnings.MecaFlu_Errors
+    type EN15544_Errors        = I18nData_ErrorsWarnings.EN15544_Errors
 
     // ── Firebox (nested types) ───────────────────────────────────────
     type Firebox_15544 = I18nData_Firebox.Firebox_15544
