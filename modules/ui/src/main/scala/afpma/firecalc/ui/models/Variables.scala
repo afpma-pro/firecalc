@@ -34,7 +34,7 @@ import afpma.firecalc.engine.models.geometry.PipePositionComputer
 import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PositionTracker
 import afpma.firecalc.engine.models.geometry.SlotIntrospector
-import afpma.firecalc.engine.models.geometry.SlotIntrospector.SplitQueryResult
+import afpma.firecalc.engine.models.geometry.SlotIntrospector.{SplitQueryResult, SlotIntrospectionResult}
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top_min
@@ -345,19 +345,28 @@ lazy val enginePostFireboxSlots_sig: Signal[Seq[PostFireboxPipeSlot]] =
     postFireboxSlots_var.signal.map(PostFireboxPipeSlot.fromDto)
 
 /**
+ * Shared upstream signal: extracts the first inner shape and split query from
+ * engine slots once per reactive cycle. Used by both `postFireboxAutoPosition_sig`
+ * and `slotPositions_sig` to avoid duplicated introspection traversals.
+ */
+lazy val slotIntrospection_sig: Signal[SlotIntrospector.SlotIntrospectionResult] =
+    enginePostFireboxSlots_sig.map: engineSlots =>
+        val firstShape = SlotIntrospector
+            .firstInnerShapeIn(engineSlots)
+            .getOrElse(afpma.firecalc.ui.instances.defaultable.pipeShapeInner.default)
+        val splitQuery = SlotIntrospector.querySplit(engineSlots)
+        SlotIntrospector.SlotIntrospectionResult(firstShape, splitQuery)
+
+/**
  * Auto-computed post-firebox start position from direction × firebox × firstSlotShape.
  * Independent of mode — used only when mode is Auto (see postFireboxEffectivePosition_sig).
  */
 lazy val postFireboxAutoPosition_sig: Signal[Position3D] =
     postFireboxInitialDir_var.signal
         .combineWith(firebox_var.signal)
-        .combineWith(enginePostFireboxSlots_sig)
-        .map: (dir, fb, engineSlots) =>
-            val firstShape = SlotIntrospector
-                .firstInnerShapeIn(engineSlots)
-                .getOrElse(afpma.firecalc.ui.instances.defaultable.pipeShapeInner.default)
-
-            SlotIntrospector.querySplit(engineSlots) match
+        .combineWith(slotIntrospection_sig)
+        .map: (dir, fb, introspection) =>
+            introspection.splitQuery match
                 case SplitQueryResult.LeadingSplit(absDir)                       =>
                     PipePositionComputer.computeBranchStartAfterSplit    (
                         absDir     = absDir,
@@ -365,7 +374,7 @@ lazy val postFireboxAutoPosition_sig: Signal[Position3D] =
                         boxYDepth  = fb.firebox_depth.value,
                         boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
                         boxZHeight = fb.firebox_height.value,
-                        innerShape = firstShape
+                        innerShape = introspection.firstShape
                     )
                 case SplitQueryResult.NoLeadingSplit(_) | SplitQueryResult.Empty =>
                     PipePositionComputer.computePostFireboxStart (
@@ -374,7 +383,7 @@ lazy val postFireboxAutoPosition_sig: Signal[Position3D] =
                         boxYDepth  = fb.firebox_depth.value,
                         boxZBottom = FireboxCoordinateSystem.FireboxBaseCenterZ,
                         boxZHeight = fb.firebox_height.value,
-                        innerShape = firstShape
+                        innerShape = introspection.firstShape
                     )
 
 /**
@@ -468,13 +477,13 @@ def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
 lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
     postFireboxSlots_var.signal
         .combineWith(
-            enginePostFireboxSlots_sig,
+            slotIntrospection_sig,
             slotFinalFrames_sig,
             postFireboxInitialDir_var.signal,
             postFireboxEffectivePosition_sig,
             firebox_var.signal
         )
-        .map: (slots, engineSlots, frames, initialDir, effectivePosition, fb) =>
+        .map: (slots, introspection, frames, initialDir, effectivePosition, fb) =>
             // Slot 0 starts at the effective position (Auto: computed, Manual: stored)
             val slot0Start =
                 if slots.isEmpty then Vec3(0, 0, 0)
@@ -484,12 +493,9 @@ lazy val slotPositions_sig: Signal[Vector[PipePositionResult]] =
             // is the firebox top center, not branchOneStart. Pass it so PositionTracker
             // records the correct split position for the symmetry plane.
             val slot0SplitPosition: Option[Vec3] =
-                SlotIntrospector.querySplit(engineSlots) match
+                introspection.splitQuery match
                     case SplitQueryResult.LeadingSplit(absDir)                       =>
-                        val firstShape  = SlotIntrospector
-                            .firstInnerShapeIn(engineSlots)
-                            .getOrElse(afpma.firecalc.ui.instances.defaultable.pipeShapeInner.default)
-                        val shapeHeight = PipePositionComputer.innerHeight(firstShape)
+                        val shapeHeight = PipePositionComputer.innerHeight(introspection.firstShape)
                         Some(
                             PipePositionComputer.computeSplitPosition(
                                 FireboxCoordinateSystem.FireboxBaseCenterZ,

@@ -113,6 +113,12 @@ object SlotIntrospector:
          */
         case NoLeadingSplit(anySplitDir: Option[AbsoluteDirection])
 
+    /** Bundles the two values that downstream UI signals derive from engine slots. */
+    case class SlotIntrospectionResult(
+        firstShape: PipeShape,
+        splitQuery: SplitQueryResult
+    )
+
     /**
      * Single-traversal query: is the leading element a split, and what is the
      * split direction if any split exists in the slot?
