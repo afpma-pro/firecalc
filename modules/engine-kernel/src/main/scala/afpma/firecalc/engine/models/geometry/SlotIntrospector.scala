@@ -5,8 +5,10 @@
 
 package afpma.firecalc.engine.models.geometry
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4
@@ -136,4 +138,35 @@ object SlotIntrospector:
                         case Some(absDir) => SplitQueryResult.LeadingSplit(absDir)
                         case None         => SplitQueryResult.NoLeadingSplit(None)
                 else SplitQueryResult.NoLeadingSplit(extractAnySplitDir(slot))
+
+    /**
+     * Extract the horizontal branch direction Vec3 for a split from the first slot's
+     * descriptor. Returns the direction as a unit Vec3 in the horizontal plane
+     * (elevation 0°) based on the split's azimuth.
+     */
+    def splitBranchDirection(firstSlot: PostFireboxPipeSlot): Either[String, Vec3] =
+        firstSlot match
+            case PostFireboxPipeSlot.FlueSlot(descr)        =>
+                val split = descr.collectFirst {
+                    case s: AddFlowOnlyPipeElement_15544_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => s
+                }
+                split match
+                    case None    => Left("splitBranchDirection: FlueSlot has no SplitSingleFlowIntoTwoFlowsWith90DegTurn")
+                    case Some(s) =>
+                        s.absDir.flatMap(_.azimuth.map(AzimuthDirection.toDegrees)) match
+                            case None     => Left("splitBranchDirection: split has no azimuth direction")
+                            case Some(az) => Right(Vec3.fromAzimuthElevation(az, 0.0))
+            case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
+                val split = descr.collectFirst {
+                    case s: AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn => s
+                }
+                split match
+                    case None    =>
+                        Left("splitBranchDirection: ThermalFlueSlot has no SplitSingleFlowIntoTwoFlowsWith90DegTurn")
+                    case Some(s) =>
+                        s.absDir.flatMap(_.azimuth.map(AzimuthDirection.toDegrees)) match
+                            case None     => Left("splitBranchDirection: split has no azimuth direction")
+                            case Some(az) => Right(Vec3.fromAzimuthElevation(az, 0.0))
+            case _                                          =>
+                Left(s"splitBranchDirection: unexpected slot type ${firstSlot.getClass.getSimpleName}")
 end SlotIntrospector

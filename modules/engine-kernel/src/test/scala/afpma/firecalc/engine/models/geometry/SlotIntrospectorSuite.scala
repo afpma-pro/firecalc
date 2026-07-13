@@ -3,7 +3,7 @@
  * Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
  */
 
-package afpma.firecalc.engine.impl.en15544
+package afpma.firecalc.engine.models.geometry
 
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
@@ -14,20 +14,17 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn
 
-import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers
-import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
 /**
- * Verifies that `splitBranchDirection` extracts the correct horizontal Vec3
- * from a split's azimuth direction — not hardcoded `Vec3.Rear`.
+ * Verifies that `SlotIntrospector.splitBranchDirection` extracts the correct
+ * horizontal Vec3 from a split's azimuth direction — not hardcoded `Vec3.Rear`.
  *
  * Coordinate system: +X=Right, +Y=Rear, +Z=Up.
  * Azimuth 0°=Rear(+Y), 90°=Right(+X), 180°=Front(-Y), -90°=Left(-X).
  */
-class PostFireboxFrameHelpersSuite extends AnyFreeSpec with Matchers {
+class SlotIntrospectorSuite extends AnyFreeSpec with Matchers {
 
     import PipeShape.*
 
@@ -50,33 +47,38 @@ class PostFireboxFrameHelpersSuite extends AnyFreeSpec with Matchers {
 
         "should return Vec3.Rear for Rear azimuth (0°)" in {
             val slot = PostFireboxPipeSlot.FlueSlot(Seq(makeSplit(AzimuthDirection.Rear)))
-            val dir  = PostFireboxFrameHelpers.splitBranchDirection(slot)
-            assertApproxVec3(dir, Vec3(0.0, 1.0, 0.0), "Rear")
+            val dir  = SlotIntrospector.splitBranchDirection(slot)
+            dir shouldBe a[Right[?, ?]]
+            assertApproxVec3(dir.toOption.get, Vec3(0.0, 1.0, 0.0), "Rear")
         }
 
         "should return Vec3.Right for Right azimuth (90°)" in {
             val slot = PostFireboxPipeSlot.FlueSlot(Seq(makeSplit(AzimuthDirection.Right)))
-            val dir  = PostFireboxFrameHelpers.splitBranchDirection(slot)
-            assertApproxVec3(dir, Vec3(1.0, 0.0, 0.0), "Right")
+            val dir  = SlotIntrospector.splitBranchDirection(slot)
+            dir shouldBe a[Right[?, ?]]
+            assertApproxVec3(dir.toOption.get, Vec3(1.0, 0.0, 0.0), "Right")
         }
 
         "should return Vec3.Front for Front azimuth (180°)" in {
             val slot = PostFireboxPipeSlot.FlueSlot(Seq(makeSplit(AzimuthDirection.Front)))
-            val dir  = PostFireboxFrameHelpers.splitBranchDirection(slot)
-            assertApproxVec3(dir, Vec3(0.0, -1.0, 0.0), "Front")
+            val dir  = SlotIntrospector.splitBranchDirection(slot)
+            dir shouldBe a[Right[?, ?]]
+            assertApproxVec3(dir.toOption.get, Vec3(0.0, -1.0, 0.0), "Front")
         }
 
         "should return Vec3.Left for Left azimuth (-90°)" in {
             val slot = PostFireboxPipeSlot.FlueSlot(Seq(makeSplit(AzimuthDirection.Left)))
-            val dir  = PostFireboxFrameHelpers.splitBranchDirection(slot)
-            assertApproxVec3(dir, Vec3(-1.0, 0.0, 0.0), "Left")
+            val dir  = SlotIntrospector.splitBranchDirection(slot)
+            dir shouldBe a[Right[?, ?]]
+            assertApproxVec3(dir.toOption.get, Vec3(-1.0, 0.0, 0.0), "Left")
         }
 
         "should return correct diagonal for RearRight azimuth (45°)" in {
             val slot = PostFireboxPipeSlot.FlueSlot(Seq(makeSplit(AzimuthDirection.RearRight)))
-            val dir  = PostFireboxFrameHelpers.splitBranchDirection(slot)
+            val dir  = SlotIntrospector.splitBranchDirection(slot)
+            dir shouldBe a[Right[?, ?]]
             // sin(45°) ≈ 0.7071, cos(45°) ≈ 0.7071
-            assertApproxVec3(dir, Vec3(0.707107, 0.707107, 0.0), "RearRight")
+            assertApproxVec3(dir.toOption.get, Vec3(0.707107, 0.707107, 0.0), "RearRight")
         }
 
         "should work for ThermalFlueSlot as well" in {
@@ -88,35 +90,33 @@ class PostFireboxFrameHelpersSuite extends AnyFreeSpec with Matchers {
                 symmetryPlaneAbsDir = None
             )
             val slot  = PostFireboxPipeSlot.ThermalFlueSlot(Seq(split))
-            val dir   = PostFireboxFrameHelpers.splitBranchDirection(slot)
-            assertApproxVec3(dir, Vec3(1.0, 0.0, 0.0), "ThermalFlueSlot Right")
+            val dir   = SlotIntrospector.splitBranchDirection(slot)
+            dir shouldBe a[Right[?, ?]]
+            assertApproxVec3(dir.toOption.get, Vec3(1.0, 0.0, 0.0), "ThermalFlueSlot Right")
         }
 
-        "should throw when slot has no split descriptor" in {
-            val slot = PostFireboxPipeSlot.FlueSlot(Seq.empty)
-            assertThrows[RuntimeException](
-                PostFireboxFrameHelpers.splitBranchDirection(slot)
-            )
+        "should return Left when slot has no split descriptor" in {
+            val slot   = PostFireboxPipeSlot.FlueSlot(Seq.empty)
+            val result = SlotIntrospector.splitBranchDirection(slot)
+            result shouldBe a[Left[?, ?]]
         }
 
-        "should throw when slot is not a FlueSlot or ThermalFlueSlot" in {
-            val slot = PostFireboxPipeSlot.ConnectorSlot(Seq.empty)
-            assertThrows[RuntimeException](
-                PostFireboxFrameHelpers.splitBranchDirection(slot)
-            )
+        "should return Left when slot is not a FlueSlot or ThermalFlueSlot" in {
+            val slot   = PostFireboxPipeSlot.ConnectorSlot(Seq.empty)
+            val result = SlotIntrospector.splitBranchDirection(slot)
+            result shouldBe a[Left[?, ?]]
         }
 
-        "should throw when split has no absDir" in {
-            val split = SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+        "should return Left when split has no absDir" in {
+            val split  = SplitSingleFlowIntoTwoFlowsWith90DegTurn(
                 name                = "no-absDir",
                 absDir              = None,
                 newInnerShape       = Circle(100.mm),
                 symmetryPlaneAbsDir = None
             )
-            val slot  = PostFireboxPipeSlot.FlueSlot(Seq(split))
-            assertThrows[RuntimeException](
-                PostFireboxFrameHelpers.splitBranchDirection(slot)
-            )
+            val slot   = PostFireboxPipeSlot.FlueSlot(Seq(split))
+            val result = SlotIntrospector.splitBranchDirection(slot)
+            result shouldBe a[Left[?, ?]]
         }
     }
 }
