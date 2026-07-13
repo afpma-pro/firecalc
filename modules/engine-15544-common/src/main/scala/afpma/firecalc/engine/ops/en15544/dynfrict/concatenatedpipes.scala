@@ -179,7 +179,6 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                         val idx = ridx.unwrap
                         if idx == 0 then (0.0.unitless: ζ).validNel[SingularFlowResistanceCoeffErrorI]
                         else localComputeCoeff(ridx)
-                    case i @ Invalid(_)    => i // unreachable — findLocalCmprssdIdx propagates vcompressed validity
             case Valid(None)       =>
                 DirectionChangeNotInPipeChain(ndc.typ, ndc.fullRef).invalidNel
             case i @ Invalid(_)    => i

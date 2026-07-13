@@ -42,14 +42,6 @@ trait MecaFluAlg:
     type FullResult <: PipeResult
 
     /**
-     * Compute pipe section result using unified context object.
-     * Replaces scattered parameters with a single typed context.
-     */
-    def makePipeSectionResult(
-        ctx: MecaFluSectionContext[pipeDescr.PipeElDescr, Params]
-    )                        (using appCtx: MecaFluAppContext): SectionResult
-
-    /**
      * Compute full pipe result using unified context object.
      * Replaces scattered parameters with a single typed context.
      */

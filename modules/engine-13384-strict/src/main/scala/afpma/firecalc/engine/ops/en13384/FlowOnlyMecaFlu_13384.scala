@@ -94,25 +94,6 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
             }
 
-    override def makePipeSectionResult(
-        ctx: MecaFluSectionContext[PipeElDescr, Params_13384]
-    )(using appCtx: MecaFluAppContext): PipeSectionResult[PipeElDescr] =
-        val ctx13384                                                     = appCtx.asInstanceOf[MecaFlu_13384_AppCtx]
-        given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
-            DynamicFrictionCoeffOp.fromFunction[NamedPipeElDescrG[DirectionChange]]: np =>
-                val dc13384 = DynamicFrictionCoeff_13384()(using ctx.gasInPipeEl.pipeEl.typ)
-                import dc13384.given
-                np.el.dynamicFrictionCoeff
-        makePipeSectionResult                (
-            gp                 = ctx.gasInPipeEl,
-            hafg               = ctx13384.hafg,
-            hamf               = ctx13384.hamf,
-            temp_start         = ctx.gasTempStart,
-            last_pipe_velocity = ctx.lastPipeVelocity,
-            last_InnerGeom     = ctx.lastInnerGeom,
-            prevO              = ctx.prevSectionResult
-        )(using ctx13384.en13384)
-
     override def makePipeResult(
         ctx   : MecaFluPipeContext[PipeElDescr],
         params: Params_13384
