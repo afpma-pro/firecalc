@@ -17,8 +17,7 @@ import org.scalatest.matchers.should.Matchers
 /**
  * Shared ScalaTest behaviors for split geometry validation.
  *
- * Covers the validation rules enforced by `validateSplitNotOnAscending`
- * (delegated to `SplitMerge90Validator.validateSplit`):
+ * Covers the validation rules enforced by `SplitGeometryValidator.validateSplitPositions`:
  *   - Branch direction must be perpendicular to incoming (90° turn)
  *   - Reflected branch must not ascend (z > 0)
  *   - Branch must not be collinear with incoming

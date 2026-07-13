@@ -1086,6 +1086,8 @@ object standard {
     case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
     case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
+    case class ConsecutiveDirectionChangesNotAllowed(prevName: String, nextName: String, sectionTyp: PipeType)
+        extends ConflictDetected
 
     /** Shape was set but not yet materialized into a physical element. */
     case class ShapeNotMaterialized(
@@ -1160,20 +1162,22 @@ object standard {
         // while FLOW_AREA_CHECK_ENABLED = false. See FlowAreaConservation banner.
         @nowarn("cat=deprecation")
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
-            case CannotSetGeometryBeforeChange(_)                 =>
+            case CannotSetGeometryBeforeChange(_)                     =>
                 I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
-            case SectionChangeRequiresCircle(shape, _)            =>
+            case SectionChangeRequiresCircle(shape, _)                =>
                 I18N.incremental_validation.conflicts.section_change_requires_circle(shape)
-            case FlowResistanceRequiresGeometry(op, "EN13384", _) =>
+            case FlowResistanceRequiresGeometry(op, "EN13384", _)     =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case FlowResistanceRequiresGeometry(op, "EN15544", _) =>
+            case FlowResistanceRequiresGeometry(op, "EN15544", _)     =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
-            case FlowResistanceRequiresGeometry(op, _, _)         =>
+            case FlowResistanceRequiresGeometry(op, _, _)             =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case PressureDiffRequiresGeometry(op, _, _)           =>
+            case PressureDiffRequiresGeometry(op, _, _)               =>
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
-            case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
+            case CasingTooSmallForLiner(linerDh, casingDh, _)         =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
+            case ConsecutiveDirectionChangesNotAllowed(prev, next, _) =>
+                I18N.incremental_validation.conflicts.consecutive_direction_changes(prev, next)
             case e: ShapeNotMaterialized =>
                 val translatedOp = e.operation match
                     case ShapeNotMaterialized.Operation.SetInnerShape         => I18N.set_prop.SetInnerShape

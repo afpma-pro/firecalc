@@ -13,7 +13,6 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
-import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
 import afpma.firecalc.engine.typeclasses.PropsStateOps
 
@@ -24,6 +23,7 @@ import afpma.firecalc.domain.IsSplitMergeTurn
 import afpma.firecalc.domain.NbOfFlows
 import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.domain.SetsNumberOfFlows
+import afpma.firecalc.engine.models.geometry.PipeFrame
 
 /**
  * Shared split/merge handling for EN 13384 incremental builders.
@@ -32,8 +32,8 @@ import afpma.firecalc.domain.SetsNumberOfFlows
  * [[ThermalIncrementalBuilder_13384]]. Both builders mix this trait in and
  * provide their own [[PropsState]] type and [[stateOps]] instance.
  *
- * Position reads (currentPosition, branchOneOffset) use default values
- * per H4 — these fields are dead state during the fold.
+ * Position tracking (currentPosition, branchOneOffset) has been removed
+ * from PropsState. Geometry validation runs post-build via SplitGeometryValidator.
  */
 trait IncrementalBuilderAlg_13384[PS] {
     self: IncrementalBuilderAlg =>
@@ -60,7 +60,8 @@ trait IncrementalBuilderAlg_13384[PS] {
 
     /**
      * Handles PropsState update after a SplitSingleFlowIntoTwoFlowsWith90DegTurn
-     * conversion step. Validates split geometry, updates frame, sets nFlows=2.
+     * conversion step. Updates frame, sets nFlows=2.
+     * Geometry validation runs post-build via SplitGeometryValidator.
      */
     protected def handleSplitStateUpdate(
         propsState: PS,
@@ -74,32 +75,17 @@ trait IncrementalBuilderAlg_13384[PS] {
             val (az, el) = AbsoluteDirection.toAzimuthElevationDeg(fd)
             Vec3.fromAzimuthElevation(az, el)
         }
-        val elemId = convStep.findNextAddElement.map(_._1).getOrElse(-1)
-        val splitValid = branchDirOpt
-            .map { _ =>
-                validateSplitNotOnAscending(
-                    propsState,
-                    2.flows,
-                    IdIncr(elemId ),
-                    opName,
-                    branchDirOpt,
-                    Vec3  (0, 0, 0),
-                    Vec3  (0, 0, 0)
-                )
-            }
-            .getOrElse(().validNel)
-        splitValid.andThen { _ =>
-            val frameUpdated = stateOps.getCurrentFrame(propsState) match
-                case Some(frame) =>
-                    val targetVec = branchDirOpt.getOrElse(frame.direction)
-                    val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
-                    val stWithDir = stateOps.setDirBeforePreviousDC(propsState, Some(frame.direction))
-                    stateOps.setCurrentFrame(stWithDir, Some(newFrame))
-                case None        => propsState
-            stateOps
-                .setNFlows(stateOps.setInnerShape(frameUpdated, newShape), 2.flows)
-                .validNel
-        }
+        val frameUpdated = stateOps.getCurrentFrame(propsState) match
+            case Some(frame) =>
+                val targetVec = branchDirOpt.getOrElse(frame.direction)
+                val newFrame  = if frame.isReachable(targetVec, 90.0) then frame.applyBendForFinalDir(90.0, targetVec)
+                else PipeFrame.initial(targetVec)
+                val stWithDir = stateOps.setDirBeforePreviousDC(propsState, Some(frame.direction))
+                stateOps.setCurrentFrame(stWithDir, Some(newFrame))
+            case None        => propsState
+        stateOps
+            .setNFlows(stateOps.setInnerShape(frameUpdated, newShape), 2.flows)
+            .validNel
 
     // -----------------------------------------------------------------------
     // Site 1b: Merge state update
@@ -121,7 +107,9 @@ trait IncrementalBuilderAlg_13384[PS] {
                     case Some(frame) =>
                         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                        val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
+                        val newFrame  = if frame.isReachable(targetVec, 90.0) then
+                            frame.applyBendForFinalDir(90.0, targetVec)
+                        else PipeFrame.initial        (targetVec      )
                         val stWithDir = stateOps.setDirBeforePreviousDC(propsState, Some(frame.direction))
                         stateOps.setCurrentFrame(stWithDir, Some(newFrame))
                     case None        => propsState
@@ -170,8 +158,7 @@ trait IncrementalBuilderAlg_13384[PS] {
 
     /**
      * Handles SetNumberOfFlows pre-element operation. Computes the updated
-     * state via flow area conservation, validates materialization, and checks
-     * split geometry if a split element follows.
+     * state via flow area conservation and validates materialization.
      */
     protected def handleSetNumberOfFlows(
         st            : PS,
@@ -183,20 +170,7 @@ trait IncrementalBuilderAlg_13384[PS] {
         val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
         stateOps
             .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
-            .andThen { _ =>
-                if !nextAddElementIsSplit(convStep) then
-                    validateSplitNotOnAscending(
-                        st,
-                        nf,
-                        IdIncr(nextElemIdIncr),
-                        nextElemName,
-                        None,
-                        Vec3  (0, 0, 0       ),
-                        Vec3  (0, 0, 0       ),
-                        isSplitElement = false
-                    ).map(_ => updatedSt)
-                else updatedSt.validNel[IncrementalValidation_Error]
-            }
+            .map(_ => updatedSt)
 
     // -----------------------------------------------------------------------
     // Site 4: Split detection

@@ -572,7 +572,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Use Horizontal so the connector's split (2→3) isn't blocked by validateSplitNotOnAscending
+        // Use Horizontal so the connector's split (2→3) isn't blocked by split geometry validation
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows  (2.flows       ),
             SetInnerShape(Circle(150.mm)),
@@ -597,7 +597,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Use Horizontal direction so the split (2→3 flows) isn't blocked by validateSplitNotOnAscending
+        // Use Horizontal direction so the split (2→3 flows) isn't blocked by split geometry validation
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows  (2.flows         ),
             SetInnerShape(Circle(150.mm)),

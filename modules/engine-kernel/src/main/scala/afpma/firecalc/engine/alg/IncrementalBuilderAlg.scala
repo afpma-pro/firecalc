@@ -8,12 +8,12 @@ package afpma.firecalc.engine.alg
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.{PipeFrame, SplitMergeTwoHelper}
-import afpma.firecalc.units.Vec3
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
-import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
-import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
-import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
+import afpma.firecalc.engine.standard.{ForbiddenAddElementAtEnd, ForbiddenAddElementAtStart}
+import afpma.firecalc.engine.standard.ConsecutiveDirectionChangesNotAllowed
+import afpma.firecalc.domain.IsDirectionChange
+import afpma.firecalc.domain.IsSplitMergeTurn
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.*
@@ -175,13 +175,10 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         ops    : Vector[Id_IncrDescr],
         seed   : PipeBuildSeed
     ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
-        val iPropsState0    = mkInitPropsState(piDescr)
-        val iPropsState1    = applyExternalNFlows(iPropsState0, seed.nFlows)
-        val iPropsState2    = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
-        val branchOneOffset = (seed.startPoint, seed.slot0FireboxSplitPosition) match
-            case (Some(sp), Some(splitPos)) => SplitMergeTwoHelper.computeBranchOneOffset(sp, splitPos)
-            case _ => 0.0
-        val iPropsState     = applyExternalBranchOneOffset(iPropsState2, branchOneOffset)
+        val iPropsState0 = mkInitPropsState(piDescr)
+        val iPropsState1 = applyExternalNFlows(iPropsState0, seed.nFlows)
+        val iPropsState2 = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
+        val iPropsState  = iPropsState2
         buildIncrDescr(
             mkInitPipeFullDescr(piDescr),
             IdsMapping.empty,
@@ -228,54 +225,6 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows = 1.flow
 
     /**
-     * Validates split geometry: the second branch must not ascend.
-     * Reads current flows + frame through the abstract-PropsState projections,
-     * so all three builders share one implementation. Merge is always allowed.
-     *
-     * `+Z` is up (gravity): ascending ⇔ branchTwoDirection.z > 0.
-     *
-     * @param state current props state
-     * @param newNFlows the new flow count after this operation
-     * @param idIncr descriptor index for error messages
-     * @param elementName human-readable element name for error messages
-     * @param splitBranchDirection first-branch direction from a split element, or None if no split element follows
-     * @param splitPosition 3D position where the split occurs
-     * @param branchOneStartPosition 3D start position of branch one
-     * @param isSplitElement whether this is a physical split element (false for SetNumberOfFlows without split element)
-     */
-    protected def validateSplitNotOnAscending(
-        state                 : PropsState,
-        newNFlows             : NbOfFlows,
-        idIncr                : IdIncr,
-        elementName           : String,
-        splitBranchDirection  : Option[Vec3],
-        splitPosition         : Vec3,
-        branchOneStartPosition: Vec3,
-        isSplitElement        : Boolean = true
-    ): ValidatedResult[Unit] =
-        val isSplit = newNFlows > currentNFlowsFromPropsState(state)
-        if isSplit then
-            currentFrameFromPropsState(state).map(_.direction) match
-                case Some(incomingDir)      =>
-                    SplitMerge90Validator.validateSplit     (
-                        incomingDirection      = incomingDir,
-                        branchOneDirection     = splitBranchDirection,
-                        splitPosition          = splitPosition,
-                        branchOneStartPosition = branchOneStartPosition,
-                        sectionTyp             = pt,
-                        elementRef             = s"'$elementName' (#$idIncr)",
-                        isSplitElement         = isSplitElement
-                    )
-                case None if isSplitElement =>
-                    GeometryWithoutInitialDirection(pt).invalidNel
-                case None                   =>
-                    // No frame direction — cannot validate geometry, allow through.
-                    ().validNel
-        else
-            // Not a split, or merge — always allowed.
-            ().validNel
-
-    /**
      * Hook for post-build validation. Called after all incremental descriptions have been
      * processed. Override in concrete builders to add pipe-specific validations.
      * Default: no validation (always valid).
@@ -296,8 +245,6 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def applyExternalFrame(s: PropsState, frame: PipeFrame): PropsState = s
 
     protected def applyExternalNFlows(s: PropsState, nFlows: NbOfFlows): PropsState = s
-
-    protected def applyExternalBranchOneOffset(s: PropsState, offset: Double): PropsState = s
 
     extension (propsState: PropsState) {
 
@@ -392,13 +339,30 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                     case None         =>
                         (inIdsMapping, inPipe).validNel
             case Some(gop) =>
-                mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel =>
-                    nel.foldLeft((inIdsMapping, inPipe)):
-                        case ((outIdsMapping, outPipe), (idIncr, nextFullElem)) =>
-                            (
-                                outIdsMapping.updated(idIncr, nextFullElem.idx),
-                                outPipe.appendElem   (nextFullElem            )
-                            )
+                val elements = mkFullElementsDescr(inPipe, convStep)(gop)(using propsState)
+                elements.andThen: nel =>
+                    // Fold-time guard: reject consecutive direction changes.
+                    // (isForbiddenAddElementAtStart already handles "can't start with DC".)
+                    val firstNewEl = nel.head._2.el
+                    val guard      =
+                        if firstNewEl.isInstanceOf[IsDirectionChange] && !firstNewEl.isInstanceOf[IsSplitMergeTurn] then
+                            inPipe.getLastOption match
+                                case Some(prev) if prev.el.isInstanceOf[IsDirectionChange] =>
+                                    ConsecutiveDirectionChangesNotAllowed(
+                                        prev.name,
+                                        nel.head._2.name,
+                                        pt
+                                    ).invalidNel
+                                case _                                                     => ().validNel
+                        else ().validNel
+                    guard.map(_ =>
+                        nel.foldLeft((inIdsMapping, inPipe)):
+                            case ((outIdsMapping, outPipe), (idIncr, nextFullElem)) =>
+                                (
+                                    outIdsMapping.updated(idIncr, nextFullElem.idx),
+                                    outPipe.appendElem   (nextFullElem            )
+                                )
+                    )
 
     protected def mkFullElementsDescr(
         prevs          : PipeFullDescr,

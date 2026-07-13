@@ -14,7 +14,7 @@ import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
-import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator}
+import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -207,10 +207,14 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                     splitPosition = seed.slot0FireboxSplitPosition
                 )
                 val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+                val splits          = posResult.splitMergePositions.filter(_.isSplit)
+                val splitValidation = NonEmptyList.fromList(splits.toList) match
+                    case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
+                    case None     => ().validNel
                 val positionErrors: ValidatedResult[Unit] =
                     if posResult.errors.isEmpty then ().validNel
                     else posResult.errors.map(e => SymmetryPlaneAbsDirVertical(pt, e).invalidNel).sequence.map(_ => ())
-                (mergeValidation |+| positionErrors).as(())
+                (splitValidation |+| mergeValidation |+| positionErrors).as(())
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[Length] =
@@ -387,37 +391,23 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                     val (az, el) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                     Vec3.fromAzimuthElevation(az, el)
                 }
-                val elemId = convStep.findNextAddElement.map(_._1).getOrElse(-1)
-                val branchOneStartPos = branchDirOpt
-                    .map(dir => propsState.currentPosition + dir.normalized * propsState.branchOneOffset)
-                    .getOrElse(propsState.currentPosition)
-                val splitValid        = branchDirOpt
-                    .map { _ =>
-                        validateSplitNotOnAscending(
-                            propsState,
-                            2.flows,
-                            IdIncr(elemId),
-                            op.name,
-                            branchDirOpt,
-                            propsState.currentPosition,
-                            branchOneStartPos
+                propsState.currentFrame match
+                    case Some(frame) =>
+                        val targetVec = branchDirOpt.getOrElse {
+                            val perp = frame.direction.cross(Vec3.Up)
+                            if perp.norm > 1e-9 then perp.normalized else Vec3.Rear
+                        }
+                        val newFrame  = if frame.isReachable(targetVec, 90.0) then
+                            frame.applyBendForFinalDir(90.0, targetVec)
+                        else PipeFrame.initial        (targetVec      )
+                        propsState.copy(
+                            dirBeforePreviousDC = Some(frame.direction),
+                            currentFrame        = Some(newFrame)
                         )
-                    }
-                    .getOrElse(().validNel)
-                splitValid.andThen { _ =>
-                    propsState.currentFrame match
-                        case Some(frame) =>
-                            val targetVec = branchDirOpt.getOrElse(frame.direction)
-                            val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
-                            propsState.copy(
-                                dirBeforePreviousDC = Some(frame.direction),
-                                currentFrame        = Some(newFrame)
-                            )
-                        case None        => propsState
-                    stateOps
-                        .setNFlows(stateOps.setInnerShape(propsState, op.newInnerShape), 2.flows)
-                        .validNel
-                }
+                    case None        => propsState
+                stateOps
+                    .setNFlows(stateOps.setInnerShape(propsState, op.newInnerShape), 2.flows)
+                    .validNel
             case Some(op: MergeTwoFlowsIntoSingleWith90DegTurn)     =>
                 val frameUpdate = op.absDir match
                     case Some(fd) =>
@@ -425,13 +415,27 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                             case Some(frame) =>
                                 val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                                 val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
+                                val newFrame  = if frame.isReachable(targetVec, 90.0) then
+                                    frame.applyBendForFinalDir(90.0, targetVec)
+                                else PipeFrame.initial        (targetVec      )
                                 propsState.copy(
                                     dirBeforePreviousDC = Some(frame.direction),
                                     currentFrame        = Some(newFrame)
                                 )
                             case None        => propsState
-                    case None     => propsState
+                    case None     =>
+                        propsState.currentFrame match
+                            case Some(frame) =>
+                                val perp      = frame.direction.cross(Vec3.Up)
+                                val targetVec = if perp.norm > 1e-9 then perp.normalized else Vec3.Rear
+                                val newFrame  = if frame.isReachable(targetVec, 90.0) then
+                                    frame.applyBendForFinalDir(90.0, targetVec)
+                                else PipeFrame.initial        (targetVec      )
+                                propsState.copy(
+                                    dirBeforePreviousDC = Some(frame.direction),
+                                    currentFrame        = Some(newFrame)
+                                )
+                            case None        => propsState
                 stateOps
                     .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 1.flow)
                     .validNel
@@ -482,20 +486,7 @@ trait FlowOnlyIncrementalBuilder_15544 extends IncrementalBuilderAlg with Framed
                             val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
                             stateOps
                                 .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
-                                .andThen { _ =>
-                                    if !nextAddElementIsSplit(convStep) then
-                                        validateSplitNotOnAscending(
-                                            st,
-                                            nf,
-                                            IdIncr(nextElemIdIncr),
-                                            nextElemName,
-                                            None,
-                                            st.currentPosition,
-                                            st.currentPosition,
-                                            isSplitElement = false
-                                        ).map(_ => updatedSt)
-                                    else updatedSt.validNel[IncrementalValidation_Error]
-                                }
+                                .map(_ => updatedSt)
                         }
             }
 

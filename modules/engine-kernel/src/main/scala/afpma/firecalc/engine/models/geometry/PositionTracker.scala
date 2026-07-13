@@ -136,8 +136,13 @@ object PositionTracker:
                                     case Some(fd) =>
                                         val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
                                         val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                        f.applyBendForFinalDir(90.0, targetVec)
-                                    case None     => f
+                                        if f.isReachable      (targetVec, 90.0) then f.applyBendForFinalDir(90.0, targetVec)
+                                        else PipeFrame.initial(targetVec      )
+                                    case None     =>
+                                        val defaultBranch = f.direction.cross(Vec3.Up)
+                                        if defaultBranch.norm > 1e-9 then
+                                            f.applyBendForFinalDir (90.0, defaultBranch.normalized)
+                                        else f.applyBendForFinalDir(90.0, Vec3.Rear               )
                             SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
                                 case Right(config) =>
                                     val pos =

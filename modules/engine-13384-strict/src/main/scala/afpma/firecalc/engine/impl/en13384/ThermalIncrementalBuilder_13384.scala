@@ -13,8 +13,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.engine.FlowAreaConservation
-import afpma.firecalc.engine.alg.IncrementalBuilderAlg
-import afpma.firecalc.engine.alg.SplitMerge90Validator
+import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
 import afpma.firecalc.engine.alg.en13384.IncrementalBuilderAlg_13384
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -161,15 +160,7 @@ trait ThermalIncrementalBuilder_13384
             val nextAddSectionsOps =
                 convStep.allRemainingOps
                     .map(_._2)
-                    .find:
-                        case _: PreElementOp                                                    => false
-                        case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain) => true
-                        case _: AddSectionHorizontal                                            => true
-                        case _: AddSectionVertical                                              => true
-                        case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff |
-                                SplitSingleFlowIntoTwoFlowsWith90DegTurn | MergeTwoFlowsIntoSingleWith90DegTurn) =>
-                            false
-                    .map(_.asInstanceOf[AddElement])
+                    .flatMap(op => typeTestAddElement.unapply(op))
             nextAddSectionsOps.headOption.flatMap:
                 case _ @AddSectionSlopped(_, l)                            => l.some
                 case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
@@ -253,10 +244,14 @@ trait ThermalIncrementalBuilder_13384
                     splitPosition = seed.slot0FireboxSplitPosition
                 )
                 val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+                val splits          = posResult.splitMergePositions.filter(_.isSplit)
+                val splitValidation = NonEmptyList.fromList(splits.toList) match
+                    case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
+                    case None     => ().validNel
                 val positionErrors: ValidatedResult[Unit] =
                     if posResult.errors.isEmpty then ().validNel
                     else posResult.errors.map(e => SymmetryPlaneAbsDirVertical(pt, e).invalidNel).sequence.map(_ => ())
-                (mergeValidation |+| positionErrors).as(())
+                (splitValidation |+| mergeValidation |+| positionErrors).as(())
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
