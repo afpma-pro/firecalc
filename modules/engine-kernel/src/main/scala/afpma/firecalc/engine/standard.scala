@@ -632,6 +632,7 @@ object standard {
         case class TwoSuccessStraightSectionNotAllowed(pipeName1: String, pipeName2: String)
             extends FluePipeShapeSequenceError
         case class HolesShouldNotHappen(holeAfterPipeName: String)   extends FluePipeShapeSequenceError
+        case class DevError(msg: String)                             extends FluePipeShapeSequenceError
 
         // ShowUsingLocale for formula errors (delegates to i18n)
         given ShowUsingLocale[FluePipeShapeSequenceError] = showUsingLocale:
@@ -647,6 +648,7 @@ object standard {
                 I18N.en15544_errors.two_successive_straight_section_not_allowed(n1, n2)
             case HolesShouldNotHappen(h)                        =>
                 I18N.en15544_errors.holes_should_not_happen(h)
+            case DevError(m)                                    => m
 
         // given Show[FluePipeShapeSequenceError] = Show.show(x => s"FLUE PIPE DESCR ERROR: ${x.msg}")
 
@@ -743,6 +745,38 @@ object standard {
                 sectionTyp
             )
     }
+
+    /**
+     * A DirectionChange element was passed to a chain-aware DFC but its (PipeIdx, PipeType)
+     * key was not found in the chain's ordinal map.
+     */
+    case class DirectionChangeNotInPipeChain(
+        sectionTyp: PipeType,
+        elementRef: String
+    ) extends SingularFlowResistanceCoeffErrorI
+
+    given show_DirectionChangeNotInPipeChain: ShowUsingLocale[DirectionChangeNotInPipeChain] =
+        showUsingLocale: e =>
+            I18N.en15544_errors.direction_change_not_in_pipe_chain(
+                e.sectionTyp.show,
+                e.elementRef
+            )
+
+    /**
+     * SplitMerge90 at the end of a pipe chain is not permitted.
+     * It must appear at the first element (zeta=0.0) or mid-chain (zeta=1.4).
+     */
+    case class SplitMerge90AtEndOfChain(
+        sectionTyp: PipeType,
+        elementRef: String
+    ) extends SingularFlowResistanceCoeffErrorI
+
+    given show_SplitMerge90AtEndOfChain: ShowUsingLocale[SplitMerge90AtEndOfChain] =
+        showUsingLocale: e =>
+            I18N.en15544_errors.split_merge_90_at_end_of_chain(
+                e.sectionTyp.show,
+                e.elementRef
+            )
 
     // InvalidPressureRequirement
 
@@ -882,6 +916,8 @@ object standard {
                 I18N.mecaflu.errors.missing_upstream_seed_values(reason)
             case ComputationError(err, _)                           => err.show
             case x: SingularFlowResistanceCoeffError => x.show
+            case x: DirectionChangeNotInPipeChain    => x.show
+            case x: SplitMerge90AtEndOfChain         => x.show
             case x: FluePipeShapeSequenceError       => x.show
 
     // Incremental Builder Validation Errors
@@ -981,52 +1017,63 @@ object standard {
     case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
     case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
     case class GeometryWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
-    case class FlowSplitRequiresInnerShapeBeforeDirectionChange(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
+    case class SplitReflectedBranchAscends(
+        sectionTyp: PipeType,
+        elementRef: String
     ) extends PrerequisiteNotMet
-    case class FlowMergeRequiresInnerShapeBeforeDirectionChange(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
+    case class SplitBranchesCollinear(
+        sectionTyp: PipeType,
+        elementRef: String
     ) extends PrerequisiteNotMet
-    case class FlowMergeRequiresLengthBearingSectionBeforeDirectionChange(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
+    case class SplitBranchesNotOpposite(
+        sectionTyp    : PipeType,
+        elementRef    : String,
+        branchAngleDeg: Double
     ) extends PrerequisiteNotMet
-    case class FlowSplitForbiddenOnAscendingPipe(
-        sectionTyp        : PipeType,
-        directionChangeRef: String
+    case class MergeBranchTipNotAtMergePosition(
+        sectionTyp: PipeType,
+        elementRef: String,
+        distanceMm: Double
+    ) extends PrerequisiteNotMet
+    case class SymmetryPlaneAzimuthMissing(
+        sectionTyp: PipeType,
+        elementRef: String
     ) extends PrerequisiteNotMet
 
     object PrerequisiteNotMet:
         given ShowUsingLocale[PrerequisiteNotMet] = showUsingLocale:
-            case _: ThicknessRequiresInnerGeometry                             =>
+            case _: ThicknessRequiresInnerGeometry         =>
                 I18N.incremental_validation.prerequisites.thickness_requires_inner_geometry
-            case _: LayerRequiresSectionGeometry                               =>
+            case _: LayerRequiresSectionGeometry           =>
                 I18N.incremental_validation.prerequisites.layer_requires_section_geometry
-            case _: LayersRequireInnerShape                                    => I18N.incremental_validation.prerequisites.layers_require_inner_shape
-            case _: DirectionChangeRequiresSectionGeometry                     =>
+            case _: LayersRequireInnerShape                => I18N.incremental_validation.prerequisites.layers_require_inner_shape
+            case _: DirectionChangeRequiresSectionGeometry =>
                 I18N.incremental_validation.prerequisites.direction_change_requires_section_geometry
-            case _: FinalDirWithoutInitialDirection                            =>
+            case _: FinalDirWithoutInitialDirection        =>
                 I18N.incremental_validation.prerequisites.final_dir_without_initial_direction
-            case _: GeometryWithoutInitialDirection                            =>
+            case _: GeometryWithoutInitialDirection        =>
                 I18N.incremental_validation.prerequisites.geometry_without_initial_direction
-            case e: FlowSplitRequiresInnerShapeBeforeDirectionChange           =>
-                I18N.incremental_validation.prerequisites.flow_split_requires_inner_shape_before_direction_change(
-                    e.directionChangeRef
+            case e: SplitReflectedBranchAscends            =>
+                I18N.incremental_validation.prerequisites.split_reflected_branch_ascends(
+                    e.elementRef
                 )
-            case e: FlowMergeRequiresInnerShapeBeforeDirectionChange           =>
-                I18N.incremental_validation.prerequisites.flow_merge_requires_inner_shape_before_direction_change(
-                    e.directionChangeRef
+            case e: SplitBranchesCollinear                 =>
+                I18N.incremental_validation.prerequisites.split_branches_collinear(
+                    e.elementRef
                 )
-            case e: FlowMergeRequiresLengthBearingSectionBeforeDirectionChange =>
-                I18N.incremental_validation.prerequisites
-                    .flow_merge_requires_length_bearing_section_before_direction_change(
-                        e.directionChangeRef
-                    )
-            case e: FlowSplitForbiddenOnAscendingPipe                          =>
-                I18N.incremental_validation.prerequisites.flow_split_forbidden_on_ascending_pipe(
-                    e.directionChangeRef
+            case e: SplitBranchesNotOpposite               =>
+                I18N.incremental_validation.prerequisites.split_branches_not_opposite(
+                    e.elementRef,
+                    f"${e.branchAngleDeg}%.1f"
+                )
+            case e: MergeBranchTipNotAtMergePosition       =>
+                I18N.incremental_validation.prerequisites.merge_branch_tip_not_at_merge_position(
+                    e.elementRef,
+                    f"${e.distanceMm}%.2f"
+                )
+            case e: SymmetryPlaneAzimuthMissing            =>
+                I18N.incremental_validation.prerequisites.symmetry_plane_azimuth_missing(
+                    e.elementRef
                 )
 
     // Conflict errors
@@ -1039,6 +1086,8 @@ object standard {
     case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
         extends ConflictDetected
     case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
+    case class ConsecutiveDirectionChangesNotAllowed(prevName: String, nextName: String, sectionTyp: PipeType)
+        extends ConflictDetected
 
     /** Shape was set but not yet materialized into a physical element. */
     case class ShapeNotMaterialized(
@@ -1113,20 +1162,22 @@ object standard {
         // while FLOW_AREA_CHECK_ENABLED = false. See FlowAreaConservation banner.
         @nowarn("cat=deprecation")
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
-            case CannotSetGeometryBeforeChange(_)                 =>
+            case CannotSetGeometryBeforeChange(_)                     =>
                 I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
-            case SectionChangeRequiresCircle(shape, _)            =>
+            case SectionChangeRequiresCircle(shape, _)                =>
                 I18N.incremental_validation.conflicts.section_change_requires_circle(shape)
-            case FlowResistanceRequiresGeometry(op, "EN13384", _) =>
+            case FlowResistanceRequiresGeometry(op, "EN13384", _)     =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case FlowResistanceRequiresGeometry(op, "EN15544", _) =>
+            case FlowResistanceRequiresGeometry(op, "EN15544", _)     =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
-            case FlowResistanceRequiresGeometry(op, _, _)         =>
+            case FlowResistanceRequiresGeometry(op, _, _)             =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case PressureDiffRequiresGeometry(op, _, _)           =>
+            case PressureDiffRequiresGeometry(op, _, _)               =>
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
-            case CasingTooSmallForLiner(linerDh, casingDh, _)     =>
+            case CasingTooSmallForLiner(linerDh, casingDh, _)         =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
+            case ConsecutiveDirectionChangesNotAllowed(prev, next, _) =>
+                I18N.incremental_validation.conflicts.consecutive_direction_changes(prev, next)
             case e: ShapeNotMaterialized =>
                 val translatedOp = e.operation match
                     case ShapeNotMaterialized.Operation.SetInnerShape         => I18N.set_prop.SetInnerShape

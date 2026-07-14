@@ -8,11 +8,13 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.dto.common.PipeShape
 
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -289,4 +291,131 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         assertApprox(connResult.finalPoint.z, 1.0, "z")
     }
 
+    // ── Test 12: SplitMerge90 without offset (computed at call sites) ─────
+
+    it should "not advance position by offset for SplitMerge90 (offset computed at call sites)" in {
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
+        // The offset field was removed from the DTO. The branch start position
+        // is now computed at call sites (Variables.scala, FireCalcYAML_Loader.scala)
+        // using PipePositionComputer.computeBranchStartAfterSplit.
+        // PositionTracker no longer advances by offset for SplitMerge90.
+        val initialDir    = PipeInitialDirection.default
+        val splitPos      = Vec3(0, 0, 0.62)
+        val elems         = Seq(
+            SplitSingleFlowIntoTwoFlowsWith90DegTurn                (
+                name                 = "split",
+                absDir               = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
+                newInnerShape        = PipeShape.Circle(18.cm),
+                symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
+            ),
+            AddSectionSlopped                                       ("sortie de foyer", 0.3.meters)
+        )
+        val externalFrame = Some(PipeFrame.initial(Vec3.Up))
+        val result        = PositionTracker.computeFlowOnly15544(
+            elems,
+            initialDir,
+            externalFrame,
+            splitPos
+        )
+
+        // PositionTracker does not advance by offset anymore.
+        // The segment starts at the split position and goes along the branch direction.
+        result.segments.size shouldBe 1
+        assertVec3Approx(result.segments.head.startPoint, splitPos)
+
+        // After the 90° bend (Up → Front), the horizontal section goes along Front direction.
+        // The frame direction after the bend is Front (horizontal).
+        // AddSectionSlopped follows the frame, so it goes 0.3m in the Front direction.
+        val expectedEnd = splitPos + Vec3.Front * 0.3
+        assertVec3Approx(result.segments.head.endPoint, expectedEnd)
+        assertVec3Approx(result.finalPoint, expectedEnd            )
+    }
+
+    // ── Test 13: Missing symmetryPlaneAzimuth with vertical incoming produces error ─────
+
+    it should "produce error in PipePositionResult.errors when symmetryPlaneAzimuth is missing with vertical incoming" in {
+        import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
+        // symmetryPlaneAzimuth = None with vertical incoming should produce
+        // SplitMergeTwoHelperError.SymmetryPlaneAzimuthRequired
+        val initialDir    = PipeInitialDirection.default
+        val splitPos      = Vec3(0, 0, 0.62)
+        val elems         = Seq(
+            SplitSingleFlowIntoTwoFlowsWith90DegTurn                (
+                name                 = "test-split-missing-azimuth",
+                absDir               = Some(AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)),
+                newInnerShape        = PipeShape.Circle(18.cm),
+                symmetryPlaneAzimuth = None
+            ),
+            AddSectionSlopped                                       ("sortie de foyer", 0.3.meters)
+        )
+        val externalFrame = Some(PipeFrame.initial(Vec3.Up))
+        val result        = PositionTracker.computeFlowOnly15544(
+            elems,
+            initialDir,
+            externalFrame,
+            splitPos
+        )
+
+        // The split should have been skipped (no splitMergePosition added)
+        result.splitMergePositions shouldBe empty
+
+        // The error should contain the element name
+        result.errors should contain("test-split-missing-azimuth")
+        result.errors.size shouldBe 1
+    }
+
+    // ── Test 14: Thermal SetPropertiesInBatch extracts inner shape ─────
+
+    "PositionTracker.computeThermal13384" should "extract SetInnerShape from SetPropertiesInBatch props" in {
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
+        val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+        val elems      = Seq[ThermalPipeDescr_13384](
+            SetPropertiesInBatch(
+                batch_name = "batch",
+                props      = Seq(
+                    SetInnerShape(PipeShape.Circle(18.cm))
+                )
+            ),
+            AddSectionVertical  ("v", 1.0.meters)
+        )
+        val result     = PositionTracker.computeThermal13384(
+            elems,
+            initialDir,
+            None,
+            Vec3(0, 0, 0)
+        )
+        result.segments.size `shouldBe` 1
+        assertVec3Approx(result.finalPoint, Vec3(0, 0, 1))
+        // Inner shape from SetPropertiesInBatch should propagate into the segment
+        result.segments.head.innerShape shouldBe Some(PipeShape.Circle(18.cm))
+    }
+
+    // ── Test 15: Thermal LinedFlue extracts inner shape from liner ──────────
+
+    it should "extract SetInnerShape from LinedFlue liner props" in {
+        import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4.*
+        import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.*
+        import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.WithoutAirSpace_V2
+        val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
+        val liner      = SetPropertiesInBatch(
+            batch_name = "liner",
+            props      = Seq(SetInnerShape(PipeShape.Circle(20.cm)))
+        )
+        val casing     = SetPropertiesInBatch(batch_name = "casing", props = Seq.empty)
+        val elems      = Seq[ThermalPipeDescr_13384](
+            LinedFlue         ("lined", liner, WithoutAirSpace_V2, casing),
+            AddSectionVertical("v", 2.0.meters                           )
+        )
+        val result     = PositionTracker.computeThermal13384(
+            elems,
+            initialDir,
+            None,
+            Vec3(0, 0, 0)
+        )
+        result.segments.size `shouldBe` 1
+        assertVec3Approx(result.finalPoint, Vec3(0, 0, 2))
+        // Inner shape from LinedFlue liner should propagate into the segment
+        result.segments.head.innerShape shouldBe Some(PipeShape.Circle(20.cm))
+    }
 end PositionTrackerSuite

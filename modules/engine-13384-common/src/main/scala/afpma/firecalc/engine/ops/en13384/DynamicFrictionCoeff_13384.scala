@@ -9,7 +9,7 @@ import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.engine.models.{PipeType, NamedPipeElDescrG}
 import afpma.firecalc.engine.models.gtypedefs.{ζ, CoefficientOfFlowResistance}
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
@@ -453,5 +453,18 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
             case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio))
             case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp)          )
         }
+
+    /**
+     * Factory method to create a chain-aware dynamic friction coefficient operator.
+     *
+     * Wraps the provided DFC instance with pipe-chain awareness (e.g., SplitMerge90
+     * position-based zeta computation). The `given DynamicFrictionCoeffOp[DC]` must
+     * be available in scope (provided by this instance's given instances when
+     * `import this.given` or `import dcDfc.given` is used).
+     */
+    def makeChainAwareDfc[PipeElDescr <: Matchable, DC <: Matchable](
+        pipeElements: Vector[NamedPipeElDescrG[PipeElDescr]]
+    )(using dfc: DynamicFrictionCoeffOp[DC]): DynamicFrictionCoeffOp[NamedPipeElDescrG[DC]] =
+        DynamicFrictionCoeffOpForPipeChain[PipeElDescr, DC](pipeElements, dfc)
 
 end DynamicFrictionCoeff_13384

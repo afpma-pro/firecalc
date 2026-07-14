@@ -8,9 +8,9 @@ package afpma.firecalc.engine.dev_fixtures.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
@@ -154,7 +154,7 @@ object StrictInterleavedConnectorFixture_15544
     // computed via Thermal 13384 inside the flue region).
     //
     // Topology:
-    //   Slot 0 — FlueSlot: horizontal exit + 90° turn upward (flow-only)
+    //   Slot 0 — FlueSlot: horizontal exit + 90° turn upward + short vertical section
     //   Slot 1 — ConnectorSlot: interleaved connector in flue region (thermal)
     //   Slot 2 — FlueSlot: ascending vertical column (flow-only, LAST flue)
     //   Slot 3 — ConnectorSlot: standard connector after flue region (thermal)
@@ -173,7 +173,8 @@ object StrictInterleavedConnectorFixture_15544
                     addSharpAngle_90deg (
                         "F1-virage 90 deg (-> Haut)",
                         AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
-                    )
+                    ),
+                    addSectionVertical  ("F1-colonne courte", 10.cm)
                 )
             )
         val slot1 =

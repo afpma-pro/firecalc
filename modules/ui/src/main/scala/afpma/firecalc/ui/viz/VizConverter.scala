@@ -16,7 +16,7 @@ import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PipeSegmentPosition
 import afpma.firecalc.units.Vec3
 
-import afpma.firecalc.ui.AIR_DISTRIB_HEIGHT_M
+import afpma.firecalc.domain.{AirDistributionBox, FireboxCoordinateSystem}
 
 import afpma.firecalc.filaire.ChimneyEndCapDefaults
 import afpma.firecalc.filaire.FilaireTypes.*
@@ -75,13 +75,16 @@ object VizConverter:
      * @param heightCm firebox height in cm (Down-Up axis)
      */
     def fireboxToLine(
-        widthCm         : Double,
-        depthCm         : Double,
-        heightCm        : Double,
-        displayName     : Option[String] = None
-    ): FireCalcFilaireLine =
-        FireCalcFilaireLine(
-            origin      = Origin(0.0, 0.0, 0.0),
+        widthCm    : Double,
+        depthCm    : Double,
+        heightCm   : Double,
+        displayName: Option[String] = None
+    ): FireCalcFilaireLine = {
+        val originX = FireboxCoordinateSystem.FireboxBaseCenterX * M_TO_CM
+        val originY = FireboxCoordinateSystem.FireboxBaseCenterY * M_TO_CM
+        val originZ = FireboxCoordinateSystem.FireboxBaseCenterZ * M_TO_CM
+        FireCalcFilaireLine     (
+            origin      = Origin(originX, originY, originZ),
             direction   = Vector(0.0, 0.0, 1.0),
             length      = Length(heightCm),
             color       = FireboxColor,
@@ -89,6 +92,7 @@ object VizConverter:
             name        = Some("Firebox"),
             displayName = displayName
         )
+    }
 
     /** Color used for the symbolic chimney end-cap disc. */
     val ChimneyEndCapColor: LineColor = ChimneyEndCapDefaults.Color
@@ -137,10 +141,13 @@ object VizConverter:
      * @param widthCm  firebox width in cm (Left-Right axis)
      * @param depthCm  firebox depth in cm (Front-Rear axis)
      */
-    def airDistribToLine(widthCm: Double, depthCm: Double, displayName: Option[String] = None): FireCalcFilaireLine =
-        val heightCm = AIR_DISTRIB_HEIGHT_M * 100.0
+    def airDistribToLine(widthCm: Double, depthCm: Double, displayName: Option[String] = None): FireCalcFilaireLine = {
+        val heightCm = AirDistributionBox.Z_HEIGHT * M_TO_CM
+        val originX  = AirDistributionBox.CenterX * M_TO_CM
+        val originY  = AirDistributionBox.CenterY * M_TO_CM
+        val originZ  = AirDistributionBox.CenterZ * M_TO_CM
         FireCalcFilaireLine     (
-            origin      = Origin(0.0, 0.0, -heightCm),
+            origin      = Origin(originX, originY, originZ),
             direction   = Vector(0.0, 0.0, 1.0),
             length      = Length(heightCm),
             color       = AirDistribColor,
@@ -148,6 +155,7 @@ object VizConverter:
             name        = Some("Air Distribution"),
             displayName = displayName
         )
+    }
 
     case class PipeDisplayNames(
         flue           : String,
@@ -202,14 +210,14 @@ object VizConverter:
         fireboxLine     : FireCalcFilaireLine,
         airDistribLine  : FireCalcFilaireLine,
         chimneyEndCapO  : Option[FireCalcFilaireLine] = None
-    ): FireCalcFilaireGroups =
+    ): FireCalcFilaireGroups = {
         val exhaustLines        = postFireboxSlots.toList.flatMap: (pt, name, displayName, pos) =>
             pipeToLines(pos, colorForPipeType(pt), name, Some(displayName))
         val chimneyEndCapGroupO = chimneyEndCapO.map: line =>
             // Separate group so Three.js mitring does not deform the chimney's end face
             // against the wider, differently-colored end-cap.
             FireCalcFilaireGroup(List(line), Some("Chimney End Cap"))
-        List(
+        val groups              = List(
             FireCalcFilaireGroup(List(airDistribLine), Some("Air Distribution")),
             FireCalcFilaireGroup(List(fireboxLine), Some("Firebox")            ),
             FireCalcFilaireGroup(exhaustLines, Some("Exhaust")                 ),
@@ -218,3 +226,5 @@ object VizConverter:
                 Some       ("Air Intake"                                               )
             )
         ) ++ chimneyEndCapGroupO.toList
+        groups
+    }

@@ -338,10 +338,11 @@ case class Shortcuts(
 )
 
 case class Viz(
-    reset_view  : String,
-    view_mode   : String,
-    annotations : String,
-    no_pipe_data: String
+    reset_view         : String,
+    view_mode          : String,
+    annotations        : String,
+    no_pipe_data       : String,
+    webgl_not_available: String
 )
 
 case class Graph(

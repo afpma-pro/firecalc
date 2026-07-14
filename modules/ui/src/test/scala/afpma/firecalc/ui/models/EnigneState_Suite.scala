@@ -5,18 +5,16 @@
 
 package afpma.firecalc.ui.models
 
+import afpma.firecalc.dto.common.PipeInitialDirection
+import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180
+import afpma.firecalc.dto.v7.AirIntakePosition
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.v7.PostFireboxStartPosition
+
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
-import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.AddSharpeAngle_0_to_180
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.common.Position3D
-import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.v7.AirIntakePosition
-import afpma.firecalc.dto.v7.PostFireboxStartPosition
-import afpma.firecalc.units.coulombutils.*
-
 import io.circe.*
 import io.circe.parser.*
 import io.circe.syntax.*
@@ -76,15 +74,13 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
             "stores the original initial frame at FramedPostFireboxPipes level" in {
                 val pipes = EngineState.example_projet_15544.post_firebox_pipes
 
-                pipes.initialDirection shouldBe                               (
+                pipes.initialDirection shouldBe (
                     PipeInitialDirection(
                         AzimuthDirection.Left,
                         InclinationDirection.Horizontal
                     )
                 )
-                pipes.initialPosition shouldBe PostFireboxStartPosition.Manual(
-                    Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)
-                )
+                pipes.initialPosition shouldBe PostFireboxStartPosition.Auto
             }
 
             "keeps vertical direction-change absDir pins as explicit azimuth None" in {

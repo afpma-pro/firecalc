@@ -391,4 +391,77 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         ChainEditDispatcher.downstreamPinCount(slots, coord) shouldBe 1
     }
 
+    // ── rotateAllPins — initial-direction full-chain rotation ──
+
+    "ChainEditDispatcher.rotateAllPins" should "rotate all downstream pins by the direction delta" in {
+        val slots  = flueAndChimney(
+            Seq(
+                bend(90.0, Some(adRight)), // elem 0
+                bend(90.0, Some(adRear) )  // elem 1
+            ),
+            Seq(chimneyBend(45.0, Some(adDown)))
+        )
+        val result = ChainEditDispatcher.rotateAllPins(slots, Vec3.Rear, Vec3.Front)
+
+        result match
+            case Seq(FlueSlot(descr), ChimneySlot(_)) =>
+                val bend0 = descr(0).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+                val bend1 = descr(1).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+                bend0.absDir shouldBe Some(absDir(Left, Horizontal) )
+                bend1.absDir shouldBe Some(absDir(Front, Horizontal))
+            case _                                    => fail("slot structure changed")
+    }
+
+    it should "rotate element 0 in slot 0 (lb=-1, nothing skipped)" in {
+        val slots  = simpleFlue(bend(90.0, Some(adRight)))
+        val result = ChainEditDispatcher.rotateAllPins(slots, Vec3.Front, Vec3.Rear)
+        result match
+            case Seq(FlueSlot(descr), _) =>
+                val bend0 = descr(0).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+                bend0.absDir shouldBe Some(absDir(Left, Horizontal))
+            case _                       => fail("slot structure changed")
+    }
+
+    it should "return slots unchanged when direction delta is zero" in {
+        val slots = simpleFlue(bend(90.0, Some(adRight)))
+        ChainEditDispatcher.rotateAllPins(slots, Vec3.Front, Vec3.Front) shouldBe slots
+    }
+
+    it should "handle pure inclination change (horizontal to up)" in {
+        val slots  = simpleFlue(bend(90.0, Some(adFront)))
+        val result = ChainEditDispatcher.rotateAllPins(slots, Vec3.Front, Vec3.Up)
+        result match
+            case Seq(FlueSlot(descr), _) =>
+                val bend0 = descr(0).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+                bend0.absDir.get.inclination should not be Horizontal
+            case _                       => fail("slot structure changed")
+    }
+
+    it should "not modify unpinned elements" in {
+        val slots  = simpleFlue(
+            bend(90.0, None         ), // unpinned
+            bend(45.0, Some(adRight))  // pinned
+        )
+        val result = ChainEditDispatcher.rotateAllPins(slots, Vec3.Front, Vec3.Rear)
+        result match
+            case Seq(FlueSlot(descr), _) =>
+                val unpinned = descr(0).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+                val pinned   = descr(1).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180]
+                unpinned.absDir shouldBe None
+                pinned.absDir should not be None
+            case _                       => fail("slot structure changed")
+    }
+
+    it should "rotate chimney pins when they exist" in {
+        val slots  = flueAndChimney(
+            Seq(bend(90.0, Some(adRight))      ),
+            Seq(chimneyBend(45.0, Some(adDown)))
+        )
+        val result = ChainEditDispatcher.rotateAllPins(slots, Vec3.Front, Vec3.Rear)
+        result match
+            case Seq(FlueSlot(_), ChimneySlot(chimneyDescr)) =>
+                val chimBend = chimneyDescr(0).asInstanceOf[TDElem13.AddSharpeAngle_0_to_90]
+                chimBend.absDir shouldBe defined
+            case _                                           => fail("slot structure changed")
+    }
 end ChainEditDispatcherSuite

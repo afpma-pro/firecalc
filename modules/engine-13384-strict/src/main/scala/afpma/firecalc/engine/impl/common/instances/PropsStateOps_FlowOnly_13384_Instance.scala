@@ -66,5 +66,24 @@ object PropsStateOps_FlowOnly_13384_Instance:
 
         def materialize(state: FlowOnlyPropsState_13384): FlowOnlyPropsState_13384 =
             state.shapeState match
-                case ShapeState.Set(shape) => state.copy(shapeState = ShapeState.Materialized(shape))
-                case _                     => state
+                case ShapeState.Set(shape)      => state.copy(shapeState = ShapeState.Materialized(shape))
+                case ShapeState.Empty           => state
+                case ShapeState.Materialized(_) => state
+
+        override def getCurrentFrame(state: FlowOnlyPropsState_13384): Option[PipeFrame] =
+            state.currentFrame
+
+        override def getDirBeforePreviousDC(state: FlowOnlyPropsState_13384): Option[Vec3] =
+            state.dirBeforePreviousDC
+
+        override def setDirBeforePreviousDC(
+            state: FlowOnlyPropsState_13384,
+            dir  : Option[Vec3]
+        ): FlowOnlyPropsState_13384 =
+            state.copy(dirBeforePreviousDC = dir)
+
+        override def setCurrentFrame(
+            state: FlowOnlyPropsState_13384,
+            frame: Option[PipeFrame]
+        ): FlowOnlyPropsState_13384 =
+            state.copy(currentFrame = frame)

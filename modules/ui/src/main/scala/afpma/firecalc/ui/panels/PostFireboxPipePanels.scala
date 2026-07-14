@@ -467,43 +467,75 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
     // preservation (so the new angle + computed absDir remain geometrically consistent)
     // and then trigger the downstream rotation offer via the standard flow.
 
-    // `prevSnapshot` is initialized from the current slots because `.changes` below skips the
-    // current value. Without this, the first real user edit after mount would only prime the
-    // baseline and would not trigger angle/direction propagation.
+    // `prevBaseline` is initialized from the current slots and initial direction because
+    // `.changes` below skips the current value. Without this, the first real user edit
+    // after mount would only prime the baseline and would not trigger angle/direction propagation.
     // `lastDispatcherWrite_var` is shared with AppToasts so strategy re-dispatches from the
     // toast can suppress EVERY echo (debounced + binder roundtrip + normalization) until a
     // genuinely different snapshot arrives.
-    private var prevSnapshot: Option[Seq[PostFireboxPipeDescrSlot_V7]] = Some(postFireboxSlots_var.now())
-    private var prevProject : EngineState                              = engineStateVar.now()
+    private case class SlotBaseline(
+        slots     : Option[Seq[PostFireboxPipeDescrSlot_V7]],
+        initialDir: PipeInitialDirection
+    )
+
+    private var prevBaseline: SlotBaseline = SlotBaseline(
+        slots      = Some(postFireboxSlots_var.now()),
+        initialDir = postFireboxInitialDir_var.now()
+    )
+    private var prevProject : EngineState  = engineStateVar.now()
 
     private def sameProjectAsideFromSlots(a: EngineState, b: EngineState): Boolean =
-        a.copy(post_firebox_pipes = a.post_firebox_pipes.copy(slots = b.post_firebox_pipes.slots)) == b
+        val aPipes = a.post_firebox_pipes
+        val bPipes = b.post_firebox_pipes
+        a.copy(
+            post_firebox_pipes = aPipes.copy(
+                slots            = bPipes.slots,
+                initialDirection = bPipes.initialDirection
+            )
+        ) == b
+
+    private def dirToVec3(dir: PipeInitialDirection): Vec3 =
+        Vec3.fromAzimuthElevation(
+            dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+            InclinationDirection.toDegrees                       (dir.inclination)
+        )
 
     private def currentInitialFrame: Option[PipeFrame] =
-        val dir = postFireboxInitialDir_var.now()
-        Some(
-            PipeFrame.initial(
-                Vec3.fromAzimuthElevation(
-                    dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
-                    InclinationDirection.toDegrees                       (dir.inclination)
-                )
-            )
-        )
+        Some(PipeFrame.initial(dirToVec3(postFireboxInitialDir_var.now())))
+
+    private def handleInitialDirChange(newDir: PipeInitialDirection): Unit =
+        val oldDir        = dirToVec3(prevBaseline.initialDir)
+        val newVec        = dirToVec3(newDir)
+        val slotsBaseline = prevBaseline.slots.getOrElse(postFireboxSlots_var.now())
+
+        ChainEditDispatcher.computeInitialDirRotation      (
+            slotsBaseline       = slotsBaseline,
+            oldDir              = oldDir,
+            newDir              = newVec,
+            lastDispatcherWrite = lastDispatcherWrite_var.now()
+        ) match
+            case Some(rewritten) =>
+                lastDispatcherWrite_var.set(Some(rewritten))
+                postFireboxSlots_var.set   (rewritten      )
+                prevBaseline = prevBaseline.copy(slots = Some(rewritten), initialDir = newDir)
+            case None            =>
+                prevBaseline = prevBaseline.copy(initialDir = newDir)
 
     private def handleSlotSnapshot(newSnapshot: Seq[PostFireboxPipeDescrSlot_V7]): Unit =
         val currentProject = engineStateVar.now()
         if !sameProjectAsideFromSlots(currentProject, prevProject) then
             prevProject  = currentProject
-            prevSnapshot = Some(newSnapshot)
+            prevBaseline = prevBaseline.copy(slots = Some(newSnapshot))
         // Value-based suppression: ANY echo of the last dispatcher-written state (first debounced
         // emit, subsequent bidirsync roundtrips, normalize passes) is absorbed. Only a snapshot
         // that truly differs from the last dispatcher write can produce a new offer.
-        else if lastDispatcherWrite_var.now().contains(newSnapshot) then prevSnapshot = Some(newSnapshot)
+        else if lastDispatcherWrite_var.now().contains(newSnapshot) then
+            prevBaseline = prevBaseline.copy(slots = Some(newSnapshot))
         else
-            prevSnapshot match
+            prevBaseline.slots match
                 case None       =>
                     // First emit after mount — prime the baseline, no offer.
-                    prevSnapshot = Some(newSnapshot)
+                    prevBaseline = prevBaseline.copy(slots = Some(newSnapshot))
                 case Some(prev) =>
                     ChainEditDispatcher.detectEdit(prev, newSnapshot) match
                         case Some(edit) =>
@@ -516,9 +548,9 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                             val rewritten    = ChainEditDispatcher(prev, newSnapshot, edit, strategy, initialFrame)
                             lastDispatcherWrite_var.set(Some(rewritten))
                             postFireboxSlots_var.set   (rewritten      )
-                            prevSnapshot = Some(rewritten)
+                            prevBaseline = prevBaseline.copy(slots = Some(rewritten))
                         case None       =>
-                            prevSnapshot = Some(newSnapshot)
+                            prevBaseline = prevBaseline.copy(slots = Some(newSnapshot))
 
     // ── Main node ────────────────────────────────────────────────
 
@@ -540,10 +572,18 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
         // they must not be interpreted as user edits or their stored absDir pins may be rewritten.
         engineStateVar.signal.changes --> Observer[EngineState]: project =>
             if !sameProjectAsideFromSlots(project, prevProject) then
-                prevProject  = project
-                prevSnapshot = Some(project.post_firebox_pipes.slots),
+                prevProject = project
+                val pipes = project.post_firebox_pipes
+                prevBaseline = SlotBaseline(
+                    slots      = Some(pipes.slots),
+                    initialDir = pipes.initialDirection
+                ),
         postFireboxSlots_var.signal.changes.debounce(300) --> Observer[Seq[PostFireboxPipeDescrSlot_V7]](
             handleSlotSnapshot
+        ),
+        // Initial-direction change: rotate all downstream pins to preserve chain shape.
+        postFireboxInitialDir_var.signal.changes.debounce(300) --> Observer[PipeInitialDirection](
+            handleInitialDirChange
         ),
         child.maybe <-- topologyWarning,
         child.maybe <-- lZMinWarning,

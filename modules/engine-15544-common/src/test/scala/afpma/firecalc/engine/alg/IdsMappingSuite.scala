@@ -8,9 +8,9 @@ package afpma.firecalc.engine.alg
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.common.PipeInitialDirection
 
 import afpma.firecalc.engine.models.FluePipe_Module_15544

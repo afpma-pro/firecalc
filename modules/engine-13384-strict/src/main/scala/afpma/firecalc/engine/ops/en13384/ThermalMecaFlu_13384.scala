@@ -64,7 +64,10 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
         last_AirSpaceDetailed: Option[AirSpaceDetailed],
         last_InnerGeom       : Option[PipeShape],
         prevO                : Option[PipeSectionResult[PipeElDescr]]
-    )(using alg: EN13384_1_A1_2019_Application_Alg): PipeSectionResult[PipeElDescr] =
+    )(using
+        alg: EN13384_1_A1_2019_Application_Alg,
+        dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]]
+    ): PipeSectionResult[PipeElDescr] =
         new MecaFlu_EN13384_PipeSectionResult_Impl(
             gp,
             hafg,
@@ -76,7 +79,8 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
             last_InnerGeom,
             prevO
         ) {
-            override given en13384: EN13384_1_A1_2019_Application_Alg = alg
+            override given en13384      : EN13384_1_A1_2019_Application_Alg                          = alg
+            override given chainAwareDfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] = dfc
         }
 
     def makePipeResult(
@@ -101,22 +105,6 @@ object ThermalMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384_
             ) {
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
             }
-
-    override def makePipeSectionResult(
-        ctx: MecaFluSectionContext[PipeElDescr, Params_13384]
-    )(using appCtx: MecaFluAppContext): PipeSectionResult[PipeElDescr] =
-        val ctx13384 = appCtx.asInstanceOf[MecaFlu_13384_AppCtx]
-        makePipeSectionResult                   (
-            gp                    = ctx.gasInPipeEl,
-            hafg                  = ctx13384.hafg,
-            hamf                  = ctx13384.hamf,
-            temp_start            = ctx.gasTempStart,
-            last_pipe_density     = ctx.lastPipeDensity,
-            last_pipe_velocity    = ctx.lastPipeVelocity,
-            last_AirSpaceDetailed = ctx.lastAirSpaceDetailed,
-            last_InnerGeom        = ctx.lastInnerGeom,
-            prevO                 = ctx.prevSectionResult
-        )(using ctx13384.en13384)
 
     override def makePipeResult(
         ctx   : MecaFluPipeContext[PipeElDescr],
@@ -144,10 +132,12 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     last_InnerGeom       : Option[PipeShape],
     prevO                : Option[PipeSectionResult[PipeElDescr]]
 ) extends PipeSectionResult[PipeElDescr]
-    with ThermalMecaFlu_Helpers:
+    with ThermalMecaFlu_Helpers
+    with MecaFlu_13384_DynamicFriction[PipeElDescr]:
 
     val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()(using gp.pipeEl.typ)
-    import dynamicFrictionCoeff_13384.given
+    given chainAwareDfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
+        scala.compiletime.deferred
 
     given en13384: EN13384_1_A1_2019_Application_Alg            = scala.compiletime.deferred
     given pgfOps : PipeWithGasFlowOps[PipeWithGasFlowOps.Error] =
@@ -584,7 +574,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
 
     val v_zetaO_dynamicFriction: ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] =
         gp.pipeEl.el match
-            case _ : StraightSection                                                    =>
+            case _ : StraightSection                                  =>
                 (None, 0.0.pascals).validNel
             case PressureDiff(pa, _) =>
                 val pd = en13384.P_R_dynamicPressure_calc(
@@ -598,37 +588,14 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
                 val pu = pa
                 val zeta_eq: ζ = pu / (pd * se)
                 (Some(zeta_eq), pu).validNel
-            case el: (DirectionChange | SectionGeometryChange | SingularFlowResistance) =>
-                import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
-                el.dynamicFrictionCoeff match
-                    case Valid(zeta)         =>
-                        val pu = MecaFluOps.whenGasType(gp.pipeEl.typ)(
-                            ifCombustionAir = en13384.P_B_dynamicFriction(
-                                zeta,
-                                density_for_pr_pu_pd,
-                                velocity_for_pr_pu_pd
-                            )(using pReq),
-                            ifFlueGas       = en13384.P_R_dynamicFriction(
-                                zeta,
-                                density_for_pr_pu_pd,
-                                velocity_for_pr_pu_pd
-                            )(using pReq)
-                        )
-                        (Some(zeta), pu).validNel
-                    case inel @ Invalid(nel) =>
-                        val urOpt = nel.toList
-                            .filter(_.isInstanceOf[UnexpectedRatio_Ld_Dh[?]])
-                            .headOption
-                        urOpt match
-                            case Some(u @ UnexpectedRatio_Ld_Dh(_, _, _)) =>
-                                MecaFlu_Error
-                                    .UseUnsafeToSkipRatioValidationError(
-                                        s"${curr.fullRef}:\n\t ${u.msg}\n\t => try to use '_unsafe' suffix: it should skip ratio validation",
-                                        curr.typ
-                                    )
-                                    .invalidNel
-                            case None | Some(_)                           =>
-                                inel
+            case el: DirectionChange                                  =>
+                val zetaResult = chainAwareDfc.dynamicFrictionCoeff(
+                    NamedPipeElDescrG(gp.pipeEl.idx, gp.pipeEl.typ, gp.pipeEl.name, el, gp.pipeEl.nf)
+                )
+                handleDynamicFrictionResult(zetaResult, gp.pipeEl.typ)
+            case el: (SectionGeometryChange | SingularFlowResistance) =>
+                import dynamicFrictionCoeff_13384.given
+                handleDynamicFrictionResult(el.dynamicFrictionCoeff, gp.pipeEl.typ)
 
     private def temperature_i_o_b_calc = temperature_i_x_b_calc(section_length, to)
 
@@ -771,6 +738,10 @@ private abstract trait MecaFlu_13384_PipeResult_Impl(
 
     private val _out =
 
+        val dcDfc          = DynamicFrictionCoeff_13384()(using fd.pipeType)
+        import dcDfc.given
+        val _chainAwareDfc = dcDfc.makeChainAwareDfc[PipeElDescr, DirectionChange](fd.elements)
+
         val initS = MapState(
             gas_temp_start        = temp_start,
             last_AirSpaceDetailed = None,
@@ -792,7 +763,8 @@ private abstract trait MecaFlu_13384_PipeResult_Impl(
                 last_AirSpaceDetailed,
                 last_InnerGeom,
                 prevO
-            )
+            )(using en13384, _chainAwareDfc)
+
             val nextS: MapState = st.copy(
                 gas_temp_start        = psr.gas_temp_end,
                 last_AirSpaceDetailed = asd,

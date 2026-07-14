@@ -8,9 +8,9 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7

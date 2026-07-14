@@ -134,9 +134,16 @@ object FlowOnlyPipeDescr_15544 extends afpma.firecalc.engine.models.PipeDescrAlg
             override val effectiveShape: PipeShape
         ) extends DirectionChange(60.degrees, None, effectiveShape) derives Show
 
+    /**
+     * Direction change that splits a single flow into two flows (or merges two flows into one)
+     * with a 90-degree turn.
+     *
+     * @param nFlows number of flows after the split/merge
+     * @param angleN2 optional second angle
+     * @param effectiveShape pipe shape at the direction change
+     */
     case class SplitMerge90(
         nFlows                     : NbOfFlows,
-        zeta                       : ζ,
         override val angleN2       : Option[QtyD[Degree]] = None,
         override val effectiveShape: PipeShape
     ) extends DirectionChange(90.degrees, angleN2, effectiveShape)

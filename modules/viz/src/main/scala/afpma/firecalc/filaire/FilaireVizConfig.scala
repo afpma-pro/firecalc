@@ -33,5 +33,6 @@ case class FilaireVizConfig(
     labelAnnotations      : Option[String]        = None,
     labelAxisRear         : Option[String]        = None,
     labelAxisUp           : Option[String]        = None,
-    labelAxisRight        : Option[String]        = None
+    labelAxisRight        : Option[String]        = None,
+    labelWebGLError       : Option[String]        = None
 )

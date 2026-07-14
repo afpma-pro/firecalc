@@ -99,12 +99,15 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     override protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
         headIdx match
             case None     =>
-                // Outside head region — fall back to base (status icon only)
-                statusIcon.map(n => Some(div(n)))
-            case Some(hi) =>
+                // Outside head region — status icon + warning icon
                 statusIcon
-                    .combineWithDistinct(headRegionLengthsSig, lZMinSig)
-                    .map: (icon, lengthsOpt, lzMinOpt) =>
+                    .combineWithDistinct(warningIcon)
+                    .map((err, warn) => Some(div(cls := "flex items-center gap-1", err, warn)))
+            case Some(hi) =>
+                // Head region — status icon + warning icon + length summary
+                statusIcon
+                    .combineWithDistinct(warningIcon, headRegionLengthsSig, lZMinSig)
+                    .map: (icon, warn, lengthsOpt, lzMinOpt) =>
                         val summaryOpt = DynamicPipeSlotPanel.lengthSummaryFromIndex(
                             headIdx                    = hi,
                             isLast                     = isLastInHeadRegion,
@@ -118,12 +121,28 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                         )
                         Some(
                             div(
-                                cls := "flex items-center",
+                                cls := "flex items-center gap-1",
                                 icon,
-                                summaryOpt.map(s => span(cls := "ml-2 text-xs font-normal", s)).getOrElse(emptyNode)
+                                warn,
+                                summaryOpt.map(s => span(cls := "text-xs font-normal", s)).getOrElse(emptyNode)
                             )
                         )
 
+    // ── Firebox split direction override warning ─────────────────────
+
+    override protected def warningVnelSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
+        PanelStatusHelper.fireboxSplitWarningSignal[FlowOnlyPipeDescr_15544]  (
+            slotIndex   = slotIndex,
+            elemsSignal = elems_v.signal,
+            isSplit     = {
+                case _: AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+                case _ => false
+            },
+            isProperty  = {
+                case _: SetFlowOnlyPipeProp_15544 => true
+                case _ => false
+            }
+        )
     // ── Slot-indexed wiring ──────────────────────────────────────
 
     /** Zoom into the slot's descriptor sequence within the slot vector. */
@@ -573,7 +592,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                             (a, n ) => a.copy(name = n),
                             _.absDir,
                             (a, fd) => a.copy(absDir = fd),
-                            mkOnDirectionCommit(iix._1)
+                            mkOnDirectionCommit(iix._1),
+                            _.symmetryPlaneAzimuth,
+                            (a, az) => a.copy(symmetryPlaneAzimuth = az)
                         )
                     )
                 )
@@ -600,7 +621,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                             (a, n ) => a.copy(name = n),
                             _.absDir,
                             (a, fd) => a.copy(absDir = fd),
-                            mkOnDirectionCommit(iix._1)
+                            mkOnDirectionCommit(iix._1),
+                            _.symmetryPlaneAzimuth,
+                            (a, az) => a.copy(symmetryPlaneAzimuth = az)
                         )
                     )
                 )

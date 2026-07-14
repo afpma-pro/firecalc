@@ -8,11 +8,10 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
-import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.common.Position3D
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
@@ -53,7 +52,7 @@ object EngineState:
                 azimuth     = AzimuthDirection.Left,
                 inclination = InclinationDirection.Horizontal
             ), // Left,
-            initialPosition  = PostFireboxStartPosition.Manual(Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)),
+            initialPosition  = PostFireboxStartPosition.Auto,
             slots            = Seq(
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),

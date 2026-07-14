@@ -8,6 +8,7 @@ package afpma.firecalc.ui.instances
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
+import afpma.firecalc.domain.AzimuthDirection
 
 import afpma.firecalc.engine.models.gtypedefs.*
 
@@ -157,6 +158,8 @@ object defaultable:
         def default = Circle(180.mm)
     given pipeShapeOuter: Defaultable[PipeShape]:
         def default = Circle(200.mm)
+
+    given optionAzimuthDirection: Defaultable[Option[AzimuthDirection]] = Defaultable(None)
 
     object pipe_shape:
         given circle   : Defaultable[PipeShape.Circle]   :

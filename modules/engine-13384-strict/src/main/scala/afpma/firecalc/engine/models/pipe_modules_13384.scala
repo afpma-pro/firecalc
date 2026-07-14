@@ -88,7 +88,7 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
     ): FullDescrResult =
-        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))
+        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))
 
     def mkPipeFromIncrDescr(
         incrSeq: Seq[ThermalPipeDescr_13384],
@@ -105,7 +105,8 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame] = None
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
-        val (fdResult, seedV) = mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))
+        val (fdResult, seedV) =
+            mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))
         (fdResult, seedV.map(_.frame))
 
     def mkPipeFromIncrDescrWithSeed(
@@ -149,7 +150,7 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
     ): FullDescrResult =
-        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed.fromFrame(externalInitialFrame))._1
+        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))._1
 
     def mkPipeFromIncrDescr(
         incrSeq: Seq[ThermalPipeDescr_13384],

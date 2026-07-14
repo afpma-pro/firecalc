@@ -89,3 +89,21 @@ object PropsStateOps_Thermal_13384_Instance:
                 case other                 =>
                     state
             result
+
+        override def getCurrentFrame(state: ThermalPropsState_13384): Option[PipeFrame] =
+            state.currentFrame
+
+        override def getDirBeforePreviousDC(state: ThermalPropsState_13384): Option[Vec3] =
+            state.dirBeforePreviousDC
+
+        override def setDirBeforePreviousDC(
+            state: ThermalPropsState_13384,
+            dir  : Option[Vec3]
+        ): ThermalPropsState_13384 =
+            state.copy(dirBeforePreviousDC = dir)
+
+        override def setCurrentFrame(
+            state: ThermalPropsState_13384,
+            frame: Option[PipeFrame]
+        ): ThermalPropsState_13384 =
+            state.copy(currentFrame = frame)

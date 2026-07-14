@@ -7,23 +7,13 @@ package afpma.firecalc.engine.alg
 
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
-import afpma.firecalc.domain.{
-    IsDirectionChange,
-    IsLengthBearingPipeElement,
-    IsSplitMergeTurn,
-    SetsInnerShape,
-    SetsNumberOfFlows
-}
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
-import afpma.firecalc.engine.standard.FlowMergeRequiresInnerShapeBeforeDirectionChange
-import afpma.firecalc.engine.standard.FlowMergeRequiresLengthBearingSectionBeforeDirectionChange
-import afpma.firecalc.engine.standard.FlowSplitRequiresInnerShapeBeforeDirectionChange
-import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
-import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
-import afpma.firecalc.engine.standard.FlowSplitForbiddenOnAscendingPipe
+import afpma.firecalc.engine.standard.{ForbiddenAddElementAtEnd, ForbiddenAddElementAtStart}
+import afpma.firecalc.engine.standard.ConsecutiveDirectionChangesNotAllowed
+import afpma.firecalc.domain.IsDirectionChange
+import afpma.firecalc.domain.IsSplitMergeTurn
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 
 import cats.data.*
@@ -179,7 +169,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
         val iPropsState0 = mkInitPropsState(piDescr)
         val iPropsState1 = applyExternalNFlows(iPropsState0, seed.nFlows)
-        val iPropsState  = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
+        val iPropsState2 = seed.frame.fold(iPropsState1)(applyExternalFrame(iPropsState1, _))
+        val iPropsState  = iPropsState2
         buildIncrDescr(
             mkInitPipeFullDescr(piDescr),
             IdsMapping.empty,
@@ -188,113 +179,22 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             opsLeft = ops
         )
 
-    private enum FlowTransState:
-        case None
-        case SplitNeedsInnerShape
-        case MergeNeedsInnerShapeThenSection(shapeSeen: Boolean)
-
-    private enum FlowEvent:
-        case FlowCountSet(nFlows: NbOfFlows)
-        case InnerShapeSet
-        case DirectionChange(ref: String)
-        case LengthBearing
-
-    private case class FlowTransAcc(
-        nFlows        : NbOfFlows,
-        state         : FlowTransState,
-        errorsReversed: List[IncrementalValidation_Error]
-    )
-
-    private def addElementRef(idIncr: IdIncr, addElement: AddElement): String =
-        s"'${addElement.name}' (#$idIncr)"
-
-    private def flowEvents(idIncr: IdIncr, descr: IncrDescr): List[FlowEvent] =
-        descr match
-            case sp: SetProp      =>
-                sp match
-                    case flowCount: SetsNumberOfFlows => List(FlowEvent.FlowCountSet(flowCount.n_flows))
-                    case _        : SetsInnerShape    => List(FlowEvent.InnerShapeSet)
-                    case _ => Nil
-            case op: PreElementOp =>
-                op match
-                    case flowCount: SetsNumberOfFlows => List(FlowEvent.FlowCountSet(flowCount.n_flows))
-                    case _        : SetsInnerShape    => List(FlowEvent.InnerShapeSet)
-                    case _ => Nil
-            case ae: AddElement   =>
-                ae match
-                    // Split/Merge types emit 3 events in specific order.
-                    // MUST appear before generic IsDirectionChange arm, otherwise only 1 event is emitted.
-                    case sm: (IsSplitMergeTurn & SetsNumberOfFlows) =>
-                        List(
-                            FlowEvent.DirectionChange(addElementRef(idIncr, ae)),
-                            FlowEvent.FlowCountSet(sm.n_flows),
-                            FlowEvent.InnerShapeSet
-                        )
-                    // Direction changes are zero-length operations; if a descriptor ever carries both markers,
-                    // the direction-change requirement is the safer interpretation for validation.
-                    case _ : IsDirectionChange                      => List(FlowEvent.DirectionChange(addElementRef(idIncr, ae)))
-                    case _ : IsLengthBearingPipeElement             => List(FlowEvent.LengthBearing)
-                    case _ => Nil
-
-    private def applyFlowEvent(acc: FlowTransAcc, event: FlowEvent): FlowTransAcc =
-        event match
-            case FlowEvent.FlowCountSet(next) if next > acc.nFlows =>
-                acc.copy(nFlows = next, state = FlowTransState.SplitNeedsInnerShape)
-            case FlowEvent.FlowCountSet(next) if next < acc.nFlows =>
-                acc.copy(nFlows = next, state = FlowTransState.MergeNeedsInnerShapeThenSection(false))
-            case FlowEvent.FlowCountSet(_)                         =>
-                acc
-            case FlowEvent.InnerShapeSet                           =>
-                acc.state match
-                    case FlowTransState.SplitNeedsInnerShape                   =>
-                        acc.copy(state = FlowTransState.None)
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(false) =>
-                        acc.copy(state = FlowTransState.MergeNeedsInnerShapeThenSection(true))
-                    case _                                                     => acc
-            case FlowEvent.DirectionChange(ref)                    =>
-                val errorOpt = acc.state match
-                    case FlowTransState.SplitNeedsInnerShape                   =>
-                        Some(FlowSplitRequiresInnerShapeBeforeDirectionChange(pt, ref))
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(false) =>
-                        Some(FlowMergeRequiresInnerShapeBeforeDirectionChange(pt, ref))
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(true)  =>
-                        Some(FlowMergeRequiresLengthBearingSectionBeforeDirectionChange(pt, ref))
-                    case FlowTransState.None                                   => None
-                errorOpt.fold(acc)(error => acc.copy(errorsReversed = error :: acc.errorsReversed))
-            case FlowEvent.LengthBearing                           =>
-                acc.state match
-                    case FlowTransState.MergeNeedsInnerShapeThenSection(true) =>
-                        acc.copy(state = FlowTransState.None)
-                    case _                                                    => acc
-
-    private def validateFlowTransitions(
-        incrDescrs   : Vector[Id_IncrDescr],
-        initialNFlows: NbOfFlows
-    ): ValidatedResult[Unit] =
-        val acc = incrDescrs.foldLeft(FlowTransAcc(initialNFlows, FlowTransState.None, Nil)):
-            case (current, (idIncr, descr)) =>
-                flowEvents(idIncr, descr).foldLeft(current)((acc, e) => applyFlowEvent(acc, e))
-
-        NonEmptyList.fromList(acc.errorsReversed.reverse) match
-            case Some(errors) => errors.invalid[Unit]
-            case None         => ().validNel
-
     private def buildFrom(
         piDescr: PipeIncrDescr,
         seed   : PipeBuildSeed
     ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, PipeBuildSeed)] =
         val iListIncrDescr = piDescr.listIncrDescr()
         validateBoundaryElements(iListIncrDescr) *>
-            validateFlowTransitions(iListIncrDescr, seed.nFlows) *>
             foldFromInit(piDescr, iListIncrDescr, seed)
                 .andThen: (ids, fd, finalState) =>
-                    postBuildValidation(iListIncrDescr, finalState) *>
+                    postBuildValidation(iListIncrDescr, finalState, seed) *>
                         (ids, fd, nextSeedFromFinalState(seed, finalState)).validNel
 
     private def nextSeedFromFinalState(seed: PipeBuildSeed, finalState: PropsState): PipeBuildSeed =
-        PipeBuildSeed (
-            frame  = currentFrameFromPropsState(finalState).orElse(seed.frame),
-            nFlows = currentNFlowsFromPropsState(finalState)
+        PipeBuildSeed          (
+            frame           = currentFrameFromPropsState(finalState).orElse(seed.frame),
+            nFlows          = currentNFlowsFromPropsState(finalState),
+            positionContext = seed.positionContext
         )
 
     def define(iDescrs: IncrDescr*): PipeIncrDescr
@@ -316,44 +216,14 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def currentNFlowsFromPropsState(s: PropsState): NbOfFlows = 1.flow
 
     /**
-     * Validates that a flow split is not attempted on an ascending pipe.
-     * Reads current flows + frame through the abstract-PropsState projections,
-     * so all three builders share one implementation. Merge is always allowed.
-     *
-     * `+Z` is up (gravity): ascending ⇔ direction.z > 0.
-     */
-    protected def validateSplitNotOnAscending(
-        state    : PropsState,
-        newNFlows: NbOfFlows,
-        idIncr   : IdIncr
-    ): ValidatedResult[Unit] =
-        if (
-            splitOnAscending(
-                currentNFlows = currentNFlowsFromPropsState(state),
-                newNFlows     = newNFlows,
-                direction     = currentFrameFromPropsState(state).map(_.direction)
-            )
-        )
-            FlowSplitForbiddenOnAscendingPipe(pt, s"#$idIncr").invalidNel
-        else
-            ().validNel
-
-    /** Pure decision: true iff this transition is a forbidden ascending split. */
-    private[engine] def splitOnAscending(
-        currentNFlows: NbOfFlows,
-        newNFlows    : NbOfFlows,
-        direction    : Option[Vec3]
-    ): Boolean =
-        newNFlows > currentNFlows && direction.exists(_.z > 0)
-
-    /**
      * Hook for post-build validation. Called after all incremental descriptions have been
      * processed. Override in concrete builders to add pipe-specific validations.
      * Default: no validation (always valid).
      */
     protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
-        finalState: PropsState
+        finalState: PropsState,
+        seed      : PipeBuildSeed
     ): ValidatedResult[Unit] = ().validNel
 
     /**
@@ -460,13 +330,33 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                     case None         =>
                         (inIdsMapping, inPipe).validNel
             case Some(gop) =>
-                mkFullElementsDescr(inPipe, convStep)(gop)(using propsState).map: nel =>
-                    nel.foldLeft((inIdsMapping, inPipe)):
-                        case ((outIdsMapping, outPipe), (idIncr, nextFullElem)) =>
-                            (
-                                outIdsMapping.updated(idIncr, nextFullElem.idx),
-                                outPipe.appendElem   (nextFullElem            )
-                            )
+                val elements = mkFullElementsDescr(inPipe, convStep)(gop)(using propsState)
+                elements.andThen: nel =>
+                    // Fold-time guard: reject consecutive direction changes.
+                    // (isForbiddenAddElementAtStart already handles "can't start with DC".)
+                    val firstNewEl = nel.head._2.el
+                    val guard      =
+                        firstNewEl match
+                            case _: (IsDirectionChange & IsSplitMergeTurn) => ().validNel
+                            case _: IsDirectionChange                      =>
+                                inPipe.getLastOption match
+                                    case Some(prev)
+                                        if (prev.el match { case _: IsDirectionChange => true; case _ => false }) =>
+                                        ConsecutiveDirectionChangesNotAllowed(
+                                            prev.name,
+                                            nel.head._2.name,
+                                            pt
+                                        ).invalidNel
+                                    case _ => ().validNel
+                            case _ => ().validNel
+                    guard.map(_ =>
+                        nel.foldLeft((inIdsMapping, inPipe)):
+                            case ((outIdsMapping, outPipe), (idIncr, nextFullElem)) =>
+                                (
+                                    outIdsMapping.updated(idIncr, nextFullElem.idx),
+                                    outPipe.appendElem   (nextFullElem            )
+                                )
+                    )
 
     protected def mkFullElementsDescr(
         prevs          : PipeFullDescr,

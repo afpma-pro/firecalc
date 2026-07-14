@@ -525,7 +525,6 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Use horizontal pipe so flow split (2 flows) isn't blocked by FlowSplitForbiddenOnAscendingPipe
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows    (2.flows       ),
             SetInnerShape(Circle(150.mm)),
@@ -546,7 +545,6 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
     }
 
     it should "inherit flow count from thermal flue into connector and chimney" in {
-        // Use horizontal pipe so flow split (2 flows) isn't blocked by FlowSplitForbiddenOnAscendingPipe
         val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
             ThermalChannelTopologyOp_13384.SetNumberOfFlows (2.flows                          ),
             SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
@@ -574,7 +572,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Use Horizontal so the connector's split (2→3) isn't blocked by validateSplitNotOnAscending
+        // Use Horizontal so the connector's split (2→3) isn't blocked by split geometry validation
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows  (2.flows       ),
             SetInnerShape(Circle(150.mm)),
@@ -599,7 +597,7 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Use Horizontal direction so the split (2→3 flows) isn't blocked by validateSplitNotOnAscending
+        // Use Horizontal direction so the split (2→3 flows) isn't blocked by split geometry validation
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows  (2.flows         ),
             SetInnerShape(Circle(150.mm)),
@@ -622,7 +620,6 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Use horizontal pipe so flow split (2 flows) isn't blocked by FlowSplitForbiddenOnAscendingPipe
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows    (2.flows       ),
             SetInnerShape(Circle(150.mm)),
@@ -638,14 +635,18 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
         results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
     }
 
-    // ── V7 FlowSplitForbiddenOnAscendingPipe negative tests ──────────────
+    // ── Ascending pipe split (geometry-based validation) ────────────────
+    // The old blanket FlowSplitForbiddenOnAscendingPipe is replaced by
+    // SplitMerge90Validator which only validates when a split element with
+    // branch direction is present. SetNumberOfFlows without a split element
+    // is a valid flow-count change regardless of pipe direction.
 
-    it should "reject flow split on ascending pipe in flow-only flue (FlowSplitForbiddenOnAscendingPipe)" in {
+    it should "allow SetNumberOfFlows on ascending pipe without split element (flow-only flue)" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Ascending pipe with SetNumberOfFlows(2.flows) — should be rejected, falling back to 1 flow
+        // Ascending pipe with SetNumberOfFlows(2.flows) — allowed (no split element)
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows  (2.flows       ),
             SetInnerShape(Circle(150.mm)),
@@ -662,12 +663,12 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             initialFrame = rearUpFrame
         )
 
-        // Flow split forbidden on ascending pipe → falls back to 1 flow
-        results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
+        // No split element → geometry validation not triggered → 2 flows allowed
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
     }
 
-    it should "reject flow split on ascending pipe in thermal flue (FlowSplitForbiddenOnAscendingPipe)" in {
-        // Ascending pipe with SetNumberOfFlows(2.flows) — should be rejected, falling back to 1 flow
+    it should "allow SetNumberOfFlows on ascending pipe without split element (thermal flue)" in {
+        // Ascending pipe with SetNumberOfFlows(2.flows) — allowed (no split element)
         val thermalFlueDescr = Seq[ThermalPipeDescr_13384](
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(2.flows                          ),
             SetThermalPipeProp_13384.SetInnerShape(Circle(150.mm)              ),
@@ -687,16 +688,16 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             initialFrame = rearUpFrame
         )
 
-        // Flow split forbidden on ascending pipe → falls back to 1 flow
-        results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
+        // No split element → geometry validation not triggered → 2 flows allowed
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
     }
 
-    it should "reject flow split on ascending pipe through empty connector (FlowSplitForbiddenOnAscendingPipe)" in {
+    it should "allow SetNumberOfFlows on ascending pipe through empty connector" in {
         import afpma.firecalc.dto.all.SetFlowOnlyPipeProp_15544.*
         import afpma.firecalc.dto.all.AddFlowOnlyPipeElement_15544.*
         import afpma.firecalc.dto.all.FlowOnlyChannelTopologyOp_15544.*
 
-        // Ascending pipe with SetNumberOfFlows(2.flows) — should be rejected, falling back to 1 flow
+        // Ascending pipe with SetNumberOfFlows(2.flows) — allowed (no split element)
         val flueDescr = Seq[FlowOnlyPipeDescr_15544](
             SetNumberOfFlows  (2.flows       ),
             SetInnerShape(Circle(150.mm)),
@@ -709,8 +710,8 @@ class PipeChainGenericSuite extends AnyFlatSpec with Matchers:
             initialFrame = rearUpFrame
         )
 
-        // Flow split forbidden on ascending pipe → falls back to 1 flow
-        results.map(_.finalNFlows) shouldBe Vector(1.flows, 1.flows, 1.flows)
+        // No split element → geometry validation not triggered → 2 flows allowed
+        results.map(_.finalNFlows) shouldBe Vector(2.flows, 2.flows, 2.flows)
     }
 
     // ── upstreamFailure cascade suppression ────────────────────────────

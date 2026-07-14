@@ -15,6 +15,7 @@ import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.matchers.CustomCatsMatchers.*
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
@@ -254,6 +255,324 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
 
             val c2 = cv2.toOption.get
             c2.unwrap.value `should` ===(0.5.unitless.value +- 0.001)
+        }
+    }
+
+    "SplitMerge90" - {
+        "at start of pipe chain (index 0) should return zeta = 0.0" in {
+            import FluePipe_Module_15544.*
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Horizontal
+                        )
+                    )
+                    .define(
+                        roughness                                  (3.mm                 ),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                            "split",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                            rectangle        (20.cm, 20.cm                                           )
+                        ),
+                        addSectionHorizontal                       ("branche 1", 1.meters),
+                        addSectionHorizontal                       ("branche 2", 1.meters)
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val split = accu.getByNameWithType[DirectionChange]("split")
+            val cv    = inst.dynamicFrictionCoeff(split.get)
+            cv.should(beValid)
+            cv.toOption.get.unwrap.value `should` ===(0.0 +- 0.001)
+        }
+
+        "mid-chain should return zeta = 1.4" in {
+            import FluePipe_Module_15544.*
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Horizontal
+                        )
+                    )
+                    .define(
+                        roughness                                  (3.mm                     ),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionHorizontal                       ("branche amont", 1.meters),
+                        addSplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                            "split",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                            rectangle        (20.cm, 20.cm                                           )
+                        ),
+                        addSectionHorizontal                       ("branche 1", 1.meters    ),
+                        addSectionHorizontal                       ("branche 2", 1.meters    )
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val split = accu.getByNameWithType[DirectionChange]("split")
+            val cv    = inst.dynamicFrictionCoeff(split.get)
+            cv.should(beValid)
+            cv.toOption.get.unwrap.value `should` ===(1.4 +- 0.001)
+        }
+
+        "MergeTwoFlowsIntoSingleWith90DegTurn mid-chain should return zeta = 1.4" in {
+            import FluePipe_Module_15544.*
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Up
+                        )
+                    )
+                    .define(
+                        roughness                              (3.mm                    ),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionVertical                     ("branche 1", 1.meters   ),
+                        addSectionVertical                     ("branche 2", 1.meters   ),
+                        addMergeTwoFlowsIntoSingleWith90DegTurn(
+                            "merge",
+                            AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
+                            rectangle        (20.cm, 20.cm                                   )
+                        ),
+                        addSectionVertical                     ("branche aval", 1.meters)
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val merge = accu.getByNameWithType[DirectionChange]("merge")
+            val cv    = inst.dynamicFrictionCoeff(merge.get)
+            cv.should(beValid)
+            cv.toOption.get.unwrap.value `should` ===(1.4 +- 0.001)
+        }
+        "with short section before should apply level1 correction" in {
+            import FluePipe_Module_15544.*
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Up
+                        )
+                    )
+                    .define(
+                        roughness                              (3.mm                 ),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionVertical                     ("branche 1", 10.cm   ),
+                        addSectionVertical                     ("branche 2", 10.cm   ),
+                        addMergeTwoFlowsIntoSingleWith90DegTurn(
+                            "merge",
+                            AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
+                            rectangle        (20.cm, 20.cm                                   )
+                        ),
+                        addSectionVertical                     ("aval court", 10.cm  ),
+                        addSharpAngle_90deg                    (
+                            "virage",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+                        ),
+                        addSectionVertical                     ("branche 3", 1.meters)
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val merge = accu.getByNameWithType[DirectionChange]("merge")
+            val cv    = inst.dynamicFrictionCoeff(merge.get)
+            cv.should                                  (beValid     )
+            // zeta must differ from the base 1.4 due to short-section neighbor correction
+            // nm1 and np1 are both short → level2 path, zeta from np1 window
+            cv.toOption.get.unwrap.value should not be (1.4 +- 0.001)
+        }
+
+        "with short section after should apply level1 correction" in {
+            import FluePipe_Module_15544.*
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Up
+                        )
+                    )
+                    .define(
+                        roughness                              (3.mm                 ),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionVertical                     ("branche 1", 1.meters),
+                        addSectionVertical                     ("branche 2", 1.meters),
+                        addMergeTwoFlowsIntoSingleWith90DegTurn(
+                            "merge",
+                            AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
+                            rectangle        (20.cm, 20.cm                                   )
+                        ),
+                        addSectionVertical                     ("aval court", 10.cm  ),
+                        addSharpAngle_90deg                    (
+                            "virage",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+                        ),
+                        addSectionVertical                     ("branche 3", 1.meters)
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val merge = accu.getByNameWithType[DirectionChange]("merge")
+            val cv    = inst.dynamicFrictionCoeff(merge.get)
+            cv.should                                  (beValid     )
+            // zeta must differ from the base 1.4 due to short-section neighbor correction
+            // nm1 regular, np1 short → level1 path, zeta from np1 window
+            cv.toOption.get.unwrap.value should not be (1.4 +- 0.001)
+        }
+
+        "with two consecutive short sections should apply level2 correction" in {
+            import FluePipe_Module_15544.*
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Up
+                        )
+                    )
+                    .define(
+                        roughness                              (3.mm                 ),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionVertical                     ("branche 1", 10.cm   ),
+                        addSectionVertical                     ("branche 2", 10.cm   ),
+                        addMergeTwoFlowsIntoSingleWith90DegTurn(
+                            "merge",
+                            AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
+                            rectangle        (20.cm, 20.cm                                   )
+                        ),
+                        addSectionVertical                     ("aval court", 10.cm  ),
+                        addSharpAngle_90deg                    (
+                            "virage",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Up)
+                        ),
+                        addSectionVertical                     ("branche 3", 1.meters)
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val merge = accu.getByNameWithType[DirectionChange]("merge")
+            val cv    = inst.dynamicFrictionCoeff(merge.get)
+            cv.should                                  (beValid     )
+            // zeta must differ from the base 1.4 due to level2 neighbor correction
+            // (two consecutive short sections: before and after SplitMerge90)
+            cv.toOption.get.unwrap.value should not be (1.4 +- 0.001)
+        }
+        "as last direction change before final section uses FWindow computation" in {
+            import FluePipe_Module_15544.*
+            // SplitMerge90 is the last direction change in the chain (before the final section).
+            // Previously this would have hit the end-of-chain hardcoded zeta=1.4 if the
+            // SplitMerge90 were at compressed.size-1. Now it goes through localComputeCoeff
+            // which uses FWindow. With regular sections on both sides, FWindow returns ~1.4
+            // (same numeric value, but via the correct computation path).
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Horizontal
+                        )
+                    )
+                    .define(
+                        roughness                                  (3.mm),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionHorizontal                       (
+                            "section before",
+                            1.meters
+                        ),
+                        addSplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                            "split",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                            rectangle        (20.cm, 20.cm                                           )
+                        ),
+                        addSectionHorizontal                       (
+                            "final section",
+                            1.meters
+                        )
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
+            val split = accu.getByNameWithType[DirectionChange]("split")
+            val cv    = inst.dynamicFrictionCoeff(split.get)
+            cv.should(beValid)
+            // Zeta computed via FWindow (localComputeCoeff), not a hardcoded end-of-chain value
+            cv.toOption.get.unwrap.value `should` ===(1.4 +- 0.001)
+        }
+
+        "as truly last element with no following section is rejected" in {
+            import FluePipe_Module_15544.*
+            import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.CanNotEndWithADirectionChange
+            // Build a valid pipe with SplitMerge90 followed by a section,
+            // then truncate the elements so SplitMerge90 is truly last.
+            // This exercises the FWindow check in DFC computation.
+            val accu =
+                FluePipe_Module_15544.incremental
+                    .withInitialDirection(
+                        PipeInitialDirection(
+                            Some(AzimuthDirection.Front),
+                            InclinationDirection.Horizontal
+                        )
+                    )
+                    .define(
+                        roughness                                  (3.mm),
+                        innerShape(rectangle(20.cm, 20.cm)),
+                        addSectionHorizontal                       (
+                            "section before",
+                            1.meters
+                        ),
+                        addSplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                            "split",
+                            AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal),
+                            rectangle        (20.cm, 20.cm                                           )
+                        ),
+                        addSectionHorizontal                       (
+                            "final section",
+                            1.meters
+                        )
+                    )
+                    .toFullDescr()
+                    .toOption
+                    .get
+                    ._2
+
+            // Truncate: remove the final section so SplitMerge90 is truly last
+            val truncatedElems = accu.elems.take(accu.elems.size - 1)
+
+            val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(truncatedElems)
+            val split = accu.getByNameWithType[DirectionChange]("split")
+            val cv    = inst.dynamicFrictionCoeff(split.get)
+            cv.should(beInvalid)
+            cv.toEither.left.toOption.get.exists {
+                case _: CanNotEndWithADirectionChange => true
+                case _ => false
+            } shouldBe true
         }
     }
 

@@ -33,6 +33,7 @@ import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
+import afpma.firecalc.domain.FireboxCoordinateSystem
 
 import scala.annotation.nowarn
 
@@ -398,16 +399,25 @@ abstract class EN15544_MCE_Application(
                             en15544_mce.en13384_heatingAppliance_massFlows
                         )
 
-                        val initialSeed =
-                            PipeBuildSeed.fromFrame(
-                                en15544_mce.incrInputs.postFirebox.initialDirection.map(toPipeFrame)
-                            )
+                        val dims = en15544_mce.firebox.dimensions.base match
+                            case afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions.Base
+                                    .Squared(width, depth) =>
+                                (width.value, depth.value, en15544_mce.firebox.dimensions.height.value)
+
+                        val seed = PipeBuildSeed.withPositions(
+                            slots        = flueRegionSlots,
+                            initialFrame = en15544_mce.incrInputs.postFirebox.initialDirection.map(toPipeFrame),
+                            fbWidth      = dims._1,
+                            fbDepth      = dims._2,
+                            fbHeight     = dims._3,
+                            fbBottomZ    = FireboxCoordinateSystem.FireboxBaseCenterZ
+                        )
 
                         // Build a PipeSlot for each flue region slot, threading descriptor seed
                         // through the fold accumulator (no mutable state).
                         val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
                             flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
-                                Validated.validNel((Vector.empty, initialSeed))
+                                Validated.validNel((Vector.empty, seed))
                             ) { (accV, slot) =>
                                 accV.andThen { case (acc, seed) =>
                                     slot match
@@ -563,7 +573,7 @@ abstract class EN15544_MCE_Application(
                                             val v4Descr       = descr
                                             val (fdResult, _) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithSeed(v4Descr, initialSeed)
+                                                    .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
                                             FluePipe_Module_13384.FullDescrResult.extractPipe(
                                                 fdResult
                                             ) match

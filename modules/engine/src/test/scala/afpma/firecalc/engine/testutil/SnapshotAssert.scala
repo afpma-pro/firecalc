@@ -7,8 +7,32 @@ package afpma.firecalc.engine.testutil
 
 import java.nio.file.{Files, Path}
 
+/**
+ * Snapshot assertion utility.
+ *
+ * Compares `actual` output against a file on disk. On mismatch, throws with a
+ * diff of the first differing line.
+ *
+ * === Regenerating Snapshots ===
+ *
+ * Set the environment variable `FIRECALC_UPDATE_SNAPSHOTS=1` to write `actual`
+ * back to the snapshot file instead of asserting.
+ *
+ * IMPORTANT: use `sbt` (not `sbt --client`) so the env var reaches the forked
+ * test JVM. The `--client` flag connects to a long-lived server process that
+ * does not inherit shell env vars.
+ *
+ * ```bash
+ * # Regenerate snapshots for a single suite
+ * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "engine_15544_strict/testOnly *EcolabeledCombustionAirPipeFullDescrSuite"
+ *
+ * # Regenerate snapshots for all suites in a module
+ * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "engine_15544_strict/test"
+ * ```
+ */
 object SnapshotAssert:
 
+    /** Environment variable key that triggers snapshot regeneration. */
     private val UpdateEnv = "FIRECALC_UPDATE_SNAPSHOTS"
 
     def assertMatches(actual: String, snapshotPath: Path): Unit =

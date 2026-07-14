@@ -8,14 +8,12 @@ package afpma.firecalc.payments
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v7.FireCalcYAML_V7
-import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.dto.common.Position3D
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v4.AzimuthDirection
 import afpma.firecalc.dto.v4.InclinationDirection
-import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.dto.v7.FireCalcYAML_V7
+import afpma.firecalc.dto.v7.FramedPostFireboxPipes
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
@@ -55,8 +53,7 @@ object GenerateExampleProjectFixture:
                     azimuth     = AzimuthDirection.Left,
                     inclination = InclinationDirection.Horizontal
                 ),
-                initialPosition  =
-                    PostFireboxStartPosition.Manual(Position3D(-21.cm, (44 / 2 - 25 / 2).cm, (78 - 15).cm)),
+                initialPosition  = PostFireboxStartPosition.Auto,
                 slots            = Seq(
                     PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                     PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),

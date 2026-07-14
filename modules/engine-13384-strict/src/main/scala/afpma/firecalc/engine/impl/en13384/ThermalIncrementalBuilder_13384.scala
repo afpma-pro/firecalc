@@ -11,13 +11,10 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.SetsInnerShape
-import afpma.firecalc.dto.v4.AbsoluteDirection
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
 
 import afpma.firecalc.engine.FlowAreaConservation
-import afpma.firecalc.engine.alg.IncrementalBuilderAlg
+import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
+import afpma.firecalc.engine.alg.en13384.IncrementalBuilderAlg_13384
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
 import afpma.firecalc.engine.impl.common.instances.DirectionChangeDSL_13384_Instances.given
@@ -30,6 +27,7 @@ import afpma.firecalc.engine.impl.common.instances.SectionDSL_13384_Instances.gi
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PositionTracker
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
@@ -45,6 +43,10 @@ import coulomb.policy.standard.given
 import scala.annotation.targetName
 import scala.reflect.*
 
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
+import afpma.firecalc.domain.SetsInnerShape
 import com.softwaremill.quicklens.*
 
 object models:
@@ -55,13 +57,18 @@ object models:
     type ThermalPipeIncrDescr  = PipeIncrDescrG[Id_ThermalIncrDescr_13384]
     type FlowOnlyPipeIncrDescr = PipeIncrDescrG[Id_FlowOnlyIncrDescr_13384]
 
-trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
+trait ThermalIncrementalBuilder_13384
+    extends IncrementalBuilderAlg
+    with IncrementalBuilderAlg_13384[ThermalPropsState_13384]:
 
     import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.*
 
     import AddThermalPipeElement_13384.*
     import SetThermalPipeProp_13384.*
     import ThermalChannelTopologyOp_13384.*
+    override protected type SplitDTO  = SplitSingleFlowIntoTwoFlowsWith90DegTurn
+    override protected type MergeDTO  = MergeTwoFlowsIntoSingleWith90DegTurn
+    override protected type StateOpsT = ThermalPropsStateOps[PropsState]
 
     override given hasInnerShapeAtPos: HasInnerShapeAtPos[PipeElDescr] =
         afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.hasInnerShapeAtPos
@@ -105,7 +112,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     ): Boolean =
         addElement match
             case _: AddDirectionChange                       => true
-            case _: SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
+            case _: SplitSingleFlowIntoTwoFlowsWith90DegTurn => false
             case _: MergeTwoFlowsIntoSingleWith90DegTurn     => true
             case _ => false
 
@@ -129,8 +136,18 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     // ========== PropsState via Typeclass ==========
 
-    override protected type PropsState = ThermalPropsState_13384
-    private val stateOps = summon[ThermalPropsStateOps[PropsState]]
+    protected val stateOps = summon[ThermalPropsStateOps[PropsState]]
+
+    override protected def mkSplitMerge90Descr(
+        nFlows         : NbOfFlows,
+        angleN2        : Option[QtyD[Degree]],
+        shape          : PipeShape
+    ): PipeElDescr =
+        SplitMerge90(
+            nFlows         = nFlows,
+            angleN2        = angleN2,
+            effectiveShape = shape
+        )
 
     given nbOfFlowsFromPropsState: Function1[PropsState, NbOfFlows] = stateOps.getNFlows
 
@@ -141,17 +158,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[QtyD[Meter]] =
             val nextAddSectionsOps =
-                convStep.allRemainingOps
+                convStep.nextStepOps
                     .map(_._2)
-                    .find:
-                        case _: PreElementOp                                                    => false
-                        case _: (AddSectionSlopped | AddSectionSloppedForceManualElevationGain) => true
-                        case _: AddSectionHorizontal                                            => true
-                        case _: AddSectionVertical                                              => true
-                        case _: (AddSectionChange | AddDirectionChange | AddFlowResistance | AddPressureDiff |
-                                SplitSingleFlowIntoTwoFlowsWith90DegTurn | MergeTwoFlowsIntoSingleWith90DegTurn) =>
-                            false
-                    .map(_.asInstanceOf[AddElement])
+                    .flatMap(op => typeTestAddElement.unapply(op))
             nextAddSectionsOps.headOption.flatMap:
                 case _ @AddSectionSlopped(_, l)                            => l.some
                 case _ @AddSectionSloppedForceManualElevationGain(_, l, _) => l.some
@@ -212,7 +221,8 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
 
     override protected def postBuildValidation(
         incrDescrs: Vector[Id_IncrDescr],
-        finalState: PropsState
+        finalState: PropsState,
+        seed      : PipeBuildSeed
     ): ValidatedResult[Unit] =
         val hasGeometry = incrDescrs.exists:
             case (_, _: AddElement) => true
@@ -225,7 +235,23 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                 case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
                 case _ => false
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
-            else ().validNel
+            else
+                val posResult       = PositionTracker.computeThermal13384(
+                    incrDescrs.map(_._2).toSeq,
+                    PipeInitialDirection.default,
+                    finalState.initialFrame,
+                    seed.positionContext.flatMap(_.startPoint).getOrElse(Vec3(0, 0, 0)),
+                    splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
+                )
+                val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+                val splits          = posResult.splitMergePositions.filter(_.isSplit)
+                val splitValidation = NonEmptyList.fromList(splits.toList) match
+                    case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
+                    case None     => ().validNel
+                val positionErrors: ValidatedResult[Unit] =
+                    if posResult.errors.isEmpty then ().validNel
+                    else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
+                (splitValidation |+| mergeValidation |+| positionErrors).as(())
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
@@ -266,22 +292,10 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
             // BEFORE the split/merge (state update runs in `updateStateAfterConversionStep`),
             // so `prevInnerGeomO == currentShapeO` → no SectionGeometryChange inserted.
             case op: SplitSingleFlowIntoTwoFlowsWith90DegTurn =>
-                val dc = SplitMerge90(
-                    nFlows         = 2.flows,
-                    zeta           = CoefficientOfFlowResistance.splitMerge90Zeta,
-                    angleN2        = None,
-                    effectiveShape = op.newInnerShape
-                )
-                dc.validNel
+                mkSplitMerge90(st, op.absDir, 2.flows, op.newInnerShape)
 
             case op: MergeTwoFlowsIntoSingleWith90DegTurn =>
-                val dc = SplitMerge90(
-                    nFlows         = 1.flow,
-                    zeta           = CoefficientOfFlowResistance.splitMerge90Zeta,
-                    angleN2        = None,
-                    effectiveShape = op.newInnerShape
-                )
-                dc.validNel
+                mkSplitMerge90(st, op.absDir, 1.flow, op.newInnerShape)
 
             case op: AddDirectionChange =>
                 stateOps
@@ -379,39 +393,9 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                             case None        => propsState.validNel
                     case None     => propsState.validNel
             case Some(op: SplitSingleFlowIntoTwoFlowsWith90DegTurn) =>
-                val frameUpdate = op.absDir match
-                    case Some(fd) =>
-                        propsState.currentFrame match
-                            case Some(frame) =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                )
-                            case None        => propsState
-                    case None     => propsState
-                stateOps
-                    .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 2.flows)
-                    .validNel
+                handleSplitStateUpdate(propsState, op, op.absDir, op.newInnerShape, op.name, convStep)
             case Some(op: MergeTwoFlowsIntoSingleWith90DegTurn)     =>
-                val frameUpdate = op.absDir match
-                    case Some(fd) =>
-                        propsState.currentFrame match
-                            case Some(frame) =>
-                                val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(fd)
-                                val targetVec = Vec3.fromAzimuthElevation(azDeg, elDeg)
-                                val newFrame  = frame.applyBendForFinalDir(90.0, targetVec)
-                                propsState.copy(
-                                    dirBeforePreviousDC = Some(frame.direction),
-                                    currentFrame        = Some(newFrame)
-                                )
-                            case None        => propsState
-                    case None     => propsState
-                stateOps
-                    .setNFlows(stateOps.setInnerShape(frameUpdate, op.newInnerShape), 1.flow)
-                    .validNel
+                handleMergeStateUpdate(propsState, op, op.absDir, op.newInnerShape)
             case Some(_ @AddFlowResistance(_, _, _))                =>
                 propsState.validNel
             case Some(_ @AddPressureDiff(_, _))                     => propsState.validNel
@@ -501,13 +485,7 @@ trait ThermalIncrementalBuilder_13384 extends IncrementalBuilderAlg:
                         updateVNelState(vState, idIncr, nextElemName)(prop)
                     case ThermalChannelTopologyOp_13384.SetNumberOfFlows(nf) =>
                         vState.andThen { st =>
-                            stateOps
-                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
-                                .andThen { _ =>
-                                    validateSplitNotOnAscending(st, nf, IdIncr(idIncr)).andThen(_ =>
-                                        FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps).validNel
-                                    )
-                                }
+                            handleSetNumberOfFlows(st, nf, convStep, nextElemIdIncr, nextElemName)
                         }
                     case SetPropertiesInBatch(batch_name, props, _) =>
                         props.foldLeft(vState)((vs, prop) => updateVNelState(vs, idIncr, nextElemName)(prop))

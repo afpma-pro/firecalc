@@ -10,7 +10,9 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.domain.{NbOfFlows, PipeShape, ShapeState}
 
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.PipeType
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.standard.*
 
 import cats.data.ValidatedNel
@@ -77,6 +79,12 @@ trait PropsStateOps[State]:
     ): ValidatedNel[IncrementalValidation_Error, Unit] =
         if requiresMaterializedShape(state) then ShapeNotMaterialized(pt, op, elementIndex, elementName).invalidNel
         else ().validNel
+
+    // Direction tracking operations (for framed builders)
+    def getCurrentFrame       (state: State                          ): Option[PipeFrame] = None
+    def getDirBeforePreviousDC(state: State                          ): Option[Vec3]      = None
+    def setDirBeforePreviousDC(state: State, dir  : Option[Vec3]     ): State             = state
+    def setCurrentFrame       (state: State, frame: Option[PipeFrame]): State             = state
 
     // Common validation helper
     extension (state: State)

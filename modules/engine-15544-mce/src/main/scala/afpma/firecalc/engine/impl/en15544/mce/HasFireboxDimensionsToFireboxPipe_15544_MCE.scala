@@ -8,8 +8,8 @@ package afpma.firecalc.engine.impl.en15544.mce
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.dto.v4.AzimuthDirection
-import afpma.firecalc.dto.v4.InclinationDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*

@@ -677,7 +677,6 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                         newInnerShape = rectangle(9.cm, 9.cm),
                         absDir        = None
                     ),
-                    addSectionHorizontal                    ("dual", 1.meters      ),
                     MergeTwoFlowsIntoSingleWith90DegTurn    (
                         "merge",
                         newInnerShape = square(18.cm),

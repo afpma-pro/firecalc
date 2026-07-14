@@ -212,7 +212,8 @@ final case class Viz3DPanel()(using Locale) extends Component:
                                 labelAnnotations     = Some(I18N_UI.viz.annotations),
                                 labelAxisRear        = Some(I18N.direction_badge.cardinal_rear),
                                 labelAxisUp          = Some(I18N.direction_badge.cardinal_up),
-                                labelAxisRight       = Some(I18N.direction_badge.cardinal_right)
+                                labelAxisRight       = Some(I18N.direction_badge.cardinal_right),
+                                labelWebGLError      = Some(I18N_UI.viz.webgl_not_available)
                             ),
                             loadDisplayType          (),
                             Some[Option[FireCalcFilaireLine] => Unit] {

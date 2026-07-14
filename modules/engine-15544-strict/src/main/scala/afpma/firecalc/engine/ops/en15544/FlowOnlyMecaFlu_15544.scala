@@ -150,27 +150,6 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
                 override given shortSection: ShortSectionAlg = ssa
             }
 
-    override def makePipeSectionResult(
-        ctx: MecaFluSectionContext[PipeElDescr, DraftCondition]
-    )(using appCtx: MecaFluAppContext): PipeSectionResult[PipeElDescr] =
-        val ctx15544   = appCtx.asInstanceOf[MecaFlu_15544_AppCtx]
-        val en15544App = ctx15544.en15544.asInstanceOf[ApplicationAlg]
-        val gasTempApprox: PositionOp[TCelsius] =
-            QtyDAtPosition.constant(ctx.gasTempStart).atPos
-        given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544App.dynFrict13384Factory
-        given ShortSectionAlg                                            = ctx15544.shortSection
-        given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
-            FlowOnlyDynamicFrictionCoeff_15544()(using ctx.gasInPipeEl.pipeEl.typ)
-                .mkInstanceForNamedPipesConcat(Vector(ctx.gasInPipeEl.pipeEl))
-        makePipeSectionResult(
-            ctx.gasInPipeEl,
-            ctx15544.loadQty,
-            ctx.lastInnerGeom,
-            ctx.lastPipeVelocity,
-            ctx.lastPipeDensity,
-            gasTempApprox
-        )(using en15544App)
-
     override def makePipeResult(
         ctx   : MecaFluPipeContext[PipeElDescr],
         params: DraftCondition
