@@ -8,14 +8,13 @@ package afpma.firecalc.engine.models.geometry
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
+import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.dto.common.PipeShape
+
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
-import afpma.firecalc.dto.all.ThermalPipeDescr_13384
-import afpma.firecalc.dto.v4.AirSpaceDetailed_V2.WithoutAirSpace_V2
-
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 

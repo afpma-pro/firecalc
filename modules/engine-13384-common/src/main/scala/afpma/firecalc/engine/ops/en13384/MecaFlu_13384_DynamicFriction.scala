@@ -85,7 +85,9 @@ trait MecaFlu_13384_DynamicFriction[PipeElDescr <: Matchable]:
                 (Some(zeta), pu).validNel
             case inel @ Invalid(nel) =>
                 val urOpt = nel.toList
-                    .filter(_.isInstanceOf[UnexpectedRatio_Ld_Dh[?]])
+                    .filter:
+                        case _: UnexpectedRatio_Ld_Dh[?] => true
+                        case _ => false
                     .headOption
                 urOpt match
                     case Some(u @ UnexpectedRatio_Ld_Dh(_, _, _)) =>

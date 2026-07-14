@@ -336,16 +336,19 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
                     // (isForbiddenAddElementAtStart already handles "can't start with DC".)
                     val firstNewEl = nel.head._2.el
                     val guard      =
-                        if firstNewEl.isInstanceOf[IsDirectionChange] && !firstNewEl.isInstanceOf[IsSplitMergeTurn] then
-                            inPipe.getLastOption match
-                                case Some(prev) if prev.el.isInstanceOf[IsDirectionChange] =>
-                                    ConsecutiveDirectionChangesNotAllowed(
-                                        prev.name,
-                                        nel.head._2.name,
-                                        pt
-                                    ).invalidNel
-                                case _                                                     => ().validNel
-                        else ().validNel
+                        firstNewEl match
+                            case _: (IsDirectionChange & IsSplitMergeTurn) => ().validNel
+                            case _: IsDirectionChange                      =>
+                                inPipe.getLastOption match
+                                    case Some(prev)
+                                        if (prev.el match { case _: IsDirectionChange => true; case _ => false }) =>
+                                        ConsecutiveDirectionChangesNotAllowed(
+                                            prev.name,
+                                            nel.head._2.name,
+                                            pt
+                                        ).invalidNel
+                                    case _ => ().validNel
+                            case _ => ().validNel
                     guard.map(_ =>
                         nel.foldLeft((inIdsMapping, inPipe)):
                             case ((outIdsMapping, outPipe), (idIncr, nextFullElem)) =>
