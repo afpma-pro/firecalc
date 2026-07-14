@@ -1035,7 +1035,7 @@ object standard {
         elementRef: String,
         distanceMm: Double
     ) extends PrerequisiteNotMet
-    case class SymmetryPlaneAbsDirVertical(
+    case class SymmetryPlaneAzimuthMissing(
         sectionTyp: PipeType,
         elementRef: String
     ) extends PrerequisiteNotMet
@@ -1071,8 +1071,8 @@ object standard {
                     e.elementRef,
                     f"${e.distanceMm}%.2f"
                 )
-            case e: SymmetryPlaneAbsDirVertical            =>
-                I18N.incremental_validation.prerequisites.symmetry_plane_abs_dir_vertical(
+            case e: SymmetryPlaneAzimuthMissing            =>
+                I18N.incremental_validation.prerequisites.symmetry_plane_azimuth_missing(
                     e.elementRef
                 )
 

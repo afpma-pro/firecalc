@@ -58,7 +58,7 @@ object I18nData_IncrementalValidation:
             split_branches_collinear                  : StringFormat1,
             split_branches_not_opposite               : StringFormat2,
             merge_branch_tip_not_at_merge_position    : StringFormat2,
-            symmetry_plane_abs_dir_vertical           : StringFormat1
+            symmetry_plane_azimuth_missing            : StringFormat1
         )
 
         case class Conflicts(

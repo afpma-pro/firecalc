@@ -36,11 +36,11 @@ class SlotIntrospectorSuite extends AnyFreeSpec with Matchers {
         assert(math.abs(actual.z - expected.z) < 1e-6, s"$label z: expected ${expected.z}, got ${actual.z}")
 
     private def makeSplit(azimuth: AzimuthDirection) =
-        SplitSingleFlowIntoTwoFlowsWith90DegTurn               (
-            name                = "test-split",
-            absDir              = Some(AbsoluteDirection(Some(azimuth), InclinationDirection.Up)),
-            newInnerShape       = Circle(100.mm),
-            symmetryPlaneAbsDir = None
+        SplitSingleFlowIntoTwoFlowsWith90DegTurn                (
+            name                 = "test-split",
+            absDir               = Some(AbsoluteDirection(Some(azimuth), InclinationDirection.Up)),
+            newInnerShape        = Circle(100.mm),
+            symmetryPlaneAzimuth = None
         )
 
     "splitBranchDirection" - {
@@ -84,10 +84,10 @@ class SlotIntrospectorSuite extends AnyFreeSpec with Matchers {
         "should work for ThermalFlueSlot as well" in {
             import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4.SplitSingleFlowIntoTwoFlowsWith90DegTurn as ThermalSplit
             val split = ThermalSplit(
-                name                = "test-thermal-split",
-                absDir              = Some(AbsoluteDirection(Some(AzimuthDirection.Right), InclinationDirection.Up)),
-                newInnerShape       = Circle(100.mm),
-                symmetryPlaneAbsDir = None
+                name                 = "test-thermal-split",
+                absDir               = Some(AbsoluteDirection(Some(AzimuthDirection.Right), InclinationDirection.Up)),
+                newInnerShape        = Circle(100.mm),
+                symmetryPlaneAzimuth = None
             )
             val slot  = PostFireboxPipeSlot.ThermalFlueSlot(Seq(split))
             val dir   = SlotIntrospector.splitBranchDirection(slot)
@@ -109,10 +109,10 @@ class SlotIntrospectorSuite extends AnyFreeSpec with Matchers {
 
         "should return Left when split has no absDir" in {
             val split  = SplitSingleFlowIntoTwoFlowsWith90DegTurn(
-                name                = "no-absDir",
-                absDir              = None,
-                newInnerShape       = Circle(100.mm),
-                symmetryPlaneAbsDir = None
+                name                 = "no-absDir",
+                absDir               = None,
+                newInnerShape        = Circle(100.mm),
+                symmetryPlaneAzimuth = None
             )
             val slot   = PostFireboxPipeSlot.FlueSlot(Seq(split))
             val result = SlotIntrospector.splitBranchDirection(slot)

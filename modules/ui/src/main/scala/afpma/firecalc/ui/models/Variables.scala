@@ -35,6 +35,7 @@ import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PositionTracker
 import afpma.firecalc.engine.models.geometry.SlotIntrospector
 import afpma.firecalc.engine.models.geometry.SlotIntrospector.{SplitQueryResult, SlotIntrospectionResult}
+import afpma.firecalc.engine.models.FireboxSplitFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top_min
@@ -461,15 +462,18 @@ lazy val slotFinalFrames_sig: Signal[Vector[Option[PipeFrame]]] =
  */
 def slotInitialFrameSig(idx: Int): Signal[Option[PipeFrame]] =
     if idx <= 0 then
-        postFireboxInitialDir_var.signal.map: dir =>
-            Some(
-                PipeFrame.initial(
-                    Vec3.fromAzimuthElevation(
-                        dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
-                        InclinationDirection.toDegrees                       (dir.inclination)
-                    )
-                )
-            )
+        postFireboxInitialDir_var.signal
+            .combineWith(enginePostFireboxSlots_sig)
+            .map: (dir, slots) =>
+                val isLeadingSplit = slots.headOption.exists(FireboxSplitFrame.isLeadingSplit)
+                val dirVec         =
+                    if isLeadingSplit then Vec3.Up
+                    else
+                        Vec3.fromAzimuthElevation(
+                            dir.azimuth.map(AzimuthDirection.toDegrees).getOrElse(0.0            ),
+                            InclinationDirection.toDegrees                       (dir.inclination)
+                        )
+                Some(PipeFrame.initial(dirVec))
     else slotFinalFrames_sig.map(frames => frames.lift(idx - 1).flatten)
 
 // ── Slot-indexed position tracking ───────────────────────────────

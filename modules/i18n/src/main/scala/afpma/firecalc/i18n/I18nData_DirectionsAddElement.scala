@@ -197,9 +197,9 @@ object I18nData_DirectionsAddElement:
         SplitSingleFlowIntoTwoFlowsWith90DegTurn: String,
         MergeTwoFlowsIntoSingleWith90DegTurn    : String,
         newInnerShape                           : String,
-        symmetryPlaneAbsDir                     : String,
+        symmetryPlaneAzimuth                    : String,
         collinearVectors                        : String,
-        absDirVertical                          : String,
+        azimuthRequired                         : String,
         offset                                  : String
     )
 

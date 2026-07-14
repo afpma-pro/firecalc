@@ -21,10 +21,10 @@ trait HasDirectionChangeData extends IsDirectionChange:
  * `n_flows` from `SetsNumberOfFlows` already distinguishes split (2) vs merge (1).
  */
 trait HasSplitMergeData extends IsSplitMergeTurn with SetsNumberOfFlows:
-    def name               : String
-    def absDir             : Option[AbsoluteDirection] = None
-    def newInnerShape      : PipeShape
-    def symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+    def name                : String
+    def absDir              : Option[AbsoluteDirection] = None
+    def newInnerShape       : PipeShape
+    def symmetryPlaneAzimuth: Option[AzimuthDirection]  = None
 
 /**
  * Typed accessor for length-bearing section elements.

@@ -10,6 +10,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilDirection
 import afpma.firecalc.dto.all.AirSpaceDetailed_V2.VentilOpenings
 import afpma.firecalc.dto.common.NbOfFlows
+import afpma.firecalc.domain.AzimuthDirection
 
 import afpma.firecalc.i18n.implicits.I18N
 
@@ -181,7 +182,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
         setShape: (A, PipeShape) => A
     )(using
         Defaultable[A],
-        Defaultable[Option[AbsoluteDirection]],
+        Defaultable[Option[AzimuthDirection]],
         Defaultable[PipeShape],
         ValidateVar[A]
     ): Form[A] =
@@ -192,6 +193,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
 
     given horizontal_form_SplitSingleFlowIntoTwoFlowsWith90DegTurn: Form[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
         import defaultable.pipeShapeInner
+        import defaultable.optionAzimuthDirection
         given Defaultable[Option[AbsoluteDirection]]                = Defaultable(None)
         given ValidateVar[SplitSingleFlowIntoTwoFlowsWith90DegTurn] =
             ValidateVarCommonInstances.valid_always
@@ -200,6 +202,7 @@ class FlowOnlyHorizontalForm_13384(using DisplayUnits, Locale):
 
     given horizontal_form_MergeTwoFlowsIntoSingleWith90DegTurn: Form[MergeTwoFlowsIntoSingleWith90DegTurn] =
         import defaultable.pipeShapeInner
+        import defaultable.optionAzimuthDirection
         given Defaultable[Option[AbsoluteDirection]]            = Defaultable(None)
         given ValidateVar[MergeTwoFlowsIntoSingleWith90DegTurn] =
             ValidateVarCommonInstances.valid_always

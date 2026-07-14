@@ -92,7 +92,7 @@ engine_state:
                   diameter: 
                     value: "0.18"
                     unit: "meter"
-              symmetryPlaneAbsDir: !!null
+              symmetryPlaneAzimuth: !!null
           - 
             SetRoughness: 
               roughness: 
@@ -145,7 +145,7 @@ engine_state:
                   diameter: 
                     value: "0.18"
                     unit: "meter"
-              symmetryPlaneAbsDir: !!null
+              symmetryPlaneAzimuth: !!null
           - 
             AddSectionSlopped: 
               name: "section horizontale"

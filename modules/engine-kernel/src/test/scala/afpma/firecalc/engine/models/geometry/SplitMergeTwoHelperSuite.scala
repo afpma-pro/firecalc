@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.models.geometry
 
-import afpma.firecalc.domain.{AbsoluteDirection, AzimuthDirection, InclinationDirection}
+import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.engine.models.geometry.SymmetryPlaneConfig
 import afpma.firecalc.units.Vec3
 
@@ -460,36 +460,26 @@ class SplitMergeTwoHelperSuite extends AnyFlatSpec with Matchers:
         assertVec3Approx(plane.branchTwoDirection, Vec3.Front )
     }
 
-    // ── SymmetryPlaneConfig.fromIncomingWithAbsDir ────────────────────────────
+    // ── SymmetryPlaneConfig.fromIncomingWithRotation ─────────────────────────
 
-    "fromIncomingWithAbsDir" should "use azimuth of absDir for vertical incoming" in {
-        // azimuth=Front (180°) → stored directly as AzimuthDirection.Front
-        val absDir = AbsoluteDirection(Some(AzimuthDirection.Front), InclinationDirection.Horizontal)
-        val config = SymmetryPlaneConfig.fromIncomingWithAbsDir(Vec3.Up, Some(absDir))
+    "fromIncomingWithRotation" should "use provided azimuth for vertical incoming" in {
+        val config = SymmetryPlaneConfig.fromIncomingWithRotation(Vec3.Up, Some(AzimuthDirection.Front))
         config shouldBe Right(SymmetryPlaneConfig.VerticalIncoming(AzimuthDirection.Front))
     }
 
-    it should "default to AzimuthDirection.Right when None provided for vertical incoming" in {
-        val config = SymmetryPlaneConfig.fromIncomingWithAbsDir(Vec3.Up, None)
-        config shouldBe Right(SymmetryPlaneConfig.VerticalIncoming(AzimuthDirection.Right))
+    it should "return Left when azimuth missing for vertical incoming" in {
+        val result = SymmetryPlaneConfig.fromIncomingWithRotation(Vec3.Up, None)
+        result shouldBe Left(SplitMergeTwoHelperError.SymmetryPlaneAzimuthRequired)
     }
 
-    it should "ignore absDir for non-vertical incoming" in {
-        val absDir = AbsoluteDirection(Some(AzimuthDirection.Front), InclinationDirection.Horizontal)
-        val config = SymmetryPlaneConfig.fromIncomingWithAbsDir(Vec3.Rear, Some(absDir))
+    it should "ignore azimuth for non-vertical incoming" in {
+        val config = SymmetryPlaneConfig.fromIncomingWithRotation(Vec3.Rear, Some(AzimuthDirection.Front))
         config shouldBe Right(SymmetryPlaneConfig.NonVertical)
     }
 
-    it should "return Left when absDir is straight Up" in {
-        val absDir = AbsoluteDirection(None, InclinationDirection.Up)
-        val result = SymmetryPlaneConfig.fromIncomingWithAbsDir(Vec3.Up, Some(absDir))
-        result shouldBe Left(SplitMergeTwoHelperError.SymmetryPlaneAbsDirVertical)
-    }
-
-    it should "return Left when absDir is straight Down" in {
-        val absDir = AbsoluteDirection(None, InclinationDirection.Down)
-        val result = SymmetryPlaneConfig.fromIncomingWithAbsDir(Vec3.Up, Some(absDir))
-        result shouldBe Left(SplitMergeTwoHelperError.SymmetryPlaneAbsDirVertical)
+    it should "return Left when azimuth missing for vertical incoming (Down)" in {
+        val result = SymmetryPlaneConfig.fromIncomingWithRotation(Vec3.Down, None)
+        result shouldBe Left(SplitMergeTwoHelperError.SymmetryPlaneAzimuthRequired)
     }
 
     "VerticalIncoming with rotation=90°" should "reflect Rear to Left" in {

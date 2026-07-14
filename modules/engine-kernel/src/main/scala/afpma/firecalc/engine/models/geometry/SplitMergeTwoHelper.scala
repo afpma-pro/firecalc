@@ -11,7 +11,6 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import cats.Show
 
-import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 
 /**
@@ -59,30 +58,26 @@ object SymmetryPlaneConfig:
         else NonVertical
 
     /**
-     * Derive config from the incoming flow direction and an optional symmetry-plane direction.
+     * Derive config from the incoming flow direction and an optional symmetry-plane azimuth.
      *
      * When the incoming direction is vertical, the symmetry plane is defined by the plane
-     * containing `Up` and the horizontal projection of `symmetryPlaneAbsDir`.
-     * The azimuth of `symmetryPlaneAbsDir` is stored directly in `VerticalIncoming`.
+     * containing `Up` and the horizontal direction at the given `symmetryPlaneAzimuth`.
+     * The azimuth is stored directly in `VerticalIncoming`.
      *
-     * If `symmetryPlaneAbsDir` points straight Up or Down (no horizontal projection),
-     * returns `Left(SymmetryPlaneAbsDirVertical)`.
+     * If `symmetryPlaneAzimuth` is `None` when the incoming direction is vertical,
+     * returns `Left(SymmetryPlaneAzimuthRequired)`.
      *
      * For non-vertical incoming, the azimuth is ignored and `Right(NonVertical)` is returned.
      */
-    def fromIncomingWithAbsDir(
-        incoming           : Vec3,
-        symmetryPlaneAbsDir: Option[AbsoluteDirection]
+    def fromIncomingWithRotation(
+        incoming            : Vec3,
+        symmetryPlaneAzimuth: Option[AzimuthDirection]
     ): Either[SplitMergeTwoHelperError, SymmetryPlaneConfig] =
         val crossNorm = incoming.cross(Vec3.Up).norm
         if crossNorm < VerticalEpsilon then
-            symmetryPlaneAbsDir match
-                case Some(absDir) =>
-                    absDir.azimuth match
-                        case Some(azimuth) => Right(VerticalIncoming(azimuth))
-                        case None          =>
-                            Left(SplitMergeTwoHelperError.SymmetryPlaneAbsDirVertical)
-                case None         => Right(VerticalIncoming(AzimuthDirection.Right))
+            symmetryPlaneAzimuth match
+                case Some(az) => Right(VerticalIncoming(az))
+                case None     => Left(SplitMergeTwoHelperError.SymmetryPlaneAzimuthRequired)
         else Right(NonVertical)
 
     /** Compute the unit normal to the symmetry plane for the given config. */
@@ -110,24 +105,23 @@ object SplitMergeTwoHelperError:
     case object CollinearVectors extends SplitMergeTwoHelperError
 
     /**
-     * The symmetry plane absolute direction points straight Up or Down
-     * (no horizontal projection) when the incoming direction is vertical.
+     * The incoming direction is vertical but no symmetry-plane azimuth was provided.
      * The symmetry plane is undefined because there is no horizontal axis
      * to span with `Up`.
      */
-    case object SymmetryPlaneAbsDirVertical extends SplitMergeTwoHelperError
+    case object SymmetryPlaneAzimuthRequired extends SplitMergeTwoHelperError
 
     given Show[SplitMergeTwoHelperError] = Show.show:
-        case CollinearVectors            =>
+        case CollinearVectors             =>
             "SplitMergeTwoHelperError.CollinearVectors: incoming and first-branch directions are collinear — split plane is undefined"
-        case SymmetryPlaneAbsDirVertical =>
-            "SplitMergeTwoHelperError.SymmetryPlaneAbsDirVertical: symmetryPlaneAbsDir must have a horizontal component (cannot be straight Up or Down) when the incoming direction is vertical"
+        case SymmetryPlaneAzimuthRequired =>
+            "SplitMergeTwoHelperError.SymmetryPlaneAzimuthRequired: symmetryPlaneAzimuth is required when the incoming direction is vertical"
 
     given ShowUsingLocale[SplitMergeTwoHelperError] = Show.show:
-        case CollinearVectors            =>
+        case CollinearVectors             =>
             I18N.split_merge.collinearVectors
-        case SymmetryPlaneAbsDirVertical =>
-            I18N.split_merge.absDirVertical
+        case SymmetryPlaneAzimuthRequired =>
+            I18N.split_merge.azimuthRequired
 
 /**
  * Geometry helper for symmetric flow splits.

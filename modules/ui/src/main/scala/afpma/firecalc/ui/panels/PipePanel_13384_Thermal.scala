@@ -642,7 +642,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                             (a, n ) => a.copy(name = n),
                             _.absDir,
                             (a, fd) => a.copy(absDir = fd),
-                            None
+                            None,
+                            _.symmetryPlaneAzimuth,
+                            (a, az) => a.copy(symmetryPlaneAzimuth = az)
                         )
                     )
                 )
@@ -668,7 +670,9 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                             (a, n ) => a.copy(name = n),
                             _.absDir,
                             (a, fd) => a.copy(absDir = fd),
-                            None
+                            None,
+                            _.symmetryPlaneAzimuth,
+                            (a, az) => a.copy(symmetryPlaneAzimuth = az)
                         )
                     )
                 )

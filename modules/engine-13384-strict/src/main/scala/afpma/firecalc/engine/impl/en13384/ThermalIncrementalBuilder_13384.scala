@@ -250,7 +250,7 @@ trait ThermalIncrementalBuilder_13384
                     case None     => ().validNel
                 val positionErrors: ValidatedResult[Unit] =
                     if posResult.errors.isEmpty then ().validNel
-                    else posResult.errors.map(e => SymmetryPlaneAbsDirVertical(pt, e).invalidNel).sequence.map(_ => ())
+                    else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
                 (splitValidation |+| mergeValidation |+| positionErrors).as(())
 
     override protected def mkFullElementsDescr(

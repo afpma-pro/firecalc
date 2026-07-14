@@ -204,11 +204,15 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         setName          : (AA, String) => AA,
         getAbsDir        : AA => Option[AbsoluteDirection],
         setAbsDir        : (AA, Option[AbsoluteDirection]) => AA,
-        onDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit]
+        onDirectionCommit: Option[(Option[AbsoluteDirection], Option[AbsoluteDirection]) => Unit],
+        getAzimuth       : AA => Option[AzimuthDirection],
+        setAzimuth       : (AA, Option[AzimuthDirection]) => AA
     )(using faa: Form[AA]): (Var[AA], FormConfig) => HtmlElement =
         import afpma.laminar.form.Form
         import afpma.laminar.form.derivation.FormDerivation.forString
         import afpma.firecalc.ui.instances.ValidateVarCommonInstances.string.given
+        import afpma.firecalc.ui.instances.HorizontalFormCommonInstances
+        import afpma.firecalc.domain.AzimuthDirection
         (ev, fc) =>
             val nameVar   = ev.zoomLazy(getName)(setName)
             val absDirVar = ev.zoomLazy(getAbsDir)(setAbsDir)
@@ -230,6 +234,25 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 onDirectionCommit = onDirectionCommit
             ).node
 
+            // Azimuth direction select — shown only when incoming direction is vertical
+            val azimuthVar = ev.zoomLazy(getAzimuth)(setAzimuth)
+            val azVar      = azimuthVar.zoomLazy {
+                case Some(az) => az
+                case None     => AzimuthDirection.Right
+            } { (_, az) => Some(az) }
+
+            val hfc         = new HorizontalFormCommonInstances(using du, loc)
+            val azimuthForm = hfc.horizontal_form_AzimuthDirection
+
+            val isVerticalSig = frameBeforeSig_badge(idx).map(
+                _.exists(f => Math.abs(f.direction.z) > (1.0 - 1e-6))
+            )
+
+            val azimuthNode = div(
+                cls("hidden") <-- isVerticalSig.map(!_),
+                azimuthForm.render(azVar, fc.withFieldName(I18N.split_merge.symmetryPlaneAzimuth))
+            )
+
             div(
                 cls := "flex flex-col gap-2",
                 div       (
@@ -238,7 +261,8 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                     rdiNode,
                     badgeEl
                 ),
-                faa.render(ev, fc)
+                faa.render(ev, fc),
+                azimuthNode
             )
 
     protected def renderElemTyped[AA <: Elem](

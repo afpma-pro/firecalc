@@ -54,7 +54,7 @@ case class SplitMergePosition(
  * @param finalPoint  XYZ end of the last segment (equals startPoint if no segments)
  * @param finalFrame  PipeFrame after the last element (None if no frame was ever set)
  * @param splitMergePositions  Positions of split and merge elements
- * @param errors       Element refs that failed validation (e.g., symmetryPlaneAbsDir vertical)
+ * @param errors       Element refs that failed validation (e.g., symmetryPlaneAzimuth missing)
  */
 case class PipePositionResult(
     segments           : Seq[PipeSegmentPosition],

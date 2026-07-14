@@ -31,10 +31,10 @@ object PositionTracker:
     private case class CmdSetInnerShape(shape: PipeShape)                                  extends PipeCommand
     private case class CmdDirectionChange(absDir: Option[AbsoluteDirection], angle: Angle) extends PipeCommand
     private case class CmdSplitMerge90(
-        absDir             : Option[AbsoluteDirection],
-        isSplit            : Boolean,
-        name               : String,
-        symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        absDir              : Option[AbsoluteDirection],
+        isSplit             : Boolean,
+        name                : String,
+        symmetryPlaneAzimuth: Option[AzimuthDirection] = None
     ) extends PipeCommand
     private case class CmdSection(length: Length)                                          extends PipeCommand
     private case class CmdSectionSloppedForceManual(length: Length, elevGain: Length)      extends PipeCommand
@@ -85,7 +85,7 @@ object PositionTracker:
                     state.frame.applyBendForFinalDir(angle.toUnit[Degree].value, targetVec)
                 (state.copy(frame = newFrame.getOrElse(state.frame)), TrackingOutputs.empty)
 
-            case CmdSplitMerge90(absDir, isSplit, name, symmetryPlaneAbsDir) =>
+            case CmdSplitMerge90(absDir, isSplit, name, symmetryPlaneAzimuth) =>
                 val f                    = state.frame
                 val frameAfter           =
                     absDir match
@@ -99,7 +99,7 @@ object PositionTracker:
                             if defaultBranch.norm > 1e-9 then f.applyBendForFinalDir(90.0, defaultBranch.normalized)
                             else f.applyBendForFinalDir                             (90.0, Vec3.Rear               )
                 val (smPos, frameResult) =
-                    SymmetryPlaneConfig.fromIncomingWithAbsDir(f.direction, symmetryPlaneAbsDir) match
+                    SymmetryPlaneConfig.fromIncomingWithRotation(f.direction, symmetryPlaneAzimuth) match
                         case Right(config) =>
                             val pos =
                                 if isSplit && !state.firstSplitConsumed && splitPosition.isDefined then
@@ -180,7 +180,7 @@ object PositionTracker:
                     e.absDir,
                     isSplit = e.n_flows == 2,
                     name    = e.name,
-                    e.symmetryPlaneAbsDir
+                    e.symmetryPlaneAzimuth
                 )
             )
 

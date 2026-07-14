@@ -592,7 +592,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                             (a, n ) => a.copy(name = n),
                             _.absDir,
                             (a, fd) => a.copy(absDir = fd),
-                            mkOnDirectionCommit(iix._1)
+                            mkOnDirectionCommit(iix._1),
+                            _.symmetryPlaneAzimuth,
+                            (a, az) => a.copy(symmetryPlaneAzimuth = az)
                         )
                     )
                 )
@@ -619,7 +621,9 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                             (a, n ) => a.copy(name = n),
                             _.absDir,
                             (a, fd) => a.copy(absDir = fd),
-                            mkOnDirectionCommit(iix._1)
+                            mkOnDirectionCommit(iix._1),
+                            _.symmetryPlaneAzimuth,
+                            (a, az) => a.copy(symmetryPlaneAzimuth = az)
                         )
                     )
                 )

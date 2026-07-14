@@ -33,7 +33,7 @@ import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
 import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
-import afpma.firecalc.engine.standard.SymmetryPlaneAbsDirVertical
+import afpma.firecalc.engine.standard.SymmetryPlaneAzimuthMissing
 import afpma.firecalc.engine.typeclasses.*
 import cats.data.*
 import cats.syntax.all.*
@@ -231,7 +231,7 @@ trait FlowOnlyIncrementalBuilder_13384
                     case None     => ().validNel
                 val positionErrors: ValidatedResult[Unit] =
                     if posResult.errors.isEmpty then ().validNel
-                    else posResult.errors.map(e => SymmetryPlaneAbsDirVertical(pt, e).invalidNel).sequence.map(_ => ())
+                    else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
                 (splitValidation |+| mergeValidation |+| positionErrors).as(())
 
     override protected def mkFullElementsDescr(

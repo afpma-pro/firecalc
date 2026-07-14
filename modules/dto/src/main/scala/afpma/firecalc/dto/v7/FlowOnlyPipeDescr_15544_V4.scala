@@ -212,13 +212,13 @@ object AddFlowOnlyPipeElement_15544_V4:
     @Transl(I(_.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn))
     case class SplitSingleFlowIntoTwoFlowsWith90DegTurn(
         @Transl(I(_.terms.name))
-        name                            : String,
+        name                             : String,
         @Transl(I(_.terms.absolute_direction))
-        override val absDir             : Option[AbsoluteDirection] = None,
+        override val absDir              : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape                   : PipeShape,
-        @Transl(I(_.split_merge.symmetryPlaneAbsDir))
-        override val symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        newInnerShape                    : PipeShape,
+        @Transl(I(_.split_merge.symmetryPlaneAzimuth))
+        override val symmetryPlaneAzimuth: Option[AzimuthDirection]  = None
     ) extends AddFlowOnlyPipeElement_15544_V4
         with SetsNumberOfFlows
         with SetsInnerShape
@@ -234,13 +234,13 @@ object AddFlowOnlyPipeElement_15544_V4:
     @Transl(I(_.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn))
     case class MergeTwoFlowsIntoSingleWith90DegTurn(
         @Transl(I(_.terms.name))
-        name                            : String,
+        name                             : String,
         @Transl(I(_.terms.absolute_direction))
-        override val absDir             : Option[AbsoluteDirection] = None,
+        override val absDir              : Option[AbsoluteDirection] = None,
         @Transl(I(_.split_merge.newInnerShape))
-        newInnerShape                   : PipeShape,
-        @Transl(I(_.split_merge.symmetryPlaneAbsDir))
-        override val symmetryPlaneAbsDir: Option[AbsoluteDirection] = None
+        newInnerShape                    : PipeShape,
+        @Transl(I(_.split_merge.symmetryPlaneAzimuth))
+        override val symmetryPlaneAzimuth: Option[AzimuthDirection]  = None
     ) extends AddFlowOnlyPipeElement_15544_V4
         with SetsNumberOfFlows
         with SetsInnerShape
