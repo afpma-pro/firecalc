@@ -10,7 +10,7 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.FluePipeT
-import afpma.firecalc.engine.standard.ShapeNotMaterialized
+import afpma.firecalc.engine.standard.{ShapeNotMaterialized, SlotContext, SlotIndex}
 import afpma.firecalc.units.coulombutils.*
 
 import org.scalatest.flatspec.AnyFlatSpec
@@ -45,7 +45,7 @@ class SplitMergeMaterializationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape(PipeShape.Circle(20.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -74,7 +74,7 @@ class SplitMergeMaterializationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape(PipeShape.Circle(20.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("postMerge", 1.meters)
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -98,7 +98,7 @@ class SplitMergeMaterializationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape(PipeShape.Circle(10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual2", 1.meters   )
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
     }
 
     it should "accept SetInnerShape after merge + length-bearing section" in {
@@ -124,7 +124,7 @@ class SplitMergeMaterializationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape(PipeShape.Circle(20.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("postMerge2", 1.meters)
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
     }
 
 end SplitMergeMaterializationSuite

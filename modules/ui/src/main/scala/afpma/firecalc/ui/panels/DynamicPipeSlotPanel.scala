@@ -11,6 +11,7 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.standard.SlotIndex
 
 import com.raquo.airstream.core.Signal
 import com.raquo.laminar.api.L.HtmlElement
@@ -37,7 +38,7 @@ object DynamicPipeSlotPanel:
      *   EN 15544 minimum flue-pipe length, `None` if Invalid. Reactive.
      */
     def forSlot(
-        slotIndex           : Int,
+        slotIndex           : SlotIndex,
         slot                : PostFireboxPipeDescrSlot_V7,
         slotControlsNode    : Option[HtmlElement]            = None,
         headIdx             : Option[Int]                    = None,

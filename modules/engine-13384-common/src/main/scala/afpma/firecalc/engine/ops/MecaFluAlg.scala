@@ -9,7 +9,6 @@ import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
 import cats.syntax.all.*
@@ -40,34 +39,6 @@ trait MecaFluAlg:
 
     /** Result type for a full pipe */
     type FullResult <: PipeResult
-
-    /**
-     * Compute full pipe result using unified context object.
-     * Replaces scattered parameters with a single typed context.
-     */
-    def makePipeResult(
-        ctx   : MecaFluPipeContext[pipeDescr.PipeElDescr],
-        params: Params
-    )                 (using appCtx: MecaFluAppContext): Either[MecaFlu_Error, FullResult]
-
-/** Base application context for MecaFlu operations. Sub-traits add standard-specific fields. */
-trait MecaFluAppContext
-
-/** EN13384 application context — carries HeatingAppliance data. */
-trait MecaFlu_13384_AppCtx extends MecaFluAppContext:
-    def en13384: EN13384_1_A1_2019_Application_Alg
-    def hafg   : HeatingAppliance.FlueGas
-    def hamf   : HeatingAppliance.MassFlows
-
-object MecaFlu_13384_AppCtx:
-    def apply(
-        _en13384: EN13384_1_A1_2019_Application_Alg,
-        _hafg   : HeatingAppliance.FlueGas,
-        _hamf   : HeatingAppliance.MassFlows
-    ): MecaFlu_13384_AppCtx = new MecaFlu_13384_AppCtx:
-        def en13384 = _en13384
-        def hafg    = _hafg
-        def hamf    = _hamf
 
 /** Intermediate algebra for EN13384-based fluid mechanics calculations. */
 trait MecaFlu_13384_Alg extends MecaFluAlg with HasTypeMembers_13384_Alg:

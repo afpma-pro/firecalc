@@ -7,6 +7,7 @@ package afpma.firecalc.ui.panels
 
 import algebra.instances.all.given
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
@@ -18,28 +19,26 @@ import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
-import afpma.firecalc.domain.IsBackendForbidden
 
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
-import afpma.firecalc.ui.instances.V7FormInstances
 import afpma.firecalc.ui.daisyui.DaisyUIDynamicList
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
 import afpma.firecalc.ui.icons.lucide
+import afpma.firecalc.ui.instances.V7FormInstances
 import afpma.firecalc.ui.models.VizElementId
 import afpma.firecalc.ui.models.expertModeOn
 import afpma.firecalc.ui.models.panelOpenedVar
 import afpma.firecalc.ui.models.vizHoveredElement
 import afpma.firecalc.ui.models.vizSelectedElement
-
 import afpma.firecalc.ui.utils.combineWithDistinct
+
 import cats.Show
 import cats.data.*
 import cats.syntax.show.*
@@ -53,6 +52,7 @@ import scala.scalajs.js
 import _root_.coulomb.*
 import _root_.coulomb.ops.algebra.all.*
 import _root_.coulomb.policy.standard.given
+import afpma.firecalc.domain.IsBackendForbidden
 import afpma.laminar.form.*
 import afpma.laminar.form.daisyui.*
 import afpma.laminar.form.daisyui.DaisyUITooltip
@@ -68,6 +68,15 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
     type Out
     type PT <: PipeType
     lazy val sectionType: PT
+
+    /** Override with a slotted context in slot panels; stays unslotted for type-scoped panels. */
+    protected def slotContext: SlotContext = SlotContext.unslotted
+
+    /** Derived panel scope for error filtering. */
+    def panelScope: PanelScope =
+        slotContext.slotIndex match
+            case Some(si) => PanelScope.SlotScope(sectionType, si)
+            case None     => PanelScope.TypeScope(sectionType)
 
     type Elem = In
 
@@ -650,11 +659,11 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             case e: FlueGasVelocityError         =>
                 reverseMap
                     .get(e.sectionId)
-                    .fold(err)(idIncr => e.copy(sectionId = idIncr))
+                    .fold(err)(idIncr => e.copy(sectionId = idIncr)(using e.sc))
             case e: FluePipeInvalidGeometryRatio =>
                 reverseMap
                     .get(e.sectionId)
-                    .fold(err)(idIncr => e.copy(sectionId = idIncr))
+                    .fold(err)(idIncr => e.copy(sectionId = idIncr)(using e.sc))
             case other => other
 
     def statusIcon =
@@ -670,7 +679,7 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
                 // Collect engine errors for this section
                 val engineErrs: List[PanelStatusHelper.PanelError] =
                     PanelStatusHelper
-                        .keepGlobalErrorsOrErrorsSpecificToSectionTyp(_ == sectionType)(vnel) match
+                        .filterErrors(panelScope, vnel) match
                         case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
                             errs.toList.map: err =>
                                 PanelStatusHelper.PanelError.EngineError(remapErrorSectionId(err, reverseMap))

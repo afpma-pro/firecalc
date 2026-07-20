@@ -10,19 +10,21 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.*
+import afpma.firecalc.engine.standard.SlotContext
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
+
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 given FireboxToCombustionAirPipe_15544_Strict[Ecolabeled] = EcolabeledToFireboxInternalPipes_15544_Strict
 given FireboxToFireboxPipe_15544_Strict[Ecolabeled]       = EcolabeledToFireboxInternalPipes_15544_Strict
@@ -154,5 +156,5 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
             val fullDescr = CombustionAirPipe_Module_15544.incremental
                 .withInitialDirection                                 (PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal))
                 .define(recombined_incr_descr*)
-                .toFullDescr()
+                .toFullDescr(using SlotContext.unslotted)
             CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                                                                    )

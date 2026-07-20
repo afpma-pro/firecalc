@@ -12,6 +12,7 @@ import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.SectionGeometryChange
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -38,7 +39,7 @@ class SectionGeometryChangeAutoInsertionSuite extends AnyFlatSpec with Matchers:
             builder.innerShape       (pipeB         ),
             builder.addSectionSlopped("s2", 1.meters)
         )
-        val result     = p.toFullDescr()
+        val result     = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe true
         val elems      = result.toOption.get._2.elems
         // Should have 3 elements: s1, SectionGeometryChange, s2
@@ -73,7 +74,7 @@ class SectionGeometryChangeAutoInsertionSuite extends AnyFlatSpec with Matchers:
             builder.innerShape       (pipeB, preventAutoSectionGeometryChange = true),
             builder.addSectionSlopped("s2", 1.meters                                )
         )
-        val result = p.toFullDescr()
+        val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe true
         val elems  = result.toOption.get._2.elems
         // No auto SectionGeometryChange inserted: just s1 and s2.
@@ -103,7 +104,7 @@ class SectionGeometryChangeAutoInsertionSuite extends AnyFlatSpec with Matchers:
             builder.innerShape       (pipeB, preventAutoSectionGeometryChange = false),
             builder.addSectionSlopped("s2", 1.meters                                 )
         )
-        val result = p.toFullDescr()
+        val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe true
         val elems  = result.toOption.get._2.elems
         elems.size shouldBe 3

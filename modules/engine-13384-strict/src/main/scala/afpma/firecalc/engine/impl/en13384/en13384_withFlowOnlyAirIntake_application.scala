@@ -10,6 +10,7 @@ import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.standard.SlotContext
 import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
@@ -32,7 +33,8 @@ abstract class EN13384_WithFlowOnlyAirIntake_Application(
             hamf               = HeatingAppliance.MassFlows.summon,
             temp_start         = T_L,
             last_pipe_velocity = None,
-            gas                = CombustionAir
+            gas                = CombustionAir,
+            sc                 = SlotContext.unslotted
         )
 
     override def airIntake_PipeResult =

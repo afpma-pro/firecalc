@@ -60,7 +60,7 @@ object ElementFactory_15544_Instances:
             op: AddFlowOnlyPipeElement_15544.AddSectionSlopped |
                 AddFlowOnlyPipeElement_15544.AddSectionSloppedForceManualElevationGain |
                 AddFlowOnlyPipeElement_15544.AddSectionHorizontal | AddFlowOnlyPipeElement_15544.AddSectionVertical
-        )(using ctx: FlowOnlyStraightSectionCtx_15544) =
+        )(using ctx: FlowOnlyStraightSectionCtx_15544, sc: SlotContext) =
             val vg = ctx.getValidated(
                 _.geometry,
                 InnerGeometryMustBeSet(op.name, ctx.pipeType)
@@ -127,7 +127,8 @@ object ElementFactory_15544_Instances:
         DirectionChangeCtx_15544
     ] with
         def make(op: AddFlowOnlyPipeElement_15544.AddDirectionChange)(using
-            ctx: DirectionChangeCtx_15544
+            ctx: DirectionChangeCtx_15544,
+            sc : SlotContext
         ) =
             ctx.getValidated(
                 _.geometry,
@@ -161,7 +162,8 @@ object ElementFactory_15544_Instances:
         FlowResistanceCtx_15544
     ] with
         def make(op: AddFlowOnlyPipeElement_15544.AddFlowResistance)(using
-            ctx: FlowResistanceCtx_15544
+            ctx: FlowResistanceCtx_15544,
+            sc : SlotContext
         ) =
             op match
                 case AddFlowOnlyPipeElement_15544.AddFlowResistance(
@@ -173,7 +175,7 @@ object ElementFactory_15544_Instances:
                         _.geometry,
                         FlowResistanceRequiresGeometry(
                             op.name,
-                            "EN15544",
+                            ValidationStandard.EN15544,
                             ctx.pipeType
                         )
                     ).andThen { geom =>
@@ -221,7 +223,8 @@ object ElementFactory_15544_Instances:
         SectionGeometryChangeCtx_15544
     ] with
         def make(op: AddFlowOnlyPipeElement_15544.AddSectionShapeChange)(using
-            ctx: SectionGeometryChangeCtx_15544
+            ctx: SectionGeometryChangeCtx_15544,
+            sc : SlotContext
         ) =
             if (ctx.setPropsHasGeometryChange)
                 CannotSetGeometryBeforeChange(ctx.pipeType).invalidNel
@@ -244,16 +247,17 @@ object ElementFactory_15544_Instances:
         FlowResistanceCtx_15544
     ] with
         def make(op: AddFlowOnlyPipeElement_15544.AddPressureDiff)(using
-            ctx: FlowResistanceCtx_15544
+            ctx: FlowResistanceCtx_15544,
+            sc : SlotContext
         ) =
             ctx.getValidated(
                 _.geometry,
                 PressureDiffRequiresGeometry(
                     op.name,
-                    "EN15544",
+                    ValidationStandard.EN15544,
                     ctx.pipeType
                 )
-            ).andThen { geom =>
+            ).andThen { _ =>
                 FlowOnlyPipeDescr_15544
                     .PressureDiff           (
                         pa            = op.pressure_difference,

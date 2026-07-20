@@ -62,7 +62,7 @@ object ElementFactory_13384_Instances:
             op: AddFlowOnlyPipeElement_13384.AddSectionSlopped |
                 AddFlowOnlyPipeElement_13384.AddSectionSloppedForceManualElevationGain |
                 AddFlowOnlyPipeElement_13384.AddSectionHorizontal | AddFlowOnlyPipeElement_13384.AddSectionVertical
-        )(using ctx: FlowOnlyStraightSectionCtx_13384) =
+        )(using ctx: FlowOnlyStraightSectionCtx_13384, sc: SlotContext) =
             val vig = ctx.getValidated(
                 _.innerShape,
                 InnerGeometryMustBeSet(op.name, ctx.pipeType)
@@ -139,7 +139,7 @@ object ElementFactory_13384_Instances:
             op: AddThermalPipeElement_13384.AddSectionSlopped |
                 AddThermalPipeElement_13384.AddSectionSloppedForceManualElevationGain |
                 AddThermalPipeElement_13384.AddSectionHorizontal | AddThermalPipeElement_13384.AddSectionVertical
-        )(using ctx: ThermalStraightSectionCtx_13384) =
+        )(using ctx: ThermalStraightSectionCtx_13384, sc: SlotContext) =
             val vig     = ctx.getValidated(
                 _.innerShape,
                 InnerGeometryMustBeSet(op.name, ctx.pipeType)
@@ -231,7 +231,8 @@ object ElementFactory_13384_Instances:
         DirectionChangeCtx_13384
     ] with
         def make(op: AddFlowOnlyPipeElement_13384.AddDirectionChange)(using
-            ctx: DirectionChangeCtx_13384
+            ctx: DirectionChangeCtx_13384,
+            sc : SlotContext
         ) =
             val vDh: ValidatedNel[IncrementalValidation_Error, QtyD[Meter]] =
                 ctx.getValidated(
@@ -367,7 +368,8 @@ object ElementFactory_13384_Instances:
         DirectionChangeCtx_13384
     ] with
         def make(op: AddThermalPipeElement_13384.AddDirectionChange)(using
-            ctx: DirectionChangeCtx_13384
+            ctx: DirectionChangeCtx_13384,
+            sc : SlotContext
         ) =
             val vDh: ValidatedNel[IncrementalValidation_Error, QtyD[Meter]] =
                 ctx.getValidated(
@@ -508,7 +510,8 @@ object ElementFactory_13384_Instances:
         FlowResistanceCtx_13384
     ] with
         def make(op: AddFlowOnlyPipeElement_13384.AddFlowResistance)(using
-            ctx: FlowResistanceCtx_13384
+            ctx: FlowResistanceCtx_13384,
+            sc : SlotContext
         ) =
             op match
                 case AddFlowOnlyPipeElement_13384.AddFlowResistance(
@@ -520,7 +523,7 @@ object ElementFactory_13384_Instances:
                         _.innerShape,
                         FlowResistanceRequiresGeometry(
                             op.name,
-                            "EN13384",
+                            ValidationStandard.EN13384,
                             ctx.pipeType
                         )
                     ).andThen { geom =>
@@ -562,7 +565,8 @@ object ElementFactory_13384_Instances:
         FlowResistanceCtx_13384
     ] with
         def make(op: AddThermalPipeElement_13384.AddFlowResistance)(using
-            ctx: FlowResistanceCtx_13384
+            ctx: FlowResistanceCtx_13384,
+            sc : SlotContext
         ) =
             op match
                 case AddThermalPipeElement_13384.AddFlowResistance(
@@ -574,7 +578,7 @@ object ElementFactory_13384_Instances:
                         _.innerShape,
                         FlowResistanceRequiresGeometry(
                             op.name,
-                            "EN13384",
+                            ValidationStandard.EN13384,
                             ctx.pipeType
                         )
                     ).andThen { geom =>
@@ -622,7 +626,8 @@ object ElementFactory_13384_Instances:
         SectionGeometryChangeCtx_13384
     ] with
         def make(op: AddFlowOnlyPipeElement_13384.AddSectionChange)(using
-            ctx: SectionGeometryChangeCtx_13384
+            ctx: SectionGeometryChangeCtx_13384,
+            sc : SlotContext
         ) =
             if (ctx.setPropsHasGeometryChange)
                 CannotSetGeometryBeforeChange(ctx.pipeType).invalidNel
@@ -669,7 +674,8 @@ object ElementFactory_13384_Instances:
         SectionGeometryChangeCtx_13384
     ] with
         def make(op: AddThermalPipeElement_13384.AddSectionChange)(using
-            ctx: SectionGeometryChangeCtx_13384
+            ctx: SectionGeometryChangeCtx_13384,
+            sc : SlotContext
         ) =
             if (ctx.setPropsHasGeometryChange)
                 CannotSetGeometryBeforeChange(ctx.pipeType).invalidNel
@@ -714,13 +720,14 @@ object ElementFactory_13384_Instances:
         FlowResistanceCtx_13384
     ] with
         def make(op: AddFlowOnlyPipeElement_13384.AddPressureDiff)(using
-            ctx: FlowResistanceCtx_13384
+            ctx: FlowResistanceCtx_13384,
+            sc : SlotContext
         ) =
             ctx.getValidated(
                 _.innerShape,
                 FlowResistanceRequiresGeometry(
                     op.name,
-                    "EN13384",
+                    ValidationStandard.EN13384,
                     ctx.pipeType
                 )
             ).andThen { geom =>
@@ -740,13 +747,14 @@ object ElementFactory_13384_Instances:
         FlowResistanceCtx_13384
     ] with
         def make(op: AddThermalPipeElement_13384.AddPressureDiff)(using
-            ctx: FlowResistanceCtx_13384
+            ctx: FlowResistanceCtx_13384,
+            sc : SlotContext
         ) =
             ctx.getValidated(
                 _.innerShape,
                 FlowResistanceRequiresGeometry(
                     op.name,
-                    "EN13384",
+                    ValidationStandard.EN13384,
                     ctx.pipeType
                 )
             ).andThen { geom =>

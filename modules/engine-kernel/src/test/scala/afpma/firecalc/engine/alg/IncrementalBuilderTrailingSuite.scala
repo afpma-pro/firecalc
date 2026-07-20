@@ -53,7 +53,7 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestStraight   ("s", 1.meters               ),
             TestSetFinalPos(0.meters, 0.meters, 1.meters)
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` true
     }
 
@@ -63,7 +63,7 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestStraight     ("s", 1.meters               ),
             TestSetInitialPos(0.meters, 0.meters, 1.meters)
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` true
     }
 
@@ -73,7 +73,7 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestStraight("s", 1.meters),
             TestSetRect (12.cm, 12.cm )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` false
         result.toEither.left.toOption.get.head `shouldBe` a[AddElementMissingAfterSetProp[?]]
     }
@@ -86,16 +86,16 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestSetRect      (12.cm, 12.cm                ),
             TestSetInitialPos(0.meters, 0.meters, 0.meters)
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` false
         result.toEither.left.toOption.get.head `shouldBe` a[AddElementMissingAfterSetProp[?]]
     }
 
     it should "allow only trailing ops with no AddElement" in {
-        val descr  = builder.define(
+        val descr  = builder.define   (
             TestSetFinalPos(0.meters, 0.meters, 1.meters)
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` true
         result.toOption.get._2.elems.size `shouldBe` 0
     }
@@ -107,7 +107,7 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestSetFinalPos  (0.meters, 0.meters, 1.meters),
             TestSetInitialPos(0.meters, 0.meters, 0.meters)
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` true
     }
 
@@ -118,7 +118,7 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestSetFinalPos(0.meters, 0.meters, 1.meters),
             TestSetRect    (20.cm, 20.cm                )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` false
         val errors = result.toEither.left.toOption.get
         errors.head match
@@ -135,6 +135,6 @@ class IncrementalBuilderTrailingSuite extends AnyFlatSpec with Matchers with Inc
             TestSetRect (12.cm, 12.cm ),
             TestBend90  ("b"          )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid `shouldBe` true
     }

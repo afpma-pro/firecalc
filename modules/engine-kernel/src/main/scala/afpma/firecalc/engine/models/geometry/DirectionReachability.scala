@@ -10,7 +10,8 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.domain.AbsoluteDirection
 
-import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
+import afpma.firecalc.engine.models.{PipeType, FluePipeT, ConnectorPipeT, ChimneyPipeT, AirIntakePipeT}
+import afpma.firecalc.engine.standard.{IncompatibleDirectionInPipe, SlotContext, SlotIndex}
 
 import coulomb.policy.standard.given
 
@@ -36,14 +37,19 @@ object DirectionReachability:
         (failures.result(), frame)
 
     private def checkSlotChain[E](
-        descr: Seq[E],
-        idx  : Int,
-        label: String,
-        frame: Option[PipeFrame]
+        descr    : Seq[E],
+        pipeType : PipeType,
+        slotIndex: SlotIndex,
+        frame    : Option[PipeFrame]
     )(using FrameReplay.ElemExtractors[E]): (List[IncompatibleDirectionInPipe], Option[PipeFrame]) =
         val indexed = descr.indices.zip(descr)
         val (failures, endFrame) = checkSlot(indexed, frame)
-        (failures.map(elemIdx => IncompatibleDirectionInPipe(label, idx, elemIdx)), endFrame)
+        (
+            failures.map(elemIdx =>
+                IncompatibleDirectionInPipe(pipeType, elemIdx)(using SlotContext.forSlot(slotIndex))
+            ),
+            endFrame
+        )
 
     def checkPostFireboxChain(
         slots       : Seq[PostFireboxPipeSlot],
@@ -58,16 +64,18 @@ object DirectionReachability:
                         case PostFireboxPipeSlot.NoFlueSlot             =>
                             (errs, frame)
                         case PostFireboxPipeSlot.FlueSlot(descr)        =>
-                            val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Flue", frame)
+                            val (newErrs, newFrame) = checkSlotChain(descr, FluePipeT, SlotIndex.unsafe(slotIdx), frame)
                             (errs ++ newErrs, newFrame)
                         case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
-                            val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Flue", frame)
+                            val (newErrs, newFrame) = checkSlotChain(descr, FluePipeT, SlotIndex.unsafe(slotIdx), frame)
                             (errs ++ newErrs, newFrame)
                         case PostFireboxPipeSlot.ConnectorSlot(descr)   =>
-                            val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Connector", frame)
+                            val (newErrs, newFrame) =
+                                checkSlotChain(descr, ConnectorPipeT, SlotIndex.unsafe(slotIdx), frame)
                             (errs ++ newErrs, newFrame)
                         case PostFireboxPipeSlot.ChimneySlot(descr)     =>
-                            val (newErrs, newFrame) = checkSlotChain(descr, slotIdx, "Chimney", frame)
+                            val (newErrs, newFrame) =
+                                checkSlotChain(descr, ChimneyPipeT, SlotIndex.unsafe(slotIdx), frame)
                             (errs ++ newErrs, newFrame)
             ._1
 
@@ -77,5 +85,5 @@ object DirectionReachability:
     )(using FrameReplay.ElemExtractors[D]): List[IncompatibleDirectionInPipe] =
         val indexed = descr.indices.zip(descr)
         val (failures, _) = checkSlot(indexed, initialFrame)
-        failures.map(elemIdx => IncompatibleDirectionInPipe("AirIntake", -1, elemIdx))
+        failures.map(elemIdx => IncompatibleDirectionInPipe(AirIntakePipeT, elemIdx)(using SlotContext.unslotted))
 end DirectionReachability

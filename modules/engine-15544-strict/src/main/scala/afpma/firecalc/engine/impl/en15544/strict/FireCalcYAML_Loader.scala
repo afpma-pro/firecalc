@@ -60,7 +60,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
             FlowOnlyAirIntakePipe_Module_13384.incremental
                 .fromFramedSequence(fcProj.air_intake_pipes)
                 .define(fcProj.air_intake_pipes.descr*)
-                .toFullDescr()
+                .toFullDescr(using SlotContext.unslotted)
 
     val airIntakePipe: ValidatedNel[IncrementalValidation_Error, FlowOnlyAirIntakePipe_13384] =
         FlowOnlyAirIntakePipe_Module_13384.extractPipe(airIntakePipeResult)

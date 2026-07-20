@@ -51,6 +51,9 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                     select.contains(VizElementId.FireboxElement)
                 if matches then "viz-highlighted" else ""
 
+    private lazy val fireboxScope: PanelScope =
+        PanelScope.MultiTypeScope(List(FireboxPipeT, CombustionAirPipeT))
+
     lazy val fireboxForm = FireboxComponent(firebox_var).node
 
     // contraints / error validation for firebox
@@ -181,9 +184,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                 if !typeAvail then div(lucide.`circle-check`)
                                 else
                                     PanelStatusHelper
-                                        .keepGlobalErrorsOrErrorsSpecificToSectionTyp(st =>
-                                            (st == FireboxPipeT) || (st == CombustionAirPipeT)
-                                        )(all_cons) match
+                                        .filterErrors(
+                                            fireboxScope,
+                                            all_cons
+                                        ) match
                                         case Validated.Valid(_)      => div(lucide.`circle-check`)
                                         case Validated.Invalid(errs) =>
                                             DaisyUITooltip (
@@ -205,9 +209,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                 if !typeAvail then div(lucide.`circle-check`)
                                 else
                                     PanelStatusHelper
-                                        .keepGlobalErrorsOrErrorsSpecificToSectionTyp(st =>
-                                            (st == FireboxPipeT) || (st == CombustionAirPipeT)
-                                        )(fb_press_avail) match
+                                        .filterErrors(
+                                            fireboxScope,
+                                            fb_press_avail
+                                        ) match
                                         case Validated.Valid(_)      => div(lucide.`circle-check`)
                                         case Validated.Invalid(errs) =>
                                             DaisyUITooltip (

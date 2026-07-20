@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.typeclasses
 
-import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.{IncrementalValidation_Error, SlotContext}
 
 import cats.data.ValidatedNel
 
@@ -21,7 +21,8 @@ import cats.data.ValidatedNel
  */
 trait ElementFactory[AddOp, El, Ctx]:
     def make(op: AddOp)(using
-        ctx: Ctx
+        ctx: Ctx,
+        sc : SlotContext
     ): ValidatedNel[IncrementalValidation_Error, El]
 
 object ElementFactory:
@@ -32,12 +33,14 @@ object ElementFactory:
     // Summoner with context - primary usage pattern
     def make[A, E, C](op: A)(using
         factory: ElementFactory[A, E, C],
-        ctx    : C
+        ctx    : C,
+        sc     : SlotContext
     ): ValidatedNel[IncrementalValidation_Error, E] =
         factory.make(op)
 
     // Alternative: create factory bound to context
     def withContext[A, E, C](ctx: C)(using
-        factory: ElementFactory[A, E, C]
+        factory: ElementFactory[A, E, C],
+        sc     : SlotContext
     ): A => ValidatedNel[IncrementalValidation_Error, E] =
-        op => factory.make(op)(using ctx)
+        op => factory.make(op)(using ctx, sc)

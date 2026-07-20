@@ -27,6 +27,7 @@ import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 import afpma.firecalc.units.coulombutils.*
 
 import coulomb.*
@@ -43,6 +44,7 @@ import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
+import afpma.firecalc.engine.impl.en15544.common.SlotIndexProvider
 import afpma.firecalc.domain.FireboxCoordinateSystem
 
 object EN15544_Strict_Application:
@@ -159,7 +161,8 @@ sealed abstract class EN15544_Strict_Application(
                 hamf               = HeatingAppliance.MassFlows.summon,
                 temp_start         = T_L,
                 last_pipe_velocity = None,
-                gas                = CombustionAir
+                gas                = CombustionAir,
+                sc                 = SlotContext.unslotted
             )
 
         override def airIntake_PipeResult =
@@ -244,8 +247,10 @@ sealed abstract class EN15544_Strict_Application(
                 gas                 = CombustionAir,
                 loadQty             = LoadQty.summon,
                 z_geodetical_height = z_geodetical_height,
-                params              = pressReq_from_Params_15544
-            )(using en15544)
+                params              = pressReq_from_Params_15544,
+                tempStartOverride   = None,
+                sc                  = SlotContext.unslotted
+            )(using en15544, en15544.ssalg(SlotContext.unslotted))
             .toValidatedNel
 
     // ─── StrictAtParams: concrete inner class for strict application ─────
@@ -266,8 +271,10 @@ sealed abstract class EN15544_Strict_Application(
                     gas                 = FlueGas,
                     loadQty             = p._2,
                     z_geodetical_height = z_geodetical_height,
-                    params              = p._1
-                )(using en15544)
+                    params              = p._1,
+                    tempStartOverride   = None,
+                    sc                  = SlotContext.unslotted
+                )(using en15544, en15544.ssalg(SlotContext.unslotted))
                 .toValidatedNel
 
         /**
@@ -332,9 +339,10 @@ sealed abstract class EN15544_Strict_Application(
                 // Build PipeSlot for each flue region slot, threading descriptor seed through
                 // the fold accumulator (no mutable state).
                 val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
-                    flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
+                    val provider = SlotIndexProvider.prefix
+                    flueRegionSlots.zipWithIndex.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
                         Validated.validNel((Vector.empty, seed))
-                    ) { (accV, slot) =>
+                    ) { case (accV, (slot, idx)) =>
                         accV.andThen { case (acc, seed) =>
                             slot match
                                 case FlueSlot(descr)        =>
@@ -342,10 +350,10 @@ sealed abstract class EN15544_Strict_Application(
                                     import FluePipe_Module_15544.toFullDescrWithSeed
                                     val flueResult = FluePipe_Module_15544.incremental
                                         .define(descr*)
-                                        .toFullDescrWithSeed(seed)
+                                        .toFullDescrWithSeed(seed)(using SlotContext.forSlot(provider(idx)))
                                     val fdResult: FluePipe_Module_15544.FullDescrResult =
                                         flueResult.map((ids, fd, _) => (ids, fd))
-                                    val nextSeed   = flueResult.map(_._3).toOption.getOrElse(seed)
+                                    val nextSeed = flueResult.map(_._3).toOption.getOrElse(seed)
                                     FluePipe_Module_15544.FullDescrResult
                                         .extractPipe(fdResult)
                                         .map(pipe =>
@@ -363,11 +371,13 @@ sealed abstract class EN15544_Strict_Application(
                                     val v4Descr               = descr
                                     val (fdResult, nextSeedV) =
                                         FluePipe_Module_13384
-                                            .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
-                                    val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                            .mkPipeFromIncrDescrWithSeed(v4Descr, seed)(using
+                                                SlotContext.forSlot(provider(idx))
+                                            )
+                                    val nextSeed = nextSeedV.toOption.getOrElse(seed)
                                     FluePipe_Module_13384.FullDescrResult
                                         .extractPipe(fdResult)
-                                        .map(pipe =>
+                                        .map                                           (pipe =>
                                             (
                                                 acc :+ tcThermal13384.mkSlot(
                                                     FluePipeT,
@@ -387,11 +397,13 @@ sealed abstract class EN15544_Strict_Application(
                                     else
                                         val (fdResult, nextSeedV) =
                                             ConnectorPipe_Module
-                                                .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
-                                        val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                                .mkPipeFromIncrDescrWithSeed(v4Descr, seed)(using
+                                                    SlotContext.forSlot(provider(idx))
+                                                )
+                                        val nextSeed = nextSeedV.toOption.getOrElse(seed)
                                         ConnectorPipe_Module.FullDescrResult
                                             .extractPipe(fdResult)
-                                            .map(pipe =>
+                                            .map                                           (pipe =>
                                                 (
                                                     acc :+ ConnectorPipe_Module.foldPipeCanBe(pipe)  (
                                                         onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
@@ -477,7 +489,7 @@ sealed abstract class EN15544_Strict_Application(
                                 case Some(descr) =>
                                     val flueResult = FluePipe_Module_15544.incremental
                                         .define(descr*)
-                                        .toFullDescrWithSeed(seed)
+                                        .toFullDescrWithSeed(seed)(using SlotContext.fromOption(SlotIndex.from(0)))
                                     val fdResult: FluePipe_Module_15544.FullDescrResult =
                                         flueResult.map((ids, fd, _) => (ids, fd))
                                     FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match
@@ -488,8 +500,13 @@ sealed abstract class EN15544_Strict_Application(
                                                     gas                 = FlueGas,
                                                     loadQty             = p._2,
                                                     z_geodetical_height = z_geodetical_height,
-                                                    params              = p._1
-                                                )(using en15544)
+                                                    params              = p._1,
+                                                    tempStartOverride   = None,
+                                                    sc                  = SlotContext.fromOption(SlotIndex.from(0))
+                                                )(using
+                                                    en15544,
+                                                    en15544.ssalg(SlotContext.fromOption(SlotIndex.from(0)))
+                                                )
                                                 .toValidatedNel
                                         case Validated.Invalid(nel) => Validated.Invalid(nel)
 
@@ -509,12 +526,12 @@ sealed abstract class EN15544_Strict_Application(
                             last_pipe_density  = seedDensity,
                             last_pipe_velocity = seedVelocity
                         )
-                        val folded          = slots.foldLeft[Either[
+                        val folded          = slots.zipWithIndex.foldLeft[Either[
                             afpma.firecalc.engine.standard.MecaFlu_Error,
                             (UpstreamState, Vector[PipeResult])
-                        ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>
+                        ]](Right((initialUpstream, Vector.empty))) { case (acc, (slot, idx)) =>
                             acc.flatMap { case (upstream, results) =>
-                                slot.compute(upstream, p).map { pr =>
+                                slot.compute(upstream, p, SlotIndex.unsafe(idx)).map { pr =>
                                     val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
                                     (nextUpstream, results :+ pr)
                                 }

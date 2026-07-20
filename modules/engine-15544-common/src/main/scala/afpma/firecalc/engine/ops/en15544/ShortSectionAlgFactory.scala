@@ -12,6 +12,7 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.*
 import afpma.firecalc.engine.models.en15544.shortsection.*
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSection.*
 import afpma.firecalc.engine.models.gtypedefs.*
+import afpma.firecalc.engine.standard.SlotContext
 
 /**
  * Factory that wires [[ShortSectionAlg]] with EN 15544 dynamic-friction coefficients.
@@ -22,7 +23,9 @@ import afpma.firecalc.engine.models.gtypedefs.*
  */
 object ShortSectionAlgFactory:
 
-    def make(using
+    def make(
+        sc: SlotContext
+    )(using
         en15544        : afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg,
         dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
     ): ShortSectionAlg = new ShortSectionAlg:
@@ -45,7 +48,7 @@ object ShortSectionAlgFactory:
                 angleN2        = None,
                 effectiveShape = dc01.effectiveShape
             )
-            val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
+            val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT, sc)
             val ζα3_v       = flowOnlyDFC.whenRegularFor(dc02)
             val α1          = dc01.angleN1
             val α2          =

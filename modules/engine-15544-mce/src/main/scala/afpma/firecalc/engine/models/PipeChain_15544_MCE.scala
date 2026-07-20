@@ -11,6 +11,8 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.SlotIndex
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.ValidatedNel
 
@@ -45,21 +47,30 @@ object PipeChain_15544_MCE:
 
     def build(d: Descriptors): Built =
         // Flue pipe → capture final frame
+        // Fixed test position
         val initialSeed                 = PipeBuildSeed.default
         val (fluePipeResult, flueSeedV) =
-            FluePipe_Module_13384.mkPipeFromIncrDescrWithSeed(d.flue, initialSeed)
-        val flueSeed                    = flueSeedV.getOrElse(initialSeed)
-        val flueFinalFrame              = flueSeed.frame
+            FluePipe_Module_13384.mkPipeFromIncrDescrWithSeed(d.flue, initialSeed)(using
+                SlotContext.fromOption(SlotIndex.from(0))
+            )
+        val flueSeed = flueSeedV.getOrElse(initialSeed)
+        val flueFinalFrame = flueSeed.frame
 
         // Connector pipe with flue's final frame → capture final frame
+        // Fixed test position
         val (connectorPipeResult, connectorSeedV) =
-            ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(d.connector, flueSeed)
-        val connectorSeed                         = connectorSeedV.getOrElse(flueSeed)
-        val connectorFinalFrame                   = connectorSeed.frame
+            ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(d.connector, flueSeed)(using
+                SlotContext.fromOption(SlotIndex.from(1))
+            )
+        val connectorSeed = connectorSeedV.getOrElse(flueSeed)
+        val connectorFinalFrame = connectorSeed.frame
 
         // Chimney pipe with connector's final frame, falling back to flue's frame
+        // Fixed test position
         val chimneyPipeResult =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorSeed)._1
+            ChimneyPipe_Module
+                .mkPipeFromIncrDescr(d.chimney, connectorSeed)(using SlotContext.fromOption(SlotIndex.from(2)))
+                ._1
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)
 

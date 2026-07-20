@@ -20,6 +20,7 @@ import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionCha
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.ops.en15544.FlowOnlyMecaFlu_15544
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
 
@@ -51,15 +52,18 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
 
     given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
         new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
-            def make(pt: PipeType): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
-                val delegate = DynamicFrictionCoeff_13384()(using pt)
+            def make(pt: PipeType, sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                val delegate = DynamicFrictionCoeff_13384()(using pt, sc)
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
-    val flowOnlyDynamicFrictionCoeff_15544                           = FlowOnlyDynamicFrictionCoeff_15544()
+    val flowOnlyDynamicFrictionCoeff_15544                           =
+        FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT, SlotContext.forSlot(SlotIndex.unsafe(0)))
     given DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
-        flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(channel_pipe_full_descr.elementsUnwrap)(using
-            en15544.ssalg
+        flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(
+            channel_pipe_full_descr.elementsUnwrap
+        )(using
+            en15544.ssalg(SlotContext.forSlot(SlotIndex.unsafe(0)))
         )
 
     import LoadQty.givens.nominal
@@ -76,8 +80,10 @@ class MecaFlu_15544_Suite extends AnyFreeSpec with Matchers {
                     FlueGas,
                     nominal,
                     en15544.z_geodetical_height,
-                    p
-                )(using en15544, en15544.ssalg)
+                    p,
+                    None,
+                    SlotContext.forSlot(SlotIndex.unsafe(0))
+                )(using en15544, en15544.ssalg(SlotContext.forSlot(SlotIndex.unsafe(0))))
                 pr.toOption shouldBe defined
             }
         }

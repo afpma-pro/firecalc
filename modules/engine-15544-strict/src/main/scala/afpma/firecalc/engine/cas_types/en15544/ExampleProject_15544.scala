@@ -18,6 +18,7 @@ import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
+import afpma.firecalc.engine.standard.SlotContext
 
 import io.taig.babel.Languages
 
@@ -62,7 +63,8 @@ object ExampleProject_15544
 
     val airIntakePipe =
         import AirIntakePipe_Module.*
-        mkPipeFromIncrDescr(conduit_air_descr).extractPipe
+        // Test fixture — no slot index
+        mkPipeFromIncrDescr(conduit_air_descr)(using SlotContext.unslotted).extractPipe
 
     val foyer_descr = TraditionalFirebox(
         h11_profondeurDuFoyer            = 44.cm,

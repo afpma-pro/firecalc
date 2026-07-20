@@ -6,8 +6,6 @@
 package afpma.firecalc.engine.impl.en15544.strict
 
 import afpma.firecalc.dto.common.PipeInitialDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
@@ -16,8 +14,12 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.Door15aFirebox_Catalog
 import afpma.firecalc.engine.standard.PressureLossMustBeDefined
 import afpma.firecalc.engine.standard.PressureLossTableError
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.syntax.validated.*
+
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 /**
  * Combustion air pipe for [[Door15aFirebox_Catalog]] fireboxes.
@@ -49,7 +51,7 @@ trait Door15aCatalogFireboxToCombustionAirPipe_15544_Strict
                             innerShape     (firebox.actualAirIntakePipeShape),
                             addPressureDiff("door_15a_pressure_loss", pl    )
                         )
-                        .toFullDescr()
+                        .toFullDescr(using SlotContext.unslotted)
                     CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr)
                 case Left(None)         =>
                     PressureLossMustBeDefined(CombustionAirPipeT).invalidNel

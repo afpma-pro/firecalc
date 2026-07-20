@@ -27,7 +27,7 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PositionTracker
 import afpma.firecalc.engine.models.geometry.SplitMergeTwoHelper
 import afpma.firecalc.engine.models.geometry.SymmetryPlaneConfig
-import afpma.firecalc.engine.standard.MergeBranchTipNotAtMergePosition
+import afpma.firecalc.engine.standard.{MergeBranchTipNotAtMergePosition, SlotContext, SlotIndex}
 
 import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterX
 import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterY
@@ -241,7 +241,7 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped("section horizontale", 0.5.meters)
             )
 
-            val result = p.toFullDescrWithSeed(seed)
+            val result = p.toFullDescrWithSeed(seed)(using SlotContext.forSlot(SlotIndex.unsafe(0)))
             result.isValid shouldBe true
         }
 
@@ -296,7 +296,7 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped("section horizontale", 0.5.meters)
             )
 
-            val result = p.toFullDescrWithSeed(seed)
+            val result = p.toFullDescrWithSeed(seed)(using SlotContext.forSlot(SlotIndex.unsafe(0)))
             result.isValid shouldBe false
 
             val errors = result.toEither.left.toOption.get

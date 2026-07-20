@@ -41,7 +41,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -63,7 +63,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)           ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -78,7 +78,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[GeometryWithoutInitialDirection]
@@ -106,7 +106,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -131,7 +131,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -149,7 +149,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[GeometryWithoutInitialDirection]

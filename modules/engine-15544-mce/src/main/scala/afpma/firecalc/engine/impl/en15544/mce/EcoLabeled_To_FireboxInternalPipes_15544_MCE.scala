@@ -10,9 +10,6 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToInternalPipes_15544_MCE
 import afpma.firecalc.engine.impl.en15544.mce.HasFireboxDimensionsToFireboxPipe_15544_MCE
@@ -23,6 +20,11 @@ import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.*
 import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
+import afpma.firecalc.engine.standard.SlotContext
+
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 given FireboxToCombustionAirPipe_15544_MCE[Ecolabeled] = Ecolabeled_To_FireboxInternalPipes_15544_MCE
 given FireboxToFireboxPipe_15544_MCE[Ecolabeled]       = Ecolabeled_To_FireboxInternalPipes_15544_MCE
@@ -156,5 +158,5 @@ object Ecolabeled_To_FireboxInternalPipes_15544_MCE
                     PipeInitialDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
                 ) // Front (arbitrary)
                 .define(recombined_incr_descr*)
-                .toFullDescr()
+                .toFullDescr(using SlotContext.unslotted)
                 .extractPipe

@@ -14,6 +14,7 @@ import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.models.AirIntakePipeT
 import afpma.firecalc.engine.validation.SplitMergeNotAllowedInAirIntake
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -67,7 +68,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 )
             ))*
         )
-        val errors  = descr.toFullDescr().toEither.left.toOption.get
+        val errors  = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.left.toOption.get
         errors.exists(_.isInstanceOf[SplitMergeNotAllowedInAirIntake]) shouldBe true
     }
 
@@ -88,7 +89,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 )
             ))*
         )
-        val errors  = descr.toFullDescr().toEither.left.toOption.get
+        val errors  = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.left.toOption.get
         errors.exists(_.isInstanceOf[SplitMergeNotAllowedInAirIntake]) shouldBe true
     }
 
@@ -109,7 +110,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 )
             ))*
         )
-        val errors  = descr.toFullDescr().toEither.left.toOption.get
+        val errors  = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.left.toOption.get
         errors.exists(_.isInstanceOf[SplitMergeNotAllowedInAirIntake]) shouldBe true
     }
 
@@ -130,7 +131,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 )
             ))*
         )
-        val errors  = descr.toFullDescr().toEither.left.toOption.get
+        val errors  = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.left.toOption.get
         errors.exists(_.isInstanceOf[SplitMergeNotAllowedInAirIntake]) shouldBe true
     }
 
@@ -141,7 +142,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped("section", 1.meters)
             ))*
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
     }
     it should "accumulate air intake and geometry errors" in {
         // Builder WITHOUT initial direction → geometry validation fails
@@ -161,7 +162,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 )
             ))*
         )
-        val errors  = descr.toFullDescr().toEither.left.toOption.get
+        val errors  = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.left.toOption.get
         errors.exists(_.isInstanceOf[SplitMergeNotAllowedInAirIntake]) shouldBe true
         errors.exists(_.isInstanceOf[afpma.firecalc.engine.standard.GeometryWithoutInitialDirection]) shouldBe true
         errors.exists(_.isInstanceOf[afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection]) shouldBe true
@@ -184,7 +185,7 @@ class AirIntakeSplitMergeProhibitionSuite extends AnyFlatSpec with Matchers:
                 )
             ))*
         )
-        val errors  = descr.toFullDescr().toEither.left.toOption.get
+        val errors  = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.left.toOption.get
         errors.exists(_.isInstanceOf[SplitMergeNotAllowedInAirIntake]) shouldBe true
         errors.exists(_.isInstanceOf[afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection]) shouldBe true
     }

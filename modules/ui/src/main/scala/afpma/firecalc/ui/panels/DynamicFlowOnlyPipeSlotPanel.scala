@@ -22,6 +22,7 @@ import afpma.firecalc.engine.models.FluePipe_Module_15544.innerShapeAtPrefix
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.SlotIndex
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -45,7 +46,7 @@ import io.taig.babel.Locale
 
 /** Flow-only 15544 slot panel (flue pipe in Strict mode). */
 final case class DynamicFlowOnlyPipeSlotPanel(
-    slotIndex           : Int,
+    slotIndex           : SlotIndex,
     slotControlsNode    : Option[HtmlElement]            = None,
     headIdx             : Option[Int]                    = None,
     isLastInHeadRegion  : Boolean                        = false,
@@ -54,13 +55,15 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 )                                            (using Locale, DisplayUnits)
     extends PipePanel:
 
-    override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
+    override protected def slotContext: SlotContext = SlotContext.forSlot(slotIndex)
+
+    override protected def vizFieldsetIdPrefix : String              = s"slot-${slotIndex.value}"
     override protected lazy val pipeTypeCls    : String              = "pipe-type-flue"
     override protected def accordionTitlePrefix: Option[HtmlElement] = slotControlsNode
 
     override protected def ownsVizElement(id: VizElementId): Boolean = id match
-        case VizElementId.PostFireboxSlotElement(si, _) => si == slotIndex
-        case VizElementId.FluePipeElement(_)            => slotIndex == 0 // backward compat
+        case VizElementId.PostFireboxSlotElement(si, _) => si == slotIndex.value
+        case VizElementId.FluePipeElement(_)            => slotIndex.isFirst // backward compat
         case _                                          => false
 
     override protected def vizElementIndex(id: VizElementId): Int = id match
@@ -131,8 +134,8 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     // ── Firebox split direction override warning ─────────────────────
 
     override protected def warningVnelSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
-        PanelStatusHelper.fireboxSplitWarningSignal[FlowOnlyPipeDescr_15544]  (
-            slotIndex   = slotIndex,
+        PanelStatusHelper.fireboxSplitWarningSignal[FlowOnlyPipeDescr_15544](
+            isFirstSlot = slotIndex.isFirst,
             elemsSignal = elems_v.signal,
             isSplit     = {
                 case _: AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn => true
@@ -148,12 +151,12 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     /** Zoom into the slot's descriptor sequence within the slot vector. */
     lazy val elems_v: Var[Seq[FlowOnlyPipeDescr_15544]] =
         postFireboxSlots_var.zoomLazy(slots =>
-            slots.lift(slotIndex) match
+            slots.lift(slotIndex.value) match
                 case Some(PostFireboxPipeDescrSlot_V7.FlueSlot(d)) => d
                 case _                                             => Seq.empty
         )((slots, descr) =>
             slots.zipWithIndex.map { case (s, i) =>
-                if i == slotIndex then PostFireboxPipeDescrSlot_V7.FlueSlot(descr) else s
+                if i == slotIndex.value then PostFireboxPipeDescrSlot_V7.FlueSlot(descr) else s
             }
         )
 
@@ -167,12 +170,12 @@ final case class DynamicFlowOnlyPipeSlotPanel(
     //   - `IncrementalValidation_Error <: MCalc_Error`,
     // so `Signal[ValidatedNel[IncrementalValidation_Error, _]] <: Signal[VNelMcalcErr[_]]`.
     override lazy val pipeMappings_vnel_signal: Signal[VNelMcalcErr[PipeIdsMapping]] =
-        slotMappingFnSig(slotIndex)
+        slotMappingFnSig(slotIndex.value)
 
     override lazy val pipeResult_vnel_signal: Signal[VNelMcalcErr[PipeResult]] =
         postFireboxPipeResults_sig.map: vnel =>
             vnel.andThen: results =>
-                results.lift(slotIndex) match
+                results.lift(slotIndex.value) match
                     case Some((_, pr)) => Validated.validNel(pr)
                     case None          => Validated.invalidNel(FluePipeNotDefinedYet)
 
@@ -203,7 +206,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 citedConstraintsCheck_sig
             )
             .map: (results, pipeResultV, pressureV, velocityV, shapeV, citedV) =>
-                results.lift(slotIndex) match
+                results.lift(slotIndex.value) match
                     case Some(result) if result.upstreamFailure =>
                         ErrorsInOtherSectionType.invalidNel
                     case Some(result)                           =>
@@ -255,7 +258,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
 
     private lazy val frameBeforeByIdx: Signal[Map[Int, PipeFrame]] =
         welems_var.signal
-            .combineWithDistinct(slotInitialFrameSig(slotIndex))
+            .combineWithDistinct(slotInitialFrameSig(slotIndex.value))
             .map: (elems, externalFrame) =>
                 FrameReplay.replayFrameMap(elems, externalFrame)
     private lazy val directionAfterByIdx: Signal[Map[Int, Vec3]] =
@@ -629,7 +632,7 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 )
             }
             .toSignal
-            .map(renderV7WrapperElems(slotIndex == 0))
+            .map(renderV7WrapperElems(slotIndex.isFirst))
 
     // ── Tag tree menu (same as FluePipePanel) ────────────────────
 

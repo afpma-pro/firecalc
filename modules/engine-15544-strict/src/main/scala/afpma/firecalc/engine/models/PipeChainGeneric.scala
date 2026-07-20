@@ -5,15 +5,18 @@
 
 package afpma.firecalc.engine.models
 
-import afpma.firecalc.dto.all.NbOfFlows
-import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
-import afpma.firecalc.engine.models.FireboxSplitFrame
-import afpma.firecalc.engine.models.PipePositionContext
-import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
-import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
 
+import afpma.firecalc.dto.all.NbOfFlows
+import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
+
+import afpma.firecalc.engine.models.FireboxSplitFrame
+import afpma.firecalc.engine.models.PipePositionContext
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+
 import cats.data.Validated
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 /**
  * Builds a Vector[SlotBuildResult] from a sequence of PostFireboxPipeDescrSlot,
@@ -52,10 +55,10 @@ object PipeChainGeneric:
                 )
         // Track whether any prior slot failed — downstream slots get upstreamFailure=true
         // so the UI can show ErrorsInOtherSectionType instead of spurious cascading errors.
-        slots
+        slots.zipWithIndex
             .foldLeft(((Vector.empty[SlotBuildResult], false), initialSeed)):
-                case (((results, failedUpstream), seed), slot) =>
-                    val result         = buildSlot(slot, seed)
+                case (((results, failedUpstream), seed), (slot, idx)) =>
+                    val result         = buildSlot(slot, seed)(using SlotContext.fromOption(SlotIndex.from(idx)))
                     val resultWithFlag =
                         if failedUpstream then result.copy(upstreamFailure = true)
                         else result
@@ -67,13 +70,14 @@ object PipeChainGeneric:
     private def buildSlot(
         slot: PostFireboxPipeDescrSlot_V7,
         seed: PipeBuildSeed
-    ): SlotBuildResult =
+    )(using sc: SlotContext): SlotBuildResult =
         slot match
             case PostFireboxPipeDescrSlot_V7.FlueSlot(descr)        => buildFlue15544(descr, seed)
             case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(descr) => buildThermalFlue(descr, seed)
             case PostFireboxPipeDescrSlot_V7.ConnectorSlot(descr)   =>
                 buildThermal(ConnectorPipeT, "Connector", descr, seed)
-            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     => buildThermal(ChimneyPipeT, "Chimney", descr, seed)
+            case PostFireboxPipeDescrSlot_V7.ChimneySlot(descr)     =>
+                buildThermal(ChimneyPipeT, "Chimney", descr, seed)
             case PostFireboxPipeDescrSlot_V7.NoFlueSlot             =>
                 SlotBuildResult(
                     NoFluePipeT,
@@ -88,7 +92,7 @@ object PipeChainGeneric:
     private def buildFlue15544(
         descr: Seq[afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544],
         seed : PipeBuildSeed
-    ): SlotBuildResult =
+    )(using sc: SlotContext): SlotBuildResult =
         import FluePipe_Module_15544.FullDescrResult.given
         import FluePipe_Module_15544.toFullDescrWithSeed
         val flueResult = FluePipe_Module_15544.incremental
@@ -106,7 +110,7 @@ object PipeChainGeneric:
     private def buildThermalFlue(
         descr: Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
         seed : PipeBuildSeed
-    ): SlotBuildResult =
+    )(using sc: SlotContext): SlotBuildResult =
         val (fullDescrResult, nextSeedV) =
             FluePipe_Module_13384.mkPipeFromIncrDescrWithSeed(descr, seed)
         val pipe                         = FluePipe_Module_13384.FullDescrResult.extractPipe(fullDescrResult)
@@ -122,7 +126,7 @@ object PipeChainGeneric:
         label   : String,
         descr   : Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
         seed    : PipeBuildSeed
-    ): SlotBuildResult =
+    )(using sc: SlotContext): SlotBuildResult =
         pipeType match
             case ConnectorPipeT => buildConnector(descr, seed)
             case ChimneyPipeT   => buildChimney(descr, seed)
@@ -140,7 +144,7 @@ object PipeChainGeneric:
     private def buildConnector(
         descr: Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
         seed : PipeBuildSeed
-    ): SlotBuildResult =
+    )(using sc: SlotContext): SlotBuildResult =
         val (fullDescrResult, nextSeedV) =
             ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(descr, seed)
         val pipe                         = ConnectorPipe_Module.FullDescrResult.extractPipe(fullDescrResult)
@@ -152,7 +156,7 @@ object PipeChainGeneric:
     private def buildChimney(
         descr: Seq[afpma.firecalc.dto.all.ThermalPipeDescr_13384],
         seed : PipeBuildSeed
-    ): SlotBuildResult =
+    )(using sc: SlotContext): SlotBuildResult =
         val (fullDescrResult, nextSeedV) =
             ChimneyPipe_Module.mkPipeFromIncrDescr(descr, seed)
         val pipe                         = ChimneyPipe_Module.FullDescrResult.extractPipe(fullDescrResult)

@@ -474,16 +474,14 @@ case class PipesResult_15544(
 
     /** All results in the flue-pipe region (first flue to last flue, inclusive). */
     def conceptualFlue: Vector[PipeResult] =
-        if lastFluePipeIdx < 0 then Vector.empty
-        else postFirebox.take(lastFluePipeIdx + 1).map(_._2)
+        lastFluePipeIdx.fold(Vector.empty[PipeResult])(i => postFirebox.take(i + 1).map(_._2))
 
     /** The connector pipe: last ConnectorPipeT before the terminal chimney. */
     def connector: Option[PipeResult] =
-        val candidateIdx = lastFluePipeIdx + 1
-        if candidateIdx >= 0 && candidateIdx < postFirebox.size - 1 then
+        lastFluePipeIdx.map(_ + 1).filter(_ < postFirebox.size - 1).flatMap { candidateIdx =>
             val (pt, pr) = postFirebox(candidateIdx)
             if pt == ConnectorPipeT then Some(pr) else None
-        else None
+        }
 
     /** The terminal chimney pipe (always last). */
     def chimney: PipeResult =
@@ -493,24 +491,24 @@ case class PipesResult_15544(
         pr
 
     // ── region boundary ──
-    private val lastFluePipeIdx: Int = postFirebox.lastIndexWhere(_._1 == FluePipeT)
+    private val lastFluePipeIdx: Option[Int] =
+        val i = postFirebox.lastIndexWhere(_._1 == FluePipeT)
+        if i >= 0 then Some(i) else None
 
     /** Last flue pipe result (for t_F / efficiency). */
     def lastFluePipeResult: Option[PipeResult] =
-        if lastFluePipeIdx < 0 then None
-        else Some(postFirebox(lastFluePipeIdx)._2)
+        lastFluePipeIdx.map(i => postFirebox(i)._2)
 
     // ── aggregate lists ──
     private val postFireboxResults: List[PipeResult] = postFirebox.map(_._2).toList
 
-    // When `lastFluePipeIdx < 0` (no FluePipe in the post-firebox chain — legal under
+    // When `lastFluePipeIdx` is empty (no FluePipe in the post-firebox chain — legal under
     // EN 13384 standalone grammar where HEAD_REGION is empty), the "until flue pipe
     // end" aggregations (`Σ_pRs_until_fluepipe_end`, `Σ_pRg_until_fluepipe_end`, …)
     // reduce to the combustion-air + firebox contribution only. `List.map.sum` on an
     // empty tail yields zero, so the cumulative sums render cleanly. Plan issue E3.
     val orderedPipesUntilFluePipe = /* airIntake :: */ combustionAir :: firebox ::
-        (if lastFluePipeIdx < 0 then Nil
-         else postFirebox.take(lastFluePipeIdx + 1).map(_._2).toList)
+        lastFluePipeIdx.fold(List.empty[PipeResult])(i => postFirebox.take(i + 1).map(_._2).toList)
 
     val orderedPipesAll = airIntake :: combustionAir :: firebox :: postFireboxResults
 

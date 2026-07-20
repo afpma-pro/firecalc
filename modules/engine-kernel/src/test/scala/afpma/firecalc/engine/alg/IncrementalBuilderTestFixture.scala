@@ -108,7 +108,7 @@ trait IncrementalBuilderTestFixture:
         override protected def updateStateBeforeConversionStep(
             propsState: PropsState,
             convStep  : ConversionStep
-        ): ValidatedResult[PropsState] =
+        )(using sc: SlotContext): ValidatedResult[PropsState] =
             convStep.allPreElementOpsUntilNextAddElement
                 .foldLeft(propsState.validNel[IncrementalValidation_Error]) { case (vState, (_, setPropOp)) =>
                     setPropOp match
@@ -131,7 +131,11 @@ trait IncrementalBuilderTestFixture:
         override protected def mkFullElementsDescr(
             prevs   : PipeFullDescr,
             convStep: ConversionStep
-        )(id_addElementOp: (IdIncr, AddElement)): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
+        )(using
+            sc: SlotContext
+        )(
+            id_addElementOp: (IdIncr, AddElement)
+        ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
             id_addElementOp match
                 case (idIncr, TestStraight(n, l)) =>
                     mkNamedElement(prevs, idIncr, n, TestElStraight(l))

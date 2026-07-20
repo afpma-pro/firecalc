@@ -37,46 +37,46 @@ class FireboxSplitWarningSignalSuite extends AnyFreeSpec with Matchers:
     }
 
     "fireboxSplitWarning — slotIndex 0 with split first" in {
-        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544] (
-            slotIndex  = 0,
-            elems      = Seq(split, section),
-            isSplit    = isSplit,
-            isProperty = isProperty
+        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544](
+            isFirstSlot = true,
+            elems       = Seq(split, section),
+            isSplit     = isSplit,
+            isProperty  = isProperty
         ) shouldBe PanelStatusHelper.PanelWarning.FireboxSplitDirectionOverridden.invalidNel
     }
 
     "fireboxSplitWarning — slotIndex 0 without split" in {
-        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544] (
-            slotIndex  = 0,
-            elems      = Seq(section),
-            isSplit    = isSplit,
-            isProperty = isProperty
+        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544](
+            isFirstSlot = true,
+            elems       = Seq(section),
+            isSplit     = isSplit,
+            isProperty  = isProperty
         ) shouldBe ().validNel
     }
 
     "fireboxSplitWarning — slotIndex > 0 with split" in {
-        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544] (
-            slotIndex  = 1,
-            elems      = Seq(split),
-            isSplit    = isSplit,
-            isProperty = isProperty
+        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544](
+            isFirstSlot = false,
+            elems       = Seq(split),
+            isSplit     = isSplit,
+            isProperty  = isProperty
         ) shouldBe ().validNel
     }
 
     "fireboxSplitWarning — empty slot" in {
-        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544] (
-            slotIndex  = 0,
-            elems      = Seq.empty[FlowOnlyPipeDescr_15544],
-            isSplit    = isSplit,
-            isProperty = isProperty
+        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544](
+            isFirstSlot = true,
+            elems       = Seq.empty[FlowOnlyPipeDescr_15544],
+            isSplit     = isSplit,
+            isProperty  = isProperty
         ) shouldBe ().validNel
     }
 
     "fireboxSplitWarning — split after SetInnerShape (property skipped)" in {
-        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544] (
-            slotIndex  = 0,
-            elems      = Seq(setShape, split),
-            isSplit    = isSplit,
-            isProperty = isProperty
+        PanelStatusHelper.fireboxSplitWarning[FlowOnlyPipeDescr_15544](
+            isFirstSlot = true,
+            elems       = Seq(setShape, split),
+            isSplit     = isSplit,
+            isProperty  = isProperty
         ) shouldBe PanelStatusHelper.PanelWarning.FireboxSplitDirectionOverridden.invalidNel
     }

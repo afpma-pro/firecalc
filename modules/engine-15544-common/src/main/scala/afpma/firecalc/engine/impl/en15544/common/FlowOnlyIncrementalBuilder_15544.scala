@@ -98,7 +98,7 @@ trait FlowOnlyIncrementalBuilder_15544
      * @param dir the initial direction
      * @return this builder (for chaining)
      */
-    def withInitialDirection(dir: PipeInitialDirection): this.type =
+    override def withInitialDirection(dir: PipeInitialDirection): this.type =
         wrapperInitialDirection = Some(dir)
         this
 
@@ -147,12 +147,12 @@ trait FlowOnlyIncrementalBuilder_15544
 
         /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */
         def innerShapeAtPrefix(n: Int): Option[PipeShape] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.flatMap(stateOps.getInnerShape)
 
         /** Number of flows in effect after folding the first n descriptors. */
         def nFlowsAtPrefix(n: Int): Option[NbOfFlows] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.map(stateOps.getNFlows)
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
@@ -192,7 +192,7 @@ trait FlowOnlyIncrementalBuilder_15544
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState,
         seed      : PipeBuildSeed
-    ): ValidatedResult[Unit] =
+    )(using sc: SlotContext): ValidatedResult[Unit] =
         val airIntakeValidation = AirIntakeValidation.validateAirIntakeConstraints(pt, incrDescrs)
 
         val hasGeometry        = incrDescrs.exists:
@@ -252,6 +252,8 @@ trait FlowOnlyIncrementalBuilder_15544
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
+    )(using
+        sc: SlotContext
     )(
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
@@ -337,7 +339,13 @@ trait FlowOnlyIncrementalBuilder_15544
 
                 case op: AddDirectionChange =>
                     stateOps
-                        .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
+                        .validateMaterialized(
+                            st,
+                            Operation.AddDirectionChange,
+                            pt,
+                            idIncr.unwrap,
+                            addElementOp.name
+                        )
                         .andThen { _ =>
                             given DirectionChangeCtx_15544 =
                                 DirectionChangeCtx_15544(
@@ -351,7 +359,13 @@ trait FlowOnlyIncrementalBuilder_15544
 
                 case op: AddSectionShapeChange =>
                     stateOps
-                        .validateMaterialized(st, Operation.AddSectionShapeChange, pt, idIncr.unwrap, addElementOp.name)
+                        .validateMaterialized(
+                            st,
+                            Operation.AddSectionShapeChange,
+                            pt,
+                            idIncr.unwrap,
+                            addElementOp.name
+                        )
                         .andThen { _ =>
                             given SectionGeometryChangeCtx_15544 =
                                 SectionGeometryChangeCtx_15544(
@@ -418,7 +432,7 @@ trait FlowOnlyIncrementalBuilder_15544
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
-    ): ValidatedResult[PropsState] =
+    )(using sc: SlotContext): ValidatedResult[PropsState] =
         // Use the AddElement's idIncr for elementIndex in errors — it is the physical
         // element that the pre-element ops target, so the error points to the element
         // the user sees (and can fix) rather than the preceding SetInnerShape row.
@@ -432,7 +446,13 @@ trait FlowOnlyIncrementalBuilder_15544
                 ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                     vState.andThen { st =>
                         stateOps
-                            .validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, nextElemName)
+                            .validateMaterialized(
+                                st,
+                                Operation.SetInnerShape,
+                                pt,
+                                nextElemIdIncr,
+                                nextElemName
+                            )
                             .andThen { _ =>
                                 FlowAreaConservation
                                     .validateSetInnerShape(st, g, pt, nextElemIdIncr, nextElemName)(using stateOps)
@@ -456,7 +476,13 @@ trait FlowOnlyIncrementalBuilder_15544
                         vState.andThen { st =>
                             val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
                             stateOps
-                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
+                                .validateMaterialized(
+                                    st,
+                                    Operation.SetNumberOfFlows,
+                                    pt,
+                                    nextElemIdIncr,
+                                    nextElemName
+                                )
                                 .map(_ => updatedSt)
                         }
             }

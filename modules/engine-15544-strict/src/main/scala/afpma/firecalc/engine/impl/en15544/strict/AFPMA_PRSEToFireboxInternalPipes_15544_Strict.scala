@@ -17,6 +17,7 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.AFPMA_PRSE
+import afpma.firecalc.engine.standard.SlotContext
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
@@ -114,5 +115,5 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                             innerShape          (firebox.geometrieEquivalenteDesInjecteursAir),
                             addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm   )
                         )
-                        .toFullDescr()
+                        .toFullDescr(using SlotContext.unslotted)
                     CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                                                           )

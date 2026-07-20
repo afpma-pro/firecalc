@@ -19,6 +19,7 @@ import afpma.firecalc.dto.all.AddThermalPipeElement_13384.{
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
 
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
@@ -66,7 +67,7 @@ class Pipes_13384_IncrementalBuilder extends AnyFreeSpec with Matchers with Incr
                                 addSectionHorizontal("first", 2.meters)
                             )
 
-                    val vRepr = p.toFullDescr()
+                    val vRepr = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
 
                     val expected = PipeFullDescr(
                         elements = Vector(

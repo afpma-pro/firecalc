@@ -16,6 +16,7 @@ import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.*
 import cats.syntax.all.*
@@ -25,83 +26,50 @@ import coulomb.policy.standard.given
 
 class FlowOnlyDynamicFrictionCoeff_15544()(using
     sectionTyp     : PipeType,
+    sc             : SlotContext,
     dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
 ):
 
-    private val dynamicFrictionCoeff_13384 = dynFrictFactory.make(sectionTyp)
-
     def whenRegularFor(pd: en15544_pipedescr.NotPressureDiff): DynamicFrictionCoeffOp.Result =
-        import regular.given
         pd match
-            case x: en15544_pipedescr.DirectionChange        => x.dynamicFrictionCoeff
-            case x: en15544_pipedescr.SingularFlowResistance => x.dynamicFrictionCoeff
+            case x: en15544_pipedescr.SingularFlowResistance =>
+                x.zeta.validNel[SingularFlowResistanceCoeffError]
             case en15544_pipedescr.SectionGeometryChange(from, to) =>
                 // See RQ_002
-                dynamicFrictionCoeff_13384.thermalSectionGeometryChange.dynamicFrictionCoeff(
+                val delegate = dynFrictFactory.make(sectionTyp, sc)
+                delegate.thermalSectionGeometryChange.dynamicFrictionCoeff(
                     SectionGeometryChange_13384.make(from.area, to.area)
                 )
             case _: en15544_pipedescr.StraightSection => DynamicFrictionCoeffOp.zero
-
-    private object regular:
-
-        given singularFlowResistance: DynamicFrictionCoeffOp[en15544_pipedescr.SingularFlowResistance] =
-            DynamicFrictionCoeffOp.fromFunction[en15544_pipedescr.SingularFlowResistance](_.zeta.validNel)
-
-        given directionChange: DynamicFrictionCoeffOp[en15544_pipedescr.DirectionChange]:
-            extension (s: en15544_pipedescr.DirectionChange)
-                def dynamicFrictionCoeff: DynamicFrictionCoeffOp.Result =
-                    s match
-                        case ss: en15544_pipedescr.DirectionChange.AngleVifDe0A180 =>
-                            angleVifDe0A180.dynamicFrictionCoeff(ss)
-                        case ss: en15544_pipedescr.DirectionChange.CircularArc60   =>
-                            circularArc60.dynamicFrictionCoeff(ss)
-                        case ss: en15544_pipedescr.SplitMerge90                    =>
-                            splitMerge90.dynamicFrictionCoeff(ss)
-
-        // Individual Resistance
-        given angleVifDe0A180: DynamicFrictionCoeffOp[en15544_pipedescr.DirectionChange.AngleVifDe0A180] =
-            DynamicFrictionCoeffOp.fromFunction { shape =>
-                _interpolateHelper            (
-                    shape             = shape,
-                    resName           = "EN 15544:2023 // Table 3",
-                    tsvTableRawString = """|Angle	ζ
-                           |0	0,00
-                           |10	0,10
-                           |30	0,20
-                           |45	0,40
-                           |60	0,80
-                           |90	1,20
-                           |180	2,40""".stripMargin,
-                    xHeader           = "Angle",
-                    xi                = shape.α.toUnit[Degree].value,
-                    xMinMax           = (0, 180),
-                    yCriteria         = None,
-                    yHeaderSelectFunc = _ => Right("ζ")
-                )
-            }
-
-        // Individual Resistance
-        given circularArc60: DynamicFrictionCoeffOp[en15544_pipedescr.DirectionChange.CircularArc60] =
-            DynamicFrictionCoeffOp.fromFunction { _ =>
-                (0.7.unitless: ζ).validNel[SingularFlowResistanceCoeffError]
-            }
-
-        given splitMerge90: DynamicFrictionCoeffOp[en15544_pipedescr.SplitMerge90] =
-            DynamicFrictionCoeffOp.fromFunction { _ =>
-                CoefficientOfFlowResistance.splitMerge90Zeta.validNel[SingularFlowResistanceCoeffError]
-            }
-
-        given straightSection: DynamicFrictionCoeffOp[en15544_pipedescr.StraightSection] =
-            DynamicFrictionCoeffOp.fromFunction { _ =>
-                (0.0.unitless: ζ).validNel[SingularFlowResistanceCoeffError]
-            }
-
-    end regular
+            case dc: en15544_pipedescr.DirectionChange =>
+                dc match
+                    case ss: en15544_pipedescr.DirectionChange.AngleVifDe0A180 =>
+                        _interpolateHelper            (
+                            shape             = ss,
+                            resName           = "EN 15544:2023 // Table 3",
+                            tsvTableRawString = """|Angle	ζ
+                                   |0	0,00
+                                   |10	0,10
+                                   |30	0,20
+                                   |45	0,40
+                                   |60	0,80
+                                   |90	1,20
+                                   |180	2,40""".stripMargin,
+                            xHeader           = "Angle",
+                            xi                = ss.α.toUnit[Degree].value,
+                            xMinMax           = (0, 180),
+                            yCriteria         = None,
+                            yHeaderSelectFunc = _ => Right("ζ")
+                        )
+                    case _ : en15544_pipedescr.DirectionChange.CircularArc60   =>
+                        (0.7.unitless: ζ).validNel[SingularFlowResistanceCoeffError]
+                    case _ : en15544_pipedescr.SplitMerge90                    =>
+                        CoefficientOfFlowResistance.splitMerge90Zeta.validNel[SingularFlowResistanceCoeffError]
 
     def mkInstanceForNamedPipesConcat(
         namedPipesConcat: Vector[models.NamedPipeElDescrG[PipeElDescr]]
     )(using SSAlg: ShortSectionAlg): DynamicFrictionCoeffOp[models.NamedPipeElDescrG[DirectionChange]] =
-        dynfrict.DynamicFrictionCoeffOpForConcatenatedPipeVector(namedPipesConcat)
+        dynfrict.DynamicFrictionCoeffOpForConcatenatedPipeVector(namedPipesConcat, sc)
 
     // given DynamicFrictionCoeffOp[afpma.firecalc.engine.models.DirectionChange] with
     //     extension (s: afpma.firecalc.engine.models.DirectionChange) def dynamicFrictionCoeff: DynamicFrictionCoeffOp.Result =
@@ -112,7 +80,7 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
     //                 dc_EN13384.dynamicFrictionCoeff
 
     // HELPERS
-    private def _interpolateHelper[S: Show](
+    private def _interpolateHelper[S](
         shape            : S,
         resName          : String,
         tsvTableRawString: String,
@@ -121,7 +89,7 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
         xMinMax          : (Double, Double),
         yHeaderSelectFunc: Option[Double] => Either[SingularFlowResistanceCoeffError, String],
         yCriteria        : Option[Double]
-    ): DynamicFrictionCoeffOp.Result =
+    )(using showS: Show[S]): DynamicFrictionCoeffOp.Result =
         DynamicFrictionCoeffOp.interpolateHelper[S](
             shape,
             sectionTyp,
@@ -145,8 +113,9 @@ object FlowOnlyDynamicFrictionCoeff_15544:
         def thermalSectionGeometryChange: DynamicFrictionCoeffOp[SectionGeometryChange_13384]
 
     /**
-     * Factory that creates a [[DynFrict13384Like]] for a given [[PipeType]].
+     * Factory that creates a [[DynFrict13384Like]] for a given [[PipeType]] and slot index.
      *  Leaf modules provide a concrete implementation backed by `DynamicFrictionCoeff_13384`.
+     *  The `slotIndex` parameter ensures error targets correctly identify the affected slot.
      */
     trait DynFrict13384Factory:
-        def make(pt: PipeType): DynFrict13384Like
+        def make(pt: PipeType, sc: SlotContext): DynFrict13384Like

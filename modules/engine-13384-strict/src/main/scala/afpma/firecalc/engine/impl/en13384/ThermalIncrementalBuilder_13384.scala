@@ -179,12 +179,12 @@ trait ThermalIncrementalBuilder_13384
     /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */
     extension (piDescr: PipeIncrDescr)
         def innerShapeAtPrefix(n: Int): Option[PipeShape] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.flatMap(stateOps.getInnerShape)
 
         /** Number of flows in effect after folding the first n descriptors. */
         def nFlowsAtPrefix(n: Int): Option[NbOfFlows] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.map(stateOps.getNFlows)
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
@@ -227,7 +227,7 @@ trait ThermalIncrementalBuilder_13384
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState,
         seed      : PipeBuildSeed
-    ): ValidatedResult[Unit] =
+    )(using sc: SlotContext): ValidatedResult[Unit] =
         val airIntakeValidation = AirIntakeValidation.validateAirIntakeConstraints(pt, incrDescrs)
 
         val hasGeometry        = incrDescrs.exists:
@@ -272,6 +272,8 @@ trait ThermalIncrementalBuilder_13384
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
+    )(using
+        sc: SlotContext
     )(
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
@@ -315,7 +317,13 @@ trait ThermalIncrementalBuilder_13384
 
             case op: AddDirectionChange =>
                 stateOps
-                    .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
+                    .validateMaterialized(
+                        st,
+                        Operation.AddDirectionChange,
+                        pt,
+                        idIncr.unwrap,
+                        addElementOp.name
+                    )
                     .andThen { _ =>
                         given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
                             stateOps.getInnerShape(st),
@@ -329,7 +337,13 @@ trait ThermalIncrementalBuilder_13384
 
             case op: AddSectionChange =>
                 stateOps
-                    .validateMaterialized(st, Operation.AddSectionChange, pt, idIncr.unwrap, addElementOp.name)
+                    .validateMaterialized(
+                        st,
+                        Operation.AddSectionChange,
+                        pt,
+                        idIncr.unwrap,
+                        addElementOp.name
+                    )
                     .andThen { _ =>
                         given SectionGeometryChangeCtx_13384 =
                             SectionGeometryChangeCtx_13384(
@@ -421,7 +435,7 @@ trait ThermalIncrementalBuilder_13384
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
-    ): ValidatedResult[PropsState] =
+    )(using sc: SlotContext): ValidatedResult[PropsState] =
         // Use the AddElement's idIncr for elementIndex in errors — it is the physical
         // element that the pre-element ops target, so the error points to the element
         // the user sees (and can fix) rather than the preceding SetInnerShape row.
@@ -440,13 +454,14 @@ trait ThermalIncrementalBuilder_13384
                 g     : PipeShape
             ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                 vState.andThen { st =>
-                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, elemName).andThen {
-                        _ =>
+                    stateOps
+                        .validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, elemName)
+                        .andThen { _ =>
                             FlowAreaConservation
                                 .validateSetInnerShape(st, g, pt, nextElemIdIncr, elemName)(using stateOps)
                                 .toValidatedNel
                                 .map(s => stateOps.setInnerShape(s, g))
-                    }
+                        }
                 }
             atom match
                 case SetInnerShape(g)                                 =>
@@ -469,7 +484,9 @@ trait ThermalIncrementalBuilder_13384
                 case SetMaterial(lm)                                  =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                 case SetLayer(e, lambda)                              =>
-                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt)))
+                    val vGeom = vState.andThen(
+                        _.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt))
+                    )
                     vGeom.andThen: geom =>
                         vState.map(
                             _.modify(_.layers)
@@ -478,7 +495,8 @@ trait ThermalIncrementalBuilder_13384
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
                 case SetLayers(ldescrs)                               =>
-                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
+                    val vGeom =
+                        vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
                         vState.map(
@@ -529,7 +547,7 @@ trait ThermalIncrementalBuilder_13384
             IncrementalValidation_Error,
             PropsState
         ]
-    ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+    )(using sc: SlotContext): ValidatedNel[IncrementalValidation_Error, PropsState] =
         val LinedFlue(_, liner, airSpace, casing) = lf
 
         // Apply liner's non-layer props (material, inner shape, roughness, etc.)

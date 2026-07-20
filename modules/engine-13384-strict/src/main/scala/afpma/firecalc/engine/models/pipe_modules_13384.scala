@@ -20,7 +20,7 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.ops.HasOutsideSurfaceInLocation
 import afpma.firecalc.engine.ops.HasUnheatedHeightInsideAndOutside
-import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.{IncrementalValidation_Error, SlotContext}
 
 import cats.data.ValidatedNel
 import cats.syntax.all.*
@@ -81,19 +81,19 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
     type G = FlueGas
     val gas = FlueGas
 
-    def mkPipeFromIncrDescr(incrSeq: Seq[ThermalPipeDescr_13384]): FullDescrResult =
-        mkPipeFromIncrDescr(incrSeq, externalInitialFrame = None)
+    def mkPipeFromIncrDescr(incrSeq: Seq[ThermalPipeDescr_13384])(using sc: SlotContext): FullDescrResult =
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame = None)(using sc)
 
     def mkPipeFromIncrDescr(
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
-    ): FullDescrResult =
-        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))
+    )(using sc: SlotContext): FullDescrResult =
+        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))(using sc)
 
     def mkPipeFromIncrDescr(
         incrSeq: Seq[ThermalPipeDescr_13384],
         seed   : PipeBuildSeed
-    ): FullDescrResult =
+    )(using sc: SlotContext): FullDescrResult =
         if (incrSeq.isEmpty) (IdsMapping.empty, Without).validNel[IncrementalValidation_Error]
         else
             incremental
@@ -104,15 +104,19 @@ object ConnectorPipe_Module extends afpma.firecalc.engine.impl.en13384.Increment
     def mkPipeFromIncrDescrWithFinalFrame(
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame] = None
+    )(using
+        sc: SlotContext
     ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, Option[PipeFrame]]) =
         val (fdResult, seedV) =
-            mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))
+            mkPipeFromIncrDescrWithSeed(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))(using
+                sc
+            )
         (fdResult, seedV.map(_.frame))
 
     def mkPipeFromIncrDescrWithSeed(
         incrSeq: Seq[ThermalPipeDescr_13384],
         seed   : PipeBuildSeed
-    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
+    )(using sc: SlotContext): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
         if (incrSeq.isEmpty) ((IdsMapping.empty, Without).validNel[IncrementalValidation_Error], seed.validNel)
         else
             val result = incremental.define(incrSeq*).toFullDescrWithSeed(seed)
@@ -143,19 +147,19 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
     type G = FlueGas
     val gas = FlueGas
 
-    def mkPipeFromIncrDescr(incrSeq: Seq[ThermalPipeDescr_13384]): FullDescrResult =
-        mkPipeFromIncrDescr(incrSeq, externalInitialFrame = None)
+    def mkPipeFromIncrDescr(incrSeq: Seq[ThermalPipeDescr_13384])(using sc: SlotContext): FullDescrResult =
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame = None)(using sc)
 
     def mkPipeFromIncrDescr(
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
-    ): FullDescrResult =
-        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))._1
+    )(using sc: SlotContext): FullDescrResult =
+        mkPipeFromIncrDescr(incrSeq, PipeBuildSeed(externalInitialFrame, NbOfFlows(1), None))(using sc)._1
 
     def mkPipeFromIncrDescr(
         incrSeq: Seq[ThermalPipeDescr_13384],
         seed   : PipeBuildSeed
-    ): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
+    )(using sc: SlotContext): (FullDescrResult, ValidatedNel[IncrementalValidation_Error, PipeBuildSeed]) =
         val result = incremental.define(incrSeq*).toFullDescrWithSeed(seed)
         (result.map((ids, fd, _) => (ids, fd)), result.map(_._3))
 
@@ -175,8 +179,9 @@ object ChimneyPipe_Module extends afpma.firecalc.engine.impl.en13384.Incremental
     def lastInnerShape(
         incrSeq             : Seq[ThermalPipeDescr_13384],
         externalInitialFrame: Option[PipeFrame]
-    ): Option[PipeShape] =
-        mkPipeFromIncrDescr(incrSeq, externalInitialFrame).extractPipe.toOption.flatMap(_.lastInnerGeom)
+    )(using sc: SlotContext): Option[PipeShape] =
+        mkPipeFromIncrDescr(incrSeq, externalInitialFrame)(using sc).extractPipe.toOption
+            .flatMap(_.lastInnerGeom)
 
     type PipeCanBe = FullDescr
 

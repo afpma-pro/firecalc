@@ -7,14 +7,15 @@ package afpma.firecalc.engine.alg
 
 import afpma.firecalc.dto.all.NbOfFlows
 import afpma.firecalc.dto.all.NbOfFlows.*
+
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.AddElementMissingAfterSetProp
-import afpma.firecalc.engine.standard.{ForbiddenAddElementAtEnd, ForbiddenAddElementAtStart}
 import afpma.firecalc.engine.standard.ConsecutiveDirectionChangesNotAllowed
-import afpma.firecalc.domain.IsDirectionChange
-import afpma.firecalc.domain.IsSplitMergeTurn
+import afpma.firecalc.engine.standard.ForbiddenAddElementAtEnd
+import afpma.firecalc.engine.standard.ForbiddenAddElementAtStart
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.*
 import cats.data.Validated.*
@@ -22,6 +23,9 @@ import cats.syntax.all.*
 
 import scala.annotation.tailrec
 import scala.reflect.*
+
+import afpma.firecalc.domain.IsDirectionChange
+import afpma.firecalc.domain.IsSplitMergeTurn
 
 trait IncrementalBuilderAlg extends PipeDescrAlg:
 
@@ -105,7 +109,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
 
     private def validateBoundaryElements(
         incrDescrs: Vector[Id_IncrDescr]
-    ): ValidatedResult[Unit] =
+    )(using sc: SlotContext): ValidatedResult[Unit] =
         val firstAddElement: Option[(IdIncr, AddElement)] =
             incrDescrs.collectFirst:
                 case (id, ae: AddElement) => (id, ae)
@@ -129,16 +133,21 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
 
     extension (piDescr: PipeIncrDescr)
         def listIncrDescr(): Vector[Id_IncrDescr]
-        def toFullDescr(): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr)] =
+        def toFullDescr(using
+            sc: SlotContext
+        ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr)] =
             buildFrom(piDescr, PipeBuildSeed.default).map((ids, fd, _) => (ids, fd))
 
         /** Like toFullDescr(), but also returns the final PipeFrame (if direction tracking was active). */
-        def toFullDescrWithFinalFrame()
-            : ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
+        def toFullDescrWithFinalFrame(using
+            sc: SlotContext
+        ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
             buildFrom(piDescr, PipeBuildSeed.default).map((ids, fd, nextSeed) => (ids, fd, nextSeed.frame))
 
         def toFullDescrWithSeed(
             seed: PipeBuildSeed
+        )(using
+            sc: SlotContext
         ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, PipeBuildSeed)] =
             buildFrom(piDescr, seed)
 
@@ -149,12 +158,14 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
          */
         def toFullDescrWithExternalInitialFrame(
             externalInitialFrame: Option[PipeFrame]
+        )(using
+            sc: SlotContext
         ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, Option[PipeFrame])] =
             buildFrom(piDescr, PipeBuildSeed.fromFrame(externalInitialFrame))
                 .map((ids, fd, nextSeed) => (ids, fd, nextSeed.frame))
 
         /** Returns the PropsState after folding only the first n descriptors — used to prefill UI fields at insert position. */
-        def propsStateAtPrefix(n: Int): ValidatedResult[PropsState] =
+        def propsStateAtPrefix(n: Int)(using sc: SlotContext): ValidatedResult[PropsState] =
             foldFromInit(piDescr, piDescr.listIncrDescr().take(n), PipeBuildSeed.default).map(_._3)
 
     /**
@@ -166,6 +177,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         piDescr: PipeIncrDescr,
         ops    : Vector[Id_IncrDescr],
         seed   : PipeBuildSeed
+    )(using
+        sc: SlotContext
     ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
         val iPropsState0 = mkInitPropsState(piDescr)
         val iPropsState1 = applyExternalNFlows(iPropsState0, seed.nFlows)
@@ -182,6 +195,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     private def buildFrom(
         piDescr: PipeIncrDescr,
         seed   : PipeBuildSeed
+    )(using
+        sc: SlotContext
     ): ValidatedNel[IncrementalValidation_Error, (IdsMapping, PipeFullDescr, PipeBuildSeed)] =
         val iListIncrDescr = piDescr.listIncrDescr()
         validateBoundaryElements(iListIncrDescr) *>
@@ -224,7 +239,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState,
         seed      : PipeBuildSeed
-    ): ValidatedResult[Unit] = ().validNel
+    )(using sc: SlotContext): ValidatedResult[Unit] = ().validNel
 
     /**
      * Apply an external initial frame to a freshly-created PropsState, but ONLY if
@@ -306,7 +321,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def updateStateBeforeConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
-    ): ValidatedResult[PropsState]
+    )                                            (using sc: SlotContext): ValidatedResult[PropsState]
 
     protected def updateStateAfterConversionStep(
         propsState: PropsState,
@@ -318,7 +333,7 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         inIdsMapping: IdsMapping,
         propsState  : PropsState,
         convStep    : ConversionStep
-    ): ValidatedResult[(IdsMapping, PipeFullDescr)] =
+    )(using sc: SlotContext): ValidatedResult[(IdsMapping, PipeFullDescr)] =
         val nextGeomOp = convStep.findNextAddElement
         nextGeomOp match
             case None      =>
@@ -361,6 +376,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
     protected def mkFullElementsDescr(
         prevs          : PipeFullDescr,
         convStep       : ConversionStep
+    )                                (using
+        sc             : SlotContext
     )                                (
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]]
@@ -374,6 +391,8 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
         propsState: PropsState,
         opsDone   : Vector[Id_IncrDescr],
         opsLeft   : Vector[Id_IncrDescr]
+    )(using
+        sc: SlotContext
     ): ValidatedResult[(IdsMapping, PipeFullDescr, PropsState)] =
         val convStep = mkConversionStep(opsLeft)
         if (convStep.isLastStep)
@@ -385,7 +404,12 @@ trait IncrementalBuilderAlg extends PipeDescrAlg:
             updateStateBeforeConversionStep(propsState, convStep) match
                 case Valid(preparedState) =>
                     // update full descr
-                    updateIdsMappingAndPipeFullDescr(pFullDescr, idsMapping, preparedState, convStep) match
+                    updateIdsMappingAndPipeFullDescr(
+                        pFullDescr,
+                        idsMapping,
+                        preparedState,
+                        convStep
+                    ) match
                         case Valid(nextIdMappings, nextPipeFullDescr) =>
                             // update state AFTER updating full descr
                             updateStateAfterConversionStep(

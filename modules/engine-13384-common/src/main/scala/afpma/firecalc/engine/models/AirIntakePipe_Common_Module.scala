@@ -10,6 +10,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.impl.common.*
 import afpma.firecalc.engine.models.geometry.FrameReplay
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.syntax.all.*
 
@@ -39,9 +40,11 @@ trait AirIntakePipe_Common_Module extends IncrementalPipeDefModule_Common[AirInt
     type G = CombustionAir
     val gas = CombustionAir
 
-    def mkPipeFromIncrDescr(incrSeq: Seq[IncrDescr]): FullDescrResult =
+    def mkPipeFromIncrDescr(incrSeq: Seq[IncrDescr])(using sc: SlotContext): FullDescrResult =
         if (incrSeq.isEmpty) (IdsMapping.empty, NoVentilationOpenings).validNel[IncrementalValidation_Error]
-        else incremental.define(incrSeq*).toFullDescr()
+        else
+            // Air intake is unslotted — None is correct
+            incremental.define(incrSeq*).toFullDescr(using SlotContext.unslotted)
 
     type PipeCanBe = FullDescr | NoVentilationOpenings
 

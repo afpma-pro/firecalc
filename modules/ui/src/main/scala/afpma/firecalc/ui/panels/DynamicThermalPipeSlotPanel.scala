@@ -12,6 +12,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.SlotIndex
 
 import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
@@ -33,7 +34,7 @@ import io.taig.babel.Locale
 
 /** Thermal 13384 slot panel (connector, chimney, thermal flue). */
 final case class DynamicThermalPipeSlotPanel(
-    slotIndex           : Int,
+    slotIndex           : SlotIndex,
     pipeTypeVal         : PipeType,
     title               : String,
     slotControlsNode    : Option[HtmlElement]            = None,
@@ -44,17 +45,19 @@ final case class DynamicThermalPipeSlotPanel(
 )                                           (using Locale, DisplayUnits)
     extends PipePanel_13384_Thermal:
 
-    override protected def vizFieldsetIdPrefix : String              = s"slot-$slotIndex"
+    override protected def slotContext: SlotContext = SlotContext.forSlot(slotIndex)
+
+    override protected def vizFieldsetIdPrefix : String              = s"slot-${slotIndex.value}"
     override protected def accordionTitlePrefix: Option[HtmlElement] = slotControlsNode
     override protected lazy val pipeTypeCls    : String              = pipeTypeVal match
         case FluePipeT      => "pipe-type-flue"
         case ConnectorPipeT => "pipe-type-connector"
         case ChimneyPipeT   => "pipe-type-chimney"
         case NoFluePipeT    => "pipe-type-no-flue"
-        case _              => s"pipe-type-slot-$slotIndex"
+        case _              => s"pipe-type-slot-${slotIndex.value}"
 
     override protected def ownsVizElement(id: VizElementId): Boolean = id match
-        case VizElementId.PostFireboxSlotElement(si, _) => si == slotIndex
+        case VizElementId.PostFireboxSlotElement(si, _) => si == slotIndex.value
         // backward compat for existing viz element IDs
         case VizElementId.ConnectorPipeElement(_)       => pipeTypeVal == ConnectorPipeT
         case VizElementId.ChimneyPipeElement(_)         => pipeTypeVal == ChimneyPipeT
@@ -68,7 +71,7 @@ final case class DynamicThermalPipeSlotPanel(
 
     type Out = Any // type-erased
     // `sectionType` is only consumed via `==` in the base class (see
-    // `PipePanel.keepGlobalErrorsOrErrorsSpecificToSectionTyp`), so a singleton
+    // `PanelStatusHelper.filterErrors`), so a singleton
     // path-dependent type (`pipeTypeVal.type`) would buy us nothing and force an
     // unchecked cast. Widen to `PipeType` — equality is all we need.
     type PT  = PipeType
@@ -119,7 +122,7 @@ final case class DynamicThermalPipeSlotPanel(
 
     // ── Slot-indexed wiring ──────────────────────────────────────
 
-    override protected def isSlotZero: Boolean = slotIndex == 0
+    override protected def isSlotZero: Boolean = slotIndex.isFirst
 
     @nowarn("msg=unused import")
     override protected def shapeAtPrefix(insertIdx: Int): PipeShape =
@@ -161,14 +164,14 @@ final case class DynamicThermalPipeSlotPanel(
 
     lazy val elems_v: Var[Seq[ThermalPipeDescr_13384]] =
         postFireboxSlots_var.zoomLazy(slots =>
-            slots.lift(slotIndex) match
+            slots.lift(slotIndex.value) match
                 case Some(PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(d)) => d
                 case Some(PostFireboxPipeDescrSlot_V7.ConnectorSlot(d))   => d
                 case Some(PostFireboxPipeDescrSlot_V7.ChimneySlot(d))     => d
                 case _                                                    => Seq.empty
         )((slots, descr) =>
             slots.zipWithIndex.map { case (s, i) =>
-                if i != slotIndex then s
+                if i != slotIndex.value then s
                 else
                     s match
                         case PostFireboxPipeDescrSlot_V7.ThermalFlueSlot(_) =>
@@ -182,7 +185,7 @@ final case class DynamicThermalPipeSlotPanel(
         )
 
     override protected def externalInitialFrameSig: Signal[Option[PipeFrame]] =
-        slotInitialFrameSig(slotIndex)
+        slotInitialFrameSig(slotIndex.value)
 
     // ── IdsMapping: erased Int → Option[Int] ─────────────────────
 
@@ -191,12 +194,12 @@ final case class DynamicThermalPipeSlotPanel(
     // Covariance carries this assignment — see the matching comment on the
     // flow-only panel's `pipeMappings_vnel_signal` above.
     override lazy val pipeMappings_vnel_signal: Signal[VNelMcalcErr[PipeIdsMapping]] =
-        slotMappingFnSig(slotIndex)
+        slotMappingFnSig(slotIndex.value)
 
     override lazy val pipeResult_vnel_signal: Signal[VNelMcalcErr[PipeResult]] =
         postFireboxPipeResults_sig.map: vnel =>
             vnel.andThen: results =>
-                results.lift(slotIndex) match
+                results.lift(slotIndex.value) match
                     case Some((_, pr)) => Validated.validNel(pr)
                     case None          => Validated.invalidNel(ChimneyPipeNotDefinedYet)
 
@@ -219,7 +222,7 @@ final case class DynamicThermalPipeSlotPanel(
         slotBuildResults_sig
             .combineWithDistinct(pipeResult_vnel_signal, pressureSumCheck_sig, velocityCheck_sig)
             .map: (results, pipeResultV, pressureV, velocityV) =>
-                results.lift(slotIndex) match
+                results.lift(slotIndex.value) match
                     case Some(result) if result.upstreamFailure =>
                         ErrorsInOtherSectionType.invalidNel
                     case Some(result)                           =>

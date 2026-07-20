@@ -31,8 +31,10 @@ import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
+import afpma.firecalc.engine.standard.SlotIndex
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
+import afpma.firecalc.engine.impl.en15544.common.SlotIndexProvider
 import afpma.firecalc.domain.FireboxCoordinateSystem
 
 import scala.annotation.nowarn
@@ -222,7 +224,8 @@ abstract class EN15544_MCE_Application(
                 temp_start         = T_L,
                 last_pipe_density  = None,
                 last_pipe_velocity = None,
-                gas                = CombustionAir
+                gas                = CombustionAir,
+                sc                 = SlotContext.unslotted
             )
 
         override def airIntake_PipeResult =
@@ -308,7 +311,8 @@ abstract class EN15544_MCE_Application(
                                 case ComputeAt.Mean   => asp.last_velocity_mean
                                 case ComputeAt.Middle => asp.last_velocity_middle
                             ,
-                            gas                = CombustionAir
+                            gas                = CombustionAir,
+                            sc                 = SlotContext.unslotted
                         )
                         .toValidatedNel
 
@@ -344,7 +348,8 @@ abstract class EN15544_MCE_Application(
                                     case ComputeAt.Mean   => cci.last_velocity_mean
                                     case ComputeAt.Middle => cci.last_velocity_middle
                                 ,
-                                gas                = FlueGas
+                                gas                = FlueGas,
+                                sc                 = SlotContext.unslotted
                             )
                             .toValidatedNel
 
@@ -416,18 +421,22 @@ abstract class EN15544_MCE_Application(
                         // Build a PipeSlot for each flue region slot, threading descriptor seed
                         // through the fold accumulator (no mutable state).
                         val slotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
-                            flueRegionSlots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
+                            val provider = SlotIndexProvider.prefix
+                            flueRegionSlots.zipWithIndex.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
                                 Validated.validNel((Vector.empty, seed))
-                            ) { (accV, slot) =>
+                            ) { (accV, si) =>
+                                val (slot, idx) = si
                                 accV.andThen { case (acc, seed) =>
                                     slot match
                                         case ThermalFlueSlot(descr) =>
                                             val v4Descr               = descr
                                             val (fdResult, nextSeedV) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
-                                            val nextSeed              = nextSeedV.getOrElse(seed)
-                                            val pipeV                 =
+                                                    .mkPipeFromIncrDescrWithSeed(v4Descr, seed)(using
+                                                        SlotContext.forSlot(provider(idx))
+                                                    )
+                                            val nextSeed = nextSeedV.getOrElse(seed)
+                                            val pipeV =
                                                 FluePipe_Module_13384.FullDescrResult
                                                     .extractPipe(fdResult)
                                             pipeV match
@@ -460,9 +469,11 @@ abstract class EN15544_MCE_Application(
                                             else
                                                 val (fdResult, nextSeedV) =
                                                     ConnectorPipe_Module
-                                                        .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
-                                                val nextSeed              = nextSeedV.getOrElse(seed)
-                                                val pipeV                 =
+                                                        .mkPipeFromIncrDescrWithSeed(v4Descr, seed)(using
+                                                            SlotContext.forSlot(provider(idx))
+                                                        )
+                                                val nextSeed = nextSeedV.getOrElse(seed)
+                                                val pipeV =
                                                     ConnectorPipe_Module.FullDescrResult
                                                         .extractPipe(fdResult)
                                                 pipeV match
@@ -573,7 +584,9 @@ abstract class EN15544_MCE_Application(
                                             val v4Descr       = descr
                                             val (fdResult, _) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithSeed(v4Descr, seed)
+                                                    .mkPipeFromIncrDescrWithSeed(v4Descr, seed)(using
+                                                        SlotContext.fromOption(SlotIndex.from(0))
+                                                    )
                                             FluePipe_Module_13384.FullDescrResult.extractPipe(
                                                 fdResult
                                             ) match
@@ -595,7 +608,8 @@ abstract class EN15544_MCE_Application(
                                                                         case ComputeAt.Mean   => cc.last_velocity_mean
                                                                         case ComputeAt.Middle => cc.last_velocity_middle
                                                                     ,
-                                                                    gas                = FlueGas
+                                                                    gas                = FlueGas,
+                                                                    sc                 = SlotContext.fromOption(SlotIndex.from(0))
                                                                 )
                                                                 .toValidatedNel
                                                 case Validated.Invalid(nel) => Validated.Invalid(nel)
@@ -620,12 +634,12 @@ abstract class EN15544_MCE_Application(
                                     last_pipe_density  = seedDensity,
                                     last_pipe_velocity = seedVelocity
                                 )
-                                val folded          = slots.foldLeft[Either[
+                                val folded          = slots.zipWithIndex.foldLeft[Either[
                                     afpma.firecalc.engine.standard.MecaFlu_Error,
                                     (UpstreamState, Vector[PipeResult])
-                                ]](Right((initialUpstream, Vector.empty))) { case (acc, slot) =>
+                                ]](Right((initialUpstream, Vector.empty))) { case (acc, (slot, idx)) =>
                                     acc.flatMap { case (upstream, results) =>
-                                        slot.compute(upstream, p).map { pr =>
+                                        slot.compute(upstream, p, SlotIndex.unsafe(idx)).map { pr =>
                                             val nextUpstream =
                                                 UpstreamState.fromPipeResult(pr, computeAt)
                                             (nextUpstream, results :+ pr)

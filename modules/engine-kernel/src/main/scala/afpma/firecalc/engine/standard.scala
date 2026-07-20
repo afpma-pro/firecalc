@@ -43,6 +43,43 @@ import io.taig.babel.Locale
 
 object standard {
 
+    /**
+     * A validated, non-negative slot index in the post-firebox pipe chain.
+     *
+     * Absence of a slot (air intake, firebox, standalone pipe modules) is
+     * represented as `Option[SlotIndex]`, never as a sentinel value.
+     */
+    opaque type SlotIndex = Int
+
+    object SlotIndex:
+        /** Safe constructor. Returns `None` for negative inputs. */
+        def from(n: Int): Option[SlotIndex] =
+            if n >= 0 then Some(n) else None
+
+        /**
+         * Unsafe constructor for internal use where `n >= 0` is guaranteed
+         * (e.g. `zipWithIndex` in the chain compute loop).
+         */
+        def unsafe(n: Int): SlotIndex = n
+
+        extension (s: SlotIndex)
+            def value  : Int     = s
+            def isFirst: Boolean = s == 0
+
+    /**
+     * Captures the slot context for error targeting during incremental validation.
+     * Replaces explicit `Option[SlotIndex]` threading through error constructors.
+     */
+    final class SlotContext private (private val _slotIndex: Option[SlotIndex]):
+        def slotIndex              : Option[SlotIndex] = _slotIndex
+        def targetFor(pt: PipeType): ErrorTarget       =
+            _slotIndex.fold[ErrorTarget](ErrorTarget.TypeTarget(pt))(ErrorTarget.SlotTarget(_))
+
+    object SlotContext:
+        def forSlot(i: SlotIndex): SlotContext = new SlotContext(Some(i))
+        val unslotted: SlotContext = new SlotContext(None)
+        def fromOption(o: Option[SlotIndex]): SlotContext = o.fold(unslotted)(forSlot(_))
+
     type VNelMcalcErr[+X] = ValidatedNel[MCalc_Error, X]
 
     extension [X1, X2, O](vmcex_tup: (VNelMcalcErr[X1], VNelMcalcErr[X2]))
@@ -121,8 +158,24 @@ object standard {
                     f
 
     sealed trait MCalc_Error
-    trait HasSectionTypError:
-        def sectionTyp: PipeType
+
+    /**
+     * Which scope an error belongs to, for panel-level error filtering.
+     * A panel only shows errors whose target it "sees" (scope containment).
+     */
+    enum ErrorTarget:
+        /** Belongs to one specific slot. */
+        case SlotTarget(slotIndex: SlotIndex)
+
+        /** Belongs to all panels of a given pipe type. */
+        case TypeTarget(pipeType: PipeType)
+
+        /** Visible to all panels. */
+        case GlobalTarget
+
+    /** Marker trait for errors that participate in the new scope-containment model. */
+    trait TargetedError:
+        def target: ErrorTarget
 
     given ShowUsingLocale[MCalc_Error] = showUsingLocale:
         case e: UnexpectedDevError          => s"DEV_ERROR: ${e.msg}"
@@ -162,10 +215,13 @@ object standard {
     case object InvalidTypeOfAppliance_WoodLogsIncompatibleWithPelletsFuelType extends Inputs_Error
     case object StoveParamsSizingInputMissing                                  extends Inputs_Error
     case class IncompatibleDirectionInPipe(
-        pipeLabel   : String,
-        slotIndex   : Int,
+        pipeType    : PipeType,
         elementIndex: Int
-    ) extends Inputs_Error
+    )                                     (using val sc: SlotContext)
+        extends Inputs_Error
+        with TargetedError:
+        def target: ErrorTarget =
+            sc.targetFor(pipeType)
 
     object Inputs_Error:
         given ShowUsingLocale[Inputs_Error] = showUsingLocale:
@@ -177,8 +233,7 @@ object standard {
                 I18N.inputs_error.stove_params_sizing_input_missing
             case e: IncompatibleDirectionInPipe                                         =>
                 I18N.inputs_error.incompatible_direction_in_pipe(
-                    e.pipeLabel,
-                    e.slotIndex.toString,
+                    e.pipeType.show,
                     e.elementIndex.toString
                 )
 
@@ -195,8 +250,8 @@ object standard {
         case e: InvalidConstraint          => Show[InvalidConstraint].show(e)
         case e: EN15544_ErrorMessage       => Show[EN15544_ErrorMessage].show(e)
 
-    sealed trait FireboxError extends EN15544_Error with HasSectionTypError:
-        override final def sectionTyp: PipeType = FireboxPipeT
+    sealed trait FireboxError extends EN15544_Error with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(FireboxPipeT)
 
     given ShowUsingLocale[FireboxError] = showUsingLocale:
         case e: InvalidTermValue[?]                => show_InvalidTermValue(using e.showT).show(e)
@@ -370,7 +425,7 @@ object standard {
     ) extends InvalidTermValue[T]:
         override given showT: Show[T] = Show[T]
 
-    sealed trait FluePipeError extends EN15544_Error with HasSectionTypError
+    sealed trait FluePipeError extends EN15544_Error
 
     given show_FluePipeError: ShowUsingLocale[FluePipeError] = showUsingLocale:
         case err: FlueGasVelocityError         => err.show
@@ -390,7 +445,11 @@ object standard {
         endVelocity  : Option[v],
         minVel       : v,
         maxVel       : v
-    ) extends FluePipeError
+    )                              (using val sc: SlotContext)
+        extends FluePipeError
+        with TargetedError:
+        def target: ErrorTarget =
+            sc.targetFor(sectionTyp)
     object FlueGasVelocityError        :
         given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
             def showV(vv: v): String =
@@ -436,7 +495,11 @@ object standard {
         ratio      : QtyD[1],
         minRatio   : QtyD[1],
         maxRatio   : QtyD[1]
-    ) extends FluePipeError
+    )                                      (using val sc: SlotContext)
+        extends FluePipeError
+        with TargetedError:
+        def target: ErrorTarget =
+            sc.targetFor(sectionTyp)
     object FluePipeInvalidGeometryRatio:
         given ShowUsingLocale[FluePipeInvalidGeometryRatio] = showUsingLocale:
             case FluePipeInvalidGeometryRatio(id, _, name, r, rmin, rmax) =>
@@ -444,13 +507,17 @@ object standard {
                 val term            = s"${I18N.terms.width_to_height_ratio} #${id} $name"
                 I18N.errors.term_should_be_between_inclusive(term, r.show, rmin.show, rmax.show)
 
-    class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String) extends FluePipeError
+    class FluePipeErrorCustom(val sectionTyp: PipeType, val reason: Locale ?=> String)
+        extends FluePipeError
+        with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
 
     case class FluePipeLengthBelowMinimum(
         actualLength : Length,
         minimumLength: Length
-    ) extends FluePipeError:
-        override val sectionTyp: PipeType = FluePipeT
+    ) extends FluePipeError
+        with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(FluePipeT)
 
     object FluePipeLengthBelowMinimum:
         given ShowUsingLocale[FluePipeLengthBelowMinimum] = showUsingLocale: err =>
@@ -460,9 +527,9 @@ object standard {
                 err.minimumLength.show
             )
 
-    case class EN15544_ErrorMessage(msg: String, override val sectionTyp: PipeType)
-        extends EN15544_Error
-        with HasSectionTypError derives Show
+    case class EN15544_ErrorMessage(msg: String, sectionTyp: PipeType) extends EN15544_Error with TargetedError
+        derives Show:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
 
     // EN 13384
     // NOTE: No 'def msg: String' - all error messages are provided via I18N translations through ShowUsingLocale
@@ -496,9 +563,8 @@ object standard {
 
     // ThermalResistance
     // NOTE: No 'msg' parameter - all messages are provided via I18N translations through ShowUsingLocale[EN13384_Error]
-    sealed abstract class ThermalResistance_Error(override val sectionTyp: PipeType)
-        extends EN13384_Error
-        with HasSectionTypError
+    sealed abstract class ThermalResistance_Error(val sectionTyp: PipeType) extends EN13384_Error with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
     object ThermalResistance_Error:
         case class SideRatioTooHighForRectangularForm(outer_shape: PipeShape, override val sectionTyp: PipeType)
             extends ThermalResistance_Error(sectionTyp)
@@ -510,9 +576,11 @@ object standard {
             extends ThermalResistance_Error(sectionTyp)
 
     // EN13384_ErrorMessage keeps 'msg' as it's intentional user-provided data
-    case class EN13384_ErrorMessage(msg: String)                        extends EN13384_Error
-    case class DuctTypeError(override val sectionTyp: PipeType)         extends EN13384_Error with HasSectionTypError
-    case class NoOutsideSurfaceFound(override val sectionTyp: PipeType) extends EN13384_Error with HasSectionTypError
+    case class EN13384_ErrorMessage(msg: String)           extends EN13384_Error
+    case class DuctTypeError(sectionTyp: PipeType)         extends EN13384_Error with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
+    case class NoOutsideSurfaceFound(sectionTyp: PipeType) extends EN13384_Error with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
 
     object DuctTypeError        :
         given ShowUsingLocale[DuctTypeError] = showUsingLocale: _ =>
@@ -522,7 +590,8 @@ object standard {
             I18N.en13384.errors.no_outside_surface_for_tu_calculation
 
     // NuCalcError - no 'msg' parameter, all messages via I18N
-    sealed abstract class NuCalcError(override val sectionTyp: PipeType)                extends EN13384_Error with HasSectionTypError
+    sealed abstract class NuCalcError(val sectionTyp: PipeType)                         extends EN13384_Error with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
     case class ZeroLengthPipe(pname: String, override val sectionTyp: PipeType)         extends NuCalcError(sectionTyp)
     case class ReIsAbove10million(R_e: Double, override val sectionTyp: PipeType)       extends NuCalcError(sectionTyp)
     case class PsiRatioIsGreaterThan3(ratio: Double, override val sectionTyp: PipeType) extends NuCalcError(sectionTyp)
@@ -607,33 +676,64 @@ object standard {
                 I18N.en13384.errors.invalid_duct_type_only_non_concentric_high_resistance
     end EN13384_FormulaError
 
-    sealed class PressureLossCoeff_Error(val msg: String, override val sectionTyp: PipeType)
+    sealed class PressureLossCoeff_Error(val msg: String, val sectionTyp: PipeType)
         extends EN15544_Error
-        with HasSectionTypError
+        with TargetedError:
+        def target: ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
 
     // PressureLossCoeff_Error
 
-    sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error
+    sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error:
+        protected def sc: SlotContext
 
-    sealed class SingularFlowResistanceCoeffError(val msg: String, val sectionTyp: PipeType)
+    sealed class SingularFlowResistanceCoeffError(
+        val msg       : String,
+        val sectionTyp: PipeType
+    )                                            (using val sc: SlotContext)
         extends SingularFlowResistanceCoeffErrorI
+        with TargetedError:
+        override def target: ErrorTarget =
+            sc.targetFor(sectionTyp)
 
-    sealed trait FluePipeShapeSequenceError extends SingularFlowResistanceCoeffErrorI:
-        override val sectionTyp: PipeType = FluePipeT
-
+    sealed trait FluePipeShapeSequenceError extends SingularFlowResistanceCoeffErrorI with TargetedError:
+        override val sectionTyp: PipeType    = FluePipeT
+        override def target    : ErrorTarget =
+            sc.targetFor(sectionTyp)
     object FluePipeShapeSequenceError:
 
-        // s"missing section geometry change : current section '${nel.fullRef}' (dh = ${currStraight.geometry.dh}) AND last section '${lastNel.fullRef}' (dh = ${ls.geometry.dh})"
-        case class MissingSectionGeometryChange(pipeRef1: String, dh1: String, pipeRef2: String, dh2: String)
+        case class MissingSectionGeometryChange(
+            pipeRef1: String,
+            dh1     : String,
+            pipeRef2: String,
+            dh2     : String
+        )                                      (using val sc: SlotContext)
             extends FluePipeShapeSequenceError
-        case class CanNotStartWithADirectionChange(pipeName: String) extends FluePipeShapeSequenceError
-        case class CanNotEndWithADirectionChange(pipeName: String)   extends FluePipeShapeSequenceError
-        case class TwoSuccessDirectionChangeNotAllowed(pipeName1: String, pipeName2: String)
+        case class CanNotStartWithADirectionChange(
+            pipeName: String
+        )                                         (using val sc: SlotContext)
             extends FluePipeShapeSequenceError
-        case class TwoSuccessStraightSectionNotAllowed(pipeName1: String, pipeName2: String)
+        case class CanNotEndWithADirectionChange(
+            pipeName: String
+        )                                       (using val sc: SlotContext)
             extends FluePipeShapeSequenceError
-        case class HolesShouldNotHappen(holeAfterPipeName: String)   extends FluePipeShapeSequenceError
-        case class DevError(msg: String)                             extends FluePipeShapeSequenceError
+        case class TwoSuccessDirectionChangeNotAllowed(
+            pipeName1: String,
+            pipeName2: String
+        )                                             (using val sc: SlotContext)
+            extends FluePipeShapeSequenceError
+        case class TwoSuccessStraightSectionNotAllowed(
+            pipeName1: String,
+            pipeName2: String
+        )                                             (using val sc: SlotContext)
+            extends FluePipeShapeSequenceError
+        case class HolesShouldNotHappen(
+            holeAfterPipeName: String
+        )                              (using val sc: SlotContext)
+            extends FluePipeShapeSequenceError
+        case class DevError(
+            msg: String
+        )                  (using val sc: SlotContext)
+            extends FluePipeShapeSequenceError
 
         // ShowUsingLocale for formula errors (delegates to i18n)
         given ShowUsingLocale[FluePipeShapeSequenceError] = showUsingLocale:
@@ -654,7 +754,7 @@ object standard {
         // given Show[FluePipeShapeSequenceError] = Show.show(x => s"FLUE PIPE DESCR ERROR: ${x.msg}")
 
     case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)
-        extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT) derives Show
+        extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT)(using SlotContext.unslotted) derives Show
 
     given show_SingularFlowResistanceCoeffError: ShowUsingLocale[SingularFlowResistanceCoeffError] = showUsingLocale:
         case x: MissingAlpha3AngleForShortFluePipeSection                 =>
@@ -687,40 +787,53 @@ object standard {
 
     object SingularFlowResistanceCoeffError {
 
-        sealed abstract class CouldNotSelectCoeffValuesForInterpolation[S: Show](
-            shape     : S,
-            m         : String,
-            sectionTyp: PipeType
-        ) extends SingularFlowResistanceCoeffError(
-                s"shape ${shape.show} > could not select coeff values for interpolation > $m",
+        sealed abstract class CouldNotSelectCoeffValuesForInterpolation[S](
+            shape                  : S,
+            m                      : String,
+            override val sectionTyp: PipeType,
+            showShape              : Show[S]
+        )                                                                 (using sc: SlotContext)
+            extends SingularFlowResistanceCoeffError(
+                s"shape ${showShape.show(shape)} > could not select coeff values for interpolation > $m",
                 sectionTyp
-            )
+            )                                       (using sc)
 
-        case class UnexpectedRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType, ratio: Double)(using
-            val show_shape: Show[S]
+        case class UnexpectedRatio_Ld_Dh[S](
+            shape                  : S,
+            override val sectionTyp: PipeType,
+            ratio                  : Double
+        )                                  (using
+            show_shape             : Show[S],
+            sc                     : SlotContext
         ) extends CouldNotSelectCoeffValuesForInterpolation[S](
                 shape,
                 s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}",
-                sectionTyp
-            )
+                sectionTyp,
+                show_shape
+            )(using sc)
 
         given show_UnexpectedRatio: [S] => (show_Shape: Show[S]) => Show[UnexpectedRatio_Ld_Dh[S]] =
             Show.show[UnexpectedRatio_Ld_Dh[S]]: u =>
                 s"UnexpectedRatio_Ld_Dh(shape = ${u.shape.show}, ratio = ${u.ratio})"
 
-        case class NoGivenRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType)(using val show_shape: Show[S])
-            extends CouldNotSelectCoeffValuesForInterpolation[S](
+        case class NoGivenRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType)(using
+            show_shape: Show[S],
+            sc        : SlotContext
+        ) extends CouldNotSelectCoeffValuesForInterpolation[S](
                 shape,
                 "expecing ratio Ld/Dh but none given",
-                sectionTyp
-            )
+                sectionTyp,
+                show_shape
+            )(using sc)
 
         given show_NoGivenRatio: [S] => (show_Shape: Show[S]) => Show[NoGivenRatio_Ld_Dh[S]] =
             Show.show[NoGivenRatio_Ld_Dh[S]]: u =>
                 s"NoGivenRatio_Ld_Dh(shape = ${u.shape.show})"
 
-        def InvalidShapeParameter[S: Show](shape: S, m: String, sectionTyp: PipeType) =
-            new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)
+        def InvalidShapeParameter[S: Show](shape: S, m: String, sectionTyp: PipeType)(using
+            sc: SlotContext
+        ) =
+            new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)(using sc)
 
         case class ValueOutOfBound[S: Show](
             shape                  : S,
@@ -729,10 +842,11 @@ object standard {
             v                      : Double,
             vMin                   : Double,
             vMax                   : Double
-        ) extends SingularFlowResistanceCoeffError(
+        )                                  (using sc: SlotContext)
+            extends SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
                 sectionTyp: PipeType
-            ) {
+            )(using sc) {
             def prettyShape: String = shape.show
         }
 
@@ -740,11 +854,11 @@ object standard {
             shape     : S,
             sectionTyp: PipeType,
             m         : String
-        ) =
+        )(using sc: SlotContext) =
             new SingularFlowResistanceCoeffError(
                 s"shape ${shape.show} > could not compute individual coefficient > $m",
                 sectionTyp
-            )
+            )                                   (using sc)
     }
 
     /**
@@ -754,7 +868,11 @@ object standard {
     case class DirectionChangeNotInPipeChain(
         sectionTyp: PipeType,
         elementRef: String
-    ) extends SingularFlowResistanceCoeffErrorI
+    )                                       (using val sc: SlotContext)
+        extends SingularFlowResistanceCoeffErrorI
+        with TargetedError:
+        override def target: ErrorTarget =
+            sc.targetFor(sectionTyp)
 
     given show_DirectionChangeNotInPipeChain: ShowUsingLocale[DirectionChangeNotInPipeChain] =
         showUsingLocale: e =>
@@ -770,7 +888,11 @@ object standard {
     case class SplitMerge90AtEndOfChain(
         sectionTyp: PipeType,
         elementRef: String
-    ) extends SingularFlowResistanceCoeffErrorI
+    )                                  (using val sc: SlotContext)
+        extends SingularFlowResistanceCoeffErrorI
+        with TargetedError:
+        override def target: ErrorTarget =
+            sc.targetFor(sectionTyp)
 
     given show_SplitMerge90AtEndOfChain: ShowUsingLocale[SplitMerge90AtEndOfChain] =
         showUsingLocale: e =>
@@ -795,14 +917,16 @@ object standard {
 
     case class InvalidConstraint(error: TermConstraintError[?]) extends EN15544_Error:
         /**
-         * Extract sectionTyp from inner TypedError when it wraps a HasSectionTypError
-         * (e.g. FireboxError → FireboxPipeT). Generic constraint violations
+         * Extract pipe type from inner TargetedError when it wraps a type-scoped error
+         * (e.g. FireboxError → TypeTarget(FireboxPipeT)). Generic constraint violations
          * (MinError, MaxError, GenericError) return None — they remain global.
          */
         def sectionTyp: Option[PipeType] = error match
-            case TermConstraintError.TypedError(_, nestedErr: HasSectionTypError, _) =>
-                Some(nestedErr.sectionTyp)
-            case _                                                                   => None
+            case TermConstraintError.TypedError(_, nestedErr: TargetedError, _) =>
+                nestedErr.target match
+                    case ErrorTarget.TypeTarget(pt) => Some(pt)
+                    case _                          => None
+            case _                                                              => None
 
     object InvalidConstraint:
         given ShowUsingLocale[InvalidConstraint] = showUsingLocale(_.error.failMsg)
@@ -810,7 +934,9 @@ object standard {
     // MecaFlu_Error
     // NOTE: No 'msg: String' field - all error messages are provided via I18N translations through ShowUsingLocale
 
-    sealed trait MecaFlu_Error extends MCalc_Error with HasSectionTypError
+    sealed trait MecaFlu_Error extends MCalc_Error with TargetedError:
+        def sectionTyp: PipeType
+        def target    : ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
 
     object MecaFlu_Error:
         /**
@@ -923,7 +1049,14 @@ object standard {
 
     // Incremental Builder Validation Errors
 
-    trait IncrementalValidation_Error extends MCalc_Error with HasSectionTypError
+    trait IncrementalValidation_Error extends MCalc_Error with TargetedError:
+        def sectionTyp: PipeType
+        def target    : ErrorTarget = ErrorTarget.TypeTarget(sectionTyp)
+
+    /** Slot-aware incremental validation errors: target resolves to SlotTarget when slotIndex is defined. */
+    sealed trait SlotAwareIncrementalValidation_Error extends IncrementalValidation_Error:
+        def sc             : SlotContext
+        override def target: ErrorTarget = sc.targetFor(sectionTyp)
 
     given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
         case e: NotDefinedYet             => Show[NotDefinedYet].show(e)
@@ -951,7 +1084,9 @@ object standard {
     case class AddElementMissingAfterSetProp[Id_IncrDescr <: Matchable](
         sectionTyp: PipeType,
         lastElRef : Option[String]
-    ) extends NotDefinedYet:
+    )                                                                  (using val sc: SlotContext)
+        extends NotDefinedYet
+        with SlotAwareIncrementalValidation_Error:
         def showUsingLocale: Locale ?=> String =
             I18N.incremental_validation.not_defined_yet.add_element_missing_after_set_prop(lastElRef.getOrElse(""))
 
@@ -967,14 +1102,33 @@ object standard {
     sealed trait PropertyMustBeSet extends IncrementalValidation_Error:
         def operationName: String
 
-    case class InnerGeometryMustBeSet(operationName: String, sectionTyp: PipeType)       extends PropertyMustBeSet
-    case class OuterGeometryMustBeSet(operationName: String, sectionTyp: PipeType)       extends PropertyMustBeSet
-    case class GeometryMustBeSet(operationName: String, sectionTyp: PipeType)            extends PropertyMustBeSet
-    case class RoughnessMustBeSet(operationName: String, sectionTyp: PipeType)           extends PropertyMustBeSet
-    case class LayersMustBeSet(operationName: String, sectionTyp: PipeType)              extends PropertyMustBeSet
-    case class AirSpaceAfterLayersMustBeSet(operationName: String, sectionTyp: PipeType) extends PropertyMustBeSet
-    case class PipeLocationMustBeSet(operationName: String, sectionTyp: PipeType)        extends PropertyMustBeSet
-    case class DuctTypeMustBeSet(operationName: String, sectionTyp: PipeType)            extends PropertyMustBeSet
+    case class InnerGeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class OuterGeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class GeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class RoughnessMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class LayersMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class AirSpaceAfterLayersMustBeSet(
+        operationName: String,
+        sectionTyp   : PipeType
+    )                                      (using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class PipeLocationMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
+    case class DuctTypeMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeSet
+        with SlotAwareIncrementalValidation_Error
 
     object PropertyMustBeSet:
         given ShowUsingLocale[PropertyMustBeSet] = showUsingLocale: e =>
@@ -988,14 +1142,18 @@ object standard {
                 case LayersMustBeSet(op, _)              => I18N.incremental_validation.property_must_be_set.layers(op)
                 case AirSpaceAfterLayersMustBeSet(op, _) =>
                     I18N.incremental_validation.property_must_be_set.air_space_after_layers(op)
-                case PipeLocationMustBeSet(op, _)        => I18N.incremental_validation.property_must_be_set.pipe_location(op)
+                case PipeLocationMustBeSet(op, _)        =>
+                    I18N.incremental_validation.property_must_be_set.pipe_location(op)
                 case DuctTypeMustBeSet(op, _)            => I18N.incremental_validation.property_must_be_set.duct_type(op)
 
     // Property must be defined errors (without operation name)
-    sealed trait PropertyMustBeDefined extends IncrementalValidation_Error
-
-    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)                    extends PropertyMustBeDefined
-    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)                  extends PropertyMustBeDefined
+    sealed trait PropertyMustBeDefined                                               extends IncrementalValidation_Error
+    case class SectionGeometryMustBeDefined(sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeDefined
+        with SlotAwareIncrementalValidation_Error
+    case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PropertyMustBeDefined
+        with SlotAwareIncrementalValidation_Error
     case class PressureLossMustBeDefined(sectionTyp: PipeType)                       extends PropertyMustBeDefined
     case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType) extends PropertyMustBeDefined
 
@@ -1013,12 +1171,20 @@ object standard {
     // Prerequisite errors
     sealed trait PrerequisiteNotMet extends IncrementalValidation_Error
 
-    case class ThicknessRequiresInnerGeometry(sectionTyp: PipeType)         extends PrerequisiteNotMet
-    case class LayerRequiresSectionGeometry(sectionTyp: PipeType)           extends PrerequisiteNotMet
-    case class LayersRequireInnerShape(sectionTyp: PipeType)                extends PrerequisiteNotMet
-    case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType) extends PrerequisiteNotMet
-    case class FinalDirWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
-    case class GeometryWithoutInitialDirection(sectionTyp: PipeType)        extends PrerequisiteNotMet
+    case class ThicknessRequiresInnerGeometry(sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PrerequisiteNotMet
+        with SlotAwareIncrementalValidation_Error
+    case class LayerRequiresSectionGeometry(sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PrerequisiteNotMet
+        with SlotAwareIncrementalValidation_Error
+    case class LayersRequireInnerShape(sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PrerequisiteNotMet
+        with SlotAwareIncrementalValidation_Error
+    case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType)(using val sc: SlotContext)
+        extends PrerequisiteNotMet
+        with SlotAwareIncrementalValidation_Error
+    case class FinalDirWithoutInitialDirection(sectionTyp: PipeType) extends PrerequisiteNotMet
+    case class GeometryWithoutInitialDirection(sectionTyp: PipeType) extends PrerequisiteNotMet
     case class SplitReflectedBranchAscends(
         sectionTyp: PipeType,
         elementRef: String
@@ -1078,18 +1244,47 @@ object standard {
                     e.elementRef
                 )
 
+    /** Standard identifier for validation errors with standard-specific messages. */
+    enum ValidationStandard:
+        case EN13384, EN15544
+
     // Conflict errors
     sealed trait ConflictDetected extends IncrementalValidation_Error
 
-    case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)                             extends ConflictDetected
-    case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType)           extends ConflictDetected
-    case class FlowResistanceRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
+    case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)(using val sc: SlotContext)
         extends ConflictDetected
-    case class PressureDiffRequiresGeometry(operationName: String, standard: String, sectionTyp: PipeType)
+        with SlotAwareIncrementalValidation_Error
+    case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType)(using val sc: SlotContext)
         extends ConflictDetected
-    case class CasingTooSmallForLiner(linerDh: String, casingDh: String, sectionTyp: PipeType) extends ConflictDetected
-    case class ConsecutiveDirectionChangesNotAllowed(prevName: String, nextName: String, sectionTyp: PipeType)
+        with SlotAwareIncrementalValidation_Error
+    case class FlowResistanceRequiresGeometry(
+        operationName: String,
+        standard     : ValidationStandard,
+        sectionTyp   : PipeType
+    )                                        (using val sc: SlotContext)
         extends ConflictDetected
+        with SlotAwareIncrementalValidation_Error
+    case class PressureDiffRequiresGeometry(
+        operationName: String,
+        standard     : ValidationStandard,
+        sectionTyp   : PipeType
+    )                                      (using val sc: SlotContext)
+        extends ConflictDetected
+        with SlotAwareIncrementalValidation_Error
+    case class CasingTooSmallForLiner(
+        linerDh   : String,
+        casingDh  : String,
+        sectionTyp: PipeType
+    )                                (using val sc: SlotContext)
+        extends ConflictDetected
+        with SlotAwareIncrementalValidation_Error
+    case class ConsecutiveDirectionChangesNotAllowed(
+        prevName  : String,
+        nextName  : String,
+        sectionTyp: PipeType
+    )                                               (using val sc: SlotContext)
+        extends ConflictDetected
+        with SlotAwareIncrementalValidation_Error
 
     /** Shape was set but not yet materialized into a physical element. */
     case class ShapeNotMaterialized(
@@ -1097,7 +1292,9 @@ object standard {
         operation   : ShapeNotMaterialized.Operation,
         elementIndex: Int,
         elementName : String
-    ) extends ConflictDetected
+    )                              (using val sc: SlotContext = SlotContext.unslotted)
+        extends ConflictDetected
+        with SlotAwareIncrementalValidation_Error
 
     object ShapeNotMaterialized:
         enum Operation:
@@ -1164,21 +1361,19 @@ object standard {
         // while FLOW_AREA_CHECK_ENABLED = false. See FlowAreaConservation banner.
         @nowarn("cat=deprecation")
         given ShowUsingLocale[ConflictDetected] = showUsingLocale:
-            case CannotSetGeometryBeforeChange(_)                     =>
+            case CannotSetGeometryBeforeChange(_)                                  =>
                 I18N.incremental_validation.conflicts.cannot_set_geometry_before_change
-            case SectionChangeRequiresCircle(shape, _)                =>
+            case SectionChangeRequiresCircle(shape, _)                             =>
                 I18N.incremental_validation.conflicts.section_change_requires_circle(shape)
-            case FlowResistanceRequiresGeometry(op, "EN13384", _)     =>
-                I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case FlowResistanceRequiresGeometry(op, "EN15544", _)     =>
+            case FlowResistanceRequiresGeometry(op, ValidationStandard.EN15544, _) =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry_15544(op)
-            case FlowResistanceRequiresGeometry(op, _, _)             =>
+            case FlowResistanceRequiresGeometry(op, _, _)                          =>
                 I18N.incremental_validation.conflicts.flow_resistance_requires_geometry(op)
-            case PressureDiffRequiresGeometry(op, _, _)               =>
+            case PressureDiffRequiresGeometry(op, _, _)                            =>
                 I18N.incremental_validation.conflicts.pressure_diff_requires_geometry(op)
-            case CasingTooSmallForLiner(linerDh, casingDh, _)         =>
+            case CasingTooSmallForLiner(linerDh, casingDh, _)                      =>
                 I18N.incremental_validation.conflicts.casing_too_small_for_liner(linerDh, casingDh)
-            case ConsecutiveDirectionChangesNotAllowed(prev, next, _) =>
+            case ConsecutiveDirectionChangesNotAllowed(prev, next, _)              =>
                 I18N.incremental_validation.conflicts.consecutive_direction_changes(prev, next)
             case e: ShapeNotMaterialized =>
                 val translatedOp = e.operation match
@@ -1231,10 +1426,12 @@ object standard {
                         ) + elementRef
 
     // Forbidden element position errors
-    sealed trait ForbiddenElementPosition extends IncrementalValidation_Error
+    sealed trait ForbiddenElementPosition extends IncrementalValidation_Error with SlotAwareIncrementalValidation_Error
 
-    case class ForbiddenAddElementAtStart(sectionTyp: PipeType, elementName: String) extends ForbiddenElementPosition
-    case class ForbiddenAddElementAtEnd(sectionTyp: PipeType, elementName: String)   extends ForbiddenElementPosition
+    case class ForbiddenAddElementAtStart(sectionTyp: PipeType, elementName: String)(using val sc: SlotContext)
+        extends ForbiddenElementPosition
+    case class ForbiddenAddElementAtEnd(sectionTyp: PipeType, elementName: String)(using val sc: SlotContext)
+        extends ForbiddenElementPosition
 
     object ForbiddenElementPosition:
         given ShowUsingLocale[ForbiddenElementPosition] = showUsingLocale:

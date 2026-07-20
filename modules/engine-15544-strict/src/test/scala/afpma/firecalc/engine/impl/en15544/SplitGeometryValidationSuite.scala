@@ -15,6 +15,7 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.models.FluePipeT
 
 import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 import afpma.firecalc.engine.alg.SplitGeometryValidationBehaviors
 import afpma.firecalc.engine.alg.SplitGeometryValidationBehaviors.SplitGeometryFixture
 
@@ -69,7 +70,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers with SplitG
             initialDir match
                 case Some(dir) => withInitialDirection(dir).define(descrs*)
                 case None      => define(descrs*)
-        incrDescr.toFullDescr().toEither match
+        incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither match
             case Right((_, pfd)) => Right(pfd.asInstanceOf[builder.PipeFullDescr])
             case Left(errs)      => Left(errs.toList.to(Vector))
     private val flowOnlyFixture: SplitGeometryFixture[FlowOnlyPipeDescr_15544, PipeFullDescr] =

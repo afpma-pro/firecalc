@@ -17,6 +17,7 @@ import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.dev_fixtures.en15544.v20241001.EmptyHeadRegionFixture_15544
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
+import afpma.firecalc.engine.standard.SlotContext
 
 import coulomb.policy.standard.given
 
@@ -70,8 +71,9 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
     // ── Engine `lastInnerShape` tests (typeclass-driven path) ────────
 
     it should "resolve to a terminal inner PipeShape via ChimneyPipe_Module.lastInnerShape" in {
+        // Test fixture — no slot index
         ChimneyPipe_Module
-            .lastInnerShape(ExampleProject_15544.conduit_fumees_descr, sentinelFrame)
+            .lastInnerShape(ExampleProject_15544.conduit_fumees_descr, sentinelFrame)(using SlotContext.unslotted)
             .shouldBe(defined)
     }
 
@@ -90,7 +92,8 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
             )
 
             val resultShape = CHPM
-                .lastInnerShape(syntheticChimney, sentinelFrame)
+                // Test fixture — no slot index
+                .lastInnerShape(syntheticChimney, sentinelFrame)(using SlotContext.unslotted)
                 .getOrElse(fail("synthetic chimney with section change failed to resolve a terminal shape"))
 
             resultShape match

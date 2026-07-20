@@ -13,6 +13,7 @@ import afpma.firecalc.engine.impl.en15544.strict.FireboxToInternalPipes_15544_St
 import afpma.firecalc.engine.impl.en15544.strict.GenericFireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
+import afpma.firecalc.engine.standard.SlotContext
 
 import coulomb.*
 import coulomb.policy.standard.given
@@ -40,5 +41,5 @@ object TraditionalFireboxToFireboxInternalPipes_15544_Strict
                         cross_section = h67_sectionCumuleeEntreeAirPorte
                     )
                 )
-                .toFullDescr()
+                .toFullDescr(using SlotContext.unslotted)
             CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                                                                   )

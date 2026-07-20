@@ -18,6 +18,7 @@ import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex01_colonne_ascendante
 import afpma.firecalc.fdim.exercices.en15544_strict.p1_decouverte.strict_ex02_carneau_descendant
@@ -41,16 +42,19 @@ class DynamicFrictionCoeffOpForConcatenatedPipeVectorSuite extends AnyFlatSpec w
         ex: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg & v0_2024_10_strict.WithPipeChain_15544_Strict
     )(tableOfDirectionChanges: TableFor2[String, Double]) = {
 
-        given PipeType = FluePipeT
         given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
         given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
             new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
-                def make(pt: PipeType): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
-                    val delegate = DynamicFrictionCoeff_13384()(using pt)
+                def make(
+                    pt: PipeType,
+                    sc: SlotContext
+                ): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                    val delegate = DynamicFrictionCoeff_13384()(using pt, sc)
                     new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                         def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
-        given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make
-        val flowOnlyDynamicFrictionCoeff_15544                        = FlowOnlyDynamicFrictionCoeff_15544()
+        given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make(SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val flowOnlyDynamicFrictionCoeff_15544                        =
+            FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT, SlotContext.forSlot(SlotIndex.unsafe(0)))
 
         val pipeChain  = PipeChain_15544_Strict.build(
             PipeChain_15544_Strict.Descriptors(ex.fluePipeDescr, ex.connectorPipeDescr, ex.chimneyPipeDescr),

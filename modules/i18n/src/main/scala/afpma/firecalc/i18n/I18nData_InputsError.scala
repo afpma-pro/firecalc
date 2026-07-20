@@ -5,14 +5,14 @@
 
 package afpma.firecalc.i18n
 
-import io.taig.babel.StringFormat3
+import io.taig.babel.StringFormat2
 
 object I18nData_InputsError:
 
     case class Inputs_Error(
         invald_type_of_appliance         : Inputs_Error.InvalidTypeOfAppliance,
         stove_params_sizing_input_missing: String,
-        incompatible_direction_in_pipe   : StringFormat3
+        incompatible_direction_in_pipe   : StringFormat2
     )
 
     object Inputs_Error:

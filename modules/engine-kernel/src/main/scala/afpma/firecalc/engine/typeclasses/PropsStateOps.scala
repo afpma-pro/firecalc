@@ -5,18 +5,21 @@
 
 package afpma.firecalc.engine.typeclasses
 
+import afpma.firecalc.units.Vec3
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.{NbOfFlows, PipeShape, ShapeState}
 
-import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.PipeType
-import afpma.firecalc.units.Vec3
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.*
 
 import cats.data.ValidatedNel
 import cats.syntax.all.*
+
+import afpma.firecalc.domain.NbOfFlows
+import afpma.firecalc.domain.PipeShape
+import afpma.firecalc.domain.ShapeState
 
 /**
  * Typeclass for read and write operations on PropsState.
@@ -76,6 +79,8 @@ trait PropsStateOps[State]:
         pt          : PipeType,
         elementIndex: Int,
         elementName : String
+    )(using
+        sc: SlotContext
     ): ValidatedNel[IncrementalValidation_Error, Unit] =
         if requiresMaterializedShape(state) then ShapeNotMaterialized(pt, op, elementIndex, elementName).invalidNel
         else ().validNel

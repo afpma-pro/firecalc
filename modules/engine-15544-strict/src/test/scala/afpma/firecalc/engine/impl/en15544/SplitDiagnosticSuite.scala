@@ -14,6 +14,7 @@ import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -47,7 +48,7 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("postSplit", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr()
+        val result    = incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe true
     }
 
@@ -64,7 +65,7 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                          ("postMerge", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr()
+        val result    = incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe true
     }
 
@@ -81,7 +82,7 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                              ("postSplit", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr()
+        val result    = incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
         result.isValid shouldBe true
     }
 }
