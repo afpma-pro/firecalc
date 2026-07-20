@@ -344,7 +344,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("branche aval", 1.meters)
                     )
@@ -377,7 +378,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("aval court", 10.cm  ),
                         addSharpAngle_90deg                    (
@@ -418,7 +420,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("aval court", 10.cm  ),
                         addSharpAngle_90deg                    (
@@ -455,11 +458,11 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         roughness                              (3.mm                 ),
                         innerShape(rectangle(20.cm, 20.cm)),
                         addSectionVertical                     ("branche 1", 10.cm   ),
-                        addSectionVertical                     ("branche 2", 10.cm   ),
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("aval court", 10.cm  ),
                         addSharpAngle_90deg                    (

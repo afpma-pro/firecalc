@@ -5,15 +5,13 @@
 
 package afpma.firecalc.engine
 
-import scala.annotation.nowarn
-
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.units.coulombutils.given
+import afpma.firecalc.units.coulombutils.shows.defaults.show_Velocity
+import afpma.firecalc.units.coulombutils.shows.defaults.show_Velocity_3
 
-import afpma.firecalc.domain.NbOfFlows
-
-import afpma.firecalc.dto.all.*
 import afpma.firecalc.dto.FireboxAvailabilityExtensions.localizedTypeName
+import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.i18n.LocalizedString
 import afpma.firecalc.i18n.ShowUsingLocale
@@ -22,7 +20,6 @@ import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.TermConstraintError
-import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.engine.models.en15544.PressureRequirement
 import afpma.firecalc.engine.models.gtypedefs.v
 import afpma.firecalc.engine.standard.ThermalResistance_Error.CanNotEndLayersDescriptionOnDeadAirSpace_OuterLayerMissing
@@ -30,6 +27,7 @@ import afpma.firecalc.engine.standard.ThermalResistance_Error.CouldNotComputeThe
 import afpma.firecalc.engine.standard.ThermalResistance_Error.SideRatioTooHighForRectangularForm
 import afpma.firecalc.engine.utils.InterpolationError
 import afpma.firecalc.engine.utils.readtable.ReadTableError
+import afpma.firecalc.engine.validation.ForbiddenElementInContext
 
 import cats.Show
 import cats.data.NonEmptyList
@@ -37,9 +35,12 @@ import cats.data.ValidatedNel
 import cats.derived.*
 import cats.syntax.all.*
 
+import scala.annotation.nowarn
+
+import afpma.firecalc.domain.NbOfFlows
+import afpma.firecalc.domain.PipeShape
 import io.taig.babel.Locale
-import afpma.firecalc.units.coulombutils.shows.defaults.show_Velocity_3
-import afpma.firecalc.units.coulombutils.shows.defaults.show_Velocity
+
 object standard {
 
     type VNelMcalcErr[+X] = ValidatedNel[MCalc_Error, X]
@@ -922,15 +923,16 @@ object standard {
 
     // Incremental Builder Validation Errors
 
-    sealed trait IncrementalValidation_Error extends MCalc_Error with HasSectionTypError
+    trait IncrementalValidation_Error extends MCalc_Error with HasSectionTypError
 
     given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
-        case e: NotDefinedYet            => Show[NotDefinedYet].show(e)
-        case e: PropertyMustBeSet        => Show[PropertyMustBeSet].show(e)
-        case e: PropertyMustBeDefined    => Show[PropertyMustBeDefined].show(e)
-        case e: PrerequisiteNotMet       => Show[PrerequisiteNotMet].show(e)
-        case e: ConflictDetected         => Show[ConflictDetected].show(e)
-        case e: ForbiddenElementPosition => Show[ForbiddenElementPosition].show(e)
+        case e: NotDefinedYet             => Show[NotDefinedYet].show(e)
+        case e: PropertyMustBeSet         => Show[PropertyMustBeSet].show(e)
+        case e: PropertyMustBeDefined     => Show[PropertyMustBeDefined].show(e)
+        case e: PrerequisiteNotMet        => Show[PrerequisiteNotMet].show(e)
+        case e: ConflictDetected          => Show[ConflictDetected].show(e)
+        case e: ForbiddenElementPosition  => Show[ForbiddenElementPosition].show(e)
+        case e: ForbiddenElementInContext => Show[ForbiddenElementInContext].show(e)
 
     // Pipe undefined
     sealed trait NotDefinedYet extends IncrementalValidation_Error

@@ -8,11 +8,12 @@ package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.domain.SetsInnerShape
+import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxOrigin
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.FlowAreaConservation
-import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
+import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.alg.en13384.IncrementalBuilderAlg_13384
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
@@ -29,11 +30,10 @@ import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.models.geometry.{PipeFrame, PositionTracker}
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
-import afpma.firecalc.engine.standard.FinalDirWithoutInitialDirection
-import afpma.firecalc.engine.standard.GeometryWithoutInitialDirection
-import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
-import afpma.firecalc.engine.standard.SymmetryPlaneAzimuthMissing
+import afpma.firecalc.engine.alg.{SplitMerge90Validator, SplitGeometryValidator}
+import afpma.firecalc.engine.validation.AirIntakeValidation
 import afpma.firecalc.engine.typeclasses.*
 import cats.data.*
 import cats.syntax.all.*
@@ -205,34 +205,46 @@ trait FlowOnlyIncrementalBuilder_13384
         finalState: PropsState,
         seed      : PipeBuildSeed
     ): ValidatedResult[Unit] =
-        val hasGeometry = incrDescrs.exists:
+        val airIntakeValidation = AirIntakeValidation.validateAirIntakeConstraints(pt, incrDescrs)
+
+        val hasGeometry        = incrDescrs.exists:
             case (_, _: AddElement) => true
             case _ => false
-        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
-        else
-            val hasFinalDir = incrDescrs.exists:
-                case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
-                case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
-                case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
-                case _ => false
+        val geometryValidation =
+            if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
+            else ().validNel
+
+        val hasFinalDir        = incrDescrs.exists:
+            case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
+            case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
+            case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
+            case _ => false
+        val finalDirValidation =
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
-            else
-                val posResult       = PositionTracker.computeFlowOnly13384(
-                    incrDescrs.map(_._2).toSeq,
-                    PipeInitialDirection.default,
-                    finalState.initialFrame,
-                    seed.positionContext.flatMap(_.startPoint).getOrElse(Vec3(0, 0, 0)),
-                    splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
-                )
-                val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
-                val splits          = posResult.splitMergePositions.filter(_.isSplit)
-                val splitValidation = NonEmptyList.fromList(splits.toList) match
-                    case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
-                    case None     => ().validNel
-                val positionErrors: ValidatedResult[Unit] =
-                    if posResult.errors.isEmpty then ().validNel
-                    else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
-                (splitValidation |+| mergeValidation |+| positionErrors).as(())
+            else ().validNel
+
+        // If geometry validation fails, skip position-dependent validations
+        if geometryValidation.isEmpty then (airIntakeValidation |+| geometryValidation |+| finalDirValidation).as(())
+        else
+            val posResult       = PositionTracker.computeFlowOnly13384(
+                incrDescrs.map(_._2).toSeq,
+                PipeInitialDirection.default,
+                finalState.initialFrame,
+                seed.positionContext
+                    .flatMap(_.startPoint)
+                    .getOrElse(FireboxOrigin),
+                splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
+            )
+            val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+            val splits          = posResult.splitMergePositions.filter(_.isSplit)
+            val splitValidation = NonEmptyList.fromList(splits.toList) match
+                case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
+                case None     => ().validNel
+            val positionErrors  =
+                if posResult.errors.isEmpty then ().validNel
+                else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
+            (airIntakeValidation |+| geometryValidation |+| finalDirValidation |+| splitValidation |+| mergeValidation |+| positionErrors)
+                .as(())
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,

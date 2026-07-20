@@ -609,7 +609,7 @@ trait PipePanel_13384_FlowOnly(using Locale, DisplayUnits) extends PipePanel:
         )
     )
 
-    lazy val split_group =
+    protected lazy val split_group =
         TagTreeMenu.Group (
             txt  = I18N.split_merge._self,
             next = List(

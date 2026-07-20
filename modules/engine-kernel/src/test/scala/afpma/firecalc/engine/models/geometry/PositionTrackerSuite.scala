@@ -15,6 +15,7 @@ import afpma.firecalc.dto.common.PipeShape
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
+import afpma.firecalc.domain.FireboxCoordinateSystem
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.*
 
@@ -194,10 +195,10 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
             Seq.empty,
             defaultInitialDir,
             None,
-            Vec3(0, 0, 0)
+            FireboxCoordinateSystem.FireboxOrigin
         )
         result.segments.isEmpty `shouldBe` true
-        assertVec3Approx(result.finalPoint, Vec3(0, 0, 0))
+        assertVec3Approx(result.finalPoint, FireboxCoordinateSystem.FireboxOrigin)
         // frame is initialized from initialDirection, not None
         result.finalFrame.isDefined `shouldBe` true
     }

@@ -282,7 +282,6 @@ object PositionTracker:
         finalPoint      : Option[Vec3] = None,
         splitPosition   : Option[Vec3] = None
     ): PipePositionResult =
-
         runPipeline(
             elems,
             initialDirection,
@@ -300,8 +299,7 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None,
         splitPosition   : Option[Vec3] = None
-    ): PipePositionResult =
-
+    )                                                : PipePositionResult =
         runPipeline(
             elems,
             initialDirection,
@@ -311,7 +309,6 @@ object PositionTracker:
             splitPosition,
             (elem: FlowOnlyPipeDescr_15544) => mapCommon(elem)
         )
-
     def computeThermal13384(
         elems           : Seq[ThermalPipeDescr_13384],
         initialDirection: PipeInitialDirection,
@@ -319,8 +316,7 @@ object PositionTracker:
         startPoint      : Vec3,
         finalPoint      : Option[Vec3] = None,
         splitPosition   : Option[Vec3] = None
-    ): PipePositionResult =
-
+    )                                                : PipePositionResult =
         runPipeline(
             elems,
             initialDirection,
@@ -330,8 +326,7 @@ object PositionTracker:
             splitPosition,
             mapThermal13384
         )
-
-    private def horizontalDirection(frame: PipeFrame): Vec3 =
+    private def horizontalDirection(frame: PipeFrame): Vec3               =
         val d     = frame.direction
         val horiz = Vec3(d.x, d.y, 0.0)
         if horiz.norm < 1e-9 then Vec3.Rear

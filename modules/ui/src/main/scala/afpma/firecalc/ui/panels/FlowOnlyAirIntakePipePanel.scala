@@ -16,7 +16,6 @@ import afpma.firecalc.i18n.implicits.I18N
 
 import afpma.firecalc.engine.models.AirIntakePipeT
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_13384
-import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -55,7 +54,13 @@ final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extend
 
     lazy val vnel_signal = air_intake_vnel_signal
         .combineWith(air_intake_pipe_vnel2_signal)
-        .map((v1, v2) => (v1: VNelMcalcErr[FlowOnlyAirIntakePipe_13384]) <* v2)
+        .map: (v1, v2) =>
+            // When the air intake pipe build fails, both signals carry the same
+            // builder validation error (e.g. SplitMergeNotAllowedInAirIntake).
+            // Combining them with `*<` or `*>` would duplicate the error.
+            // Guard: if v1 is invalid, return it directly; only combine when valid.
+            if v1.isValid then v1 <* v2
+            else v1
 
     lazy val elems_v: Var[Seq[FlowOnlyPipeDescr_13384]] = air_intake_incrdescr_var
 
@@ -113,6 +118,20 @@ final case class FlowOnlyAirIntakePipePanel()(using Locale, DisplayUnits) extend
             )
         )
 
+    override protected lazy val split_group =
+        TagTreeMenu.Group (
+            txt  = I18N.split_merge._self,
+            next = List(
+                TagTreeMenu.LeafDisabled[FlowOnlyPipeDescr_13384]    (
+                    txt     = I18N.split_merge.SplitSingleFlowIntoTwoFlowsWith90DegTurn,
+                    tooltip = I18N.split_merge.not_yet_implemented_air_intake_tooltip
+                ),
+                TagTreeMenu.LeafDisabled[FlowOnlyPipeDescr_13384]    (
+                    txt     = I18N.split_merge.MergeTwoFlowsIntoSingleWith90DegTurn,
+                    tooltip = I18N.split_merge.not_yet_implemented_air_intake_tooltip
+                )
+            )
+        )
     private lazy val fixedWrapperElems: Seq[HtmlElement] =
         import v7.given
         import afpma.firecalc.ui.models.{airIntakePositionMode_var, airIntakeEffectivePosition_sig}

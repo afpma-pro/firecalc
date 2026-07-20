@@ -38,12 +38,18 @@ extension (obj: CanComputePipeResult.type)
                 upstream: UpstreamState,
                 params  : Params_13384
             ): Either[MecaFlu_Error, PipeResult] =
-                // When upstream has a real temperature (not the firebox default t_W),
-                // use it as the reference for the exponential decay instead of t_burnout.
+                // Only override the temperature start when t_burnout is valid
+                // and differs from upstream. If t_burnout is invalid (e.g.,
+                // SingleTested firebox without tBurnout set), let the error
+                // propagate through t_fluepipe rather than masking it.
                 val tBurnout     = en15544App.t_burnout
                 val tempOverride =
-                    if upstream.temp_start != tBurnout then Some(upstream.temp_start)
-                    else None
+                    tBurnout.fold(
+                        _ => None,
+                        tb =>
+                            if upstream.temp_start.value != tb.value then Some(upstream.temp_start)
+                            else None
+                    )
                 FlowOnlyMecaFlu_15544.makePipeResult(fd, gas, params._2, z_geo, params._1, tempOverride)(using
                     en15544App,
                     ssa

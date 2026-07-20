@@ -99,13 +99,14 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
             val elems = Seq[FlowOnlyPipeDescr_15544](
                 SplitSingleFlowIntoTwoFlowsWith90DegTurn            (
                     "Diviser en 2 flux avec virage à 90°",
-                    newInnerShape = Circle(0.18.meters),
-                    absDir        = Some(
+                    newInnerShape        = Circle(0.18.meters),
+                    absDir               = Some(
                         AbsoluteDirection    (
                             azimuth     = Some(AzimuthDirection.Rear),
                             inclination = InclinationDirection.Horizontal
                         )
-                    )
+                    ),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
                 SetFlowOnlyPipeProp_15544.SetRoughness              (0.003.meters                 ),
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped      ("sortie de foyer", 0.3.meters),
@@ -199,13 +200,14 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
             val p = builder.define(
                 SplitSingleFlowIntoTwoFlowsWith90DegTurn            (
                     "Diviser en 2 flux avec virage à 90°",
-                    newInnerShape = Circle(0.18.meters),
-                    absDir        = Some(
+                    newInnerShape        = Circle(0.18.meters),
+                    absDir               = Some(
                         AbsoluteDirection    (
                             azimuth     = Some(AzimuthDirection.Rear),
                             inclination = InclinationDirection.Horizontal
                         )
-                    )
+                    ),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
                 SetFlowOnlyPipeProp_15544.SetRoughness              (0.003.meters                 ),
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped      ("sortie de foyer", 0.3.meters),
@@ -253,13 +255,14 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
             val p = builder.define(
                 SplitSingleFlowIntoTwoFlowsWith90DegTurn            (
                     "Diviser en 2 flux avec virage à 90°",
-                    newInnerShape = Circle(0.18.meters),
-                    absDir        = Some(
+                    newInnerShape        = Circle(0.18.meters),
+                    absDir               = Some(
                         AbsoluteDirection    (
                             azimuth     = Some(AzimuthDirection.Rear),
                             inclination = InclinationDirection.Horizontal
                         )
-                    )
+                    ),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
                 SetFlowOnlyPipeProp_15544.SetRoughness              (0.003.meters                 ),
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped      ("sortie de foyer", 0.3.meters),

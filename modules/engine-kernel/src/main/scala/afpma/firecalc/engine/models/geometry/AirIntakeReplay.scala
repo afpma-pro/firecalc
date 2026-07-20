@@ -60,11 +60,7 @@ object AirIntakeReplay:
             elems            = descr,
             initialDirection = initialDir,
             externalFrame    = None,
-            startPoint       = Vec3(
-                FireboxCoordinateSystem.FireboxBaseCenterX,
-                FireboxCoordinateSystem.FireboxBaseCenterY,
-                FireboxCoordinateSystem.FireboxBaseCenterZ
-            )
+            startPoint       = FireboxCoordinateSystem.FireboxOrigin
         )
 
     /**

@@ -55,7 +55,7 @@ case class TagTreeMenuComponent[A](
         elems: List[TagTreeMenu.Elems[A]]
     ): List[(TagTreeMenu.Modal[A], HtmlElement)] =
         elems.flatMap {
-            case m: TagTreeMenu.Modal[A]      =>
+            case m: TagTreeMenu.Modal[A]        =>
                 // Create an observer that appends the selected element
                 val onSelect: Observer[A] = Observer { selectedElem =>
                     val size = incrDescrSizeVar.now()
@@ -64,15 +64,17 @@ case class TagTreeMenuComponent[A](
                     treeStateVar.set(TreeState.initWith(ttm)                       )
                 }
                 List((m, m.modalContent(onSelect)))
-            case g: TagTreeMenu.Group[A]      =>
+            case g: TagTreeMenu.Group[A]        =>
                 collectAllModals(g.next)
-            case _: TagTreeMenu.Leaf[A]       =>
+            case _: TagTreeMenu.Leaf[A]         =>
                 Nil
-            case _: TagTreeMenu.LeafFn[A]     =>
+            case _: TagTreeMenu.LeafFn[A]       =>
                 Nil
-            case _: TagTreeMenu.Shortcut[A]   =>
+            case _: TagTreeMenu.Shortcut[A]     =>
                 Nil
-            case _: TagTreeMenu.ShortcutFn[A] =>
+            case _: TagTreeMenu.ShortcutFn[A]   =>
+                Nil
+            case _: TagTreeMenu.LeafDisabled[A] =>
                 Nil
         }
 
@@ -108,12 +110,13 @@ case class TagTreeMenuComponent[A](
 
         // Determine icon and button style based on element type
         val (icon, btnClass) = nl match
-            case _: TagTreeMenu.Shortcut[A]   => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
-            case _: TagTreeMenu.ShortcutFn[A] => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
-            case _: TagTreeMenu.LeafFn[A]     => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
-            case _: TagTreeMenu.Group[A]      => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
-            case _: TagTreeMenu.Leaf[A]       => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
-            case _: TagTreeMenu.Modal[A]      => (lucide.`book-open-text`, "bg-base-200 hover:bg-secondary"       )
+            case _: TagTreeMenu.Shortcut[A]     => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.ShortcutFn[A]   => (lucide.zap(stroke_width = 2.0), "bg-base-200 hover:bg-secondary")
+            case _: TagTreeMenu.LeafFn[A]       => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Group[A]        => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Leaf[A]         => (lucide.`circle-help`, "bg-base-200 hover:bg-secondary"          )
+            case _: TagTreeMenu.Modal[A]        => (lucide.`book-open-text`, "bg-base-200 hover:bg-secondary"       )
+            case _: TagTreeMenu.LeafDisabled[A] => (lucide.`circle-x`, "btn-disabled"                               )
 
         // For Modal case, find the pre-computed modal element
         val modalElementOpt = nl match
@@ -122,8 +125,11 @@ case class TagTreeMenuComponent[A](
 
         div(
             cls := "inline",
-            button(
-                cls := s"btn btn-sm $btnClass",
+            button  (
+                cls   := s"btn btn-sm $btnClass",
+                title := (nl match
+                    case ld: TagTreeMenu.LeafDisabled[_] => ld.tooltip
+                    case _ => ""),
                 icon,
                 txt,
                 onClick --> { _ =>
@@ -174,12 +180,13 @@ case class TagTreeMenuComponent[A](
                                 onDone()
                                 TreeState.initWith(resetTo)
 
-                            case _: TagTreeMenu.Modal[A] =>
+                            case _: TagTreeMenu.Modal[A]        =>
                                 // Open the modal - it will handle appending and resetting
                                 modalElementOpt.foreach { el =>
                                     el.ref.asInstanceOf[HTMLDialogElement].showModal()
                                 }
                                 s
+                            case _: TagTreeMenu.LeafDisabled[A] => s
                 }
             )
         )
@@ -286,12 +293,13 @@ object TagTreeMenuComponent:
             this.copy(
                 selectedNodes = nextSel,
                 choices       = x match
-                    case n: TagTreeMenu.Group[A]      => n.next
-                    case _: TagTreeMenu.Leaf[A]       => Nil
-                    case _: TagTreeMenu.LeafFn[A]     => Nil
-                    case _: TagTreeMenu.Shortcut[A]   => Nil
-                    case _: TagTreeMenu.ShortcutFn[A] => Nil
-                    case _: TagTreeMenu.Modal[A]      => Nil
+                    case n: TagTreeMenu.Group[A]        => n.next
+                    case _: TagTreeMenu.Leaf[A]         => Nil
+                    case _: TagTreeMenu.LeafFn[A]       => Nil
+                    case _: TagTreeMenu.Shortcut[A]     => Nil
+                    case _: TagTreeMenu.ShortcutFn[A]   => Nil
+                    case _: TagTreeMenu.Modal[A]        => Nil
+                    case _: TagTreeMenu.LeafDisabled[A] => Nil
             )
 
         def selectNode(n: TagTreeMenu.Group[A]): TreeState[A] =
@@ -345,6 +353,12 @@ object TagTreeMenu:
      * and a modalId that should be used as the dialog element's id attribute.
      */
     case class Modal[+A](txt: String, modalContent: Observer[A] => HtmlElement) extends Elems[A]
+
+    /**
+     * A menu entry that is visible but disabled. Renders as a non-clickable button
+     * with an optional tooltip explaining why the action is unavailable.
+     */
+    case class LeafDisabled[+A](txt: String, tooltip: String) extends Elems[A]
     object Leaf:
         def apply[A](txt: String)(using d: Defaultable[A]): Leaf[A] =
             Leaf(txt, elem = d.default)

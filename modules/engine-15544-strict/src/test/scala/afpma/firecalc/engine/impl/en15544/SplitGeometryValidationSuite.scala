@@ -101,17 +101,19 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers with SplitG
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped(name, length)
 
             override def addSplit(name: String, absDir: AbsoluteDirection): FlowOnlyPipeDescr_15544 =
-                AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn       (
                     name,
-                    newInnerShape = PipeShape.Circle(9.cm),
-                    absDir        = Some(absDir)
+                    newInnerShape        = PipeShape.Circle(9.cm),
+                    absDir               = Some(absDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Front)
                 )
 
             override def addMerge(name: String, absDir: AbsoluteDirection): FlowOnlyPipeDescr_15544 =
-                AddFlowOnlyPipeElement_15544.MergeTwoFlowsIntoSingleWith90DegTurn(
+                AddFlowOnlyPipeElement_15544.MergeTwoFlowsIntoSingleWith90DegTurn       (
                     name,
-                    newInnerShape = PipeShape.Circle(15.cm),
-                    absDir        = Some(absDir)
+                    newInnerShape        = PipeShape.Circle(15.cm),
+                    absDir               = Some(absDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Front)
                 )
 
             override def assertFirstElementIsSplitMerge90(pfd: PipeFullDescr, expectedNFlows: NbOfFlows): Unit =

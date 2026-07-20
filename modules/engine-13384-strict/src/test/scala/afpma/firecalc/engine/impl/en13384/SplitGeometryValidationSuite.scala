@@ -70,13 +70,14 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val builder = makeFlowOnlyBuilder(ascendingDir)
         val descr   = builder.define(
             (flowOnlySetup ++ Seq(
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("preSplit", 1.meters),
-                AddFlowOnlyPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("preSplit", 1.meters),
+                AddFlowOnlyPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn       (
                     "split",
-                    newInnerShape = PipeShape.Circle(9.cm),
-                    absDir        = Some(ascendingBranchDir)
+                    newInnerShape        = PipeShape.Circle(9.cm),
+                    absDir               = Some(ascendingBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters    )
             ))*
         )
         descr.toFullDescr().toEither.left.toOption.get.exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
@@ -134,13 +135,14 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val builder = makeFlowOnlyBuilder(ascendingDir)
         val descr   = builder.define(
             (flowOnlySetup ++ Seq(
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                   ("preMerge", 1.meters ),
-                AddFlowOnlyPipeElement_13384.MergeTwoFlowsIntoSingleWith90DegTurn(
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                          ("preMerge", 1.meters ),
+                AddFlowOnlyPipeElement_13384.MergeTwoFlowsIntoSingleWith90DegTurn       (
                     "merge",
-                    newInnerShape = PipeShape.Circle(20.cm),
-                    absDir        = Some(horizontalBranchDir)
+                    newInnerShape        = PipeShape.Circle(20.cm),
+                    absDir               = Some(horizontalBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                   ("postMerge", 1.meters)
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                          ("postMerge", 1.meters)
             ))*
         )
         descr.toFullDescr().isValid shouldBe true
@@ -151,13 +153,14 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val builder = makeFlowOnlyBuilder(ascendingDir)
         val descr   = builder.define(
             (flowOnlySetup ++ Seq(
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("preSplit", 1.meters),
-                AddFlowOnlyPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("preSplit", 1.meters),
+                AddFlowOnlyPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn       (
                     "split",
-                    newInnerShape = PipeShape.Circle(9.cm),
-                    absDir        = Some(horizontalBranchDir)
+                    newInnerShape        = PipeShape.Circle(9.cm),
+                    absDir               = Some(horizontalBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters    )
             ))*
         )
         descr.toFullDescr().isValid shouldBe true
@@ -168,13 +171,14 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val builder = makeThermalBuilder(ascendingDir)
         val descr   = builder.define(
             (thermalSetup ++ Seq(
-                AddThermalPipeElement_13384.AddSectionSlopped                       ("preSplit", 1.meters),
-                AddThermalPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                AddThermalPipeElement_13384.AddSectionSlopped                              ("preSplit", 1.meters),
+                AddThermalPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn       (
                     "split",
-                    newInnerShape = PipeShape.Circle(9.cm),
-                    absDir        = Some(ascendingBranchDir)
+                    newInnerShape        = PipeShape.Circle(9.cm),
+                    absDir               = Some(ascendingBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
-                AddThermalPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
+                AddThermalPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters    )
             ))*
         )
         descr.toFullDescr().toEither.left.toOption.get.exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
@@ -269,12 +273,13 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
         val builder = makeFlowOnlyBuilder(ascendingDir)
         val descr   = builder.define(
             (flowOnlySetup ++ Seq(
-                AddFlowOnlyPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                AddFlowOnlyPipeElement_13384.SplitSingleFlowIntoTwoFlowsWith90DegTurn       (
                     "split",
-                    newInnerShape = PipeShape.Circle(9.cm),
-                    absDir        = Some(horizontalBranchDir)
+                    newInnerShape        = PipeShape.Circle(9.cm),
+                    absDir               = Some(horizontalBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Right)
                 ),
-                AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters)
+                AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters)
             ))*
         )
         val (_, pfd) = descr.toFullDescr().toEither.toOption.get
