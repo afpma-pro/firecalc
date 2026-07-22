@@ -37,7 +37,7 @@ import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
-import afpma.firecalc.engine.impl.en15544.common.SlotIndexProvider
+import afpma.firecalc.engine.ops.generic.SlotIndexProvider
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
@@ -317,7 +317,7 @@ abstract class EN15544_V_2023_Common_Application
         : afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
         import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.*
         new DynFrict13384Factory:
-            def make(pt: PipeType, sc: SlotContext): DynFrict13384Like =
+            def make(pt: PipeType)(using sc: SlotContext): DynFrict13384Like =
                 val delegate = afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384()(using pt, sc)
                 new DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
@@ -483,13 +483,14 @@ abstract class EN15544_V_2023_Common_Application
                                 val stage2InitialUpstream =
                                     UpstreamState.fromPipeResult(seedPr, computeAt)
                                 val folded                =
+                                    val provider = SlotIndexProvider.suffix(lastFluePipeSlotIdx + 1)
                                     stage2PipeSlots.zipWithIndex.foldLeft[Either[
                                         afpma.firecalc.engine.standard.MecaFlu_Error,
                                         (UpstreamState, Vector[PipeResult])
                                     ]](Right((stage2InitialUpstream, Vector.empty))) { case (acc, (slot, localIdx)) =>
                                         acc.flatMap { case (upstream, results) =>
-                                            val globalIdx = lastFluePipeSlotIdx + 1 + localIdx
-                                            slot.compute(upstream, params, SlotIndex.unsafe(globalIdx)).map { pr =>
+                                            val slotIdx = provider(localIdx)
+                                            slot.compute(upstream, params, slotIdx).map { pr =>
                                                 val nextUpstream =
                                                     UpstreamState.fromPipeResult(pr, computeAt)
                                                 (nextUpstream, results :+ pr)
@@ -874,7 +875,7 @@ abstract class EN15544_V_2023_Common_Application
                                         ratio,
                                         rmin,
                                         rmax
-                                    )(using SlotContext.fromOption(SlotIndex.from(slotIdx)))
+                                    )(using SlotContext.forSlotUnsafe(slotIdx))
                                 )
                             .map(_ => ())
                     case _                                =>
@@ -916,7 +917,7 @@ abstract class EN15544_V_2023_Common_Application
                                 endVelocity   = ve,
                                 minVel        = formulas.flueGasVelocityMin,
                                 maxVel        = formulas.flueGasVelocityMax
-                            )(using SlotContext.fromOption(SlotIndex.from(slotIndex)))
+                            )(using SlotContext.forSlotUnsafe(slotIndex))
                         (startBad, endBad) match
                             case (false, false) => None
                             case (true, false ) => Some(mkErr(VelocityPosition.Start, Some(psr.v_start), None)          )

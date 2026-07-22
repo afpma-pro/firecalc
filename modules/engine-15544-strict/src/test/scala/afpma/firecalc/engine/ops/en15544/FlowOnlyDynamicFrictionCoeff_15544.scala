@@ -15,6 +15,7 @@ import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.matchers.CustomCatsMatchers.*
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.Slot0ContextFixture
 import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.{DirectionChange, SectionGeometryChange}
 import afpma.firecalc.engine.models.FluePipeT
@@ -27,21 +28,21 @@ import cats.syntax.all.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
+class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers with Slot0ContextFixture {
 
     // import pipedescr.*
 
     given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
     given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
         new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
-            def make(pt: PipeType, sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+            def make(pt: PipeType)(using sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
                 val delegate = DynamicFrictionCoeff_13384()(using pt, sc)
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
-    given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make(SlotContext.forSlot(SlotIndex.unsafe(0)))
+    given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make(summon[SlotContext])
 
     private val flowOnlyDFC =
-        FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT, SlotContext.forSlot(SlotIndex.unsafe(0)))
+        FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
 
     "tronçon court selon cas type 15544 C2 => 2 angles alternés à 90°" - {
         "zeta = (0.44, 0.44) ???" in {
@@ -84,7 +85,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         innerShape(rectangle(24.cm, 19.cm)),
                         addSectionHorizontal("Car. 7", 190.cm  )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -135,7 +136,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Rear
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -186,7 +187,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Rear
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -237,7 +238,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Right
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -284,7 +285,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addSectionHorizontal                       ("branche 1", 1.meters),
                         addSectionHorizontal                       ("branche 2", 1.meters)
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -318,7 +319,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addSectionHorizontal                       ("branche 1", 1.meters    ),
                         addSectionHorizontal                       ("branche 2", 1.meters    )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -353,7 +354,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche aval", 1.meters)
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -392,7 +393,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche 3", 1.meters)
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -434,7 +435,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche 3", 1.meters)
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -475,7 +476,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche 3", 1.meters)
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -520,7 +521,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                             1.meters
                         )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -564,7 +565,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                             1.meters
                         )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -618,7 +619,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Right (90°)
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -662,9 +663,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val recordingFactory =
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
                     def make(
-                        pt: PipeType,
-                        sc: SlotContext
-                    ): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                        pt: PipeType
+                    )(using sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
                         capturedSc = Some(sc)
                         // Return a no-op delegate; we only care that make was called with the right index
                         new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
@@ -705,9 +705,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val recordingFactory =
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
                     def make(
-                        pt: PipeType,
-                        sc: SlotContext
-                    ): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                        pt: PipeType
+                    )(using sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
                         capturedSc = Some(sc)
                         new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                             def thermalSectionGeometryChange =

@@ -126,7 +126,7 @@ private[dynfrict] final case class FWindow(
                         o_dc12      = curr.t.some,
                         o_dc12_name = curr.name.some,
                         sectionTyp
-                    )
+                    )(using sc)
                 )
                 val w_np1_opt = ζ_np2_level_n_opt.map(ζ_np2_level_n =>
                     ShortSection.PipeDescrWindow.from   (
@@ -137,7 +137,7 @@ private[dynfrict] final case class FWindow(
                         o_dc12      = np2.map(_.t.asInstanceOf[DirectionChange]),
                         o_dc12_name = np2.map(_.name),
                         sectionTyp
-                    )
+                    )(using sc)
                 )
 
                 val r_nm1_v_opt = w_nm1_opt.map(x => x.andThen(y => alg.resultFromWindow(y)))

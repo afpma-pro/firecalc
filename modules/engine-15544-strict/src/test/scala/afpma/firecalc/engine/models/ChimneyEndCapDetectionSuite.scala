@@ -17,7 +17,7 @@ import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.dev_fixtures.en15544.v20241001.EmptyHeadRegionFixture_15544
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
-import afpma.firecalc.engine.standard.SlotContext
+import afpma.firecalc.engine.UnslottedFixture
 
 import coulomb.policy.standard.given
 
@@ -38,7 +38,7 @@ import org.scalatest.matchers.should.Matchers
  * isolates the shape concern. At runtime the real upstream connector frame is
  * plumbed through.
  */
-class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
+class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers with UnslottedFixture:
 
     private val sentinelFrame = Some(PipeFrame.initial(Vec3.Up))
 
@@ -73,7 +73,7 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
     it should "resolve to a terminal inner PipeShape via ChimneyPipe_Module.lastInnerShape" in {
         // Test fixture — no slot index
         ChimneyPipe_Module
-            .lastInnerShape(ExampleProject_15544.conduit_fumees_descr, sentinelFrame)(using SlotContext.unslotted)
+            .lastInnerShape(ExampleProject_15544.conduit_fumees_descr, sentinelFrame)
             .shouldBe(defined)
     }
 
@@ -93,7 +93,7 @@ class ChimneyEndCapDetectionSuite extends AnyFlatSpec with Matchers:
 
             val resultShape = CHPM
                 // Test fixture — no slot index
-                .lastInnerShape(syntheticChimney, sentinelFrame)(using SlotContext.unslotted)
+                .lastInnerShape(syntheticChimney, sentinelFrame)
                 .getOrElse(fail("synthetic chimney with section change failed to resolve a terminal shape"))
 
             resultShape match

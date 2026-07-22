@@ -15,7 +15,7 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.models.FluePipeT
 
 import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.Slot0ContextFixture
 import afpma.firecalc.engine.alg.SplitGeometryValidationBehaviors
 import afpma.firecalc.engine.alg.SplitGeometryValidationBehaviors.SplitGeometryFixture
 
@@ -29,7 +29,11 @@ import org.scalatest.matchers.should.Matchers
  * the EN 15544 flow-only builder path. Previously this engine had no test coverage
  * for ascending branch direction validation — all split tests used `absDir = None`.
  */
-class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers with SplitGeometryValidationBehaviors:
+class SplitGeometryValidationSuite
+    extends AnyFlatSpec
+    with Matchers
+    with SplitGeometryValidationBehaviors
+    with Slot0ContextFixture:
 
     given FluePipeT = FluePipeT
 
@@ -70,7 +74,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers with SplitG
             initialDir match
                 case Some(dir) => withInitialDirection(dir).define(descrs*)
                 case None      => define(descrs*)
-        incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither match
+        incrDescr.toFullDescr.toEither match
             case Right((_, pfd)) => Right(pfd.asInstanceOf[builder.PipeFullDescr])
             case Left(errs)      => Left(errs.toList.to(Vector))
     private val flowOnlyFixture: SplitGeometryFixture[FlowOnlyPipeDescr_15544, PipeFullDescr] =

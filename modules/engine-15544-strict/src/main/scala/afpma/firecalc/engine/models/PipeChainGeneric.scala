@@ -16,7 +16,7 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 
 import cats.data.Validated
-import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.standard.SlotContext
 
 /**
  * Builds a Vector[SlotBuildResult] from a sequence of PostFireboxPipeDescrSlot,
@@ -58,7 +58,7 @@ object PipeChainGeneric:
         slots.zipWithIndex
             .foldLeft(((Vector.empty[SlotBuildResult], false), initialSeed)):
                 case (((results, failedUpstream), seed), (slot, idx)) =>
-                    val result         = buildSlot(slot, seed)(using SlotContext.fromOption(SlotIndex.from(idx)))
+                    val result         = buildSlot(slot, seed)(using SlotContext.forSlotUnsafe(idx))
                     val resultWithFlag =
                         if failedUpstream then result.copy(upstreamFailure = true)
                         else result

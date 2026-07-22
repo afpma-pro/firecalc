@@ -11,7 +11,7 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.units.coulombutils.*
-import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.Slot0ContextFixture
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -23,7 +23,7 @@ import org.scalatest.matchers.should.Matchers
  * FlowOnly 13384 builder (`FlowOnlyAirIntakePipe_Module_13384.incremental`).
  * See `SetInnerShapePreventSectionGeometryChangeAuto` / `IsBackendForbidden`.
  */
-class FlowOnlySectionGeometryChangeAutoInsertionSuite_13384 extends AnyFlatSpec with Matchers:
+class FlowOnlySectionGeometryChangeAutoInsertionSuite_13384 extends AnyFlatSpec with Matchers with Slot0ContextFixture:
 
     import PipeShape.*
 
@@ -48,7 +48,7 @@ class FlowOnlySectionGeometryChangeAutoInsertionSuite_13384 extends AnyFlatSpec 
             builder.innerShape       (pipeB         ),
             builder.addSectionSlopped("s2", 1.meters)
         )
-        val result  = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result  = p.toFullDescr
         result.isValid shouldBe true
         val elems   = result.toOption.get._2.elems
         elems.size shouldBe 3
@@ -67,7 +67,7 @@ class FlowOnlySectionGeometryChangeAutoInsertionSuite_13384 extends AnyFlatSpec 
             builder.innerShape       (pipeA         ),
             builder.addSectionSlopped("s2", 1.meters)
         )
-        val result  = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result  = p.toFullDescr
         result.isValid shouldBe true
         val elems   = result.toOption.get._2.elems
         elems.size shouldBe 2
@@ -85,7 +85,7 @@ class FlowOnlySectionGeometryChangeAutoInsertionSuite_13384 extends AnyFlatSpec 
             builder.innerShape       (pipeB, preventAutoSectionGeometryChange = true),
             builder.addSectionSlopped("s2", 1.meters                                )
         )
-        val result  = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result  = p.toFullDescr
         result.isValid shouldBe true
         val elems   = result.toOption.get._2.elems
         // No auto SectionGeometryChange inserted: just s1 and s2.
@@ -109,7 +109,7 @@ class FlowOnlySectionGeometryChangeAutoInsertionSuite_13384 extends AnyFlatSpec 
             builder.innerShape       (pipeB, preventAutoSectionGeometryChange = false),
             builder.addSectionSlopped("s2", 1.meters                                 )
         )
-        val result  = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result  = p.toFullDescr
         result.isValid shouldBe true
         val elems   = result.toOption.get._2.elems
         elems.size shouldBe 3

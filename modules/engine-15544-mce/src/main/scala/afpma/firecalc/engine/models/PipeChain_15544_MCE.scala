@@ -11,7 +11,6 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot.*
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
-import afpma.firecalc.engine.standard.SlotIndex
 import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.ValidatedNel
@@ -51,7 +50,7 @@ object PipeChain_15544_MCE:
         val initialSeed                 = PipeBuildSeed.default
         val (fluePipeResult, flueSeedV) =
             FluePipe_Module_13384.mkPipeFromIncrDescrWithSeed(d.flue, initialSeed)(using
-                SlotContext.fromOption(SlotIndex.from(0))
+                SlotContext.forSlotUnsafe(0)
             )
         val flueSeed = flueSeedV.getOrElse(initialSeed)
         val flueFinalFrame = flueSeed.frame
@@ -60,7 +59,7 @@ object PipeChain_15544_MCE:
         // Fixed test position
         val (connectorPipeResult, connectorSeedV) =
             ConnectorPipe_Module.mkPipeFromIncrDescrWithSeed(d.connector, flueSeed)(using
-                SlotContext.fromOption(SlotIndex.from(1))
+                SlotContext.forSlotUnsafe(1)
             )
         val connectorSeed = connectorSeedV.getOrElse(flueSeed)
         val connectorFinalFrame = connectorSeed.frame
@@ -69,7 +68,7 @@ object PipeChain_15544_MCE:
         // Fixed test position
         val chimneyPipeResult =
             ChimneyPipe_Module
-                .mkPipeFromIncrDescr(d.chimney, connectorSeed)(using SlotContext.fromOption(SlotIndex.from(2)))
+                .mkPipeFromIncrDescr(d.chimney, connectorSeed)(using SlotContext.forSlotUnsafe(2))
                 ._1
 
         Built(fluePipeResult, connectorPipeResult, chimneyPipeResult, flueFinalFrame, connectorFinalFrame)

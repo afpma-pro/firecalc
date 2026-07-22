@@ -29,8 +29,8 @@ trait IncrementalValidation_Error extends MCalc_Error with TargetedError:
 
 /** Slot-aware incremental validation errors: target resolves to SlotTarget when slotIndex is defined. */
 sealed trait SlotAwareIncrementalValidation_Error extends IncrementalValidation_Error:
-    def sc             : SlotContext
-    override def target: ErrorTarget = sc.targetFor(sectionTyp)
+    def slotIndex      : Option[SlotIndex]
+    override def target: ErrorTarget = slotIndex.targetFor(sectionTyp)
 
 given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
     case e: NotDefinedYet             => Show[NotDefinedYet].show(e)
@@ -58,9 +58,10 @@ case class PipeSlotNotFound(sectionTyp: PipeType) extends NotDefinedYet:
 case class AddElementMissingAfterSetProp[Id_IncrDescr <: Matchable](
     sectionTyp: PipeType,
     lastElRef : Option[String]
-)                                                                  (using val sc: SlotContext)
+)                                                                  (using sc: SlotContext)
     extends NotDefinedYet
     with SlotAwareIncrementalValidation_Error:
+    val slotIndex      : Option[SlotIndex] = sc.slotIndex
     def showUsingLocale: Locale ?=> String =
         I18N.incremental_validation.not_defined_yet.add_element_missing_after_set_prop(lastElRef.getOrElse(""))
 
@@ -76,33 +77,41 @@ object NotDefinedYet:
 sealed trait PropertyMustBeSet extends IncrementalValidation_Error:
     def operationName: String
 
-case class InnerGeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+case class InnerGeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
-case class OuterGeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class OuterGeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
-case class GeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class GeometryMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
-case class RoughnessMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class RoughnessMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
-case class LayersMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class LayersMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class AirSpaceAfterLayersMustBeSet(
     operationName: String,
     sectionTyp   : PipeType
-)                                      (using val sc: SlotContext)
+)                                      (using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
-case class PipeLocationMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class PipeLocationMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
-case class DuctTypeMustBeSet(operationName: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class DuctTypeMustBeSet(operationName: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeSet
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 
 object PropertyMustBeSet:
     given ShowUsingLocale[PropertyMustBeSet] = showUsingLocale: e =>
@@ -122,12 +131,14 @@ object PropertyMustBeSet:
 
 // Property must be defined errors (without operation name)
 sealed trait PropertyMustBeDefined                                               extends IncrementalValidation_Error
-case class SectionGeometryMustBeDefined(sectionTyp: PipeType)(using val sc: SlotContext)
+case class SectionGeometryMustBeDefined(sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeDefined
-    with SlotAwareIncrementalValidation_Error
-case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)(using sc: SlotContext)
     extends PropertyMustBeDefined
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class PressureLossMustBeDefined(sectionTyp: PipeType)                       extends PropertyMustBeDefined
 case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType) extends PropertyMustBeDefined
 
@@ -145,18 +156,22 @@ object PropertyMustBeDefined:
 // Prerequisite errors
 sealed trait PrerequisiteNotMet extends IncrementalValidation_Error
 
-case class ThicknessRequiresInnerGeometry(sectionTyp: PipeType)(using val sc: SlotContext)
+case class ThicknessRequiresInnerGeometry(sectionTyp: PipeType)(using sc: SlotContext)
     extends PrerequisiteNotMet
-    with SlotAwareIncrementalValidation_Error
-case class LayerRequiresSectionGeometry(sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class LayerRequiresSectionGeometry(sectionTyp: PipeType)(using sc: SlotContext)
     extends PrerequisiteNotMet
-    with SlotAwareIncrementalValidation_Error
-case class LayersRequireInnerShape(sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class LayersRequireInnerShape(sectionTyp: PipeType)(using sc: SlotContext)
     extends PrerequisiteNotMet
-    with SlotAwareIncrementalValidation_Error
-case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class DirectionChangeRequiresSectionGeometry(sectionTyp: PipeType)(using sc: SlotContext)
     extends PrerequisiteNotMet
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class FinalDirWithoutInitialDirection(sectionTyp: PipeType) extends PrerequisiteNotMet
 case class GeometryWithoutInitialDirection(sectionTyp: PipeType) extends PrerequisiteNotMet
 case class SplitReflectedBranchAscends(
@@ -225,40 +240,46 @@ enum ValidationStandard:
 // Conflict errors
 sealed trait ConflictDetected extends IncrementalValidation_Error
 
-case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)(using val sc: SlotContext)
+case class CannotSetGeometryBeforeChange(sectionTyp: PipeType)(using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
-case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType)(using val sc: SlotContext)
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class SectionChangeRequiresCircle(foundShape: String, sectionTyp: PipeType)(using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class FlowResistanceRequiresGeometry(
     operationName: String,
     standard     : ValidationStandard,
     sectionTyp   : PipeType
-)                                        (using val sc: SlotContext)
+)                                        (using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class PressureDiffRequiresGeometry(
     operationName: String,
     standard     : ValidationStandard,
     sectionTyp   : PipeType
-)                                      (using val sc: SlotContext)
+)                                      (using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class CasingTooSmallForLiner(
     linerDh   : String,
     casingDh  : String,
     sectionTyp: PipeType
-)                                (using val sc: SlotContext)
+)                                (using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 case class ConsecutiveDirectionChangesNotAllowed(
     prevName  : String,
     nextName  : String,
     sectionTyp: PipeType
-)                                               (using val sc: SlotContext)
+)                                               (using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 
 /** Shape was set but not yet materialized into a physical element. */
 case class ShapeNotMaterialized(
@@ -266,9 +287,10 @@ case class ShapeNotMaterialized(
     operation   : ShapeNotMaterialized.Operation,
     elementIndex: Int,
     elementName : String
-)                              (using val sc: SlotContext = SlotContext.unslotted)
+)                              (using sc: SlotContext)
     extends ConflictDetected
-    with SlotAwareIncrementalValidation_Error
+    with SlotAwareIncrementalValidation_Error:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 
 object ShapeNotMaterialized:
     enum Operation:
@@ -363,10 +385,12 @@ object ConflictDetected:
 // Forbidden element position errors
 sealed trait ForbiddenElementPosition extends IncrementalValidation_Error with SlotAwareIncrementalValidation_Error
 
-case class ForbiddenAddElementAtStart(sectionTyp: PipeType, elementName: String)(using val sc: SlotContext)
-    extends ForbiddenElementPosition
-case class ForbiddenAddElementAtEnd(sectionTyp: PipeType, elementName: String)(using val sc: SlotContext)
-    extends ForbiddenElementPosition
+case class ForbiddenAddElementAtStart(sectionTyp: PipeType, elementName: String)(using sc: SlotContext)
+    extends ForbiddenElementPosition:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+case class ForbiddenAddElementAtEnd(sectionTyp: PipeType, elementName: String)(using sc: SlotContext)
+    extends ForbiddenElementPosition:
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
 
 object ForbiddenElementPosition:
     given ShowUsingLocale[ForbiddenElementPosition] = showUsingLocale:

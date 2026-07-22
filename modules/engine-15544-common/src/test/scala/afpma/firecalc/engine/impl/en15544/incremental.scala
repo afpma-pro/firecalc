@@ -18,11 +18,12 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.ops.Position
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.engine.Slot0ContextFixture
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
+class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers with Slot0ContextFixture {
 
     import PipeShape.*
 
@@ -62,7 +63,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal("first", 2.meters)
                             )
 
-                        val vRepr = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).map(_._2)
+                        val vRepr = p.toFullDescr.map(_._2)
 
                         val expected = PipeFullDescr(
                             elements = Vector(
@@ -109,7 +110,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("second", 1.meters)
                             )
 
-                        val vRepr = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).map(_._2)
+                        val vRepr = p.toFullDescr.map(_._2)
 
                         // "second" has elevation_gain ≈ 0 (float noise from trig; expected exact 0
                         // for a horizontal pipe after a horizontal bend). Assert with tolerance.
@@ -168,7 +169,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                             )
 
                         val elems =
-                            p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).map(_._2).toOption.get.elems
+                            p.toFullDescr.map(_._2).toOption.get.elems
 
                         elems.map(_.name) `shouldBe` Vector(
                             "descente",
@@ -212,7 +213,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val result = p.toFullDescr
 
                         result.isValid `shouldBe` false
                         val Invalid(errors) = result: @unchecked
@@ -245,7 +246,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val result = p.toFullDescr
 
                         result.isValid `shouldBe` false
                         val Invalid(errors) = result: @unchecked
@@ -276,7 +277,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid `shouldBe` true
+                        p.toFullDescr.isValid `shouldBe` true
                     }
 
                     // @ignore: flow area check deactivated — see FlowAreaConservation
@@ -304,7 +305,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        val result                                                      = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val result                                                      = p.toFullDescr
                         result.isValid `shouldBe` false
                         val Invalid(errors)                                             = result: @unchecked
                         val err                                                         = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -339,7 +340,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid `shouldBe` true
+                        p.toFullDescr.isValid `shouldBe` true
                     }
                     // @ignore: flow area check deactivated — see FlowAreaConservation
                     "split 18 cm square → 2×9 cm square: area too small fails (ExpectedDimSquare)" ignore {
@@ -367,9 +368,9 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        val result                                   = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val result                                   = p.toFullDescr
                         result.isValid `shouldBe` false
-                        val Invalid(errors)                          = result: @unchecked
+                        val Invalid(errors)                          = result               : @unchecked
                         val err                                      = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
                         err.expectedDimension shouldBe a[ExpectedDimSquare]
                         val ExpectedDimSquare(_, _, expectedSide, _) = err.expectedDimension: @unchecked
@@ -400,9 +401,9 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        val result                                       = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val result                                       = p.toFullDescr
                         result.isValid `shouldBe` false
-                        val Invalid(errors)                              = result: @unchecked
+                        val Invalid(errors)                              = result               : @unchecked
                         val err                                          = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
                         err.expectedDimension shouldBe a[ExpectedDimCircle]
                         val ExpectedDimCircle(_, _, expectedDiameter, _) = err.expectedDimension: @unchecked
@@ -436,7 +437,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("section horizontale", 50.cm)
                             )
 
-                        val result                                                      = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val result                                                      = p.toFullDescr
                         result.isValid `shouldBe` false
                         val Invalid(errors)                                             = result: @unchecked
                         val err                                                         = errors.toList.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -466,7 +467,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionSlopped("s1", 2.meters)
                             )
 
-                        val vRepr = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).map(_._2)
+                        val vRepr = p.toFullDescr.map(_._2)
 
                         vRepr.isValid.shouldBe(true)
 
@@ -507,7 +508,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                                 addSectionHorizontal     ("straight-2", 50.cm      )
                             )
 
-                        val vRepr = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                        val vRepr = p.toFullDescr
 
                         val expected = PipeFullDescr(
                             elements = Vector(
@@ -601,7 +602,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     innerShape(rectangle(20.cm, 10.cm)),
                     addSectionHorizontal                    ("dual", 1.meters    )
                 )
-                val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                val result = p.toFullDescr
                 result.isValid `shouldBe` false
                 val errors = result.toEither.left.toOption.get
                 errors.head shouldBe a[ShapeNotMaterialized]
@@ -632,7 +633,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     innerShape(rectangle(20.cm, 10.cm)),
                     addSectionHorizontal                    ("postMerge", 1.meters)
                 )
-                val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                val result = p.toFullDescr
                 result.isValid `shouldBe` false
                 val errors = result.toEither.left.toOption.get
                 errors.head shouldBe a[ShapeNotMaterialized]
@@ -658,7 +659,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     innerShape(rectangle(10.cm, 10.cm)),
                     addSectionHorizontal                    ("dual2", 1.meters   )
                 )
-                val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                val result = p.toFullDescr
                 result.isValid `shouldBe` true
             }
 
@@ -687,7 +688,7 @@ class Pipes_15544_IncrementalBuilder extends AnyFreeSpec with Matchers {
                     innerShape(rectangle(20.cm, 10.cm)),
                     addSectionHorizontal                    ("postMerge2", 1.meters)
                 )
-                val result = p.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+                val result = p.toFullDescr
                 result.isValid `shouldBe` true
             }
 

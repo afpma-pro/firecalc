@@ -450,8 +450,8 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType, sc: SlotContext):
             case Some(ratio) if 30 > ratio && ratio >= 2 => Right("30 > Ld/Dh >= 2")
             case Some(_) if isUnsafe                     =>
                 Right("30 > Ld/Dh >= 2")
-            case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio))
-            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp)          )
+            case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio)(using show_shape, sc.slotIndex))
+            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp)(using show_shape, sc.slotIndex)          )
         }
 
     /**

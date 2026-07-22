@@ -37,11 +37,12 @@ case object StoveParamsSizingInputMissing                                  exten
 case class IncompatibleDirectionInPipe(
     pipeType    : PipeType,
     elementIndex: Int
-)                                     (using val sc: SlotContext)
+)                                     (using sc: SlotContext)
     extends Inputs_Error
     with TargetedError:
-    def target: ErrorTarget =
-        sc.targetFor(pipeType)
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+    def target   : ErrorTarget       =
+        slotIndex.targetFor(pipeType)
 
 object Inputs_Error:
     given ShowUsingLocale[Inputs_Error] = showUsingLocale:
@@ -287,11 +288,12 @@ case class FlueGasVelocityError(
     endVelocity  : Option[v],
     minVel       : v,
     maxVel       : v
-)                              (using val sc: SlotContext)
+)                              (using sc: SlotContext)
     extends FluePipeError
     with TargetedError:
-    def target: ErrorTarget =
-        sc.targetFor(sectionTyp)
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+    def target   : ErrorTarget       =
+        slotIndex.targetFor(sectionTyp)
 object FlueGasVelocityError        :
     given ShowUsingLocale[FlueGasVelocityError] = showUsingLocale: err =>
         def showV(vv: v): String =
@@ -337,11 +339,12 @@ case class FluePipeInvalidGeometryRatio(
     ratio      : QtyD[1],
     minRatio   : QtyD[1],
     maxRatio   : QtyD[1]
-)                                      (using val sc: SlotContext)
+)                                      (using sc: SlotContext)
     extends FluePipeError
     with TargetedError:
-    def target: ErrorTarget =
-        sc.targetFor(sectionTyp)
+    val slotIndex: Option[SlotIndex] = sc.slotIndex
+    def target   : ErrorTarget       =
+        slotIndex.targetFor(sectionTyp)
 object FluePipeInvalidGeometryRatio:
     given ShowUsingLocale[FluePipeInvalidGeometryRatio] = showUsingLocale:
         case FluePipeInvalidGeometryRatio(id, _, name, r, rmin, rmax) =>
@@ -380,22 +383,22 @@ sealed class PressureLossCoeff_Error(val msg: String, val sectionTyp: PipeType)
 
 // PressureLossCoeff_Error
 
-sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error:
-    protected def sc: SlotContext
+sealed trait SingularFlowResistanceCoeffErrorI extends MecaFlu_Error
 
 sealed class SingularFlowResistanceCoeffError(
     val msg       : String,
     val sectionTyp: PipeType
-)                                            (using val sc: SlotContext)
+)                                            (using val slotIndex: Option[SlotIndex])
     extends SingularFlowResistanceCoeffErrorI
     with TargetedError:
     override def target: ErrorTarget =
-        sc.targetFor(sectionTyp)
+        slotIndex.targetFor(sectionTyp)
 
 sealed trait FluePipeShapeSequenceError extends SingularFlowResistanceCoeffErrorI with TargetedError:
     override val sectionTyp: PipeType    = FluePipeT
+    def slotIndex          : Option[SlotIndex]
     override def target    : ErrorTarget =
-        sc.targetFor(sectionTyp)
+        slotIndex.targetFor(sectionTyp)
 object FluePipeShapeSequenceError:
 
     case class MissingSectionGeometryChange(
@@ -403,34 +406,41 @@ object FluePipeShapeSequenceError:
         dh1     : String,
         pipeRef2: String,
         dh2     : String
-    )                                      (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                                      (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
     case class CanNotStartWithADirectionChange(
         pipeName: String
-    )                                         (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                                         (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
     case class CanNotEndWithADirectionChange(
         pipeName: String
-    )                                       (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                                       (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
     case class TwoSuccessDirectionChangeNotAllowed(
         pipeName1: String,
         pipeName2: String
-    )                                             (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                                             (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
     case class TwoSuccessStraightSectionNotAllowed(
         pipeName1: String,
         pipeName2: String
-    )                                             (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                                             (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
     case class HolesShouldNotHappen(
         holeAfterPipeName: String
-    )                              (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                              (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
     case class DevError(
         msg: String
-    )                  (using val sc: SlotContext)
-        extends FluePipeShapeSequenceError
+    )                  (using sc: SlotContext)
+        extends FluePipeShapeSequenceError:
+        val slotIndex: Option[SlotIndex] = sc.slotIndex
 
     // ShowUsingLocale for formula errors (delegates to i18n)
     given ShowUsingLocale[FluePipeShapeSequenceError] = showUsingLocale:
@@ -450,8 +460,8 @@ object FluePipeShapeSequenceError:
 
     // given Show[FluePipeShapeSequenceError] = Show.show(x => s"FLUE PIPE DESCR ERROR: ${x.msg}")
 
-case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)
-    extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT)(using SlotContext.unslotted) derives Show
+case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)(using sc: SlotContext)
+    extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT)(using sc.slotIndex)
 
 given show_SingularFlowResistanceCoeffError: ShowUsingLocale[SingularFlowResistanceCoeffError] = showUsingLocale:
     case x: MissingAlpha3AngleForShortFluePipeSection                 =>
@@ -489,11 +499,11 @@ object SingularFlowResistanceCoeffError {
         m                      : String,
         override val sectionTyp: PipeType,
         showShape              : Show[S]
-    )                                                                 (using sc: SlotContext)
+    )                                                                 (using slotIndex: Option[SlotIndex])
         extends SingularFlowResistanceCoeffError(
             s"shape ${showShape.show(shape)} > could not select coeff values for interpolation > $m",
             sectionTyp
-        )                                       (using sc)
+        )                                       (using slotIndex)
 
     case class UnexpectedRatio_Ld_Dh[S](
         shape                  : S,
@@ -501,13 +511,13 @@ object SingularFlowResistanceCoeffError {
         ratio                  : Double
     )                                  (using
         show_shape             : Show[S],
-        sc                     : SlotContext
+        slotIndex              : Option[SlotIndex]
     ) extends CouldNotSelectCoeffValuesForInterpolation[S](
             shape,
             s"unexpected ratio Ld/Dh = ${"%.3f".format(ratio)}",
             sectionTyp,
             show_shape
-        )(using sc)
+        )(using slotIndex)
 
     given show_UnexpectedRatio: [S] => (show_Shape: Show[S]) => Show[UnexpectedRatio_Ld_Dh[S]] =
         Show.show[UnexpectedRatio_Ld_Dh[S]]: u =>
@@ -515,13 +525,13 @@ object SingularFlowResistanceCoeffError {
 
     case class NoGivenRatio_Ld_Dh[S](shape: S, override val sectionTyp: PipeType)(using
         show_shape: Show[S],
-        sc        : SlotContext
+        slotIndex : Option[SlotIndex]
     ) extends CouldNotSelectCoeffValuesForInterpolation[S](
             shape,
             "expecing ratio Ld/Dh but none given",
             sectionTyp,
             show_shape
-        )(using sc)
+        )(using slotIndex)
 
     given show_NoGivenRatio: [S] => (show_Shape: Show[S]) => Show[NoGivenRatio_Ld_Dh[S]] =
         Show.show[NoGivenRatio_Ld_Dh[S]]: u =>
@@ -530,20 +540,20 @@ object SingularFlowResistanceCoeffError {
     def InvalidShapeParameter[S: Show](shape: S, m: String, sectionTyp: PipeType)(using
         sc: SlotContext
     ) =
-        new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)(using sc)
+        new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)(using sc.slotIndex)
 
-    case class ValueOutOfBound[S: Show](
+    case class ValueOutOfBound[S](
         shape                  : S,
         override val sectionTyp: PipeType,
         vTermName              : String,
         v                      : Double,
         vMin                   : Double,
         vMax                   : Double
-    )                                  (using sc: SlotContext)
+    )                            (using showS: Show[S], slotIndex: Option[SlotIndex])
         extends SingularFlowResistanceCoeffError(
             s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
             sectionTyp: PipeType
-        )(using sc) {
+        )(using slotIndex) {
         def prettyShape: String = shape.show
     }
 
@@ -555,7 +565,7 @@ object SingularFlowResistanceCoeffError {
         new SingularFlowResistanceCoeffError(
             s"shape ${shape.show} > could not compute individual coefficient > $m",
             sectionTyp
-        )                                   (using sc)
+        )                                   (using sc.slotIndex)
 }
 
 /**
@@ -565,11 +575,12 @@ object SingularFlowResistanceCoeffError {
 case class DirectionChangeNotInPipeChain(
     sectionTyp: PipeType,
     elementRef: String
-)                                       (using val sc: SlotContext)
+)                                       (using sc: SlotContext)
     extends SingularFlowResistanceCoeffErrorI
     with TargetedError:
-    override def target: ErrorTarget =
-        sc.targetFor(sectionTyp)
+    val slotIndex      : Option[SlotIndex] = sc.slotIndex
+    override def target: ErrorTarget       =
+        slotIndex.targetFor(sectionTyp)
 
 given show_DirectionChangeNotInPipeChain: ShowUsingLocale[DirectionChangeNotInPipeChain] =
     showUsingLocale: e =>
@@ -585,11 +596,12 @@ given show_DirectionChangeNotInPipeChain: ShowUsingLocale[DirectionChangeNotInPi
 case class SplitMerge90AtEndOfChain(
     sectionTyp: PipeType,
     elementRef: String
-)                                  (using val sc: SlotContext)
+)                                  (using sc: SlotContext)
     extends SingularFlowResistanceCoeffErrorI
     with TargetedError:
-    override def target: ErrorTarget =
-        sc.targetFor(sectionTyp)
+    val slotIndex      : Option[SlotIndex] = sc.slotIndex
+    override def target: ErrorTarget       =
+        slotIndex.targetFor(sectionTyp)
 
 given show_SplitMerge90AtEndOfChain: ShowUsingLocale[SplitMerge90AtEndOfChain] =
     showUsingLocale: e =>

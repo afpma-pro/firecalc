@@ -31,10 +31,9 @@ import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.en13384.mkforEN13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
-import afpma.firecalc.engine.standard.SlotIndex
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
-import afpma.firecalc.engine.impl.en15544.common.SlotIndexProvider
+import afpma.firecalc.engine.ops.generic.SlotIndexProvider
 import afpma.firecalc.domain.FireboxCoordinateSystem
 
 import scala.annotation.nowarn
@@ -585,7 +584,7 @@ abstract class EN15544_MCE_Application(
                                             val (fdResult, _) =
                                                 FluePipe_Module_13384
                                                     .mkPipeFromIncrDescrWithSeed(v4Descr, seed)(using
-                                                        SlotContext.fromOption(SlotIndex.from(0))
+                                                        SlotContext.forSlotUnsafe(0)
                                                     )
                                             FluePipe_Module_13384.FullDescrResult.extractPipe(
                                                 fdResult
@@ -609,7 +608,7 @@ abstract class EN15544_MCE_Application(
                                                                         case ComputeAt.Middle => cc.last_velocity_middle
                                                                     ,
                                                                     gas                = FlueGas,
-                                                                    sc                 = SlotContext.fromOption(SlotIndex.from(0))
+                                                                    sc                 = SlotContext.forSlotUnsafe(0)
                                                                 )
                                                                 .toValidatedNel
                                                 case Validated.Invalid(nel) => Validated.Invalid(nel)
@@ -639,7 +638,7 @@ abstract class EN15544_MCE_Application(
                                     (UpstreamState, Vector[PipeResult])
                                 ]](Right((initialUpstream, Vector.empty))) { case (acc, (slot, idx)) =>
                                     acc.flatMap { case (upstream, results) =>
-                                        slot.compute(upstream, p, SlotIndex.unsafe(idx)).map { pr =>
+                                        slot.compute(upstream, p, SlotIndexProvider.prefix(idx)).map { pr =>
                                             val nextUpstream =
                                                 UpstreamState.fromPipeResult(pr, computeAt)
                                             (nextUpstream, results :+ pr)

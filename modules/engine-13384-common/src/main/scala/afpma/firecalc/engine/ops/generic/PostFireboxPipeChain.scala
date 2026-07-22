@@ -9,7 +9,6 @@ import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
-import afpma.firecalc.engine.standard.SlotIndex
 
 import cats.data.NonEmptyList
 import cats.data.Validated
@@ -92,7 +91,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
                 Right((initialUpstream, Vector.empty))
             ) { case (acc, (slot, idx)) =>
                 acc.flatMap { case (upstream, results) =>
-                    slot.compute(upstream, params, SlotIndex.unsafe(idx)).map { pr =>
+                    slot.compute(upstream, params, SlotIndexProvider.prefix(idx)).map { pr =>
                         val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
                         (nextUpstream, results :+ pr)
                     }

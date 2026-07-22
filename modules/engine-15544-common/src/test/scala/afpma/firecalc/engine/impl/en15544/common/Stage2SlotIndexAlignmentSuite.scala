@@ -88,7 +88,7 @@ class Stage2SlotIndexAlignmentSuite extends AnyFlatSpec with Matchers:
 
         val addErr = err.asInstanceOf[AddElementMissingAfterSetProp[?]]
         addErr.sectionTyp shouldBe ConnectorPipeT
-        addErr.sc.slotIndex shouldBe Some(SlotIndex.unsafe(2))
+        addErr.slotIndex shouldBe Some(SlotIndex.unsafe(2))
 
         // KEY ASSERTION: The error's target is SlotTarget(SlotIndex(2)),
         // NOT SlotTarget(SlotIndex(0)) (wrong local index)

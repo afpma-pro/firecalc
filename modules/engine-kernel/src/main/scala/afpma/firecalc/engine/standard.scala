@@ -43,14 +43,23 @@ object SlotIndex:
  * Replaces explicit `Option[SlotIndex]` threading through error constructors.
  */
 final class SlotContext private (private val _slotIndex: Option[SlotIndex]):
-    def slotIndex              : Option[SlotIndex] = _slotIndex
-    def targetFor(pt: PipeType): ErrorTarget       =
-        _slotIndex.fold[ErrorTarget](ErrorTarget.TypeTarget(pt))(ErrorTarget.SlotTarget(_))
+    def slotIndex: Option[SlotIndex] = _slotIndex
 
 object SlotContext:
     def forSlot(i: SlotIndex): SlotContext = new SlotContext(Some(i))
     val unslotted: SlotContext = new SlotContext(None)
     def fromOption(o: Option[SlotIndex]): SlotContext = o.fold(unslotted)(forSlot(_))
+
+    /** Convenience: slot context for a raw non-negative index. */
+    def forSlotUnsafe(n: Int): SlotContext = forSlot(SlotIndex.unsafe(n))
+extension (opt: Option[SlotIndex])
+    /**
+     * Resolve an error target from an optional slot index.
+     *  - `Some(idx)` → `SlotTarget(idx)` (visible in one slot panel)
+     *  - `None`      → `TypeTarget(pt)` (visible in all panels of that pipe type)
+     */
+    def targetFor(pt: PipeType): ErrorTarget =
+        opt.fold[ErrorTarget](ErrorTarget.TypeTarget(pt))(ErrorTarget.SlotTarget(_))
 
 type VNelMcalcErr[+X] = ValidatedNel[MCalc_Error, X]
 

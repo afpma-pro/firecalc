@@ -27,7 +27,7 @@ import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
-import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.standard.SlotContext
 import afpma.firecalc.units.coulombutils.*
 
 import coulomb.*
@@ -44,7 +44,7 @@ import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
 import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
-import afpma.firecalc.engine.impl.en15544.common.SlotIndexProvider
+import afpma.firecalc.engine.ops.generic.SlotIndexProvider
 import afpma.firecalc.domain.FireboxCoordinateSystem
 
 object EN15544_Strict_Application:
@@ -489,7 +489,7 @@ sealed abstract class EN15544_Strict_Application(
                                 case Some(descr) =>
                                     val flueResult = FluePipe_Module_15544.incremental
                                         .define(descr*)
-                                        .toFullDescrWithSeed(seed)(using SlotContext.fromOption(SlotIndex.from(0)))
+                                        .toFullDescrWithSeed(seed)(using SlotContext.forSlotUnsafe(0))
                                     val fdResult: FluePipe_Module_15544.FullDescrResult =
                                         flueResult.map((ids, fd, _) => (ids, fd))
                                     FluePipe_Module_15544.FullDescrResult.extractPipe(fdResult) match
@@ -502,10 +502,10 @@ sealed abstract class EN15544_Strict_Application(
                                                     z_geodetical_height = z_geodetical_height,
                                                     params              = p._1,
                                                     tempStartOverride   = None,
-                                                    sc                  = SlotContext.fromOption(SlotIndex.from(0))
+                                                    sc                  = SlotContext.forSlotUnsafe(0)
                                                 )(using
                                                     en15544,
-                                                    en15544.ssalg(SlotContext.fromOption(SlotIndex.from(0)))
+                                                    en15544.ssalg(SlotContext.forSlotUnsafe(0))
                                                 )
                                                 .toValidatedNel
                                         case Validated.Invalid(nel) => Validated.Invalid(nel)
@@ -531,7 +531,7 @@ sealed abstract class EN15544_Strict_Application(
                             (UpstreamState, Vector[PipeResult])
                         ]](Right((initialUpstream, Vector.empty))) { case (acc, (slot, idx)) =>
                             acc.flatMap { case (upstream, results) =>
-                                slot.compute(upstream, p, SlotIndex.unsafe(idx)).map { pr =>
+                                slot.compute(upstream, p, SlotIndexProvider.prefix(idx)).map { pr =>
                                     val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
                                     (nextUpstream, results :+ pr)
                                 }

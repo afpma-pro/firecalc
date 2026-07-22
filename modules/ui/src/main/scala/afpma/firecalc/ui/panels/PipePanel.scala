@@ -659,11 +659,11 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             case e: FlueGasVelocityError         =>
                 reverseMap
                     .get(e.sectionId)
-                    .fold(err)(idIncr => e.copy(sectionId = idIncr)(using e.sc))
+                    .fold(err)(idIncr => e.copy(sectionId = idIncr)(using SlotContext.fromOption(e.slotIndex)))
             case e: FluePipeInvalidGeometryRatio =>
                 reverseMap
                     .get(e.sectionId)
-                    .fold(err)(idIncr => e.copy(sectionId = idIncr)(using e.sc))
+                    .fold(err)(idIncr => e.copy(sectionId = idIncr)(using SlotContext.fromOption(e.slotIndex)))
             case other => other
 
     def statusIcon =

@@ -15,11 +15,12 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.standard.SplitBranchesCollinear
 import afpma.firecalc.engine.standard.SplitBranchesNotOpposite
-import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 import afpma.firecalc.domain.AbsoluteDirection
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import afpma.firecalc.engine.Slot0ContextFixture
 
 /**
  * Tests for split geometry validation in `updateStateAfterConversionStep`.
@@ -31,7 +32,7 @@ import org.scalatest.matchers.should.Matchers
  *   - Splits with collinear branch direction (forbidden)
  *   - Merges (direction always allowed; position validated in postBuildValidation)
  */
-class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
+class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture:
     given FluePipeT = FluePipeT
 
     // ── Direction helpers ────────────────────────────────────────────────
@@ -81,12 +82,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters    )
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
     }
     it should "allow split with horizontal reflected branch on horizontal pipe" in {
@@ -103,7 +99,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
             ))*
         )
-        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
     it should "reject split with collinear branch direction" in {
         // Branch direction same as incoming → collinear → not a real split.
@@ -119,12 +115,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[SplitBranchesCollinear]) shouldBe true
     }
     it should "reject split with non-perpendicular branch direction" in {
@@ -141,12 +132,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
     }
     it should "allow merge with absDir on ascending pipe" in {
@@ -164,7 +150,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                          ("postMerge", 1.meters)
             ))*
         )
-        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
     it should "allow split with horizontal branch on ascending pipe" in {
         // Incoming = Up, branch1 = Right (horizontal) \u2192 reflected = Left (horizontal) \u2192 allowed.
@@ -182,7 +168,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters    )
             ))*
         )
-        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
     // ── EN 13384 Thermal ────────────────────────────────────────────────
@@ -200,12 +186,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddThermalPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters    )
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
     }
 
@@ -222,7 +203,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddThermalPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
             ))*
         )
-        descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
     it should "reject split with collinear branch direction" in {
         // Branch direction same as incoming → collinear → not a real split.
@@ -238,12 +219,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddThermalPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[SplitBranchesCollinear]) shouldBe true
     }
     it should "reject split with non-perpendicular branch direction" in {
@@ -259,12 +235,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddThermalPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters    )
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[SplitBranchesNotOpposite]) shouldBe true
     }
     // ── Split as first element (no preceding section) ──────────────────
@@ -280,7 +251,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters)
             ))*
         )
-        val (_, pfd) = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.toOption.get
+        val (_, pfd) = descr.toFullDescr.toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.SplitMerge90 =>
                 sm.nFlows shouldBe 2.flows
@@ -299,7 +270,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddThermalPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters)
             ))*
         )
-        val (_, pfd) = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.toOption.get
+        val (_, pfd) = descr.toFullDescr.toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SplitMerge90 =>
                 sm.nFlows shouldBe 2.flows
@@ -319,7 +290,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                              ("dual", 1.meters)
             ))*
         )
-        val (_, pfd) = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.toOption.get
+        val (_, pfd) = descr.toFullDescr.toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384.SplitMerge90 =>
                 sm.nFlows shouldBe 2.flows
@@ -339,7 +310,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddThermalPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters)
             ))*
         )
-        val (_, pfd) = descr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0))).toEither.toOption.get
+        val (_, pfd) = descr.toFullDescr.toEither.toOption.get
         pfd.elems.head.el match
             case sm: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SplitMerge90 =>
                 sm.nFlows shouldBe 2.flows
@@ -359,12 +330,7 @@ class SplitGeometryValidationSuite extends AnyFlatSpec with Matchers:
                 AddFlowOnlyPipeElement_13384.AddSectionSlopped                       ("dual", 1.meters)
             ))*
         )
-        descr
-            .toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
-            .toEither
-            .left
-            .toOption
-            .get
+        descr.toFullDescr.toEither.left.toOption.get
             .exists(_.isInstanceOf[afpma.firecalc.engine.standard.GeometryWithoutInitialDirection]) shouldBe true
     }
 end SplitGeometryValidationSuite

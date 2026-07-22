@@ -36,7 +36,7 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
                 x.zeta.validNel[SingularFlowResistanceCoeffError]
             case en15544_pipedescr.SectionGeometryChange(from, to) =>
                 // See RQ_002
-                val delegate = dynFrictFactory.make(sectionTyp, sc)
+                val delegate = dynFrictFactory.make(sectionTyp)
                 delegate.thermalSectionGeometryChange.dynamicFrictionCoeff(
                     SectionGeometryChange_13384.make(from.area, to.area)
                 )
@@ -69,7 +69,7 @@ class FlowOnlyDynamicFrictionCoeff_15544()(using
     def mkInstanceForNamedPipesConcat(
         namedPipesConcat: Vector[models.NamedPipeElDescrG[PipeElDescr]]
     )(using SSAlg: ShortSectionAlg): DynamicFrictionCoeffOp[models.NamedPipeElDescrG[DirectionChange]] =
-        dynfrict.DynamicFrictionCoeffOpForConcatenatedPipeVector(namedPipesConcat, sc)
+        dynfrict.DynamicFrictionCoeffOpForConcatenatedPipeVector(namedPipesConcat)
 
     // given DynamicFrictionCoeffOp[afpma.firecalc.engine.models.DirectionChange] with
     //     extension (s: afpma.firecalc.engine.models.DirectionChange) def dynamicFrictionCoeff: DynamicFrictionCoeffOp.Result =
@@ -118,4 +118,4 @@ object FlowOnlyDynamicFrictionCoeff_15544:
      *  The `slotIndex` parameter ensures error targets correctly identify the affected slot.
      */
     trait DynFrict13384Factory:
-        def make(pt: PipeType, sc: SlotContext): DynFrict13384Like
+        def make(pt: PipeType)(using sc: SlotContext): DynFrict13384Like

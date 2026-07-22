@@ -23,6 +23,7 @@ import afpma.firecalc.engine.models.NamedPipeElDescrG
 import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
 import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.UnslottedFixture
 import afpma.firecalc.engine.ops.en13384.ThermalMecaFlu_13384
 
 import cats.syntax.all.*
@@ -53,7 +54,7 @@ import org.scalatest.matchers.should.*
 // import afpma.firecalc.engine.ops.en13384.MecaFlu_EN13384
 // import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 
-class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
+class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers with UnslottedFixture {
 
     import ChimneyPipe_Module.*
 
@@ -185,7 +186,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             DynamicFrictionCoeffOpForPipeChain[
                 FlowOnlyPipeDescr_13384.PipeElDescr,
                 FlowOnlyPipeDescr_13384.DirectionChange
-            ](elements, dcDfc, SlotContext.unslotted)
+            ](elements, dcDfc, summon[SlotContext])
         }
 
         def findSplitMerge90(elements: Vector[NamedPipeElDescrG[FlowOnlyPipeDescr_13384.PipeElDescr]]) =

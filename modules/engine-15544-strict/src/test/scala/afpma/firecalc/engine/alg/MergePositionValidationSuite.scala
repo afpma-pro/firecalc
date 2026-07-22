@@ -27,7 +27,7 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PositionTracker
 import afpma.firecalc.engine.models.geometry.SplitMergeTwoHelper
 import afpma.firecalc.engine.models.geometry.SymmetryPlaneConfig
-import afpma.firecalc.engine.standard.{MergeBranchTipNotAtMergePosition, SlotContext, SlotIndex}
+import afpma.firecalc.engine.standard.MergeBranchTipNotAtMergePosition
 
 import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterX
 import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterY
@@ -35,6 +35,7 @@ import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxBaseCenterZ
 import io.circe.yaml.scalayaml.parser as yamlParser
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
+import afpma.firecalc.engine.Slot0ContextFixture
 
 /**
  * Verifies merge position validation against the symmetry plane Π.
@@ -51,7 +52,7 @@ import org.scalatest.matchers.should.*
  *
  * Failing case uses a longer Front section, taking the tip off Π in Y.
  */
-class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
+class MergePositionValidationSuite extends AnyFreeSpec with Matchers with Slot0ContextFixture {
 
     import PipeShape.*
 
@@ -241,7 +242,7 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped("section horizontale", 0.5.meters)
             )
 
-            val result = p.toFullDescrWithSeed(seed)(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+            val result = p.toFullDescrWithSeed(seed)
             result.isValid shouldBe true
         }
 
@@ -296,7 +297,7 @@ class MergePositionValidationSuite extends AnyFreeSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped("section horizontale", 0.5.meters)
             )
 
-            val result = p.toFullDescrWithSeed(seed)(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+            val result = p.toFullDescrWithSeed(seed)
             result.isValid shouldBe false
 
             val errors = result.toEither.left.toOption.get

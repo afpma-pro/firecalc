@@ -30,11 +30,12 @@ import cats.syntax.all.*
 import coulomb.ops.standard.all.given
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
-    pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]],
-    sc         : SlotContext
-)                                                         (using SSAlg: ShortSectionAlg, dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory)
-    extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
-    private given SlotContext = sc
+    pipesConcat    : Vector[NamedPipeElDescrG[PipeElDescr]]
+)                                                         (using
+    sc             : SlotContext,
+    SSAlg          : ShortSectionAlg,
+    dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+) extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
 
     // merge successive straight sections into a single one
     private val vcompressed: ValidatedNel[FluePipeShapeSequenceError, Vector[(CmprssdIdx, R)]] = {

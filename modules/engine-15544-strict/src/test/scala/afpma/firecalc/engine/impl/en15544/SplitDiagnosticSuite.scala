@@ -14,13 +14,13 @@ import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.Slot0ContextFixture
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 /** Diagnostic test to see what errors EN 15544 returns for split geometry validation. */
-class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
+class SplitDiagnosticSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture {
 
     given FluePipeT = FluePipeT
 
@@ -48,7 +48,7 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("postSplit", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result    = incrDescr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -65,7 +65,7 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                          ("postMerge", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result    = incrDescr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -82,7 +82,7 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                              ("postSplit", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr(using SlotContext.forSlot(SlotIndex.unsafe(0)))
+        val result    = incrDescr.toFullDescr
         result.isValid shouldBe true
     }
 }

@@ -6,11 +6,9 @@
 package afpma.firecalc.engine
 
 import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.domain.NbOfFlows
 import afpma.firecalc.domain.PipeShape
-import afpma.firecalc.engine.models.PipeType
-import coulomb.*
-import coulomb.policy.standard.given
 
 /**
  * Expected dimension for informative error messages on flow split/merge area violations
