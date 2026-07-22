@@ -41,7 +41,8 @@ final case class DynamicThermalPipeSlotPanel(
     headIdx             : Option[Int]                    = None,
     isLastInHeadRegion  : Boolean                        = false,
     headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
-    lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
+    lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None),
+    isLastSlot          : Boolean                        = false
 )                                           (using Locale, DisplayUnits)
     extends PipePanel_13384_Thermal:
 
@@ -95,12 +96,15 @@ final case class DynamicThermalPipeSlotPanel(
     override protected lazy val titleXtraSig: Signal[Option[HtmlElement]] =
         headIdx match
             case None     =>
-                // Outside head region — fall back to base (status icon only)
-                statusIcon.map(n => Some(div(n)))
-            case Some(hi) =>
+                // Outside head region — status icon + warning icon
                 statusIcon
-                    .combineWithDistinct(headRegionLengthsSig, lZMinSig)
-                    .map: (icon, lengthsOpt, lzMinOpt) =>
+                    .combineWithDistinct(warningIcon)
+                    .map((err, warn) => Some(div(cls := "flex items-center gap-1", err, warn)))
+            case Some(hi) =>
+                // Head region — status icon + warning icon + length summary
+                statusIcon
+                    .combineWithDistinct(warningIcon, headRegionLengthsSig, lZMinSig)
+                    .map: (icon, warn, lengthsOpt, lzMinOpt) =>
                         val summaryOpt = DynamicPipeSlotPanel.lengthSummaryFromIndex(
                             headIdx                    = hi,
                             isLast                     = isLastInHeadRegion,
@@ -114,11 +118,21 @@ final case class DynamicThermalPipeSlotPanel(
                         )
                         Some(
                             div(
-                                cls := "flex items-center",
+                                cls := "flex items-center gap-1",
                                 icon,
-                                summaryOpt.map(s => span(cls := "ml-2 text-xs font-normal", s)).getOrElse(emptyNode)
+                                warn,
+                                summaryOpt.map(s => span(cls := "text-xs font-normal", s)).getOrElse(emptyNode)
                             )
                         )
+
+    // ── Unmerged flows at exit warning ─────────────────────────────
+
+    override protected def warningVnelSig: Signal[ValidatedNel[PanelStatusHelper.PanelWarning, Unit]] =
+        PanelStatusHelper.unmergedFlowsWarningSignal         (
+            isLastSlot          = isLastSlot,
+            slotBuildResultsSig = slotBuildResults_sig,
+            slotIndex           = slotIndex.value
+        )
 
     // ── Slot-indexed wiring ──────────────────────────────────────
 

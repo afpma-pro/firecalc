@@ -454,7 +454,8 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                             headIdx              = hi,
                             isLastInHeadRegion   = isLast,
                             headRegionLengthsSig = headRegionLengthsSig,
-                            lZMinSig             = lZMinSig
+                            lZMinSig             = lZMinSig,
+                            isLastSlot           = (idx == normalized.size - 1)
                         )
                         if idx == fixedZoneStart then Seq(toolbar, panel.node)
                         else Seq                         (panel.node         )

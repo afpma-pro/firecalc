@@ -10,6 +10,7 @@ import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
 
 import afpma.firecalc.engine.models.ElementPredicates
+import afpma.firecalc.engine.models.SlotBuildResult
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.ErrorTarget
 import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
@@ -28,6 +29,7 @@ import com.raquo.airstream.core.Signal
 
 import afpma.firecalc.domain.IsBackendForbidden
 import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
+import afpma.firecalc.domain.NbOfFlows
 import io.taig.babel.Locale
 
 object PanelStatusHelper:
@@ -41,6 +43,7 @@ object PanelStatusHelper:
         case object DirectionIncompatible           extends PanelWarning
         case object AirIntakePipeMissing            extends PanelWarning
         case object FireboxSplitDirectionOverridden extends PanelWarning
+        case class UnmergedFlowsAtExit(nFlows: Int) extends PanelWarning
 
     /** CSS text class name for warnings. */
     def textClsNameForWarnings: String = "text-warning"
@@ -57,6 +60,8 @@ object PanelStatusHelper:
                 I18N.firebox.air_intake_pipe_missing_warning
             case PanelWarning.FireboxSplitDirectionOverridden =>
                 I18N.direction_badge.firebox_split_direction_overridden_warning
+            case PanelWarning.UnmergedFlowsAtExit(n)          =>
+                I18N.split_merge.chimney_unmerged_flows_at_exit(n.toString)
 
     // ── PanelError ADT ─────────────────────────────────────────────
 
@@ -130,6 +135,34 @@ object PanelStatusHelper:
     ): Signal[ValidatedNel[PanelWarning, Unit]] =
         if !isFirstSlot then Signal.fromValue(().validNel                                                          )
         else elemsSignal.map                 (elems => fireboxSplitWarning(isFirstSlot, elems, isSplit, isProperty))
+
+    /**
+     * Pure predicate: warns when the last slot in the chain has unmerged flows.
+     * Suppressed if not the last slot, if upstream failed, or if n_flows <= 1.
+     */
+    def unmergedFlowsWarning(
+        finalNFlows    : NbOfFlows,
+        upstreamFailure: Boolean,
+        isLastSlot     : Boolean
+    ): ValidatedNel[PanelWarning, Unit] =
+        if !isLastSlot || upstreamFailure || finalNFlows.unwrap <= 1 then ().validNel
+        else PanelWarning.UnmergedFlowsAtExit(finalNFlows.unwrap).invalidNel
+
+    /**
+     * Build an unmerged flows at exit warning signal.
+     * Only active for the last slot; reads finalNFlows from SlotBuildResult.
+     */
+    def unmergedFlowsWarningSignal(
+        isLastSlot         : Boolean,
+        slotBuildResultsSig: Signal[Vector[SlotBuildResult]],
+        slotIndex          : Int
+    ): Signal[ValidatedNel[PanelWarning, Unit]] =
+        if !isLastSlot then Signal.fromValue(().validNel)
+        else
+            slotBuildResultsSig.map: results =>
+                results.lift(slotIndex) match
+                    case Some(r) => unmergedFlowsWarning(r.finalNFlows, r.upstreamFailure, isLastSlot)
+                    case None    => ().validNel
 
     private def clsNameForErrors(errs: NonEmptyList[MCalc_Error])(prefix: String): String =
         val isWarning = errs.toList.forall:

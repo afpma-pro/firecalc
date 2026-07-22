@@ -44,7 +44,8 @@ object DynamicPipeSlotPanel:
         headIdx             : Option[Int]                    = None,
         isLastInHeadRegion  : Boolean                        = false,
         headRegionLengthsSig: Signal[Option[Vector[Double]]] = Signal.fromValue(None),
-        lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None)
+        lZMinSig            : Signal[Option[Double]]         = Signal.fromValue(None),
+        isLastSlot          : Boolean                        = false
     )(using Locale, DisplayUnits): PipePanel =
         slot match
             case PostFireboxPipeDescrSlot_V7.FlueSlot(_)        =>
@@ -65,7 +66,8 @@ object DynamicPipeSlotPanel:
                     headIdx,
                     isLastInHeadRegion,
                     headRegionLengthsSig,
-                    lZMinSig
+                    lZMinSig,
+                    isLastSlot
                 )
             case PostFireboxPipeDescrSlot_V7.ConnectorSlot(_)   =>
                 DynamicThermalPipeSlotPanel(
@@ -76,10 +78,17 @@ object DynamicPipeSlotPanel:
                     headIdx,
                     isLastInHeadRegion,
                     headRegionLengthsSig,
-                    lZMinSig
+                    lZMinSig,
+                    isLastSlot
                 )
             case PostFireboxPipeDescrSlot_V7.ChimneySlot(_)     =>
-                DynamicThermalPipeSlotPanel(slotIndex, ChimneyPipeT, I18N.panels.chimney_pipe, slotControlsNode)
+                DynamicThermalPipeSlotPanel(
+                    slotIndex,
+                    ChimneyPipeT,
+                    I18N.panels.chimney_pipe,
+                    slotControlsNode,
+                    isLastSlot = isLastSlot
+                )
             case PostFireboxPipeDescrSlot_V7.NoFlueSlot         =>
                 throw new IllegalArgumentException("NoFlueSlot must be handled by PostFireboxPipePanels directly")
 
