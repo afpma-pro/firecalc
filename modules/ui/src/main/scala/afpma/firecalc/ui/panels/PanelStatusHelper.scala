@@ -5,27 +5,30 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.engine.standard.TargetedError
-import afpma.firecalc.engine.standard.ErrorTarget
-import afpma.firecalc.domain.IsBackendForbidden
-import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
-import afpma.firecalc.engine.models.ElementPredicates
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
-import afpma.firecalc.engine.standard.ResultsNotComputed
-import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
-import afpma.firecalc.engine.standard.InvalidConstraint
-import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
-import io.taig.babel.Locale
+
+import afpma.firecalc.engine.models.ElementPredicates
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.standard.ErrorTarget
+import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
+import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
+import afpma.firecalc.engine.standard.InvalidConstraint
+import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.ResultsNotComputed
+import afpma.firecalc.engine.standard.TargetedError
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 
 import cats.data.*
 import cats.data.Validated.Valid
 import cats.syntax.all.*
 
 import com.raquo.airstream.core.Signal
+
+import afpma.firecalc.domain.IsBackendForbidden
+import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
+import io.taig.babel.Locale
 
 object PanelStatusHelper:
 

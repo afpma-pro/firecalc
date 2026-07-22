@@ -10,9 +10,12 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.PendingFlowAreaCheck
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.ShapeNotMaterialized
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.ValidatedNel
 import cats.syntax.all.*

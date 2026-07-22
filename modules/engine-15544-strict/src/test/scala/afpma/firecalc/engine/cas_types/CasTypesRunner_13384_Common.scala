@@ -17,6 +17,7 @@ import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 import afpma.firecalc.engine.utils.{*, given}
 
 import cats.Show

@@ -13,6 +13,9 @@ import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.engine.models.CombustionAirPipeT
 import afpma.firecalc.engine.models.FireboxPipeT
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -20,9 +23,9 @@ import afpma.firecalc.ui.config.UIConfig
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
+import afpma.firecalc.ui.utils.combineWithDistinct
+import afpma.firecalc.ui.utils.flatMapVNelE
 
 import cats.data.*
 import cats.implicits.toShow

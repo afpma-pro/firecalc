@@ -9,20 +9,26 @@ import algebra.instances.all.doubleAlgebra
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.domain.NbOfFlows
-import afpma.firecalc.domain.PipeShape
-import afpma.firecalc.domain.PipeShape.Circle
-import afpma.firecalc.domain.PipeShape.Rectangle
-import afpma.firecalc.domain.PipeShape.Square
-
+import afpma.firecalc.engine.ExpectedDimCircle
+import afpma.firecalc.engine.ExpectedDimRectangle
+import afpma.firecalc.engine.ExpectedDimSquare
+import afpma.firecalc.engine.ExpectedDimension
+import afpma.firecalc.engine.FlowAreaTransition
+import afpma.firecalc.engine.standard.FlowTransitionChangesTotalCrossSection
+import afpma.firecalc.engine.PendingFlowAreaCheck
 import afpma.firecalc.engine.models.PipeType
-import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.typeclasses.PropsStateOps
 
 import coulomb.*
 import coulomb.policy.standard.given
 
 import scala.annotation.nowarn
+
+import afpma.firecalc.domain.NbOfFlows
+import afpma.firecalc.domain.PipeShape
+import afpma.firecalc.domain.PipeShape.Circle
+import afpma.firecalc.domain.PipeShape.Rectangle
+import afpma.firecalc.domain.PipeShape.Square
 
 object FlowAreaConservation:
 
