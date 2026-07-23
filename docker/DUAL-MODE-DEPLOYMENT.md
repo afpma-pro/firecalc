@@ -35,6 +35,7 @@ docker/
   docker-compose.behind-proxy.yml    # NEW — behind-proxy mode
   docker-compose.yml                 # SYMLINK — developer creates pointing to chosen mode
   Dockerfile                         # UPDATED — entrypoint script for database permission fix
+  Dockerfile.nginx                   # NEW — nginx:1.27-alpine + curl for healthcheck
   entrypoint.sh                      # NEW — fixes /app/databases ownership on startup
   .env.example                       # UPDATED — mode-specific variable documentation
   init-letsencrypt.sh                # UNCHANGED — standalone-only, documented
@@ -42,9 +43,11 @@ docker/
   nginx-standalone/                  # NEW — migrated from docker/ root
     nginx.conf                       # (from current docker/nginx.conf)
     proxy.conf.template              # (from current docker/nginx-proxy-custom.conf.template)
+    default.conf                     # NEW — empty, neutralizes nginx image default server block
   nginx-behind-proxy/                # NEW — HTTP-only configs
     nginx.conf                       # HTTP-only global config
     proxy.conf                       # Unified server block (UI + API via location matching)
+    default.conf                     # NEW — empty, neutralizes nginx image default server block
   configs/                           # UNCHANGED
   databases/                         # UNCHANGED
 ```
@@ -66,16 +69,20 @@ Identical to the current `docker-compose.yml` with nginx volume paths updated to
 
 | Service | Image | Ports | Key Volumes |
 |---------|-------|-------|-------------|
-| `backend` | `firecalc-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
+| `backend` | `firecalc-${FIRECALC_ENV}-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
 | `ui-server` | `nginx:alpine` | none (internal) | `../web/dist-app:/usr/share/nginx/html:ro`, `./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro` |
-| `nginx` | `nginx:1.27-alpine` | `80:80`, `443:443` | `./nginx-standalone/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-standalone/proxy.conf.template:/etc/nginx/templates/nginx-proxy-custom.conf.template:ro`, `letsencrypt-certs:/etc/letsencrypt:ro`, `certbot-webroot:/var/www/certbot:ro` |
+| `nginx` | built from `Dockerfile.nginx` | `80:80`, `443:443` | `./nginx-standalone/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-standalone/proxy.conf.template:/etc/nginx/templates/nginx-proxy-custom.conf.template:ro`, `./nginx-standalone/default.conf:/etc/nginx/conf.d/default.conf:ro`, `letsencrypt-certs:/etc/letsencrypt:ro`, `certbot-webroot:/var/www/certbot:ro` |
 | `certbot` | `certbot/certbot:v2.11.0` | none | `letsencrypt-certs:/etc/letsencrypt`, `certbot-webroot:/var/www/certbot` |
 
-**Networks:** `firecalc-network` (bridge)
+**Container names:** `firecalc-${FIRECALC_ENV}-{service}` (e.g. `firecalc-staging-nginx`)
+
+**Networks:** `firecalc` (bridge — Compose namespaces by project directory)
 
 **Volumes:** `letsencrypt-certs` (local), `certbot-webroot` (local)
 
 **Environment (nginx):** `UI_DOMAIN`, `API_DOMAIN`, `NGINX_ENVSUBST_FILTER=^(UI_DOMAIN|API_DOMAIN)$`
+
+**Healthcheck (nginx):** `curl -f http://localhost/healthcheck` (proxied to backend `/v1/healthcheck`)
 
 **depends_on:** `nginx` depends on `ui-server` (service_started) and `backend` (service_healthy)
 
@@ -87,15 +94,19 @@ Same services except `certbot` is removed. Nginx has no host ports.
 
 | Service | Image | Ports | Key Volumes |
 |---------|-------|-------|-------------|
-| `backend` | `firecalc-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
+| `backend` | `firecalc-${FIRECALC_ENV}-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
 | `ui-server` | `nginx:alpine` | none (internal) | `../web/dist-app:/usr/share/nginx/html:ro`, `./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro` |
-| `nginx` | `nginx:1.27-alpine` | none (Docker network only, exposes 80 internally) | `./nginx-behind-proxy/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-behind-proxy/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro` |
+| `nginx` | built from `Dockerfile.nginx` | none (Docker network only, exposes 80 internally) | `./nginx-behind-proxy/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-behind-proxy/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro`, `./nginx-behind-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro` |
 
-**Networks:** `firecalc-network` (bridge)
+**Container names:** `firecalc-${FIRECALC_ENV}-{service}` (e.g. `firecalc-staging-nginx`)
+
+**Networks:** `firecalc` (bridge — Compose namespaces by project directory), `proxy` (external — shared with NPM)
 
 **Volumes:** none (no letsencrypt volumes)
 
 **Environment (nginx):** none (no envsubst, no domain variables)
+
+**Healthcheck (nginx):** `curl -f http://localhost/healthcheck` (proxied to backend `/v1/healthcheck`)
 
 **depends_on:** `nginx` depends on `ui-server` (service_started) and `backend` (service_healthy)
 
@@ -118,10 +129,10 @@ Migrated from current `docker/nginx.conf` with no changes. Contains:
 
 Migrated from current `docker/nginx-proxy-custom.conf.template` with no changes. Processed by nginx envsubst. Contains:
 
-- Upstreams: `ui_upstream` → `ui-server:80`, `api_upstream` → `backend:8181`
+- Upstreams: `ui_upstream` → `ui-server:80`, `api_upstream` → `backend:8181`, `api_upstream_http` → `backend:8181` (for healthcheck bypass)
 - UI server block: HTTPS on 443, SSL certs, HSTS, ACME challenge, proxy to `ui_upstream`
 - API server block: HTTPS on 443, SSL certs, HSTS, ACME challenge, rate-limited auth endpoints, CSP, `client_max_body_size 50m`, proxy to `api_upstream`
-- HTTP→HTTPS redirect server block on port 80
+- HTTP→HTTPS redirect server block on port 80 with `/healthcheck` location proxying to `api_upstream_http` (bypasses redirect for Docker healthcheck)
 
 ### `nginx-behind-proxy/nginx.conf`
 
@@ -167,12 +178,21 @@ http {
 Unified server block handling both UI and API traffic via location matching.
 Single `server_name _` on `listen 80 default_server`. UI routes (`/`, `/fr/`,
 `/en/`, `/app/`, `/_next/static/`, `/assets/`) proxy to `ui_upstream`. API
-routes (`/v1/purchase/*`, `/v1/healthcheck`, default `/`) proxy to `api_upstream`.
+routes (`/v1/purchase/*`, default `/`) proxy to `api_upstream`. Dedicated
+`/healthcheck` location proxies to `api_upstream` for Docker healthcheck.
 
 **Note:** Separate server blocks for UI and API were rejected because nginx
 only uses the first `server_name _` it encounters (alphabetically by conf.d/
 filename). A single server block with location-based routing is the correct
 approach.
+
+### `nginx-standalone/default.conf` and `nginx-behind-proxy/default.conf`
+
+Both files are intentionally empty (header comment only). They override the
+nginx image's built-in `default.conf` which has a `server_name _` server block
+serving static files from `/usr/share/nginx/html/`. Without the override, the
+default server block catches `localhost` requests before our proxy config,
+breaking the healthcheck.
 
 ```nginx
 upstream ui_upstream {
@@ -403,4 +423,20 @@ the database directory), run:
 ```bash
 make docker-fix-db-perms
 ```
+
+### Nginx Healthcheck
+
+Nginx uses a curl-based healthcheck that verifies backend health through the
+proxy: `curl -f http://localhost/healthcheck`. The `/healthcheck` location in
+both proxy configs forwards to `backend:8181/v1/healthcheck`.
+
+**Why not `nginx -t`?** Config syntax check doesn't verify upstream connectivity.
+
+**Why not `curl http://localhost/`?** In standalone mode, the port 80 server
+block redirects HTTP→HTTPS. The `/healthcheck` endpoint bypasses this redirect
+in standalone mode (proxied to `api_upstream_http` in the port 80 block).
+
+**Why override `default.conf`?** The nginx image ships a default server block
+in `conf.d/default.conf` with `server_name _` that catches localhost requests
+before our proxy config. Mounting an empty `default.conf` neutralizes it.
 

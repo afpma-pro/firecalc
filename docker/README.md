@@ -59,6 +59,8 @@ docker/
 ├── docker-compose.standalone.yml   # Standalone mode (nginx handles TLS)
 ├── docker-compose.behind-proxy.yml # Behind-proxy mode (external proxy handles TLS)
 ├── Dockerfile                # Application container definition
+├── Dockerfile.nginx          # Nginx container (extends nginx:1.27-alpine + curl)
+├── entrypoint.sh             # Entrypoint script (fixes database permissions on startup)
 ├── nginx-ui-server.conf      # UI static file server configuration (shared)
 ├── init-letsencrypt.sh       # Initial certificate provisioning script (standalone)
 ├── CONFIG_SETUP.md           # Comprehensive setup guide
@@ -67,11 +69,13 @@ docker/
 │
 ├── nginx-standalone/         # Nginx config for standalone mode
 │   ├── nginx.conf            # Global nginx configuration (with SSL)
-│   └── proxy.conf.template   # Domain proxy config (envsubst template)
+│   ├── proxy.conf.template   # Domain proxy config (envsubst template)
+│   └── default.conf          # Empty — neutralizes nginx image default server block
 │
 ├── nginx-behind-proxy/       # Nginx config for behind-proxy mode
 │   ├── nginx.conf            # Global nginx configuration (HTTP only)
-│   └── proxy.conf            # Unified server block (UI + API via location matching)
+│   ├── proxy.conf            # Unified server block (UI + API via location matching)
+│   └── default.conf          # Empty — neutralizes nginx image default server block
 │
 ├── configs/                  # Configuration files
 │   └── staging/              # Staging environment configs (git-ignored)
@@ -171,7 +175,7 @@ Before deploying:
 - Environment: `FIRECALC_ENV=staging`
 - GoCardless: **SANDBOX only** (use `sandbox` config section)
 - Email: Test service (Mailtrap.io recommended)
-- Database: `databases/staging/firecalc-staging-payments.db`
+- Database: `databases/staging/firecalc-payments-staging.db`
 
 ### Production Setup
 

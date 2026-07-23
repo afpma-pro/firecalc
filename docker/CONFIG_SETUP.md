@@ -111,6 +111,8 @@ docker/
 ├── docker-compose.standalone.yml   # Standalone mode (nginx handles TLS)
 ├── docker-compose.behind-proxy.yml # Behind-proxy mode (external proxy handles TLS)
 ├── Dockerfile                    # Application container definition
+├── Dockerfile.nginx              # Nginx container (extends nginx:1.27-alpine + curl)
+├── entrypoint.sh                 # Entrypoint script (fixes database permissions on startup)
 ├── CONFIG_SETUP.md               # This file
 ├── DUAL-MODE-DEPLOYMENT.md       # Dual-mode architecture spec
 ├── README.md                     # Quick reference
@@ -119,11 +121,13 @@ docker/
 │
 ├── nginx-standalone/             # Nginx config for standalone mode
 │   ├── nginx.conf                # Global nginx configuration (with SSL)
-│   └── proxy.conf.template       # Domain proxy config (envsubst template)
+│   ├── proxy.conf.template       # Domain proxy config (envsubst template)
+│   └── default.conf              # Empty — neutralizes nginx image default server block
 │
 ├── nginx-behind-proxy/           # Nginx config for behind-proxy mode
 │   ├── nginx.conf                # Global nginx configuration (HTTP only)
-│   └── proxy.conf                # Unified server block (UI + API via location matching)
+│   ├── proxy.conf                # Unified server block (UI + API via location matching)
+│   └── default.conf              # Empty — neutralizes nginx image default server block
 │
 ├── configs/
 │   └── staging/                  # Staging environment configs (git-ignored)
