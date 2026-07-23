@@ -318,6 +318,11 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsSettings(
+        // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
+        // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
+        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
+    )
     .settings(watchI18nSources("i18n"))
     .dependsOn(utils, i18n, units, domain)
 
