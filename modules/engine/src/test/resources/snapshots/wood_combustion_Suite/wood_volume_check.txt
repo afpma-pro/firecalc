@@ -1,22 +1,22 @@
- V_a   = 4,564 
+ V_a   = 4.564 
 
- V_CO2 = 0,933 
- V_H2O = 0,334 
- V_O2  = 0,308 
+ V_CO2 = 0.933 
+ V_H2O = 0.334 
+ V_O2  = 0.308 
 
- V_fp  = 4,539 
- V_hum = 0,249 
- V_f   = 5,121 
+ V_fp  = 4.539 
+ V_hum = 0.249 
+ V_f   = 5.121 
 
- co2_max_dry   = 20,6 %
- co2_max_wet   = 18,2 %
+ co2_max_dry   = 20.6 %
+ co2_max_wet   = 18.2 %
 
- co2_dry_from_lambda(2.0)   = 10,3 %
- co2_wet_from_lambda(2.0)   = 9,6 %
+ co2_dry_from_lambda(2.0)   = 10.3 %
+ co2_wet_from_lambda(2.0)   = 9.6 %
 
- o2_dry(_from_lambdal(2.0)    = 10,529 
- o2_wet(_from_lambdal(2.0)    = 9,896 
+ o2_dry(_from_lambdal(2.0)    = 10.529 
+ o2_wet(_from_lambdal(2.0)    = 9.896 
 
- fluegas_h2o_for_lambda(2.0)  = 6,0 %
+ fluegas_h2o_for_lambda(2.0)  = 6.0 %
 
 

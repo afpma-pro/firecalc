@@ -533,8 +533,11 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
         scalacOptions ++= Seq("-Xmax-inlines:32"),
         libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
     )
-    .jvmSettings(
-        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    .jvmConfigure(
+        _.settings(
+            Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala",
+            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+        )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("i18n"))
