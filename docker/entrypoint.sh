@@ -31,6 +31,5 @@ fi
 
 # Drop privileges and run the application
 # setpriv is part of util-linux (available in Ubuntu/Debian base images).
-# --inh-execve drops ambient capabilities when exec happens.
 command -v setpriv >/dev/null 2>&1 || { echo "FATAL: setpriv not found (util-linux required)"; exit 1; }
-exec setpriv --reuid=appuser --regid=appuser --init-groups --inh-execve "$@"
+exec setpriv --reuid=appuser --regid=appuser --init-groups "$@"

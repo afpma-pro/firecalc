@@ -1,0 +1,6 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Fran\303\251aise du Po\303\24ele Ma\303\247onn\303\251 Artisanal
+#
+FROM nginx:1.27-alpine
+RUN apk add --no-cache curl

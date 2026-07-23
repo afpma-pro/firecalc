@@ -140,8 +140,12 @@ server {
 # =============================================================================
 # HTTP to HTTPS Redirects
 # =============================================================================
+upstream api_upstream_http {
+    server backend:8181;
+}
+
 server {
-    listen 80;
+    listen 80 default_server;
     server_name ${UI_DOMAIN} ${API_DOMAIN};
 
     # Let's Encrypt challenge location (HTTP)
@@ -149,6 +153,12 @@ server {
         default_type "text/plain";
         root /var/www/certbot;
         try_files $uri =404;
+    }
+
+    # Backend healthcheck — proxied to backend, bypasses HTTPS redirect
+    location = /healthcheck {
+        proxy_pass http://api_upstream_http/v1/healthcheck;
+        proxy_http_version 1.1;
     }
 
     # Redirect everything else to HTTPS

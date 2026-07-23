@@ -171,7 +171,7 @@ Before deploying:
 - Environment: `FIRECALC_ENV=staging`
 - GoCardless: **SANDBOX only** (use `sandbox` config section)
 - Email: Test service (Mailtrap.io recommended)
-- Database: `databases/staging/firecalc-payments-staging.db`
+- Database: `databases/staging/firecalc-staging-payments.db`
 
 ### Production Setup
 
@@ -182,3 +182,19 @@ For production deployment:
 4. Use GoCardless **LIVE** credentials
 5. Use production SMTP service
 6. Update domain to production URL
+
+## Multi-Environment Deployment
+
+You can run staging and production on the same host by keeping each environment
+in a separate project directory (e.g., `firecalc-staging/` and `firecalc-prod/`).
+
+Container names and image tags are prefixed with `firecalc-${FIRECALC_ENV}-payments` to
+prevent collisions:
+
+| Environment | Container Example | Image Tag |
+|-------------|-------------------|-----------|
+| staging     | `firecalc-staging-nginx` | `firecalc-staging-payments:latest` |
+| production  | `firecalc-production-nginx` | `firecalc-production-payments:latest` |
+
+**Standalone mode:** Set different `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` in each
+`.env` file to avoid host port conflicts (defaults are 80/443).

@@ -41,8 +41,8 @@ services:
       context: ..                    # Build from project root
       dockerfile: docker/Dockerfile  # Use Dockerfile in docker/ directory
 
-    image: firecalc-payments:latest
-    container_name: firecalc-payments-backend
+    image: firecalc-${FIRECALC_ENV}-payments:latest
+    container_name: firecalc-${FIRECALC_ENV}-payments-backend
 
     # Restart policy: always restart unless explicitly stopped
     restart: unless-stopped
@@ -73,7 +73,7 @@ services:
     # Only expose port internally to the docker network
     # Not published to host - only accessible via nginx proxy
     networks:
-      - firecalc-network
+      - firecalc
 
     # Expose port 8181 internally (not to host)
     expose:
@@ -111,7 +111,7 @@ services:
   # Serves the FireCalc UI static files
   ui-server:
     image: nginx:alpine
-    container_name: firecalc-ui-server
+    container_name: firecalc-${FIRECALC_ENV}-ui-server
 
     restart: unless-stopped
 
@@ -120,7 +120,7 @@ services:
       - ./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro
 
     networks:
-      - firecalc-network
+      - firecalc
 
     healthcheck:
       test: ["CMD", "test", "-f", "/usr/share/nginx/html/index.html"]
@@ -146,14 +146,16 @@ services:
   # outputting to /etc/nginx/conf.d/. NGINX_ENVSUBST_FILTER restricts substitution
   # to UI_DOMAIN and API_DOMAIN so that nginx variables ($host, $uri, etc.) are preserved.
   nginx:
-    image: nginx:1.27-alpine
-    container_name: firecalc-nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: firecalc-${FIRECALC_ENV}-nginx
 
     restart: unless-stopped
 
     ports:
-      - "443:443"
-      - "80:80"
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
 
     environment:
       - UI_DOMAIN=${UI_DOMAIN}
@@ -166,6 +168,8 @@ services:
       - ./nginx-standalone/nginx.conf:/etc/nginx/nginx.conf:ro
       # Domain proxy config (envsubst template — processed on startup)
       - ./nginx-standalone/proxy.conf.template:/etc/nginx/templates/nginx-proxy-custom.conf.template:ro
+      # Override nginx image default.conf (empty — our proxy.conf handles routing)
+      - ./nginx-standalone/default.conf:/etc/nginx/conf.d/default.conf:ro
       # Let's Encrypt certificates (read-only — certbot manages them)
       - letsencrypt-certs:/etc/letsencrypt:ro
       # ACME challenge webroot (read-only — certbot writes challenges)
@@ -178,10 +182,10 @@ services:
         condition: service_healthy
 
     networks:
-      - firecalc-network
+      - firecalc
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -201,7 +205,7 @@ services:
   # init-letsencrypt.sh (run once before first deployment).
   certbot:
     image: certbot/certbot:v2.11.0
-    container_name: firecalc-certbot
+    container_name: firecalc-${FIRECALC_ENV}-certbot
 
     restart: unless-stopped
 
@@ -225,7 +229,7 @@ services:
 # Custom bridge network for inter-service communication
 # Provides DNS resolution between services using service names
 networks:
-  firecalc-network:
+  firecalc:
     driver: bridge
     # Optional: Custom network configuration
     # ipam:
