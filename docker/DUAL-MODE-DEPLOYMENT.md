@@ -37,7 +37,13 @@ docker/
   Dockerfile                         # UPDATED — entrypoint script for database permission fix
   Dockerfile.nginx                   # NEW — nginx:1.27-alpine + curl for healthcheck
   entrypoint.sh                      # NEW — fixes /app/databases ownership on startup
-  .env.example                       # UPDATED — mode-specific variable documentation
+  .env.defaults.example              # Generic defaults template (committed)
+  .env.staging.example               # Staging overrides template (committed)
+  .env.production.example            # Production overrides template (committed)
+  setup-env.sh                       # Merge script: defaults + override → .env
+  .env.defaults                      # Real defaults (git-ignored, operator edits)
+  .env.staging                       # Real staging values (git-ignored)
+  .env                               # Generated at deploy time (never committed)
   init-letsencrypt.sh                # UNCHANGED — standalone-only, documented
   nginx-ui-server.conf               # UNCHANGED — shared internal static file server
   nginx-standalone/                  # NEW — migrated from docker/ root
@@ -276,9 +282,9 @@ server {
 
 ---
 
-## `.env.example` Updates
+## Environment Variable Files
 
-Mark `UI_DOMAIN` and `API_DOMAIN` as standalone-only. Add mode documentation at the top:
+The `.env.example` file has been replaced with a base + override pattern:
 
 ```bash
 # =============================================================================
@@ -330,16 +336,24 @@ docker-setup-behind-proxy:
 
 ### Modified Targets
 
-All existing deploy targets (`prod-docker-deploy-up`, `staging-docker-deploy-up`, `dev-docker-deploy-up`, `docker-deploy-down`, `docker-deploy-restart`, `docker-deploy-logs`) gain a symlink validation step:
+All deploy targets (`prod-docker-deploy-up`, `staging-docker-deploy-up`, `dev-docker-deploy-up`) now call `setup-env.sh` before deploying to merge environment files:
 
 ```makefile
-# Example for prod-docker-deploy-up:
-prod-docker-deploy-up:
-	@echo "Deploying to Docker (production)..."
-	@test -L docker/docker-compose.yml || (echo "ERROR: docker-compose.yml symlink not found. Run 'make docker-setup-standalone' or 'make docker-setup-behind-proxy' first." && exit 1)
-	@make prod-backend-build
+# Example for staging-docker-deploy-up:
+staging-docker-deploy-up: .docker-check-symlink
+	@echo "Deploying to Docker (staging)..."
+	@make staging-backend-build
+	@bash docker/setup-env.sh staging
 	@cd docker && docker compose down && docker compose up -d --build
-	@echo "✅ Deployment complete!"
+```
+
+A new `docker-env-setup` target allows manual env generation:
+
+```makefile
+docker-env-setup:
+	@ENV="${FIRECALC_ENV:-development}"; \
+	echo "Merging docker/.env.defaults + docker/.env.$$ENV -> docker/.env (env=$$ENV)"; \
+	bash docker/setup-env.sh "$$ENV"
 ```
 
 ---

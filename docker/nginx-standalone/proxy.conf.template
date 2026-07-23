@@ -155,6 +155,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
+    # Favicon — prevent browser auto-fetch from hitting backend/CSP
+    location = /favicon.ico {
+        return 204;
+    }
+
     # Proxy to backend
     location / {
         proxy_pass http://api_upstream;

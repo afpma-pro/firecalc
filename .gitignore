@@ -55,6 +55,10 @@ docker/configs/*/invoices/*.yaml
 docker/databases/
 # Docker compose symlink (created by make docker-setup-*)
 docker/docker-compose.yml
+# Docker env — .env is generated, real values never committed
+docker/.env.defaults
+docker/.env.staging
+docker/.env.production
 
 
 # Company-specific overrides for i18n

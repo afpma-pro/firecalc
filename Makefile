@@ -16,7 +16,7 @@ GITHUB_REPO_OWNER ?= $(shell grep 'lazy val githubOwner' build.sbt | sed 's/.*= 
 GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 
 ## MAIN ##############################
-.PHONY: check clean fmt ui-setup electron-setup landing-setup landing-build ui-status run-validation update-validation
+.PHONY: check clean fmt ui-setup electron-setup landing-setup landing-build ui-status run-validation update-validation docker-env-setup
 
 ## ================================
 ## UTILITY TARGETS
@@ -562,6 +562,17 @@ docker-fix-db-perms:
 		echo "WARNING: Could not change ownership (may need sudo). Run: sudo chown -R 999:999 docker/databases"
 	@echo "✅ Database permissions fixed on host!"
 
+## ================================
+## DOCKER ENVIRONMENT SETUP
+## ================================
+
+# Merge .env.defaults + .env.{env} -> .env
+docker-env-setup:
+	@ENV="${FIRECALC_ENV:-development}"; \
+	echo "Merging docker/.env.defaults + docker/.env.$$ENV -> docker/.env (env=$$ENV)"; \
+	bash docker/setup-env.sh "$$ENV"
+
+
 
 ## ================================
 ## DOCKER DEPLOYMENT
@@ -571,6 +582,7 @@ docker-fix-db-perms:
 prod-docker-deploy-up: .docker-check-symlink
 	@echo "Deploying to Docker (production)..."
 	@make prod-backend-build
+	@bash docker/setup-env.sh production
 	@cd docker && docker compose down && docker compose up -d --build
 	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
 	if [ "$$MODE" = "standalone" ]; then \
@@ -589,6 +601,7 @@ prod-docker-deploy-up: .docker-check-symlink
 staging-docker-deploy-up: .docker-check-symlink
 	@echo "Deploying to Docker (staging)..."
 	@make staging-backend-build
+	@bash docker/setup-env.sh staging
 	@cd docker && docker compose down && docker compose up -d --build
 	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
 	if [ "$$MODE" = "standalone" ]; then \
@@ -607,6 +620,7 @@ staging-docker-deploy-up: .docker-check-symlink
 dev-docker-deploy-up: .docker-check-symlink
 	@echo "Deploying UI to Docker (development)..."
 	@make dev-web-ui-build
+	@bash docker/setup-env.sh development
 	@cd docker && docker compose down && docker compose up -d --build
 	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
 	if [ "$$MODE" = "standalone" ]; then \

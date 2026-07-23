@@ -52,50 +52,51 @@ cd /path/to/firecalc
 # 2. Install UI dependencies (first time only)
 make ui-setup
 
-# 3. Copy environment template
-cp docker/.env.example docker/.env
+# 3. Copy environment templates (first time only)
+cp docker/.env.defaults.example docker/.env.defaults
+cp docker/.env.staging.example docker/.env.staging
 
-# 4. Edit .env with your staging values
-nano docker/.env
-# Update FIRECALC_ENV (required for both modes)
-# Update UI_DOMAIN, API_DOMAIN (required for standalone mode)
-
-# 4b. Choose deployment mode
+# 4. Edit the real files with your values
+nano docker/.env.defaults
+# Update company info, shared config, secrets
+nano docker/.env.staging
+# Update staging-specific overrides (domains, tokens)
+# 5. Choose deployment mode
 make docker-setup-standalone     # Self-contained (nginx handles TLS)
 # OR
 make docker-setup-behind-proxy   # External proxy handles TLS
 
-# 5. Create staging configuration files
+# 6. Create staging configuration files
 cd docker/configs/staging/payments
 cp payments-config.conf.example payments-config.conf
 cp email-config.conf.example email-config.conf
 cp gocardless-config.conf.example gocardless-config.conf
 
-# 6. Create staging invoice configuration
+# 7. Create staging invoice configuration
 cd ../invoices
 cp invoice-config.yaml.example invoice-config.yaml
 
-# 7. Edit all .conf and .yaml files with your actual values
+# 8. Edit all .conf and .yaml files with your actual values
 nano payments-config.conf
 nano email-config.conf
 nano gocardless-config.conf
 nano invoice-config.yaml
 
-# 8. Add company logo for invoices and reports
+# 9. Add company logo for invoices and reports
 # Copy your logo to BOTH directories (REQUIRED for PDF generation):
 cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
 cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
 
-# 9. Deploy to Docker (builds backend JAR + UI, then deploys)
+# 10. Deploy to Docker (builds backend JAR + UI, then deploys)
 cd /path/to/firecalc
 make staging-docker-deploy-up
 
-# 10. Monitor logs
+# 11. Monitor logs
 cd docker
 docker compose logs -f
 ```
 
-**Note:** The `staging-docker-deploy-up` target automatically:
+- Merges environment files (`.env.defaults` + `.env.staging` → `.env`)
 - Builds the backend JAR (`sbt payments/assembly`)
 - Builds the UI static files (Scala.js compilation + Vite build)
 - Rebuilds Docker images with `--build` flag
@@ -105,8 +106,13 @@ docker compose logs -f
 
 ```
 docker/
-├── .env.example                  # Template for environment variables
-├── .env                          # Your actual environment variables (git-ignored)
+├── .env.defaults.example          # Generic defaults template
+├── .env.staging.example           # Staging overrides template
+├── .env.production.example        # Production overrides template
+├── setup-env.sh                   # Merge script (generates .env)
+├── .env.defaults                  # Real defaults (git-ignored)
+├── .env.staging                   # Real staging values (git-ignored)
+├── .env                           # Generated at deploy time (never committed)
 ├── docker-compose.yml            # SYMLINK → chosen mode (created by make docker-setup-*)
 ├── docker-compose.standalone.yml   # Standalone mode (nginx handles TLS)
 ├── docker-compose.behind-proxy.yml # Behind-proxy mode (external proxy handles TLS)
@@ -195,34 +201,48 @@ FireCalc uses TWO separate domains for better security and separation of concern
 
 ### Step 2: Configure Docker Environment
 
-1. **Copy environment template**
+The environment configuration uses a **base + override** pattern:
+- `.env.defaults` — all variables with generic defaults (company info, shared config)
+- `.env.staging` — staging-specific overrides (domains, tokens, secrets)
+- `.env` — generated at deploy time by merging defaults + overrides (last value wins)
+
+1. **Copy templates to create real env files** (first time only)
    ```bash
-   cp docker/.env.example docker/.env
+   cp docker/.env.defaults.example docker/.env.defaults
+   cp docker/.env.staging.example docker/.env.staging
    ```
 
-2. **Edit `.env` file**
+2. **Edit `.env.defaults`** with your shared values
    ```bash
-   nano docker/.env
+   nano docker/.env.defaults
+   ```
+   Set:
+   - Company information (legal name, address, bank details)
+   - Shared configuration (SMTP host/port, GoCardless base URL)
+   - Template styling and feature flags
+
+3. **Edit `.env.staging`** with staging-specific overrides
+   ```bash
+   nano docker/.env.staging
+   ```
+   Set:
+   - `UI_DOMAIN` and `API_DOMAIN` (standalone mode)
+   - `COMPOSE_PROJECT_NAME=firecalc-staging`
+   - `FIRECALC_ENV=staging`
+   - SMTP credentials (USERNAME, PASSWORD)
+   - GoCardless credentials (ACCESS_TOKEN, WEBHOOK_SECRET, redirect URIs)
+   - JWT secret
+
+4. **Deploy** — the `make staging-docker-deploy-up` target automatically merges the files:
+   ```bash
+   make staging-docker-deploy-up
+   # → setup-env.sh merges .env.defaults + .env.staging → .env
+   # → compose up with correct config
    ```
 
-3. **Set required variables**
-   ```env
-   # Required for both modes:
-   FIRECALC_ENV=staging
-   
-   # Required for standalone mode only:
-   UI_DOMAIN=firecalc.staging.example.com
-   API_DOMAIN=api.staging.example.com
-   
-   # Company information
-   COMPANY_LEGAL_NAME="Your Company Name"
-   COMPANY_EMAIL="billing@yourcompany.com"
-   # ... (see .env.example for full list)
-   ```
-
-4. **Secure the file**
+**Or generate manually:**
    ```bash
-   chmod 600 docker/.env
+   make docker-env-setup FIRECALC_ENV=staging
    ```
 
 ### Step 3: Configure Payments Settings
