@@ -365,24 +365,46 @@ FireCalc uses TWO separate domains for better security and separation of concern
 
 ### Step 7: Prepare Database Directory
 
-The database directory requires proper ownership for the Docker container user (UID 999):
+The database directory is mounted into the container at `/app/databases`. The
+backend runs as non-root user `appuser` (UID 999), which needs write access.
+
+**Automatic fix on startup:** The container's entrypoint script (`docker/entrypoint.sh`)
+runs as root before starting the application. It checks and fixes the database
+directory ownership automatically. This means you can use `sudo docker compose up`
+without worrying about permissions — the entrypoint handles it.
+
+**Manual setup (optional):** If you prefer to set permissions on the host before
+starting containers:
 
 ```bash
 # Create staging database directory
 mkdir -p docker/databases/staging
 
-# Set ownership to match container user (UID 999) and secure permissions
+# Set ownership to match container user (UID 999)
 sudo chown -R 999:999 docker/databases
-sudo chmod -R 700 docker/databases
+# Directories: owner-only access; files: owner read/write
+sudo find docker/databases -type d -exec chmod 700 {} \;
+sudo find docker/databases -type f -exec chmod 600 {} \;
+
+Or use the Makefile target:
+
+```bash
+make docker-fix-db-perms
 ```
 
-**Why UID 999?** The Docker container runs as non-root user `appuser` with UID 999 for security. The database directory must be owned by this user to allow write access.
+**How it works:** On every container start, the entrypoint script:
+1. Runs `chown -R appuser:appuser /app/databases` (recursive ownership fix)
+2. Sets directories to `700` and files to `600` (owner-only access)
+3. Drops privileges to `appuser` via `setpriv` before launching Java
+
+This ensures SQLite can create its journal files
+(without write access, SQLite fails with `SQLITE_READONLY_DIRECTORY`).
 
 > **Security: Database Encryption at Rest**
 >
 > The SQLite database stores customer PII and payment data. The following hardening measures apply:
 >
-> - **Filesystem permissions**: The Dockerfile sets `chmod 700` on `/app/databases`, restricting access to the `appuser` owner only. The host-side directory should also use `chmod 700` (as shown above).
+> - **Filesystem permissions**: The entrypoint script sets `chown -R appuser:appuser` on `/app/databases` on every container start, then secures directories to `700` and files to `600` (owner-only access). The host-side directory should match (see manual setup above or `make docker-fix-db-perms`).
 > - **SQLCipher**: For production environments handling sensitive data, consider replacing the standard SQLite library with [SQLCipher](https://www.zetetic.net/sqlcipher/) to encrypt the database at rest. This requires a native dependency change and is not included by default.
 > - **Backups**: Database backup files contain the same sensitive data and should be encrypted (e.g., `gpg --symmetric`) and stored with restrictive permissions.
 

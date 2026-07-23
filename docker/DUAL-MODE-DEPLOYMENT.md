@@ -34,7 +34,8 @@ docker/
   docker-compose.standalone.yml      # NEW — standalone mode
   docker-compose.behind-proxy.yml    # NEW — behind-proxy mode
   docker-compose.yml                 # SYMLINK — developer creates pointing to chosen mode
-  Dockerfile                         # UNCHANGED
+  Dockerfile                         # UPDATED — entrypoint script for database permission fix
+  entrypoint.sh                      # NEW — fixes /app/databases ownership on startup
   .env.example                       # UPDATED — mode-specific variable documentation
   init-letsencrypt.sh                # UNCHANGED — standalone-only, documented
   nginx-ui-server.conf               # UNCHANGED — shared internal static file server
@@ -382,3 +383,24 @@ make prod-docker-deploy-up
 curl -I https://${UI_DOMAIN}/           # → 200, HTTPS (via NPM)
 curl -I https://${API_DOMAIN}/v1/healthcheck  # → 200, HTTPS (via NPM)
 ```
+---
+
+## Operational Notes
+
+### Database Permission Fix (Entrypoint)
+
+The backend container's entrypoint script (`docker/entrypoint.sh`) runs as root
+before starting the application. On each start it:
+1. Fixes ownership recursively (`chown -R appuser:appuser /app/databases`)
+2. Secures directories to `700` and files to `600` (owner-only access)
+3. Drops privileges to `appuser` via `setpriv`
+
+This means `sudo docker compose up` works without manual permission fixes —
+the entrypoint handles it automatically.
+If you ever need to fix permissions on the host (e.g., after manually creating
+the database directory), run:
+
+```bash
+make docker-fix-db-perms
+```
+

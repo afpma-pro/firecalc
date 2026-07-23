@@ -547,6 +547,21 @@ docker-setup-behind-proxy:
 	@echo "Setting up Docker for behind-proxy mode..."
 	@cd docker && rm -f docker-compose.yml && ln -s docker-compose.behind-proxy.yml docker-compose.yml
 	@echo "✅ Symlink: docker-compose.yml → docker-compose.behind-proxy.yml"
+# Pre-flight: fix database directory permissions on the host for container user (UID 999).
+# The entrypoint.sh script handles this automatically inside the container on startup.
+# This target is for operators who want to verify/fix host-side permissions before deploying
+# (e.g., after manually creating the database directory or switching users).
+docker-fix-db-perms:
+	@echo "Fixing database directory permissions on host (UID 999)..."
+	@if [ ! -d "docker/databases" ]; then \
+		echo "WARNING: docker/databases does not exist. Create it first: mkdir -p docker/databases"; \
+	fi
+	@find docker/databases -type d -exec chmod 700 {} \; 2>/dev/null || true
+	@find docker/databases -type f -exec chmod 600 {} \; 2>/dev/null || true
+	@chown -R 999:999 docker/databases 2>/dev/null || \
+		echo "WARNING: Could not change ownership (may need sudo). Run: sudo chown -R 999:999 docker/databases"
+	@echo "✅ Database permissions fixed on host!"
+
 
 ## ================================
 ## DOCKER DEPLOYMENT
