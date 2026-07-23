@@ -377,7 +377,7 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     .jsSettings(
         // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
         // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
-        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("i18n"))
@@ -846,7 +846,7 @@ lazy val laminar_form_derivation = (project in file("modules/laminar-form-deriva
             // magnolia for AutoDerivation[Form]
             "pro.afpma"         %%% "magnolia"        % "1.3.16",
             // java.time for LocalDate
-            "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+            "io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
             // testing
             "com.lihaoyi"       %%% "utest"           % "0.8.4" % Test
         ),
@@ -1013,8 +1013,8 @@ lazy val ui = (project in file("modules/ui"))
             "com.lihaoyi" %%% "upickle"   % "4.1.0",
 
             // provides implementation of java.time for scala js
-            "io.github.cquiroz" %%% "scala-java-time"      % "2.6.0",
-            "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
+            "io.github.cquiroz" %%% "scala-java-time"      % "2.7.0",
+            "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.7.0",
 
             // automatic data transformations (helps going from 'ui' models to 'engine' models)
             "io.scalaland" %%% "chimney" % "1.8.2",
