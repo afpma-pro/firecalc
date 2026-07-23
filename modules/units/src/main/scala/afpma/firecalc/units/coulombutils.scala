@@ -33,9 +33,6 @@ import scala.util.Failure
 import magnolia1.Transl
 
 object coulombutils:
-    // Pin default locale to FR so all String.format / printf calls use commas (,) as decimal separator,
-    // regardless of the host OS locale. Single global setting — no per-call Locale.FRANCE needed.
-    private val _ = java.util.Locale.setDefault(java.util.Locale.FRANCE)
     export conversions.*
     export monoids.given
     export shows.defaults.given

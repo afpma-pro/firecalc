@@ -2,3 +2,5 @@
 -Xms16g
 -Xmx16g
 -XX:MaxInlineLevel=32
+-Duser.language=en                                                                                                                   
+-Duser.country=US 
