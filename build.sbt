@@ -96,6 +96,30 @@ val commonAssemblyMergeStrategy: String => MergeStrategy = {
     case _                                                              => MergeStrategy.first
 }
 
+// Extract molecule library version and compute domain source hash
+// for moleculeGen staleness detection.
+// Returns (molecule-db-sqlite version, SHA-256 hash of MoleculeDomain.scala).
+def moleculeGenVersionAndHash(
+    deps      : Seq[ModuleID],
+    domainFile: File
+): Option[(String, String)] = {
+    val version = deps.collectFirst {
+        case mid if mid.name == "molecule-db-sqlite" => mid.revision
+    }
+    val hash    = if (domainFile.exists()) {
+        Some(
+            java.util.Base64.getEncoder.encodeToString(
+                java.security.MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(
+                        java.nio.file.Files.readAllBytes(domainFile.toPath)
+                    )
+            )
+        )
+    } else None
+    version.flatMap(v => hash.map(h => (v, h)))
+}
+
 lazy val root = (project in file("."))
     .aggregate(
         i18n.js,
@@ -1302,20 +1326,54 @@ lazy val payments = (project in file("modules/payments"))
             compilationResult
         },
 
-        // Guard moleculeGen: only run when generated sources directory is empty/missing.
+        // Guard moleculeGen: only run when generated sources are stale.
+        // Uses a stamp file to track molecule library version + domain source hash.
+        // Falls back to directory existence check if stamp is missing (e.g. after clean).
         // Uses Def.taskDyn because .value cannot be called conditionally in Def.task.
-        // Returns Seq.empty because MoleculePlugin already adds sourceManaged to
-        // unmanagedSourceDirectories, so the generated files are picked up automatically.
+        // Returns generated .scala files so compiler picks them up as managed sources.
         Compile / sourceGenerators += Def.taskDyn {
+            val baseDir       = baseDirectory.value
             val srcManagedDir = (Compile / sourceManaged).value / "moleculeGen"
-            val needsGen      = !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
+            val stampFile     = srcManagedDir / ".moleculeGen.stamp"
+            val domainFile    = baseDir / "src" / "main" / "scala" / "afpma" / "firecalc" /
+                "payments" / "repository" / "impl" / "MoleculeDomain.scala"
+            val current       = moleculeGenVersionAndHash(libraryDependencies.value, domainFile)
+
+            val needsGen = current match {
+                case None              => true
+                case Some((ver, hash)) =>
+                    if (!stampFile.exists()) {
+                        // No stamp: check if directory is missing/empty (first run or after clean)
+                        !srcManagedDir.exists() || IO.listFiles(srcManagedDir).isEmpty
+                    } else {
+                        val lines     = IO.read(stampFile).linesIterator.toList
+                        val stampVer  = lines.find(_.startsWith("version=")).map(_.split("=", 2)(1))
+                        val stampHash = lines.find(_.startsWith("hash=")).map(_.split("=", 2)(1))
+                        stampVer != Some(ver) || stampHash != Some(hash)
+                    }
+            }
+
             if (needsGen) {
                 Def.task {
-                    val _ = moleculeGen.inputTaskValue
-                    Seq.empty[File]
+                    // Use toTask("") to properly invoke the input task with empty arguments.
+                    // moleculeGen := handleMoleculeGen(Compile).evaluated
+                    // requires parsed input; toTask("") provides empty input programmatically.
+                    val _ = (moleculeGen toTask "").value
+                    // Write stamp file for next-time staleness detection
+                    current.foreach { case (ver, hash) =>
+                        IO.write(stampFile, s"version=$ver\nhash=$hash\n")
+                    }
+                    // Return generated .scala files so compiler picks them up
+                    (srcManagedDir ** "*.scala").get
                 }
             } else {
-                Def.task(Seq.empty[File])
+                Def.task {
+                    // Return existing generated files if present (incremental compile)
+                    if (srcManagedDir.exists())
+                        (srcManagedDir ** "*.scala").get
+                    else
+                        Seq.empty[File]
+                }
             }
         },
         Compile / run / fork          := true,
