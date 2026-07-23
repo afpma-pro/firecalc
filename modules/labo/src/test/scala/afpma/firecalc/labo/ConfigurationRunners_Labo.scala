@@ -5,8 +5,6 @@
 
 package afpma.firecalc.labo
 
-import java.nio.file.Paths
-
 import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
@@ -356,7 +354,11 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
             csv =>
                 SnapshotAssert.assertMatches(
                     csv,
-                    Paths.get(s"modules/labo/src/test/resources/snapshots/ConfigurationRunners_Labo/$snapshotName")
+                    java.nio.file.Paths.get(
+                        getClass.getClassLoader
+                            .getResource(s"snapshots/ConfigurationRunners_Labo/$snapshotName")
+                            .toURI
+                    )
                 )
         )
     end run_15544_mce_for_lab_comparison
