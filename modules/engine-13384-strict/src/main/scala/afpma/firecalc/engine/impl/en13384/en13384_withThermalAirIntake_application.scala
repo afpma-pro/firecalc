@@ -12,6 +12,7 @@ import afpma.firecalc.engine.alg.en13384.WithParams_13384
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.Inputs_13384_WithThermalAirIntake
 import afpma.firecalc.engine.models.en13384.std.*
+import afpma.firecalc.engine.standard.SlotContext
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
 
 import coulomb.*
@@ -33,7 +34,8 @@ abstract class EN13384_WithThermalAirIntake_Application(
             temp_start         = T_L,
             last_pipe_density  = None,
             last_pipe_velocity = None,
-            gas                = CombustionAir
+            gas                = CombustionAir,
+            sc                 = SlotContext.unslotted
         )
 
     override def airIntake_PipeResult =

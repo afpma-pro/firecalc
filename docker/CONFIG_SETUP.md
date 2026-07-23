@@ -27,13 +27,19 @@ All configuration is environment-specific (staging, production) and stored outsi
 
 Before starting configuration:
 
-- [ ] Domain name registered and DNS configured (e.g., `api.staging.example.com`)
+- [ ] Deployment mode chosen (standalone or behind-proxy)
 - [ ] Server with Docker and Docker Compose installed
-- [ ] Ports 80 and 443 accessible from the internet (for Let's Encrypt)
 - [ ] GoCardless account (sandbox for staging, live for production)
 - [ ] SMTP service account (Mailtrap.io for staging, production SMTP for production)
 - [ ] JWT secret generated (`openssl rand -base64 32`) and added to `.env`
 - [ ] Company information and legal details ready
+
+**Standalone mode additionally requires:**
+- [ ] Domain names registered and DNS configured (UI_DOMAIN and API_DOMAIN)
+- [ ] Ports 80 and 443 accessible from the internet (for Let's Encrypt)
+
+**Behind-proxy mode additionally requires:**
+- [ ] External reverse proxy (e.g., nginx-proxy-manager) configured
 
 ## Quick Start
 
@@ -51,7 +57,13 @@ cp docker/.env.example docker/.env
 
 # 4. Edit .env with your staging values
 nano docker/.env
-# Update UI_DOMAIN, API_DOMAIN, FIRECALC_ENV, and other variables
+# Update FIRECALC_ENV (required for both modes)
+# Update UI_DOMAIN, API_DOMAIN (required for standalone mode)
+
+# 4b. Choose deployment mode
+make docker-setup-standalone     # Self-contained (nginx handles TLS)
+# OR
+make docker-setup-behind-proxy   # External proxy handles TLS
 
 # 5. Create staging configuration files
 cd docker/configs/staging/payments
@@ -95,13 +107,27 @@ docker compose logs -f
 docker/
 ├── .env.example                  # Template for environment variables
 ├── .env                          # Your actual environment variables (git-ignored)
-├── docker-compose.yml            # Docker orchestration
+├── docker-compose.yml            # SYMLINK → chosen mode (created by make docker-setup-*)
+├── docker-compose.standalone.yml   # Standalone mode (nginx handles TLS)
+├── docker-compose.behind-proxy.yml # Behind-proxy mode (external proxy handles TLS)
 ├── Dockerfile                    # Application container definition
+├── Dockerfile.nginx              # Nginx container (extends nginx:1.27-alpine + curl)
+├── entrypoint.sh                 # Entrypoint script (fixes database permissions on startup)
 ├── CONFIG_SETUP.md               # This file
-├── nginx.conf                    # Global nginx configuration
-├── nginx-proxy-custom.conf.template  # Domain proxy config (envsubst template)
-├── nginx-ui-server.conf          # UI static file server configuration
-├── init-letsencrypt.sh           # Initial certificate provisioning script
+├── DUAL-MODE-DEPLOYMENT.md       # Dual-mode architecture spec
+├── README.md                     # Quick reference
+├── nginx-ui-server.conf          # UI static file server configuration (shared)
+├── init-letsencrypt.sh           # Initial certificate provisioning script (standalone)
+│
+├── nginx-standalone/             # Nginx config for standalone mode
+│   ├── nginx.conf                # Global nginx configuration (with SSL)
+│   ├── proxy.conf.template       # Domain proxy config (envsubst template)
+│   └── default.conf              # Empty — neutralizes nginx image default server block
+│
+├── nginx-behind-proxy/           # Nginx config for behind-proxy mode
+│   ├── nginx.conf                # Global nginx configuration (HTTP only)
+│   ├── proxy.conf                # Unified server block (UI + API via location matching)
+│   └── default.conf              # Empty — neutralizes nginx image default server block
 │
 ├── configs/
 │   └── staging/                  # Staging environment configs (git-ignored)
@@ -124,15 +150,24 @@ docker/
         └── firecalc-payments-staging.db
 ```
 
-**Nginx Architecture:** FireCalc uses a four-container architecture:
+**Nginx Architecture (Standalone Mode):** Four-container architecture:
 1. **backend** - Scala payments application (port 8181)
 2. **ui-server** - nginx:alpine serving static UI files (port 80, internal)
 3. **nginx** - Official nginx:1.27-alpine reverse proxy handling both UI and API domains with HTTPS termination (ports 443/80)
 4. **certbot** - certbot/certbot:v2.11.0 sidecar for automated Let's Encrypt certificate renewal (every 12 hours)
 
+**Nginx Architecture (Behind-Proxy Mode):** Three-container architecture (no certbot):
+1. **backend** - Scala payments application (port 8181)
+2. **ui-server** - nginx:alpine serving static UI files (port 80, internal)
+3. **nginx** - Official nginx:1.27-alpine internal gateway (HTTP only, no host ports exposed)
+
+The outer proxy (e.g., nginx-proxy-manager) handles TLS termination and forwards traffic to the inner nginx container via the shared `proxy` Docker network.
+
 ## Step-by-Step Setup
 
 ### Step 1: Configure Domains and DNS
+
+**Standalone mode only:**
 
 FireCalc uses TWO separate domains for better security and separation of concerns:
 
@@ -156,6 +191,8 @@ FireCalc uses TWO separate domains for better security and separation of concern
    # Both should return your server's IP address
    ```
 
+**Behind-proxy mode:** Domain routing is handled by the outer proxy (e.g., nginx-proxy-manager). Configure proxy hosts in your outer proxy pointing to the inner nginx container on the `proxy` Docker network.
+
 ### Step 2: Configure Docker Environment
 
 1. **Copy environment template**
@@ -170,10 +207,12 @@ FireCalc uses TWO separate domains for better security and separation of concern
 
 3. **Set required variables**
    ```env
-   # Minimum required for staging:
+   # Required for both modes:
+   FIRECALC_ENV=staging
+   
+   # Required for standalone mode only:
    UI_DOMAIN=firecalc.staging.example.com
    API_DOMAIN=api.staging.example.com
-   FIRECALC_ENV=staging
    
    # Company information
    COMPANY_LEGAL_NAME="Your Company Name"
@@ -330,24 +369,46 @@ FireCalc uses TWO separate domains for better security and separation of concern
 
 ### Step 7: Prepare Database Directory
 
-The database directory requires proper ownership for the Docker container user (UID 999):
+The database directory is mounted into the container at `/app/databases`. The
+backend runs as non-root user `appuser` (UID 999), which needs write access.
+
+**Automatic fix on startup:** The container's entrypoint script (`docker/entrypoint.sh`)
+runs as root before starting the application. It checks and fixes the database
+directory ownership automatically. This means you can use `sudo docker compose up`
+without worrying about permissions — the entrypoint handles it.
+
+**Manual setup (optional):** If you prefer to set permissions on the host before
+starting containers:
 
 ```bash
 # Create staging database directory
 mkdir -p docker/databases/staging
 
-# Set ownership to match container user (UID 999) and secure permissions
+# Set ownership to match container user (UID 999)
 sudo chown -R 999:999 docker/databases
-sudo chmod -R 700 docker/databases
+# Directories: owner-only access; files: owner read/write
+sudo find docker/databases -type d -exec chmod 700 {} \;
+sudo find docker/databases -type f -exec chmod 600 {} \;
+
+Or use the Makefile target:
+
+```bash
+make docker-fix-db-perms
 ```
 
-**Why UID 999?** The Docker container runs as non-root user `appuser` with UID 999 for security. The database directory must be owned by this user to allow write access.
+**How it works:** On every container start, the entrypoint script:
+1. Runs `chown -R appuser:appuser /app/databases` (recursive ownership fix)
+2. Sets directories to `700` and files to `600` (owner-only access)
+3. Drops privileges to `appuser` via `setpriv` before launching Java
+
+This ensures SQLite can create its journal files
+(without write access, SQLite fails with `SQLITE_READONLY_DIRECTORY`).
 
 > **Security: Database Encryption at Rest**
 >
 > The SQLite database stores customer PII and payment data. The following hardening measures apply:
 >
-> - **Filesystem permissions**: The Dockerfile sets `chmod 700` on `/app/databases`, restricting access to the `appuser` owner only. The host-side directory should also use `chmod 700` (as shown above).
+> - **Filesystem permissions**: The entrypoint script sets `chown -R appuser:appuser` on `/app/databases` on every container start, then secures directories to `700` and files to `600` (owner-only access). The host-side directory should match (see manual setup above or `make docker-fix-db-perms`).
 > - **SQLCipher**: For production environments handling sensitive data, consider replacing the standard SQLite library with [SQLCipher](https://www.zetetic.net/sqlcipher/) to encrypt the database at rest. This requires a native dependency change and is not included by default.
 > - **Backups**: Database backup files contain the same sensitive data and should be encrypted (e.g., `gpg --symmetric`) and stored with restrictive permissions.
 
@@ -407,7 +468,7 @@ sudo chmod -R 700 docker/databases
    docker compose ps
    ```
 
-4. **Provision SSL certificates (first time only)**
+4. **Provision SSL certificates (standalone mode, first time only)**
    - Before the first deployment, run the certificate provisioning script:
      ```bash
      cd docker
@@ -420,24 +481,26 @@ sudo chmod -R 700 docker/databases
      ```bash
      docker compose logs -f certbot
      ```
-   - The nginx + certbot architecture handles:
-     - HTTPS termination for both domains (single certificate with SANs)
-     - HTTP to HTTPS redirects
-     - Automatic certificate renewal before expiration
-     - Routing to appropriate upstream based on domain (UI -> ui-server, API -> backend)
 
 5. **Access the services**
+
+   **Standalone mode:**
    - **UI**: https://firecalc.staging.example.com (port 443)
    - **API**: https://api.staging.example.com (port 443)
 
-   Both domains use standard HTTPS port 443, with routing handled by nginx based on the `server_name`.
+   **Behind-proxy mode:**
+   - Services are accessed through the outer proxy (e.g., nginx-proxy-manager)
+   - Configure proxy hosts in your outer proxy pointing to the inner nginx container
 
 6. **Verify deployment**
    ```bash
-   # Check API version (should match build.sbt version)
+   # Standalone mode:
    curl -s https://api.staging.example.com/v1/healthcheck
    
-   # Check certificate includes both domains
+   # Behind-proxy mode:
+   curl -s http://firecalc-nginx/v1/healthcheck
+   
+   # Check certificate includes both domains (standalone mode)
    docker compose exec nginx openssl x509 -in /etc/letsencrypt/live/${UI_DOMAIN}/fullchain.pem -noout -text | grep DNS
    ```
    
@@ -446,7 +509,7 @@ sudo chmod -R 700 docker/databases
    {"info":{"engine_version":"0.3.0-b4","payments_base_version":"0.9.0-b4",...}}
    ```
    
-   Expected certificate output:
+   Expected certificate output (standalone mode):
    ```
    DNS:firecalc.staging.example.com, DNS:api.staging.example.com
    ```

@@ -11,6 +11,7 @@ import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
 
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.ValidatedNel
 
@@ -43,15 +44,17 @@ object PipeChain_13384:
     ): Built =
         // Connector pipe → capture final frame
         val (connectorPipeResult, connectorFinalFrameV) =
+            // Standalone build — no slot index
             ConnectorPipe_Module.mkPipeFromIncrDescrWithFinalFrame(
                 d.connector,
                 externalInitialFrame = connectorInitialFrame
-            )
+            )(using SlotContext.unslotted)
         val connectorFinalFrame                         = connectorFinalFrameV.toOption.flatten
 
         // Chimney pipe with connector's final frame
         val chimneyPipeResult =
-            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorFinalFrame)
+            // Standalone build — no slot index
+            ChimneyPipe_Module.mkPipeFromIncrDescr(d.chimney, connectorFinalFrame)(using SlotContext.unslotted)
 
         Built(connectorPipeResult, chimneyPipeResult, connectorFinalFrame)
 

@@ -12,6 +12,7 @@ import afpma.firecalc.engine.models.gtypedefs.CoefficientOfFlowResistance
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp
 import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.Result
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.Validated.Valid
 import cats.syntax.all.*
@@ -40,7 +41,8 @@ import afpma.firecalc.engine.standard.SplitMerge90AtEndOfChain
  */
 case class DynamicFrictionCoeffOpForPipeChain[PipeElDescr <: Matchable, DC <: Matchable](
     pipeElements: Vector[NamedPipeElDescrG[PipeElDescr]],
-    dcDfc       : DynamicFrictionCoeffOp[DC]
+    dcDfc       : DynamicFrictionCoeffOp[DC],
+    sc          : SlotContext
 ) extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DC]] {
 
     // Precompute the index of each (PipeIdx, PipeType) key in the pipe chain.
@@ -63,12 +65,15 @@ case class DynamicFrictionCoeffOpForPipeChain[PipeElDescr <: Matchable, DC <: Ma
                                     Valid((0.0.unitless: ζ))
                                 case `lastIdx` if lastIdx > 0 =>
                                     // Last element in the chain: error
-                                    SplitMerge90AtEndOfChain(np.typ, np.fullRef).invalidNel[ζ]
+                                    SplitMerge90AtEndOfChain(np.typ, np.fullRef)(using
+                                        sc
+                                    ).invalidNel[ζ]
                                 case _                        =>
                                     // Mid-chain: zeta = 1.4
                                     Valid(CoefficientOfFlowResistance.splitMerge90Zeta)
                         case None      =>
-                            DirectionChangeNotInPipeChain(np.typ, np.fullRef).invalidNel[ζ]
+                            DirectionChangeNotInPipeChain(np.typ, np.fullRef)(using sc)
+                                .invalidNel[ζ]
                 case _ =>
                     // Non-SplitMerge90 DirectionChange: delegate to provided DFC
                     dcDfc.dynamicFrictionCoeff(np.el)

@@ -27,6 +27,7 @@ import afpma.firecalc.engine.ops.MecaFluOps
 import afpma.firecalc.engine.ops.Position.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.UnexpectedDevError
+import afpma.firecalc.engine.standard.SlotContext
 import afpma.firecalc.engine.utils
 
 import cats.data.*
@@ -109,7 +110,8 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
         last_InnerGeom      : Option[PipeShape],
         next_Velocity_middle: Option[FlowVelocity],
         next_Density_middle : Option[Density],
-        gas_temp            : PositionOp[TCelsius]
+        gas_temp            : PositionOp[TCelsius],
+        sc                  : SlotContext
     )(using
         alg: ApplicationAlg,
         dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]]
@@ -120,7 +122,8 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
             last_InnerGeom,
             next_Velocity_middle,
             next_Density_middle,
-            gas_temp
+            gas_temp,
+            sc
         ) {
             override given en15544           : ApplicationAlg                                             = alg
             override given dynFrictionCoeffOp: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] = dfc
@@ -132,7 +135,8 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
         loadQty            : LoadQty,
         z_geodetical_height: z_geodetical_height,
         params             : DraftCondition,
-        tempStartOverride  : Option[TCelsius] = None
+        tempStartOverride  : Option[TCelsius] = None,
+        sc                 : SlotContext
     )(using
         alg: ApplicationAlg,
         ssa: ShortSectionAlg
@@ -144,25 +148,12 @@ object FlowOnlyMecaFlu_15544 extends MecaFlu_15544_Alg with HasTypeMembers_15544
                 loadQty,
                 z_geodetical_height,
                 params,
-                tempStartOverride
+                tempStartOverride,
+                sc
             ) {
                 override given en15544     : ApplicationAlg  = alg
                 override given shortSection: ShortSectionAlg = ssa
             }
-
-    override def makePipeResult(
-        ctx   : MecaFluPipeContext[PipeElDescr],
-        params: DraftCondition
-    )(using appCtx: MecaFluAppContext): Either[MecaFlu_Error, PipeResult] =
-        val ctx15544   = appCtx.asInstanceOf[MecaFlu_15544_AppCtx]
-        val en15544App = ctx15544.en15544.asInstanceOf[ApplicationAlg]
-        makePipeResult(
-            ctx.fullDescr,
-            ctx.gas,
-            ctx15544.loadQty,
-            ctx15544.zGeo,
-            params
-        )(using en15544App, ctx15544.shortSection)
 
 end FlowOnlyMecaFlu_15544
 
@@ -172,7 +163,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
     last_InnerGeom      : Option[PipeShape],
     next_Velocity_middle: Option[FlowVelocity],
     next_Density_middle : Option[Density],
-    gas_temp            : PositionOp[TCelsius]
+    gas_temp            : PositionOp[TCelsius],
+    sc                  : SlotContext
 ) extends PipeSectionResult[PipeElDescr]:
 
     given en15544           : FlowOnlyMecaFlu_15544.ApplicationAlg                       = scala.compiletime.deferred
@@ -180,7 +172,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeSectionResult_Impl(
 
     private given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544.dynFrict13384Factory
 
-    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using gip.pipeEl.typ)
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using gip.pipeEl.typ, sc)
 
     val gas    = gip.gas
     val curr   = gip.pipeEl
@@ -373,7 +365,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
     loadQty            : LoadQty,
     z_geodetical_height: z_geodetical_height,
     params             : DraftCondition,
-    tempStartOverride  : Option[TCelsius] = None
+    tempStartOverride  : Option[TCelsius] = None,
+    sc                 : SlotContext
 ) extends PipeResult.WithSections:
 
     import FlowOnlyMecaFlu_15544_PipeResult_Impl.*
@@ -383,7 +376,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
 
     private given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = en15544.dynFrict13384Factory
 
-    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using fd.pipeType)
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using fd.pipeType, sc)
 
     given dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
         flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(fd.elements)
@@ -485,7 +478,8 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                         st.last_InnerGeom,
                         next_dv_opt.map(_._2             ),
                         next_dv_opt.map(_._1             ),
-                        gasTemperature (curr             )
+                        gasTemperature (curr             ),
+                        sc
                     )
                 val nextS = st
                     .modify(_.last_InnerGeom)

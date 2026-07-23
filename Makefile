@@ -531,53 +531,110 @@ prod-electron-package-linux:
 	@rm -f web/.build-env
 
 ## ================================
+## DOCKER DEPLOYMENT — MODE SETUP
+## ================================
+
+# Internal: validate that docker-compose.yml symlink exists
+.docker-check-symlink:
+	@test -L docker/docker-compose.yml || (echo "ERROR: docker/docker-compose.yml symlink not found." && echo "Run 'make docker-setup-standalone' or 'make docker-setup-behind-proxy' first." && exit 1)
+
+docker-setup-standalone:
+	@echo "Setting up Docker for standalone mode..."
+	@cd docker && rm -f docker-compose.yml && ln -s docker-compose.standalone.yml docker-compose.yml
+	@echo "✅ Symlink: docker-compose.yml → docker-compose.standalone.yml"
+
+docker-setup-behind-proxy:
+	@echo "Setting up Docker for behind-proxy mode..."
+	@cd docker && rm -f docker-compose.yml && ln -s docker-compose.behind-proxy.yml docker-compose.yml
+	@echo "✅ Symlink: docker-compose.yml → docker-compose.behind-proxy.yml"
+# Pre-flight: fix database directory permissions on the host for container user (UID 999).
+# The entrypoint.sh script handles this automatically inside the container on startup.
+# This target is for operators who want to verify/fix host-side permissions before deploying
+# (e.g., after manually creating the database directory or switching users).
+docker-fix-db-perms:
+	@echo "Fixing database directory permissions on host (UID 999)..."
+	@if [ ! -d "docker/databases" ]; then \
+		echo "WARNING: docker/databases does not exist. Create it first: mkdir -p docker/databases"; \
+	fi
+	@find docker/databases -type d -exec chmod 700 {} \; 2>/dev/null || true
+	@find docker/databases -type f -exec chmod 600 {} \; 2>/dev/null || true
+	@chown -R 999:999 docker/databases 2>/dev/null || \
+		echo "WARNING: Could not change ownership (may need sudo). Run: sudo chown -R 999:999 docker/databases"
+	@echo "✅ Database permissions fixed on host!"
+
+
+## ================================
 ## DOCKER DEPLOYMENT
 ## ================================
 
 # Deploy UI to Docker Compose (production)
-prod-docker-deploy-up:
+prod-docker-deploy-up: .docker-check-symlink
 	@echo "Deploying to Docker (production)..."
 	@make prod-backend-build
 	@cd docker && docker compose down && docker compose up -d --build
-	@echo "✅ Deployment complete!"
-	@echo "   UI:  https://\$${UI_DOMAIN}"
-	@echo "   API: https://\$${API_DOMAIN}"
-	@echo "   (Configured in docker/.env)"
+	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
+	if [ "$$MODE" = "standalone" ]; then \
+		echo "✅ Deployment complete!"; \
+		echo "   UI:  https://$$${UI_DOMAIN}"; \
+		echo "   API: https://$$${API_DOMAIN}"; \
+		echo "   (Configured in docker/.env)"; \
+	elif [ "$$MODE" = "behind-proxy" ]; then \
+		echo "✅ Deployment complete!"; \
+		echo "   (Behind-proxy mode — URLs managed by outer proxy)"; \
+	else \
+		echo "✅ Deployment complete!"; \
+	fi
 
 # Deploy UI to Docker Compose (staging)
-staging-docker-deploy-up:
+staging-docker-deploy-up: .docker-check-symlink
 	@echo "Deploying to Docker (staging)..."
 	@make staging-backend-build
 	@cd docker && docker compose down && docker compose up -d --build
-	@echo "✅ Deployment complete!"
-	@echo "   UI:  https://\$${UI_DOMAIN}"
-	@echo "   API: https://\$${API_DOMAIN}"
-	@echo "   (Configured in docker/.env)"
+	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
+	if [ "$$MODE" = "standalone" ]; then \
+		echo "✅ Deployment complete!"; \
+		echo "   UI:  https://$$${UI_DOMAIN}"; \
+		echo "   API: https://$$${API_DOMAIN}"; \
+		echo "   (Configured in docker/.env)"; \
+	elif [ "$$MODE" = "behind-proxy" ]; then \
+		echo "✅ Deployment complete!"; \
+		echo "   (Behind-proxy mode — URLs managed by outer proxy)"; \
+	else \
+		echo "✅ Deployment complete!"; \
+	fi
 
 # Deploy UI to Docker Compose (development)
-dev-docker-deploy-up:
+dev-docker-deploy-up: .docker-check-symlink
 	@echo "Deploying UI to Docker (development)..."
 	@make dev-web-ui-build
 	@cd docker && docker compose down && docker compose up -d --build
-	@echo "✅ Deployment complete!"
-	@echo "   UI:  https://\$${UI_DOMAIN}"
-	@echo "   API: https://\$${API_DOMAIN}"
-	@echo "   (Configured in docker/.env)"
+	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
+	if [ "$$MODE" = "standalone" ]; then \
+		echo "✅ Deployment complete!"; \
+		echo "   UI:  https://$$${UI_DOMAIN}"; \
+		echo "   API: https://$$${API_DOMAIN}"; \
+		echo "   (Configured in docker/.env)"; \
+	elif [ "$$MODE" = "behind-proxy" ]; then \
+		echo "✅ Deployment complete!"; \
+		echo "   (Behind-proxy mode — URLs managed by outer proxy)"; \
+	else \
+		echo "✅ Deployment complete!"; \
+	fi
 
 # Stop Docker containers
-docker-deploy-down:
+docker-deploy-down: .docker-check-symlink
 	@echo "Stopping Docker containers..."
 	@cd docker && docker compose down
 	@echo "✅ Containers stopped!"
 
 # Restart Docker containers without rebuilding
-docker-deploy-restart:
+docker-deploy-restart: .docker-check-symlink
 	@echo "Restarting Docker containers..."
 	@cd docker && docker compose restart
 	@echo "✅ Containers restarted!"
 
 # View Docker logs
-docker-deploy-logs:
+docker-deploy-logs: .docker-check-symlink
 	@cd docker && docker compose logs -f
 
 

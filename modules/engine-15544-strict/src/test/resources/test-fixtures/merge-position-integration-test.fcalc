@@ -92,7 +92,7 @@ engine_state:
                   diameter: 
                     value: "0.18"
                     unit: "meter"
-              symmetryPlaneAzimuth: !!null
+              symmetryPlaneAzimuth: "Right"
           - 
             SetRoughness: 
               roughness: 

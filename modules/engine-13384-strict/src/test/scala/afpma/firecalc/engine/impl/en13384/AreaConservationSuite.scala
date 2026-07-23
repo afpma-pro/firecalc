@@ -12,11 +12,12 @@ import afpma.firecalc.dto.common.PipeInitialDirection
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.engine.Slot0ContextFixture
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class AreaConservationSuite extends AnyFlatSpec with Matchers:
+class AreaConservationSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture:
 
     private val horizontalDir =
         PipeInitialDirection    (
@@ -48,7 +49,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(10.cm, 10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters )
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
     it should "allow SetNumberOfFlows before SetInnerShape — sets nFlows without pending area check" in {
@@ -65,7 +66,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(20.cm, 10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters)
         )
-        result.toFullDescr().isValid shouldBe true
+        result.toFullDescr.isValid shouldBe true
     }
 
     // @ignore: flow area check deactivated — see FlowAreaConservation
@@ -83,7 +84,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(5.cm, 5.cm)  ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters )
         )
-        val result                                                      = descr.toFullDescr()
+        val result                                                      = descr.toFullDescr
         result.isValid shouldBe false
         val errors                                                      = result.toEither.left.toOption.get
         val err                                                         = errors.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -109,7 +110,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Square(9.cm) ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters )
         )
-        val result                                   = descr.toFullDescr()
+        val result                                   = descr.toFullDescr
         result.isValid shouldBe false
         val errors                                   = result.toEither.left.toOption.get
         val err                                      = errors.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -134,7 +135,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(9.cm) ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters )
         )
-        val result                                       = descr.toFullDescr()
+        val result                                       = descr.toFullDescr
         result.isValid shouldBe false
         val errors                                       = result.toEither.left.toOption.get
         val err                                          = errors.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -159,7 +160,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(20.cm, 10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-merge", 1.meters )
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
     // @ignore: flow area check deactivated — see FlowAreaConservation
@@ -179,7 +180,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(10.cm, 10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-merge", 1.meters )
         )
-        val result                                                      = descr.toFullDescr()
+        val result                                                      = descr.toFullDescr
         result.isValid shouldBe false
         val errors                                                      = result.toEither.left.toOption.get
         val err                                                         = errors.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -206,7 +207,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(10.cm, 10.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters )
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
     it should "allow SetNumberOfFlows on ascending pipe when no split element follows" in {
@@ -222,7 +223,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetRoughness        (1.mm         ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -241,7 +242,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)           )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -259,7 +260,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Circle(20.cm)),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters)
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
     // @ignore: flow area check deactivated — see FlowAreaConservation
@@ -280,7 +281,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetFlowOnlyPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(5.cm, 5.cm)  ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("after-split", 1.meters )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[FlowTransitionChangesTotalCrossSection]
@@ -307,7 +308,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(10.cm, 10.cm)                    ),
             AddThermalPipeElement_13384.AddSectionSlopped("after-split", 1.meters       )
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
     // @ignore: flow area check deactivated — see FlowAreaConservation
@@ -328,7 +329,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetInnerShape         (PipeShape.Rectangle(5.cm, 5.cm)                      ),
             AddThermalPipeElement_13384.AddSectionSlopped("after-split", 1.meters       )
         )
-        val result                                                      = descr.toFullDescr()
+        val result                                                      = descr.toFullDescr
         result.isValid shouldBe false
         val errors                                                      = result.toEither.left.toOption.get
         val err                                                         = errors.head.asInstanceOf[FlowTransitionChangesTotalCrossSection]
@@ -355,7 +356,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                                         )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -377,7 +378,7 @@ class AreaConservationSuite extends AnyFlatSpec with Matchers:
             SetThermalPipeProp_13384.SetLayer            (2.mm, WattsPerMeterKelvin(1.2)),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        descr.toFullDescr().isValid shouldBe true
+        descr.toFullDescr.isValid shouldBe true
     }
 
 end AreaConservationSuite

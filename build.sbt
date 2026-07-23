@@ -33,10 +33,10 @@ ThisBuild / startYear        := Some(2025)
 ThisBuild / licenses         := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version        = "0.3.0-b23"
-lazy val reports_base_version  = "0.9.0-b23"
-lazy val payments_base_version = "0.9.0-b23"
-lazy val ui_base_version       = "0.9.0-b23"
+lazy val engine_version        = "0.3.0-b24-SNAPSHOT"
+lazy val reports_base_version  = "0.9.0-b24-SNAPSHOT"
+lazy val payments_base_version = "0.9.0-b24-SNAPSHOT"
+lazy val ui_base_version       = "0.9.0-b24-SNAPSHOT"
 
 // Repository information (single source of truth)
 lazy val githubOwner = "afpma-pro"
@@ -318,6 +318,11 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsSettings(
+        // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
+        // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
+        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
+    )
     .settings(watchI18nSources("i18n"))
     .dependsOn(utils, i18n, units, domain)
 
@@ -377,7 +382,7 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     .jsSettings(
         // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
         // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
-        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
+        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("i18n"))
@@ -533,8 +538,11 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
         scalacOptions ++= Seq("-Xmax-inlines:32"),
         libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
     )
-    .jvmSettings(
-        libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+    .jvmConfigure(
+        _.settings(
+            Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala",
+            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+        )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("i18n"))
@@ -846,7 +854,7 @@ lazy val laminar_form_derivation = (project in file("modules/laminar-form-deriva
             // magnolia for AutoDerivation[Form]
             "pro.afpma"         %%% "magnolia"        % "1.3.16",
             // java.time for LocalDate
-            "io.github.cquiroz" %%% "scala-java-time" % "2.6.0",
+            "io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
             // testing
             "com.lihaoyi"       %%% "utest"           % "0.8.4" % Test
         ),
@@ -1013,8 +1021,8 @@ lazy val ui = (project in file("modules/ui"))
             "com.lihaoyi" %%% "upickle"   % "4.1.0",
 
             // provides implementation of java.time for scala js
-            "io.github.cquiroz" %%% "scala-java-time"      % "2.6.0",
-            "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.6.0",
+            "io.github.cquiroz" %%% "scala-java-time"      % "2.7.0",
+            "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.7.0",
 
             // automatic data transformations (helps going from 'ui' models to 'engine' models)
             "io.scalaland" %%% "chimney" % "1.8.2",

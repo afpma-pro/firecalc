@@ -13,7 +13,9 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
+import afpma.firecalc.engine.standard.SlotContext
 import afpma.firecalc.engine.typeclasses.PropsStateOps
 
 import cats.syntax.all.*
@@ -21,7 +23,6 @@ import cats.syntax.all.*
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.NbOfFlows
 import afpma.firecalc.domain.PipeShape
-import afpma.firecalc.engine.models.geometry.PipeFrame
 
 /**
  * Shared split/merge handling for EN 13384 incremental builders.
@@ -164,7 +165,7 @@ trait IncrementalBuilderAlg_13384[PS] {
         convStep      : ConversionStep,
         nextElemIdIncr: Int,
         nextElemName  : String
-    ): ValidatedResult[PS] =
+    )(using sc: SlotContext): ValidatedResult[PS] =
         val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
         stateOps
             .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)

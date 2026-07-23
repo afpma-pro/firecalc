@@ -1,4 +1,3 @@
-
 # FireCalc Docker Deployment
 
 This directory contains everything needed to deploy the FireCalc payments backend using Docker.
@@ -21,6 +20,11 @@ cp docker/.env.example docker/.env
 # 3. Edit .env with your values
 nano docker/.env
 # Update UI_DOMAIN, API_DOMAIN, FIRECALC_ENV
+
+# 3b. Choose deployment mode
+make docker-setup-standalone     # Self-contained (nginx handles TLS)
+# OR
+make docker-setup-behind-proxy   # External proxy handles TLS
 
 # 4. Copy configuration templates
 cd docker/configs/staging/payments
@@ -51,14 +55,27 @@ docker compose logs -f
 docker/
 ├── .env.example              # Environment variables template
 ├── .env                      # Your actual environment variables (git-ignored)
-├── docker-compose.yml        # Docker orchestration
+├── docker-compose.yml        # SYMLINK → chosen mode (created by make docker-setup-*)
+├── docker-compose.standalone.yml   # Standalone mode (nginx handles TLS)
+├── docker-compose.behind-proxy.yml # Behind-proxy mode (external proxy handles TLS)
 ├── Dockerfile                # Application container definition
-├── nginx.conf                # Global nginx configuration
-├── nginx-proxy-custom.conf.template  # Domain proxy config (envsubst template)
-├── nginx-ui-server.conf      # UI static file server configuration
-├── init-letsencrypt.sh       # Initial certificate provisioning script
+├── Dockerfile.nginx          # Nginx container (extends nginx:1.27-alpine + curl)
+├── entrypoint.sh             # Entrypoint script (fixes database permissions on startup)
+├── nginx-ui-server.conf      # UI static file server configuration (shared)
+├── init-letsencrypt.sh       # Initial certificate provisioning script (standalone)
 ├── CONFIG_SETUP.md           # Comprehensive setup guide
+├── DUAL-MODE-DEPLOYMENT.md   # Dual-mode architecture spec
 ├── README.md                 # This file
+│
+├── nginx-standalone/         # Nginx config for standalone mode
+│   ├── nginx.conf            # Global nginx configuration (with SSL)
+│   ├── proxy.conf.template   # Domain proxy config (envsubst template)
+│   └── default.conf          # Empty — neutralizes nginx image default server block
+│
+├── nginx-behind-proxy/       # Nginx config for behind-proxy mode
+│   ├── nginx.conf            # Global nginx configuration (HTTP only)
+│   ├── proxy.conf            # Unified server block (UI + API via location matching)
+│   └── default.conf          # Empty — neutralizes nginx image default server block
 │
 ├── configs/                  # Configuration files
 │   └── staging/              # Staging environment configs (git-ignored)
@@ -75,8 +92,9 @@ docker/
 ### Essential Files
 
 - **[`CONFIG_SETUP.md`](./CONFIG_SETUP.md)** - Comprehensive deployment guide (start here!)
+- **[`DUAL-MODE-DEPLOYMENT.md`](./DUAL-MODE-DEPLOYMENT.md)** - Dual-mode deployment architecture
 - **[`.env.example`](./.env.example)** - Template for environment variables
-- **[`docker-compose.yml`](./docker-compose.yml)** - Service orchestration
+- **[`docker-compose.yml`](./docker-compose.yml)** - Service orchestration (symlink)
 - **[`Dockerfile`](./Dockerfile)** - Application container image
 
 ### Configuration Templates
@@ -93,7 +111,8 @@ All templates are in `configs/staging/` with `.example` extension:
 
 ## Documentation
 
-📖 **Read [`CONFIG_SETUP.md`](./CONFIG_SETUP.md) for detailed setup instructions**
+Read [`CONFIG_SETUP.md`](./CONFIG_SETUP.md) for detailed setup instructions.
+Read [`DUAL-MODE-DEPLOYMENT.md`](./DUAL-MODE-DEPLOYMENT.md) for dual-mode deployment architecture.
 
 ## Common Commands
 
@@ -129,22 +148,23 @@ docker compose config
 
 Before deploying:
 
-- [ ] Both UI and API domains DNS configured and propagated
-- [ ] Ports 80 and 443 open in firewall
-- [ ] `.env` file created and configured with both UI_DOMAIN and API_DOMAIN
+- [ ] Deployment mode chosen: `make docker-setup-standalone` or `make docker-setup-behind-proxy`
+- [ ] `.env` file created and configured (UI_DOMAIN/API_DOMAIN for standalone; FIRECALC_ENV for both)
 - [ ] All config files copied from `.example` templates
 - [ ] Company information updated in all configs
 - [ ] GoCardless credentials obtained (sandbox for staging)
 - [ ] SMTP service configured (Mailtrap.io recommended for staging)
 - [ ] UI dependencies installed: `make ui-setup` (first time only)
 - [ ] Landing page dependencies installed: `make landing-setup` (first time only)
-- [ ] Backend JAR built: `make staging-backend-build` (also builds UI + landing)
-- [ ] JAR exists at: `../modules/payments/target/scala-*/firecalc-payments-assembly.jar`
-- [ ] SPA built: `../web/dist-app/app/index.html` exists
-- [ ] Landing page built: `../web/dist-app/fr/index.html` exists
-- [ ] Database directory has proper ownership: `sudo chown -R 999:999 docker/databases && sudo chmod -R 755 docker/databases`
-- [ ] UI dist-app has proper ownership: `sudo chown -R $USER:$USER web/dist-app` (if needed)
+
+**Standalone mode only:**
+- [ ] Both UI and API domains DNS configured and propagated
+- [ ] Ports 80 and 443 open in firewall
 - [ ] Initial certificates provisioned: `./init-letsencrypt.sh`
+
+**Behind-proxy mode only:**
+- [ ] Outer proxy (e.g., NPM) configured with proxy hosts pointing to inner nginx
+- [ ] Outer proxy handles TLS termination
 
 ## Deployment Environments
 
@@ -166,3 +186,19 @@ For production deployment:
 4. Use GoCardless **LIVE** credentials
 5. Use production SMTP service
 6. Update domain to production URL
+
+## Multi-Environment Deployment
+
+You can run staging and production on the same host by keeping each environment
+in a separate project directory (e.g., `firecalc-staging/` and `firecalc-prod/`).
+
+Container names and image tags are prefixed with `firecalc-${FIRECALC_ENV}-payments` to
+prevent collisions:
+
+| Environment | Container Example | Image Tag |
+|-------------|-------------------|-----------|
+| staging     | `firecalc-staging-nginx` | `firecalc-staging-payments:latest` |
+| production  | `firecalc-production-nginx` | `firecalc-production-payments:latest` |
+
+**Standalone mode:** Set different `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` in each
+`.env` file to avoid host port conflicts (defaults are 80/443).

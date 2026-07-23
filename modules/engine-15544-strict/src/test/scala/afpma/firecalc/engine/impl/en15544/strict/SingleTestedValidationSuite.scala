@@ -206,4 +206,54 @@ class SingleTestedValidationSuite extends AnyFreeSpec with Matchers:
                 case Validated.Valid(_)     =>
                     fail("Expected validation to fail with TBurnoutNotSet")
         }
+
+        // ── Multi-slot edge case: downstream FlueSlot blocked by upstream t_burnout ──
+
+        "multi-slot chain: FlueSlot_2 blocked when t_burnout is None even though it has valid upstream" in {
+            // Topology: FlueSlot_0 → ConnectorSlot_1 → FlueSlot_2 → ChimneySlot
+            // FlueSlot_0 needs t_burnout (firebox outlet temp) — should fail with TBurnoutNotSet.
+            // FlueSlot_2 has valid upstream temp from ConnectorSlot_1 — should theoretically
+            // be computable, but the t_burnout.andThen gate in flueRegionPipeResults
+            // short-circuits the entire fold before FlueSlot_2 gets a chance.
+            val yaml   =
+                FireCalcYAML_V7                        (
+                    locale                         = Locale(Languages.Fr),
+                    display_units                  = DisplayUnits.SI,
+                    standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
+                    project_description            = ProjectDescr(
+                        reference = "Multi-slot t_burnout edge case",
+                        date      = "2026-07-20",
+                        country   = Country.France
+                    ),
+                    local_conditions               = ExampleProject_15544.localConditions,
+                    stove_params                   = stubStoveParams(18.5),
+                    air_intake_pipes               = FramedAirIntakePipes.fromLegacy(ExampleProject_15544.conduit_air_descr),
+                    firebox                        = stubSingleTestedDTO(maxFuelMass = 18.5, tBurnout = None),
+                    post_firebox_pipes             = FramedPostFireboxPipes(
+                        PipeInitialDirection    (
+                            azimuth     = AzimuthDirection.Left,
+                            inclination = InclinationDirection.Horizontal
+                        ),
+                        PostFireboxStartPosition.Auto,
+                        slots = Seq(
+                            // Slot 0 — FlueSlot: needs t_burnout
+                            PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                            // Slot 1 — ConnectorSlot: thermal, produces upstream temp for Slot 2
+                            PostFireboxPipeDescrSlot.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
+                            // Slot 2 — FlueSlot: has valid upstream from Connector, should be computable
+                            PostFireboxPipeDescrSlot.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
+                            // Slot 3 — ChimneySlot
+                            PostFireboxPipeDescrSlot.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
+                        )
+                    )
+                )
+            val app    = loadApp(yaml)
+            val result = app.validateResultsExceptEmissionsValues(Country.France)
+            result.isValid shouldBe false
+            result match
+                case Validated.Invalid(nel) =>
+                    nel.toList should contain(TBurnoutNotSet)
+                case Validated.Valid(_)     =>
+                    fail("Expected validation to fail with TBurnoutNotSet")
+        }
     }

@@ -8,9 +8,6 @@ package afpma.firecalc.engine.cas_types.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
@@ -18,7 +15,11 @@ import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
+import afpma.firecalc.engine.standard.SlotContext
 
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import io.taig.babel.Languages
 
 object CasType_15544_C3
@@ -86,7 +87,7 @@ object CasType_15544_C3
                 )
             )
             .define(conduit_air_descr*)
-            .toFullDescr()
+            .toFullDescr(using SlotContext.unslotted)
             .extractPipe
 
     val foyer_descr = Ecolabeled_V1(

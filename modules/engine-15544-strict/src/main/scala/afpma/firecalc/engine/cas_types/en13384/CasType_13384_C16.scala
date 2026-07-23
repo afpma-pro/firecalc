@@ -10,9 +10,6 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.i18n.LocalizedString
 
@@ -22,12 +19,16 @@ import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.*
 import afpma.firecalc.engine.models.en13384.typedefs.*
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.syntax.all.*
 
 import coulomb.*
 import coulomb.policy.standard.given
 
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import io.taig.babel.Languages
 
 object CasType_13384_C16
@@ -179,7 +180,7 @@ object CasType_13384_C16
                 addSectionHorizontal           ("hz", 50.cm                    ),
                 addSectionHorizontal           ("hz", 25.cm                    )
             )
-            .toFullDescr()
+            .toFullDescr(using SlotContext.unslotted)
             .extractPipe
 
     val connectorPipeDescr =

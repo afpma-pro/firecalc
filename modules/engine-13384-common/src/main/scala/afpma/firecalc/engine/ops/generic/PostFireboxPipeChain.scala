@@ -37,9 +37,10 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     // ── region accessors ────────────────────────────────────────────────
 
-    /** Index of the last FluePipeT slot, or -1 if none. */
-    private val lastFluePipeIdx: Int =
-        slots.lastIndexWhere(_.pipeType == FluePipeT)
+    /** Index of the last FluePipeT slot, or None if the chain has no flue pipe. */
+    private val lastFluePipeIdx: Option[Int] =
+        val i = slots.lastIndexWhere(_.pipeType == FluePipeT)
+        if i >= 0 then Some(i) else None
 
     /**
      * All slots that belong to the HEAD_REGION — i.e. everything up to and
@@ -52,8 +53,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
      * flight.
      */
     def headRegion: Vector[PipeSlot] =
-        if lastFluePipeIdx < 0 then Vector.empty
-        else slots.take(lastFluePipeIdx + 1)
+        lastFluePipeIdx.fold(Vector.empty[PipeSlot])(i => slots.take(i + 1))
 
     /** Alias — see [[headRegion]]. */
     def fluePipeRegion: Vector[PipeSlot] = headRegion
@@ -86,12 +86,12 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
         initialUpstream: UpstreamState,
         computeAt      : ComputeAt
     ): Either[MecaFlu_Error, Vector[PipeResult]] =
-        slots
+        slots.zipWithIndex
             .foldLeft[Either[MecaFlu_Error, (UpstreamState, Vector[PipeResult])]](
                 Right((initialUpstream, Vector.empty))
-            ) { case (acc, slot) =>
+            ) { case (acc, (slot, idx)) =>
                 acc.flatMap { case (upstream, results) =>
-                    slot.compute(upstream, params).map { pr =>
+                    slot.compute(upstream, params, SlotIndexProvider.prefix(idx)).map { pr =>
                         val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
                         (nextUpstream, results :+ pr)
                     }
@@ -103,8 +103,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     /** Head-region results — same indexing as [[headRegion]]. */
     def headRegionResults(results: Vector[PipeResult]): Vector[PipeResult] =
-        if lastFluePipeIdx < 0 then Vector.empty
-        else results.take(lastFluePipeIdx + 1)
+        lastFluePipeIdx.fold(Vector.empty[PipeResult])(i => results.take(i + 1))
 
     /** Alias — see [[headRegionResults]]. */
     def fluePipeResults(results: Vector[PipeResult]): Vector[PipeResult] = headRegionResults(results)
@@ -122,8 +121,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     /** The result of the last FluePipeT slot, if any. */
     def lastFluePipeResult(results: Vector[PipeResult]): Option[PipeResult] =
-        if lastFluePipeIdx < 0 then None
-        else Some(results(lastFluePipeIdx))
+        lastFluePipeIdx.map(results(_))
 
 object PostFireboxPipeChain:
 

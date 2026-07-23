@@ -19,6 +19,7 @@ import afpma.firecalc.engine.ops.generic.CanComputePipeResult
 import afpma.firecalc.engine.ops.generic.UpstreamState
 import afpma.firecalc.engine.standard.EN13384_FormulaError
 import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 
 /**
  * EN 13384 factory extension methods for core ops companion objects.
@@ -63,10 +64,11 @@ extension (obj: CanComputePipeResult.type)
             val descrAlg: ThermalPipeDescr_13384.type = ThermalPipeDescr_13384
 
             def computePipeResult(
-                fd      : PipeFullDescrG[descrAlg.PipeElDescr],
-                gas     : Gas,
-                upstream: UpstreamState,
-                params  : Params_13384
+                fd       : PipeFullDescrG[descrAlg.PipeElDescr],
+                gas      : Gas,
+                upstream : UpstreamState,
+                params   : Params_13384,
+                slotIndex: SlotIndex
             ): Either[MecaFlu_Error, PipeResult] =
                 ThermalMecaFlu_13384.makePipeResult(
                     fd,
@@ -75,7 +77,8 @@ extension (obj: CanComputePipeResult.type)
                     upstream.temp_start,
                     upstream.last_pipe_density,
                     upstream.last_pipe_velocity,
-                    gas
+                    gas,
+                    SlotContext.forSlot(slotIndex)
                 )(using params, en13384App)
 
     /** EN 13384 flow-only (simplified air-intake) pipe result. */
@@ -88,10 +91,11 @@ extension (obj: CanComputePipeResult.type)
             val descrAlg: FlowOnlyPipeDescr_13384.type = FlowOnlyPipeDescr_13384
 
             def computePipeResult(
-                fd      : PipeFullDescrG[descrAlg.PipeElDescr],
-                gas     : Gas,
-                upstream: UpstreamState,
-                params  : Params_13384
+                fd       : PipeFullDescrG[descrAlg.PipeElDescr],
+                gas      : Gas,
+                upstream : UpstreamState,
+                params   : Params_13384,
+                slotIndex: SlotIndex
             ): Either[MecaFlu_Error, PipeResult] =
                 FlowOnlyMecaFlu_13384.makePipeResult(
                     fd,
@@ -99,5 +103,6 @@ extension (obj: CanComputePipeResult.type)
                     hamf,
                     upstream.temp_start,
                     upstream.last_pipe_velocity,
-                    gas
+                    gas,
+                    SlotContext.forSlot(slotIndex)
                 )(using params, en13384App)

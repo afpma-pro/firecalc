@@ -15,6 +15,7 @@ import afpma.firecalc.dto.common.PipeInitialDirection
 
 import afpma.firecalc.engine.models.FluePipe_Module_15544
 import FluePipe_Module_15544.*
+import afpma.firecalc.engine.Slot0ContextFixture
 import FluePipe_Module_15544.FullDescrResult.given
 import FluePipe_Module_15544.toFullDescr
 
@@ -26,7 +27,7 @@ import org.scalatest.matchers.should.Matchers
  * PipeIdx (sequential "add" counter) back to descriptor index
  * (position in the full incremental descriptor, including property setters).
  */
-class IdsMappingSuite extends AnyFlatSpec with Matchers:
+class IdsMappingSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture:
 
     // ============================================================================
     // Case 1: Simple descriptor — no auto-inserted elements
@@ -51,10 +52,12 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
     )
 
     private lazy val simpleResult: FluePipe_Module_15544.FullDescrResult = {
-        FluePipe_Module_15544.incremental.withInitialDirection            (
+        FluePipe_Module_15544.incremental.withInitialDirection(
             PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         )
-        FluePipe_Module_15544.incremental.define(simpleDescr*).toFullDescr()
+        FluePipe_Module_15544.incremental
+            .define(simpleDescr*)
+            .toFullDescr
     }
 
     "simple descriptor reverseToIntMap" should "map PipeIdx back to descriptor index" in {
@@ -105,10 +108,12 @@ class IdsMappingSuite extends AnyFlatSpec with Matchers:
     )
 
     private lazy val geomChangeResult: FluePipe_Module_15544.FullDescrResult = {
-        FluePipe_Module_15544.incremental.withInitialDirection                (
+        FluePipe_Module_15544.incremental.withInitialDirection(
             PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)
         )
-        FluePipe_Module_15544.incremental.define(geomChangeDescr*).toFullDescr()
+        FluePipe_Module_15544.incremental
+            .define(geomChangeDescr*)
+            .toFullDescr
     }
 
     "geom-change descriptor" should "produce 4 full elements (3 user + 1 auto-inserted)" in {

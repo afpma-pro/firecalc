@@ -20,7 +20,7 @@ object LogSanitizerTest extends TestSuite:
         }
 
         test("maskEmail - long local part") {
-            assert(LogSanitizer.maskEmail("guillaume.augais@afpma.org") == "g***@afpma.org")
+            assert(LogSanitizer.maskEmail("ghi.abc@afpma.org") == "g***@afpma.org")
         }
 
         test("maskEmail - malformed email") {

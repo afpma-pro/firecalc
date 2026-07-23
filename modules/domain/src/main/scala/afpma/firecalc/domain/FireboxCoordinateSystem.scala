@@ -5,6 +5,8 @@
 
 package afpma.firecalc.domain
 
+import afpma.firecalc.units.Vec3
+
 /**
  * Convention-based coordinate system constants for the firebox.
  *
@@ -16,6 +18,9 @@ object FireboxCoordinateSystem:
     val FireboxBaseCenterX: Double = 0.0
     val FireboxBaseCenterY: Double = 0.0
     val FireboxBaseCenterZ: Double = 0.0
+
+    /** Firebox origin point. Default starting position for pipe position tracking. */
+    val FireboxOrigin: Vec3 = Vec3(FireboxBaseCenterX, FireboxBaseCenterY, FireboxBaseCenterZ)
 
     /**
      * Threshold for verticality check: sin(elevation) > 0.99 ⟺ within ~8° of vertical.

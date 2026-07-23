@@ -77,11 +77,11 @@ object ShortSection:
             o_dc12     : Option[DirectionChange],
             o_dc12_name: Option[String],
             sectionTyp : PipeType
-        ): ValidatedNel[SingularFlowResistanceCoeffError, PipeDescrWindow] =
+        )(using sc: SlotContext): ValidatedNel[SingularFlowResistanceCoeffError, PipeDescrWindow] =
             if (o_dc12.isDefined && o_dc12.get.angleN2.isEmpty)
                 new MissingAlpha3AngleForShortFluePipeSection(
                     s"angleN2 should be defined for '${o_dc12_name.get}'"
-                ).invalidNel
+                )                                            (using sc).invalidNel
             else PipeDescrWindow(ζα1_prev, ζα2_prev, dc01, s1, o_dc12).validNel
 
     end PipeDescrWindow

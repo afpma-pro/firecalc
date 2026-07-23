@@ -5,6 +5,9 @@
 
 package afpma.firecalc.reports.typst
 
+import java.time.LocalDateTime
+import java.time.ZoneId
+
 import afpma.firecalc.utils.BuildInfo
 
 import afpma.firecalc.i18n.implicits.I18N
@@ -16,18 +19,17 @@ import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
 import afpma.firecalc.engine.models.LocalRegulations
 import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
+import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
+import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
+import afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
+import afpma.firecalc.engine.utils.ShowAsTable
 import afpma.firecalc.engine.utils.getOrThrow
 
 import afpma.firecalc.reports.typst.TypShow.sanitized
 
 import io.taig.babel.Locale
-import afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384
-import afpma.firecalc.engine.utils.ShowAsTable
-import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
-import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 abstract class TypstReportFactory_15544(
     val isDraft                 : Boolean,

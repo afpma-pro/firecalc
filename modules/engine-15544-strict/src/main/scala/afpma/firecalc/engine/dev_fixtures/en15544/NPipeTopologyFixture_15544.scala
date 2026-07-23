@@ -8,22 +8,23 @@ package afpma.firecalc.engine.dev_fixtures.en15544.v20241001
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
-import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4 as FP4
 import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4 as EP4
-import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
 import afpma.firecalc.dto.v7.AddThermalPipeElement_13384_V4 as TP4
+import afpma.firecalc.dto.v7.SetFlowOnlyPipeProp_15544_V4 as FP4
+import afpma.firecalc.dto.v7.SetThermalPipeProp_13384_V4 as SP4
 
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
 import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+import afpma.firecalc.engine.standard.SlotContext
 
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 import io.taig.babel.Languages
 
 /**
@@ -115,7 +116,7 @@ object NPipeTopologyFixture_15544
 
     val airIntakePipe =
         import AirIntakePipe_Module.*
-        define(conduit_air_descr*).toFullDescr().extractPipe
+        define(conduit_air_descr*).toFullDescr(using SlotContext.unslotted).extractPipe
 
     val foyer_descr = Ecolabeled_V1(
         pn_reduced                                      = HeatOutputReduced.HalfOfNominal.makeWithoutValue,

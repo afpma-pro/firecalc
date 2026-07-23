@@ -16,6 +16,7 @@ import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import coulomb.*
 import coulomb.policy.standard.given
+import afpma.firecalc.engine.standard.SlotContext
 
 given FireboxToCombustionAirPipe_15544_MCE[TraditionalFirebox] = TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
 given FireboxToFireboxPipe_15544_MCE[TraditionalFirebox]       = TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
@@ -41,5 +42,5 @@ object TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
                         h67_sectionCumuleeEntreeAirPorte
                     )
                 )
-                .toFullDescr()
+                .toFullDescr(using SlotContext.unslotted)
                 .extractPipe

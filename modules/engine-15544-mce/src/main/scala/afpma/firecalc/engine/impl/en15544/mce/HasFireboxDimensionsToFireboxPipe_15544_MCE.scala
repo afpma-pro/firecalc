@@ -8,12 +8,14 @@ package afpma.firecalc.engine.impl.en15544.mce
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToFireboxPipe_15544_MCE
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
+import afpma.firecalc.engine.standard.SlotContext
+
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544] extends FireboxToFireboxPipe_15544_MCE[FB]:
 
@@ -41,7 +43,7 @@ trait HasFireboxDimensionsToFireboxPipe_15544_MCE[FB <: Firebox_15544] extends F
                         firebox.dimensions.height
                     )
                 )
-                .toFullDescr()
+                .toFullDescr(using SlotContext.unslotted)
                 .extractPipe
 
 given FireboxToFireboxPipe_15544_MCE[Firebox_15544] = HasFireboxDimensionsToFireboxPipe_15544_MCE

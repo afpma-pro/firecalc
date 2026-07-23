@@ -10,10 +10,9 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
-import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
+import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.typeclasses.PropsStateOps
 
 import cats.syntax.all.*
@@ -21,7 +20,6 @@ import cats.syntax.all.*
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.NbOfFlows
 import afpma.firecalc.domain.PipeShape
-import afpma.firecalc.engine.models.geometry.PipeFrame
 
 /**
  * Shared split/merge handling for EN 15544 incremental builders.
@@ -177,25 +175,5 @@ trait IncrementalBuilderAlg_15544[PS] {
             90.0
         )
         mkSplitMerge90Descr(nFlows, angleN2, newShape).validNel
-
-    // -----------------------------------------------------------------------
-    // Site 3: SetNumberOfFlows body
-    // -----------------------------------------------------------------------
-
-    /**
-     * Handles SetNumberOfFlows pre-element operation. Computes the updated
-     * state via flow area conservation and validates materialization.
-     */
-    protected def handleSetNumberOfFlows(
-        st            : PS,
-        nf            : NbOfFlows,
-        convStep      : ConversionStep,
-        nextElemIdIncr: Int,
-        nextElemName  : String
-    ): ValidatedResult[PS] =
-        val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
-        stateOps
-            .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
-            .map(_ => updatedSt)
 
 }

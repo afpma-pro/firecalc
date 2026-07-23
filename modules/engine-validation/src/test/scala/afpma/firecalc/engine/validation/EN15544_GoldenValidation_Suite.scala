@@ -12,6 +12,7 @@ import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C1
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C2
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 import cats.syntax.all.*
 
 class EN15544_GoldenValidation_Suite extends CasTypesRunner_15544_Strict with GoldenFileSupport:

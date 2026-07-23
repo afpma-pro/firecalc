@@ -10,11 +10,12 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.domain.SetsInnerShape
+import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxOrigin
 import afpma.firecalc.domain.AbsoluteDirection
 import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
-import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
+import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.alg.en15544.IncrementalBuilderAlg_15544
 import afpma.firecalc.engine.FlowAreaConservation
 import afpma.firecalc.engine.impl.common.FramedBuilderSupport
@@ -35,7 +36,9 @@ import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.validation.AirIntakeValidation
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
+import afpma.firecalc.engine.alg.{SplitMerge90Validator, SplitGeometryValidator}
 import afpma.firecalc.engine.typeclasses.*
 
 import cats.Show
@@ -95,7 +98,7 @@ trait FlowOnlyIncrementalBuilder_15544
      * @param dir the initial direction
      * @return this builder (for chaining)
      */
-    def withInitialDirection(dir: PipeInitialDirection): this.type =
+    override def withInitialDirection(dir: PipeInitialDirection): this.type =
         wrapperInitialDirection = Some(dir)
         this
 
@@ -144,12 +147,12 @@ trait FlowOnlyIncrementalBuilder_15544
 
         /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */
         def innerShapeAtPrefix(n: Int): Option[PipeShape] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.flatMap(stateOps.getInnerShape)
 
         /** Number of flows in effect after folding the first n descriptors. */
         def nFlowsAtPrefix(n: Int): Option[NbOfFlows] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.map(stateOps.getNFlows)
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
@@ -189,35 +192,47 @@ trait FlowOnlyIncrementalBuilder_15544
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState,
         seed      : PipeBuildSeed
-    ): ValidatedResult[Unit] =
-        val hasGeometry = incrDescrs.exists:
+    )(using sc: SlotContext): ValidatedResult[Unit] =
+        val airIntakeValidation = AirIntakeValidation.validateAirIntakeConstraints(pt, incrDescrs)
+
+        val hasGeometry        = incrDescrs.exists:
             case (_, _: AddElement) => true
             case _ => false
-        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
-        else
-            val hasFinalDir = incrDescrs.exists:
-                case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
-                case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
-                case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
-                case _ => false
+        val geometryValidation =
+            if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
+            else ().validNel
+
+        val hasFinalDir        = incrDescrs.exists:
+            case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
+            case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
+            case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
+            case _ => false
+        val finalDirValidation =
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
-            else
-                val posResult       = PositionTracker.computeFlowOnly15544(
-                    incrDescrs.map(_._2).toSeq,
-                    PipeInitialDirection.default,
-                    finalState.initialFrame,
-                    seed.positionContext.flatMap(_.startPoint).getOrElse(Vec3(0, 0, 0)),
-                    splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
-                )
-                val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
-                val splits          = posResult.splitMergePositions.filter(_.isSplit)
-                val splitValidation = NonEmptyList.fromList(splits.toList) match
-                    case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
-                    case None     => ().validNel
-                val positionErrors: ValidatedResult[Unit] =
-                    if posResult.errors.isEmpty then ().validNel
-                    else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
-                (splitValidation |+| mergeValidation |+| positionErrors).as(())
+            else ().validNel
+
+        // If geometry validation fails, skip position-dependent validations
+        if geometryValidation.isEmpty then (airIntakeValidation |+| geometryValidation |+| finalDirValidation).as(())
+        else
+            val posResult       = PositionTracker.computeFlowOnly15544(
+                incrDescrs.map(_._2).toSeq,
+                PipeInitialDirection.default,
+                finalState.initialFrame,
+                seed.positionContext
+                    .flatMap(_.startPoint)
+                    .getOrElse(FireboxOrigin),
+                splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
+            )
+            val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+            val splits          = posResult.splitMergePositions.filter(_.isSplit)
+            val splitValidation = NonEmptyList.fromList(splits.toList) match
+                case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
+                case None     => ().validNel
+            val positionErrors  =
+                if posResult.errors.isEmpty then ().validNel
+                else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
+            (airIntakeValidation |+| geometryValidation |+| finalDirValidation |+| splitValidation |+| mergeValidation |+| positionErrors)
+                .as(())
 
     extension (convStep: ConversionStep)
         def nextSectionLengthOpt: Option[Length] =
@@ -237,6 +252,8 @@ trait FlowOnlyIncrementalBuilder_15544
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
+    )(using
+        sc: SlotContext
     )(
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
@@ -322,7 +339,13 @@ trait FlowOnlyIncrementalBuilder_15544
 
                 case op: AddDirectionChange =>
                     stateOps
-                        .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
+                        .validateMaterialized(
+                            st,
+                            Operation.AddDirectionChange,
+                            pt,
+                            idIncr.unwrap,
+                            addElementOp.name
+                        )
                         .andThen { _ =>
                             given DirectionChangeCtx_15544 =
                                 DirectionChangeCtx_15544(
@@ -336,7 +359,13 @@ trait FlowOnlyIncrementalBuilder_15544
 
                 case op: AddSectionShapeChange =>
                     stateOps
-                        .validateMaterialized(st, Operation.AddSectionShapeChange, pt, idIncr.unwrap, addElementOp.name)
+                        .validateMaterialized(
+                            st,
+                            Operation.AddSectionShapeChange,
+                            pt,
+                            idIncr.unwrap,
+                            addElementOp.name
+                        )
                         .andThen { _ =>
                             given SectionGeometryChangeCtx_15544 =
                                 SectionGeometryChangeCtx_15544(
@@ -403,7 +432,7 @@ trait FlowOnlyIncrementalBuilder_15544
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
-    ): ValidatedResult[PropsState] =
+    )(using sc: SlotContext): ValidatedResult[PropsState] =
         // Use the AddElement's idIncr for elementIndex in errors — it is the physical
         // element that the pre-element ops target, so the error points to the element
         // the user sees (and can fix) rather than the preceding SetInnerShape row.
@@ -417,7 +446,13 @@ trait FlowOnlyIncrementalBuilder_15544
                 ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                     vState.andThen { st =>
                         stateOps
-                            .validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, nextElemName)
+                            .validateMaterialized(
+                                st,
+                                Operation.SetInnerShape,
+                                pt,
+                                nextElemIdIncr,
+                                nextElemName
+                            )
                             .andThen { _ =>
                                 FlowAreaConservation
                                     .validateSetInnerShape(st, g, pt, nextElemIdIncr, nextElemName)(using stateOps)
@@ -441,7 +476,13 @@ trait FlowOnlyIncrementalBuilder_15544
                         vState.andThen { st =>
                             val updatedSt = FlowAreaConservation.computeSetNFlows(st, nf, pt)(using stateOps)
                             stateOps
-                                .validateMaterialized(st, Operation.SetNumberOfFlows, pt, nextElemIdIncr, nextElemName)
+                                .validateMaterialized(
+                                    st,
+                                    Operation.SetNumberOfFlows,
+                                    pt,
+                                    nextElemIdIncr,
+                                    nextElemName
+                                )
                                 .map(_ => updatedSt)
                         }
             }
@@ -511,11 +552,25 @@ trait FlowOnlyIncrementalBuilder_15544
         newInnerShape: PipeShape
     ) = SplitSingleFlowIntoTwoFlowsWith90DegTurn(name, Some(absDir), newInnerShape)
 
+    def addSplitSingleFlowIntoTwoFlowsWith90DegTurn(
+        name                : String,
+        absDir              : AbsoluteDirection,
+        newInnerShape       : PipeShape,
+        symmetryPlaneAzimuth: AzimuthDirection
+    ) = SplitSingleFlowIntoTwoFlowsWith90DegTurn(name, Some(absDir), newInnerShape, Some(symmetryPlaneAzimuth))
+
     def addMergeTwoFlowsIntoSingleWith90DegTurn(
         name         : String,
         absDir       : AbsoluteDirection,
         newInnerShape: PipeShape
     ) = MergeTwoFlowsIntoSingleWith90DegTurn(name, Some(absDir), newInnerShape)
+
+    def addMergeTwoFlowsIntoSingleWith90DegTurn(
+        name                : String,
+        absDir              : AbsoluteDirection,
+        newInnerShape       : PipeShape,
+        symmetryPlaneAzimuth: AzimuthDirection
+    ) = MergeTwoFlowsIntoSingleWith90DegTurn(name, Some(absDir), newInnerShape, Some(symmetryPlaneAzimuth))
 
     def addSectionShapeChange(
         name    : String,

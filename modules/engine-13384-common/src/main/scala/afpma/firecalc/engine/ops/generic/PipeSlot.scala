@@ -8,6 +8,7 @@ package afpma.firecalc.engine.ops.generic
 import afpma.firecalc.engine.alg.en13384.Params_13384
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.standard.SlotIndex
 
 /**
  * A single slot in the post-firebox pipe chain.
@@ -24,7 +25,7 @@ trait PipeSlot:
     val gas     : Gas
 
     /** Compute this pipe's result given upstream state and EN 13384 params. */
-    def compute(upstream: UpstreamState, params: Params_13384): Either[MecaFlu_Error, PipeResult]
+    def compute(upstream: UpstreamState, params: Params_13384, slotIndex: SlotIndex): Either[MecaFlu_Error, PipeResult]
 
     /** The pipe's element descriptors (type-erased). Used for validation access (e.g. inner shapes). */
     def elements: Vector[NamedPipeElDescrG[?]]
@@ -37,11 +38,11 @@ object PipeSlot:
      * so the next slot in the chain receives valid propagation values.
      */
     def noop(_pipeType: PipeType, _label: String): PipeSlot = new PipeSlot:
-        val pipeType                                                = _pipeType
-        val label                                                   = _label
-        val gas                                                     = FlueGas
-        def elements                                                = Vector.empty
-        def compute(upstream: UpstreamState, _params: Params_13384) =
+        val pipeType                                                                       = _pipeType
+        val label                                                                          = _label
+        val gas                                                                            = FlueGas
+        def elements                                                                       = Vector.empty
+        def compute(upstream: UpstreamState, _params: Params_13384, _slotIndex: SlotIndex) =
             Right(
                 PipeResult.useless (
                     pipeType,

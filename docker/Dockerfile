@@ -54,8 +54,8 @@ RUN apt-get update && \
 
 # Create a non-root user for running the application
 # Running as non-root improves security by limiting potential damage from vulnerabilities
-RUN groupadd -r appuser && \
-    useradd -r -g appuser -d /app -s /sbin/nologin -c "Application user" appuser
+RUN groupadd -r -g 999 appuser && \
+    useradd -r -u 999 -g appuser -d /app -s /sbin/nologin -c "Application user" appuser
 
 # Set working directory
 WORKDIR /app
@@ -83,10 +83,15 @@ COPY modules/reports/src/main/resources/logo.jpg /app/modules/reports/src/main/r
 # to protect PII and payment data at the filesystem level.
 RUN mkdir -p /app/configs /app/databases && \
     chown -R appuser:appuser /app && \
-    chmod 700 /app/databases
+    find /app/databases -type d -exec chmod 700 {} \; && \
+    find /app/databases -type f -exec chmod 600 {} \;
 
-# Switch to non-root user
-USER appuser
+# Install entrypoint script (fixes database permissions on startup)
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Note: No USER directive — entrypoint.sh runs as root to fix permissions,
+# then drops to appuser via setpriv before exec'ing into Java.
 
 # Expose application port
 # The payments backend service listens on port 8181
@@ -101,6 +106,8 @@ EXPOSE 8181
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8181/v1/healthcheck || exit 1
 
-# Application entry point
-# Runs the assembled JAR file with the JVM
-ENTRYPOINT ["java", "-jar", "/app/firecalc-payments-assembly.jar"]
+# Entrypoint fixes database permissions, then drops to appuser
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Application command (overridable via docker-compose command:)
+CMD ["java", "-jar", "/app/firecalc-payments-assembly.jar"]

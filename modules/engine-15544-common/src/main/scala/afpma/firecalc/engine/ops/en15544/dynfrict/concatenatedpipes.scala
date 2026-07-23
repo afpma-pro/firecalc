@@ -20,6 +20,7 @@ import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.MissingSectionGeometryChange
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.TwoSuccessDirectionChangeNotAllowed
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.DevError
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.*
 import cats.data.Validated.Invalid
@@ -29,13 +30,14 @@ import cats.syntax.all.*
 import coulomb.ops.standard.all.given
 
 case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
-    pipesConcat: Vector[NamedPipeElDescrG[PipeElDescr]]
-)                                                         (using SSAlg: ShortSectionAlg, dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory)
-    extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
+    pipesConcat    : Vector[NamedPipeElDescrG[PipeElDescr]]
+)                                                         (using
+    sc             : SlotContext,
+    SSAlg          : ShortSectionAlg,
+    dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+) extends DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] {
+
     // merge successive straight sections into a single one
-    // and keep only direction change + straight section elements
-    // also keeps original source index so that the computed coefficient for an element in src
-    // can be easily computed using this struct
     private val vcompressed: ValidatedNel[FluePipeShapeSequenceError, Vector[(CmprssdIdx, R)]] = {
         val filtered =
             pipesConcat
@@ -236,7 +238,7 @@ case class DynamicFrictionCoeffOpForConcatenatedPipeVector(
                                     compressed.get(cidx + 1).map(_._2).map(extractNeeded),
                                     compressed.get(cidx + 2).map(_._2).map(extractNeeded),
                                     compressed.get(cidx + 3).map(_._2).map(extractNeeded)
-                                )(sectionTyp)
+                                )(using sectionTyp, sc, dynFrictFactory)
                                 .fold(
                                     _.invalidNel,
                                     _.validNel

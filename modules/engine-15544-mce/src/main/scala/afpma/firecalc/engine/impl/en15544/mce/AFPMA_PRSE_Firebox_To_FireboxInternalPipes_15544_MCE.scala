@@ -10,9 +10,6 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.*
-import afpma.firecalc.domain.AbsoluteDirection
-import afpma.firecalc.domain.AzimuthDirection
-import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.impl.en15544.mce.FireboxToInternalPipes_15544_MCE
 import afpma.firecalc.engine.impl.en15544.mce.HasFireboxDimensionsToFireboxPipe_15544_MCE
@@ -22,6 +19,11 @@ import afpma.firecalc.engine.models.en15544.firebox.AFPMA_PRSE
 import coulomb.*
 import coulomb.ops.algebra.all.*
 import coulomb.policy.standard.given
+
+import afpma.firecalc.engine.standard.SlotContext
+import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.domain.AzimuthDirection
+import afpma.firecalc.domain.InclinationDirection
 
 given FireboxToCombustionAirPipe_15544_MCE[AFPMA_PRSE] = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
 given FireboxToFireboxPipe_15544_MCE[AFPMA_PRSE]       = AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
@@ -131,5 +133,5 @@ object AFPMA_PRSE_Firebox_To_FireboxInternalPipes_15544_MCE
                             ),
                             addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm)
                         )
-                        .toFullDescr()
+                        .toFullDescr(using SlotContext.unslotted)
                         .extractPipe

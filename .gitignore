@@ -53,6 +53,8 @@ docker/configs/*/invoices/*.yaml
 
 # Docker databases (contain transactional data, never commit)
 docker/databases/
+# Docker compose symlink (created by make docker-setup-*)
+docker/docker-compose.yml
 
 
 # Company-specific overrides for i18n

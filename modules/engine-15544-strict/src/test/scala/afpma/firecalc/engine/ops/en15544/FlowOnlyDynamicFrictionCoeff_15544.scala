@@ -15,29 +15,34 @@ import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
 import afpma.firecalc.engine.matchers.CustomCatsMatchers.*
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.DirectionChange
+import afpma.firecalc.engine.Slot0ContextFixture
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544.{DirectionChange, SectionGeometryChange}
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
-import afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory
+import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp
+import afpma.firecalc.engine.models.gtypedefs.ζ
+import cats.syntax.all.*
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
-class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
+class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers with Slot0ContextFixture {
 
     // import pipedescr.*
 
     given en15544Impl: EN15544_V_2023_Formulas_Alg = EN15544_Strict_Formulas.make
     given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
         new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
-            def make(pt: PipeType): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
-                val delegate = DynamicFrictionCoeff_13384()(using pt)
+            def make(pt: PipeType)(using sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                val delegate = DynamicFrictionCoeff_13384()(using pt, sc)
                 new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
-    given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make
+    given ssalg: ShortSectionAlg = ShortSectionAlgFactory.make(summon[SlotContext])
 
-    private val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
+    private val flowOnlyDFC =
+        FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT)
 
     "tronçon court selon cas type 15544 C2 => 2 angles alternés à 90°" - {
         "zeta = (0.44, 0.44) ???" in {
@@ -80,7 +85,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         innerShape(rectangle(24.cm, 19.cm)),
                         addSectionHorizontal("Car. 7", 190.cm  )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -131,7 +136,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Rear
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -182,7 +187,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Rear
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -233,7 +238,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Right
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -280,7 +285,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addSectionHorizontal                       ("branche 1", 1.meters),
                         addSectionHorizontal                       ("branche 2", 1.meters)
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -314,7 +319,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addSectionHorizontal                       ("branche 1", 1.meters    ),
                         addSectionHorizontal                       ("branche 2", 1.meters    )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -344,11 +349,12 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("branche aval", 1.meters)
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -377,7 +383,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("aval court", 10.cm  ),
                         addSharpAngle_90deg                    (
@@ -386,7 +393,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche 3", 1.meters)
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -394,10 +401,10 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
             val merge = accu.getByNameWithType[DirectionChange]("merge")
             val cv    = inst.dynamicFrictionCoeff(merge.get)
-            cv.should                                  (beValid     )
+            cv.should                          (beValid              )
             // zeta must differ from the base 1.4 due to short-section neighbor correction
             // nm1 and np1 are both short → level2 path, zeta from np1 window
-            cv.toOption.get.unwrap.value should not be (1.4 +- 0.001)
+            cv.toOption.get.unwrap.value.should(not(be(1.4 +- 0.001)))
         }
 
         "with short section after should apply level1 correction" in {
@@ -418,7 +425,8 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("aval court", 10.cm  ),
                         addSharpAngle_90deg                    (
@@ -427,7 +435,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche 3", 1.meters)
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -435,10 +443,10 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
             val merge = accu.getByNameWithType[DirectionChange]("merge")
             val cv    = inst.dynamicFrictionCoeff(merge.get)
-            cv.should                                  (beValid     )
+            cv.should                          (beValid              )
             // zeta must differ from the base 1.4 due to short-section neighbor correction
             // nm1 regular, np1 short → level1 path, zeta from np1 window
-            cv.toOption.get.unwrap.value should not be (1.4 +- 0.001)
+            cv.toOption.get.unwrap.value.should(not(be(1.4 +- 0.001)))
         }
 
         "with two consecutive short sections should apply level2 correction" in {
@@ -455,11 +463,11 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         roughness                              (3.mm                 ),
                         innerShape(rectangle(20.cm, 20.cm)),
                         addSectionVertical                     ("branche 1", 10.cm   ),
-                        addSectionVertical                     ("branche 2", 10.cm   ),
                         addMergeTwoFlowsIntoSingleWith90DegTurn(
                             "merge",
                             AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Up),
-                            rectangle        (20.cm, 20.cm                                   )
+                            rectangle        (20.cm, 20.cm                                   ),
+                            AzimuthDirection.Front
                         ),
                         addSectionVertical                     ("aval court", 10.cm  ),
                         addSharpAngle_90deg                    (
@@ -468,7 +476,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ),
                         addSectionVertical                     ("branche 3", 1.meters)
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -476,10 +484,10 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(accu.elems)
             val merge = accu.getByNameWithType[DirectionChange]("merge")
             val cv    = inst.dynamicFrictionCoeff(merge.get)
-            cv.should                                  (beValid     )
+            cv.should                          (beValid              )
             // zeta must differ from the base 1.4 due to level2 neighbor correction
             // (two consecutive short sections: before and after SplitMerge90)
-            cv.toOption.get.unwrap.value should not be (1.4 +- 0.001)
+            cv.toOption.get.unwrap.value.should(not(be(1.4 +- 0.001)))
         }
         "as last direction change before final section uses FWindow computation" in {
             import FluePipe_Module_15544.*
@@ -513,7 +521,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                             1.meters
                         )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -557,7 +565,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                             1.meters
                         )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -568,11 +576,13 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
             val inst  = flowOnlyDFC.mkInstanceForNamedPipesConcat(truncatedElems)
             val split = accu.getByNameWithType[DirectionChange]("split")
             val cv    = inst.dynamicFrictionCoeff(split.get)
-            cv.should(beInvalid)
-            cv.toEither.left.toOption.get.exists {
-                case _: CanNotEndWithADirectionChange => true
-                case _ => false
-            } shouldBe true
+            cv.should    (beInvalid)
+            cv.toEither.left.toOption.get
+                .exists {
+                    case _: CanNotEndWithADirectionChange => true
+                    case _ => false
+                }
+                .shouldBe(true     )
         }
     }
 
@@ -609,7 +619,7 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
                         ), // Right (90°)
                         addSectionHorizontal("fin carneau", 1.meters  )
                     )
-                    .toFullDescr()
+                    .toFullDescr
                     .toOption
                     .get
                     ._2
@@ -638,6 +648,93 @@ class DynamicFrictionCoeffOp_EN15544_Suite extends AnyFreeSpec with Matchers {
 
             val c3 = cv3.toOption.get
             c3.unwrap.value `should` ===(0.35.unitless.value +- 0.001)
+        }
+    }
+    // ========================================================================
+    // Regression test: slot-index threading through DynFrict13384Factory
+    // Defends against wiring reverting to None (commit 1cb4e20b)
+    // ========================================================================
+
+    "DynFrict13384Factory.make" - {
+        "receives caller's SlotIndex on SectionGeometryChange path" in {
+            // Recording factory: captures the slotIndex passed to make
+            var capturedSc: Option[SlotContext] = None
+
+            val recordingFactory =
+                new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
+                    def make(
+                        pt: PipeType
+                    )(using sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                        capturedSc = Some(sc)
+                        // Return a no-op delegate; we only care that make was called with the right index
+                        new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
+                            def thermalSectionGeometryChange =
+                                new DynamicFrictionCoeffOp[
+                                    afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionGeometryChange
+                                ]:
+                                    extension (
+                                        s: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionGeometryChange
+                                    )
+                                        def dynamicFrictionCoeff =
+                                            (0.0.unitless: ζ).validNel[
+                                                afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
+                                            ]
+
+            given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = recordingFactory
+
+            val testIdx     = SlotIndex.unsafe(7)
+            val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT, SlotContext.forSlot(testIdx))
+
+            // Construct a SectionGeometryChange with real pipe shapes
+            val fromShape = PipeShape.Circle(200.mm)
+            val toShape   = PipeShape.Circle(150.mm)
+            val sgc       = SectionGeometryChange(fromShape, toShape)
+
+            // Call whenRegularFor; slotIndex flows from class-level using
+
+            flowOnlyDFC.whenRegularFor(sgc)
+
+            // Assert: factory received the caller's SlotIndex, not None
+            capturedSc.map(_.slotIndex) shouldBe Some(Some(testIdx))
+        }
+
+        "receives None when called standalone (no slot)" in {
+            // Recording factory
+            var capturedSc: Option[SlotContext] = None
+
+            val recordingFactory =
+                new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory:
+                    def make(
+                        pt: PipeType
+                    )(using sc: SlotContext): FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like =
+                        capturedSc = Some(sc)
+                        new FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Like:
+                            def thermalSectionGeometryChange =
+                                new DynamicFrictionCoeffOp[
+                                    afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionGeometryChange
+                                ]:
+                                    extension (
+                                        s: afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384.SectionGeometryChange
+                                    )
+                                        def dynamicFrictionCoeff =
+                                            (0.0.unitless: ζ).validNel[
+                                                afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
+                                            ]
+
+            given FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory = recordingFactory
+
+            val flowOnlyDFC = FlowOnlyDynamicFrictionCoeff_15544()(using FluePipeT, SlotContext.unslotted)
+
+            val fromShape = PipeShape.Circle(200.mm)
+            val toShape   = PipeShape.Circle(150.mm)
+            val sgc       = SectionGeometryChange(fromShape, toShape)
+
+            // Call whenRegularFor; slotIndex=none flows from class-level using
+
+            flowOnlyDFC.whenRegularFor(sgc)
+
+            // Assert: factory received None
+            capturedSc.map(_.slotIndex) shouldBe Some(None)
         }
     }
 }

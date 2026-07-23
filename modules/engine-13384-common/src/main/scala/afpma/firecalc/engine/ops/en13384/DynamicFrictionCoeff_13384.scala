@@ -14,6 +14,7 @@ import afpma.firecalc.engine.models.gtypedefs.{ζ, CoefficientOfFlowResistance}
 import afpma.firecalc.engine.ops.resistance.*
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError
 import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.*
 import cats.syntax.all.*
@@ -25,8 +26,7 @@ import coulomb.policy.standard.given
  * Unified dynamic friction coefficient calculations for EN13384.
  * Provides given instances for both FlowOnly and Thermal pipe descriptor types.
  */
-class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
-
+class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType, sc: SlotContext):
     // Import both PipeDescr modules
     import afpma.firecalc.engine.models.en13384.{FlowOnlyPipeDescr_13384 => FlowOnly, ThermalPipeDescr_13384 => Thermal}
 
@@ -450,8 +450,8 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
             case Some(ratio) if 30 > ratio && ratio >= 2 => Right("30 > Ld/Dh >= 2")
             case Some(_) if isUnsafe                     =>
                 Right("30 > Ld/Dh >= 2")
-            case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio))
-            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp)          )
+            case Some(ratio)                             => Left(UnexpectedRatio_Ld_Dh(shape, sectionTyp, ratio)(using show_shape, sc.slotIndex))
+            case None                                    => Left(NoGivenRatio_Ld_Dh(shape, sectionTyp)(using show_shape, sc.slotIndex)          )
         }
 
     /**
@@ -463,8 +463,9 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType):
      * `import this.given` or `import dcDfc.given` is used).
      */
     def makeChainAwareDfc[PipeElDescr <: Matchable, DC <: Matchable](
-        pipeElements: Vector[NamedPipeElDescrG[PipeElDescr]]
+        pipeElements: Vector[NamedPipeElDescrG[PipeElDescr]],
+        sc          : SlotContext
     )(using dfc: DynamicFrictionCoeffOp[DC]): DynamicFrictionCoeffOp[NamedPipeElDescrG[DC]] =
-        DynamicFrictionCoeffOpForPipeChain[PipeElDescr, DC](pipeElements, dfc)
+        DynamicFrictionCoeffOpForPipeChain[PipeElDescr, DC](pipeElements, dfc, sc)
 
 end DynamicFrictionCoeff_13384

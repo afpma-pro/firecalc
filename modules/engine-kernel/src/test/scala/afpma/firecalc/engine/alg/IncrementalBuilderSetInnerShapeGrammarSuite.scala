@@ -28,8 +28,9 @@ import scala.reflect.TypeTest
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import afpma.firecalc.engine.Slot0ContextFixture
 
-class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Matchers:
+class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture:
 
     // ---- Test State with shapeMaterialized ----
     case class GrammarTestState(geometry: Option[PipeShape], shapeMaterialized: Boolean)
@@ -139,7 +140,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
         override protected def updateStateBeforeConversionStep(
             propsState: PropsState,
             convStep  : ConversionStep
-        ): ValidatedResult[PropsState] =
+        )(using sc: SlotContext): ValidatedResult[PropsState] =
             val nextElemName = convStep.findNextAddElement.map(_._2.name).getOrElse("?")
             convStep.allPreElementOpsUntilNextAddElement
                 .foldLeft(propsState.validNel[IncrementalValidation_Error]) { case (vState, (idIncr, setPropOp)) =>
@@ -147,7 +148,12 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
                         case GrammarSetInnerShape(shape) =>
                             vState.andThen { st =>
                                 if !st.shapeMaterialized && st.geometry.isDefined then
-                                    ShapeNotMaterialized(pt, Operation.SetInnerShape, idIncr, nextElemName).invalidNel
+                                    ShapeNotMaterialized(
+                                        pt,
+                                        Operation.SetInnerShape,
+                                        idIncr,
+                                        nextElemName
+                                    ).invalidNel
                                 else st.copy(geometry = Some(shape), shapeMaterialized = false).validNel
                             }
                         case GrammarSetRoughness(_)      =>
@@ -181,7 +187,11 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
         override protected def mkFullElementsDescr(
             prevs   : PipeFullDescr,
             convStep: ConversionStep
-        )(id_addElementOp: (IdIncr, AddElement)): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
+        )(using
+            sc: SlotContext
+        )(
+            id_addElementOp: (IdIncr, AddElement)
+        ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
             val st = summon[PropsState]
             val (idIncr, addElementOp) = id_addElementOp
             val elIdx       = PipeIdx(prevs.elems.size)
@@ -210,7 +220,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
                                 ).validNel
                 case GrammarDirectionChange(n)   =>
                     st.geometry match
-                        case None    => DirectionChangeRequiresSectionGeometry(pt).invalidNel
+                        case None    => DirectionChangeRequiresSectionGeometry(pt)(using SlotContext.unslotted).invalidNel
                         case Some(_) =>
                             (!st.shapeMaterialized && st.geometry.isDefined) match
                                 case true  =>
@@ -262,7 +272,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(100.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -274,7 +284,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(150.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -288,7 +298,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(100.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -303,7 +313,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(150.mm)),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -315,7 +325,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetRoughness  (2.mm          ),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -328,7 +338,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape   (PipeShape.Circle(150.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -344,7 +354,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetNumberOfFlows(NbOfFlows(1)            ),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -358,7 +368,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarDirectionChange("bend"        ),
             GrammarSectionSlopped ("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -372,7 +382,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarFlowResistance("resistance"  ),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -386,7 +396,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarPressureDiff  ("pressure"    ),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -402,7 +412,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape   (PipeShape.Circle(150.mm)),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -415,7 +425,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(200.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -430,7 +440,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(150.mm)),
             GrammarSectionSlopped ("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe false
         val errors  = result.toEither.left.toOption.get
         errors.head shouldBe a[ShapeNotMaterialized]
@@ -444,7 +454,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetMaterial   ("steel"       ),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -457,7 +467,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetMaterial   ("steel"       ),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val result  = descr.toFullDescr()
+        val result  = descr.toFullDescr
         result.isValid shouldBe true
     }
 
@@ -477,7 +487,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape (shapeB        ),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result    = descr.toFullDescr()
+        val result    = descr.toFullDescr
         result.isValid shouldBe true
         val fullDescr = result.toEither.toOption.get._2
         val elems     = fullDescr.elems.map(_.el)
@@ -506,7 +516,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape (shapeB        ),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result    = descr.toFullDescr()
+        val result    = descr.toFullDescr
         result.isValid shouldBe true
         val fullDescr = result.toEither.toOption.get._2
         val elems     = fullDescr.elems.map(_.el)
@@ -536,7 +546,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape (circleShape   ),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe true
         val fullDescr   = result.toEither.toOption.get._2
         val elems       = fullDescr.elems.map(_.el)
@@ -569,7 +579,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape (circleShape   ),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe true
         val fullDescr   = result.toEither.toOption.get._2
         val elems       = fullDescr.elems.map(_.el)
@@ -606,7 +616,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape (circleShape   ),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe true
         val fullDescr   = result.toEither.toOption.get._2
         val elems       = fullDescr.elems.map(_.el)
@@ -638,7 +648,7 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape (shape         ),
             GrammarSectionSlopped("s2", 1.meters)
         )
-        val result    = descr.toFullDescr()
+        val result    = descr.toFullDescr
         result.isValid shouldBe true
         val fullDescr = result.toEither.toOption.get._2
         val elems     = fullDescr.elems.map(_.el)
@@ -664,9 +674,10 @@ class IncrementalBuilderSetInnerShapeGrammarSuite extends AnyFlatSpec with Match
             GrammarSetInnerShape(PipeShape.Circle(100.mm)),
             GrammarSectionSlopped("s1", 1.meters)
         )
-        val slot1Result = slot1Descr.toFullDescrWithSeed(PipeBuildSeed(None, NbOfFlows(1), None))
+        val slot1Result =
+            slot1Descr.toFullDescrWithSeed(PipeBuildSeed(None, NbOfFlows(1), None))
         slot1Result.isValid shouldBe true
-        val nextSeed    = slot1Result.toEither.toOption.get._3
+        val nextSeed = slot1Result.toEither.toOption.get._3
         // Seed carries only frame and nFlows — no shapeMaterialized
         nextSeed.nFlows shouldBe NbOfFlows(1)
     }

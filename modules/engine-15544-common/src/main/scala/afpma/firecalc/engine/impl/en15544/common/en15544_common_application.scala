@@ -37,6 +37,7 @@ import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
+import afpma.firecalc.engine.ops.generic.SlotIndexProvider
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.dto.all.*
 import afpma.firecalc.units.coulombutils.*
@@ -316,13 +317,13 @@ abstract class EN15544_V_2023_Common_Application
         : afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory =
         import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544.*
         new DynFrict13384Factory:
-            def make(pt: PipeType): DynFrict13384Like =
-                val delegate = afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384()(using pt)
+            def make(pt: PipeType)(using sc: SlotContext): DynFrict13384Like =
+                val delegate = afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384()(using pt, sc)
                 new DynFrict13384Like:
                     def thermalSectionGeometryChange = delegate.thermalSectionGeometryChange
 
-    given ssalg: afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
-        afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(using formulas, dynFrict13384Factory)
+    def ssalg(sc: SlotContext): afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
+        afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(sc)(using formulas, dynFrict13384Factory)
 
     // ─── CommonAtParams: params-dependent layer implementation ────────────
 
@@ -389,9 +390,12 @@ abstract class EN15544_V_2023_Common_Application
                         // Returns VNelMcalcErr so extraction errors propagate instead of being
                         // swallowed by PipeSlot.noop (which would cascade into downstream crashes).
                         val stage2SlotsV: VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)] =
-                            stage2Slots.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
+                            val provider = SlotIndexProvider.suffix(lastFluePipeSlotIdx + 1)
+                            stage2Slots.zipWithIndex.foldLeft[VNelMcalcErr[(Vector[PipeSlot], PipeBuildSeed)]](
                                 Validated.validNel((Vector.empty[PipeSlot], stage1Seed))
-                            ) { (accV, slot) =>
+                            ) { (accV, si) =>
+                                val (slot, i) = si
+                                val slotIdx = provider(i)
                                 accV.andThen { case (acc, seed) =>
                                     slot match
                                         case FlueSlot(_)            =>
@@ -400,11 +404,13 @@ abstract class EN15544_V_2023_Common_Application
                                         case ThermalFlueSlot(descr) =>
                                             val (fdResult, nextSeedV) =
                                                 FluePipe_Module_13384
-                                                    .mkPipeFromIncrDescrWithSeed(descr, seed)
-                                            val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                                    .mkPipeFromIncrDescrWithSeed(descr, seed)(using
+                                                        SlotContext.forSlot(slotIdx)
+                                                    )
+                                            val nextSeed = nextSeedV.toOption.getOrElse(seed)
                                             FluePipe_Module_13384.FullDescrResult
                                                 .extractPipe(fdResult)
-                                                .map(pipe =>
+                                                .map                                         (pipe =>
                                                     (
                                                         acc :+ tcThermal13384.mkSlot(
                                                             FluePipeT,
@@ -423,11 +429,13 @@ abstract class EN15544_V_2023_Common_Application
                                             else
                                                 val (fdResult, nextSeedV) =
                                                     ConnectorPipe_Module
-                                                        .mkPipeFromIncrDescrWithSeed(descr, seed)
-                                                val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                                        .mkPipeFromIncrDescrWithSeed(descr, seed)(using
+                                                            SlotContext.forSlot(slotIdx)
+                                                        )
+                                                val nextSeed = nextSeedV.toOption.getOrElse(seed)
                                                 ConnectorPipe_Module.FullDescrResult
                                                     .extractPipe(fdResult)
-                                                    .map(pipe =>
+                                                    .map                                         (pipe =>
                                                         (
                                                             acc :+ ConnectorPipe_Module.foldPipeCanBe(pipe)  (
                                                                 onWithout   = PipeSlot.noop(ConnectorPipeT, "Connector"),
@@ -444,8 +452,8 @@ abstract class EN15544_V_2023_Common_Application
                                                     )
                                         case ChimneySlot(descr)     =>
                                             val (fdResult, nextSeedV) = ChimneyPipe_Module
-                                                .mkPipeFromIncrDescr(descr, seed)
-                                            val nextSeed              = nextSeedV.toOption.getOrElse(seed)
+                                                .mkPipeFromIncrDescr(descr, seed)(using SlotContext.forSlot(slotIdx))
+                                            val nextSeed = nextSeedV.toOption.getOrElse(seed)
                                             ChimneyPipe_Module.FullDescrResult
                                                 .extractPipe(fdResult)
                                                 .map(pipe =>
@@ -475,12 +483,14 @@ abstract class EN15544_V_2023_Common_Application
                                 val stage2InitialUpstream =
                                     UpstreamState.fromPipeResult(seedPr, computeAt)
                                 val folded                =
-                                    stage2PipeSlots.foldLeft[Either[
+                                    val provider = SlotIndexProvider.suffix(lastFluePipeSlotIdx + 1)
+                                    stage2PipeSlots.zipWithIndex.foldLeft[Either[
                                         afpma.firecalc.engine.standard.MecaFlu_Error,
                                         (UpstreamState, Vector[PipeResult])
-                                    ]](Right((stage2InitialUpstream, Vector.empty))) { case (acc, slot) =>
+                                    ]](Right((stage2InitialUpstream, Vector.empty))) { case (acc, (slot, localIdx)) =>
                                         acc.flatMap { case (upstream, results) =>
-                                            slot.compute(upstream, params).map { pr =>
+                                            val slotIdx = provider(localIdx)
+                                            slot.compute(upstream, params, slotIdx).map { pr =>
                                                 val nextUpstream =
                                                     UpstreamState.fromPipeResult(pr, computeAt)
                                                 (nextUpstream, results :+ pr)
@@ -690,13 +700,25 @@ abstract class EN15544_V_2023_Common_Application
         // Validations
         lazy val validateVelocitiesInFluePipe: VNelMcalcErr[Unit] =
             conceptualFlueRegionPipeResults.andThen: rs =>
-                rs.toList.map(validateVelocitiesIn).sequence.map(_ => ())
+                rs.toList.zipWithIndex
+                    .map: (pr, slotIdx) =>
+                        validateVelocitiesIn(pr, slotIdx)
+                    .sequence
+                    .map(_ => ())
 
         lazy val validateVelocitiesInConnectorPipe: VNelMcalcErr[Unit] =
-            connector_PipeResult.andThen(validateVelocitiesIn)
+            postFireboxPipeResults.andThen { pfb =>
+                val connectorSlotIdx = pfb.size - 2
+                val (_, pr) = pfb(connectorSlotIdx)
+                validateVelocitiesIn(pr, connectorSlotIdx)
+            }
 
         lazy val validateVelocitiesInChimneyPipe: VNelMcalcErr[Unit] =
-            chimney_PipeResult.andThen(validateVelocitiesIn)
+            postFireboxPipeResults.andThen { pfb =>
+                val chimneySlotIdx = pfb.size - 1
+                val (_, pr) = pfb.last
+                validateVelocitiesIn(pr, chimneySlotIdx)
+            }
 
         lazy val validateVelocitiesInPipes: VNel[Unit] =
             List(
@@ -810,10 +832,10 @@ abstract class EN15544_V_2023_Common_Application
 
     def validateFluePipeShape(): ValidatedNel[FluePipeInvalidGeometryRatio, Unit] =
         // Collect all PipeShape configurations from flue-region slots (FlueSlot + ThermalFlueSlot),
-        // preserving the original descriptor index and element name.
+        // preserving the original descriptor index, element name, and slot index.
         // Both SetInnerShape prop instructions and AddSectionShapeChange elements can introduce a
         // Rectangle shape that must satisfy the 1:4 aspect-ratio constraint.
-        type ShapeInfo = (PipeShape, Int, String) // (shape, descrIndex, elementName)
+        type ShapeInfo = (PipeShape, Int, String, Int) // (shape, descrIndex, elementName, slotIndex)
         // Resolve SetInnerShape label once (no Locale in validation context — fall back to EN)
 
         val setInnerShapeLabel =
@@ -821,22 +843,23 @@ abstract class EN15544_V_2023_Common_Application
             // I18N.set_prop.SetInnerShape
             ""
         val flueRegionShapes: Seq[ShapeInfo] =
-            en15544.incrInputs.postFirebox.slots.flatMap:
-                case PostFireboxPipeSlot.FlueSlot(descr)        =>
-                    descr.zipWithIndex.flatMap:
-                        case (SetFlowOnlyPipeProp_15544.SetInnerShape(shape), idx                   ) =>
-                            Some((shape, idx, setInnerShapeLabel))
-                        case (AddFlowOnlyPipeElement_15544.AddSectionShapeChange(name, toShape), idx) =>
-                            Some((toShape, idx, name))
-                        case _ => None
-                case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
-                    descr.zipWithIndex.flatMap:
-                        case (SetThermalPipeProp_13384.SetInnerShape(shape), idx) =>
-                            Some((shape, idx, setInnerShapeLabel))
-                        case _ => None
-                case _                                          => Seq.empty
+            en15544.incrInputs.postFirebox.slots.zipWithIndex.flatMap: (slot, slotIdx) =>
+                slot match
+                    case PostFireboxPipeSlot.FlueSlot(descr)        =>
+                        descr.zipWithIndex.flatMap:
+                            case (SetFlowOnlyPipeProp_15544.SetInnerShape(shape), idx                   ) =>
+                                Some((shape, idx, setInnerShapeLabel, slotIdx))
+                            case (AddFlowOnlyPipeElement_15544.AddSectionShapeChange(name, toShape), idx) =>
+                                Some((toShape, idx, name, slotIdx))
+                            case _ => None
+                    case PostFireboxPipeSlot.ThermalFlueSlot(descr) =>
+                        descr.zipWithIndex.flatMap:
+                            case (SetThermalPipeProp_13384.SetInnerShape(shape), idx) =>
+                                Some((shape, idx, setInnerShapeLabel, slotIdx))
+                            case _ => None
+                    case _                                          => Seq.empty
         val checks =
-            flueRegionShapes.map: (shape, descrIdx, elementName) =>
+            flueRegionShapes.map: (shape, descrIdx, elementName, slotIdx) =>
                 shape match
                     case rect @ PipeShape.Rectangle(_, _) =>
                         val (rmin, rmax) = (1.0, 4.0)
@@ -852,7 +875,7 @@ abstract class EN15544_V_2023_Common_Application
                                         ratio,
                                         rmin,
                                         rmax
-                                    )
+                                    )(using SlotContext.forSlotUnsafe(slotIdx))
                                 )
                             .map(_ => ())
                     case _                                =>
@@ -863,7 +886,8 @@ abstract class EN15544_V_2023_Common_Application
         (fvelocity < formulas.flueGasVelocityMin) | (fvelocity > formulas.flueGasVelocityMax)
 
     protected def validateVelocitiesIn(
-        pipeResult: PipeResult
+        pipeResult: PipeResult,
+        slotIndex : Int
     ): ValidatedNel[FlueGasVelocityError, Unit] =
         pipeResult match
             case pr: PipeResult.WithSections    =>
@@ -893,7 +917,7 @@ abstract class EN15544_V_2023_Common_Application
                                 endVelocity   = ve,
                                 minVel        = formulas.flueGasVelocityMin,
                                 maxVel        = formulas.flueGasVelocityMax
-                            )
+                            )(using SlotContext.forSlotUnsafe(slotIndex))
                         (startBad, endBad) match
                             case (false, false) => None
                             case (true, false ) => Some(mkErr(VelocityPosition.Start, Some(psr.v_start), None)          )

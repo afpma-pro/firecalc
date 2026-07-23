@@ -582,7 +582,8 @@ lazy val chimneyEndCapInputs_sig: Signal[Option[(PipePositionResult, PipeShape)]
                 (slot, idx) <- lastChimneyIdxOpt
                 if slot.descr.endsWithSingularFlowResistance
                 upstreamFrame = positions.lift(idx - 1).flatMap(_.finalFrame)
-                shape <- ChimneyPipe_Module.lastInnerShape(slot.descr, upstreamFrame)
+                // UI visualization — not in a slot build context
+                shape <- ChimneyPipe_Module.lastInnerShape(slot.descr, upstreamFrame)(using SlotContext.unslotted)
                 pos   <- positions.lift(idx)
             yield (pos, shape)
 

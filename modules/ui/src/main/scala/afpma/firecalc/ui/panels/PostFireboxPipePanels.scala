@@ -15,6 +15,7 @@ import afpma.firecalc.engine.models.geometry.ChainEditDispatcher
 import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.units.Vec3
 import afpma.firecalc.engine.ops.generic.TopologyError
+import afpma.firecalc.engine.standard.SlotIndex
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
@@ -447,13 +448,14 @@ final case class PostFireboxPipePanels()(using loc: Locale, du: DisplayUnits) ex
                         val hi       = headRegionIdxs.indexOf(idx) match { case -1 => None; case n => Some(n) }
                         val isLast   = lastHeadGlobalIdx.contains(idx)
                         val panel    = DynamicPipeSlotPanel.forSlot(
-                            slotIndex            = idx,
+                            slotIndex            = SlotIndex.unsafe(idx),
                             slot                 = slot,
                             slotControlsNode     = controls,
                             headIdx              = hi,
                             isLastInHeadRegion   = isLast,
                             headRegionLengthsSig = headRegionLengthsSig,
-                            lZMinSig             = lZMinSig
+                            lZMinSig             = lZMinSig,
+                            isLastSlot           = (idx == normalized.size - 1)
                         )
                         if idx == fixedZoneStart then Seq(toolbar, panel.node)
                         else Seq                         (panel.node         )

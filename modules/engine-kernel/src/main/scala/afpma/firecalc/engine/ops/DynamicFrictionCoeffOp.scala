@@ -10,6 +10,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.utils.*
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.Show
 import cats.data.*
@@ -55,7 +56,7 @@ object DynamicFrictionCoeffOp:
             extension (s: S) def dynamicFrictionCoeff: DynamicFrictionCoeffOp.Result = f(s)
         }
 
-    def interpolateHelperE[S: Show](
+    def interpolateHelperE[S](
         shape            : S,
         sectionTyp       : PipeType,
         resName          : String,
@@ -65,11 +66,12 @@ object DynamicFrictionCoeffOp:
         xMinMax          : (Double, Double),
         yHeaderSelectFunc: Option[Double] => Either[Err, String],
         yCriteria        : Option[Double]
-    ): Either[Err, ζ] = {
+    )(using showS: Show[S], sc: SlotContext): Either[Err, ζ] = {
         val (xmin, xmax) = xMinMax
 
-        if      (xi < xmin) Left(ValueOutOfBound[S](shape, sectionTyp, xHeader, xi, xmin, xmax))
-        else if (xi > xmax) Left(ValueOutOfBound[S](shape, sectionTyp, xHeader, xi, xmin, xmax))
+        if      (xi < xmin) Left(ValueOutOfBound[S](shape, sectionTyp, xHeader, xi, xmin, xmax)(using showS, sc.slotIndex))
+        else if (xi > xmax)
+            Left(ValueOutOfBound[S](shape, sectionTyp, xHeader, xi, xmin, xmax)(using showS, sc.slotIndex))
         else
             val data = TSVTableString.fromString(tsvTableRawString)
             for
@@ -88,7 +90,7 @@ object DynamicFrictionCoeffOp:
             yield out.ea: ζ
     }
 
-    def interpolateHelper[S: Show](
+    def interpolateHelper[S](
         shape            : S,
         sectionTyp       : PipeType,
         resName          : String,
@@ -98,7 +100,7 @@ object DynamicFrictionCoeffOp:
         xMinMax          : (Double, Double),
         yHeaderSelectFunc: Option[Double] => Either[Err, String],
         yCriteria        : Option[Double]
-    ): Result =
+    )(using showS: Show[S], sc: SlotContext): Result =
         interpolateHelperE(
             shape,
             sectionTyp,

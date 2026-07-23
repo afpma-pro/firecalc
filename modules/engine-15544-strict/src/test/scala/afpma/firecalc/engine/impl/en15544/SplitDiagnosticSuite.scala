@@ -14,12 +14,13 @@ import afpma.firecalc.domain.InclinationDirection
 
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.domain.AbsoluteDirection
+import afpma.firecalc.engine.Slot0ContextFixture
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 /** Diagnostic test to see what errors EN 15544 returns for split geometry validation. */
-class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
+class SplitDiagnosticSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture {
 
     given FluePipeT = FluePipeT
 
@@ -47,39 +48,41 @@ class SplitDiagnosticSuite extends AnyFlatSpec with Matchers {
                 AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("postSplit", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr()
+        val result    = incrDescr.toFullDescr
         result.isValid shouldBe true
     }
 
     "Test 2" should "allow merge with absDir on ascending pipe" in {
         val incrDescr = withInitialDirection(ascendingDir).define(
             setup ++ Seq(
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                   ("preMerge", 1.meters ),
-                AddFlowOnlyPipeElement_15544.MergeTwoFlowsIntoSingleWith90DegTurn(
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                          ("preMerge", 1.meters ),
+                AddFlowOnlyPipeElement_15544.MergeTwoFlowsIntoSingleWith90DegTurn       (
                     "merge",
-                    newInnerShape = PipeShape.Circle(15.cm),
-                    absDir        = Some(horizontalBranchDir)
+                    newInnerShape        = PipeShape.Circle(15.cm),
+                    absDir               = Some(horizontalBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Front)
                 ),
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                   ("postMerge", 1.meters)
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                          ("postMerge", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr()
+        val result    = incrDescr.toFullDescr
         result.isValid shouldBe true
     }
 
     "Test 3" should "allow split with horizontal branch on ascending pipe" in {
         val incrDescr = withInitialDirection(ascendingDir).define(
             setup ++ Seq(
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("preSplit", 1.meters ),
-                AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn(
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                              ("preSplit", 1.meters ),
+                AddFlowOnlyPipeElement_15544.SplitSingleFlowIntoTwoFlowsWith90DegTurn       (
                     "split",
-                    newInnerShape = PipeShape.Circle(9.cm),
-                    absDir        = Some(horizontalBranchDir)
+                    newInnerShape        = PipeShape.Circle(9.cm),
+                    absDir               = Some(horizontalBranchDir),
+                    symmetryPlaneAzimuth = Some(AzimuthDirection.Front)
                 ),
-                AddFlowOnlyPipeElement_15544.AddSectionSlopped                       ("postSplit", 1.meters)
+                AddFlowOnlyPipeElement_15544.AddSectionSlopped                              ("postSplit", 1.meters)
             )*
         )
-        val result    = incrDescr.toFullDescr()
+        val result    = incrDescr.toFullDescr
         result.isValid shouldBe true
     }
 }

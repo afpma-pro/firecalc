@@ -13,6 +13,9 @@ import afpma.firecalc.i18n.implicits.given
 import afpma.firecalc.engine.models.CombustionAirPipeT
 import afpma.firecalc.engine.models.FireboxPipeT
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
+
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.*
@@ -20,9 +23,9 @@ import afpma.firecalc.ui.config.UIConfig
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.*
-import afpma.firecalc.ui.utils.{combineWithDistinct, flatMapVNelE}
+import afpma.firecalc.ui.utils.combineWithDistinct
+import afpma.firecalc.ui.utils.flatMapVNelE
 
 import cats.data.*
 import cats.implicits.toShow
@@ -50,6 +53,9 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 val matches = hover.contains(VizElementId.FireboxElement) ||
                     select.contains(VizElementId.FireboxElement)
                 if matches then "viz-highlighted" else ""
+
+    private lazy val fireboxScope: PanelScope =
+        PanelScope.MultiTypeScope(List(FireboxPipeT, CombustionAirPipeT))
 
     lazy val fireboxForm = FireboxComponent(firebox_var).node
 
@@ -181,9 +187,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                 if !typeAvail then div(lucide.`circle-check`)
                                 else
                                     PanelStatusHelper
-                                        .keepGlobalErrorsOrErrorsSpecificToSectionTyp(st =>
-                                            (st == FireboxPipeT) || (st == CombustionAirPipeT)
-                                        )(all_cons) match
+                                        .filterErrors(
+                                            fireboxScope,
+                                            all_cons
+                                        ) match
                                         case Validated.Valid(_)      => div(lucide.`circle-check`)
                                         case Validated.Invalid(errs) =>
                                             DaisyUITooltip (
@@ -205,9 +212,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                 if !typeAvail then div(lucide.`circle-check`)
                                 else
                                     PanelStatusHelper
-                                        .keepGlobalErrorsOrErrorsSpecificToSectionTyp(st =>
-                                            (st == FireboxPipeT) || (st == CombustionAirPipeT)
-                                        )(fb_press_avail) match
+                                        .filterErrors(
+                                            fireboxScope,
+                                            fb_press_avail
+                                        ) match
                                         case Validated.Valid(_)      => div(lucide.`circle-check`)
                                         case Validated.Invalid(errs) =>
                                             DaisyUITooltip (

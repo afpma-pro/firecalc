@@ -13,11 +13,12 @@ import afpma.firecalc.engine.impl.en13384.ThermalIncrementalBuilder_13384
 import afpma.firecalc.engine.models.FluePipeT
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.units.coulombutils.*
+import afpma.firecalc.engine.Slot0ContextFixture
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
+class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers with Slot0ContextFixture:
 
     // ── EN 13384 Flow-Only ──────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -63,7 +64,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)           ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -78,7 +79,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             FlowOnlyChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)           ),
             AddFlowOnlyPipeElement_13384.AddSectionSlopped("s", 1.meters     )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[GeometryWithoutInitialDirection]
@@ -106,7 +107,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -131,7 +132,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(1)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        val result = descr.toFullDescr()
+        val result = descr.toFullDescr
         if result.isValid then succeed
         else fail(s"Expected valid, got: ${result.toEither.left.toOption.get}")
     }
@@ -149,7 +150,7 @@ class AscendingPipeSplitProductionSuite extends AnyFlatSpec with Matchers:
             ThermalChannelTopologyOp_13384.SetNumberOfFlows(NbOfFlows(2)                                         ),
             AddThermalPipeElement_13384.AddSectionSlopped("s", 1.meters                 )
         )
-        val result      = descr.toFullDescr()
+        val result      = descr.toFullDescr
         result.isValid shouldBe false
         val errors      = result.toEither.left.toOption.get
         errors.head shouldBe a[GeometryWithoutInitialDirection]

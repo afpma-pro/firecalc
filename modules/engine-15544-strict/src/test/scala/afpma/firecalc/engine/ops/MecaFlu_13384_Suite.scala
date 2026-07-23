@@ -22,6 +22,8 @@ import afpma.firecalc.engine.models.GasInPipeEl
 import afpma.firecalc.engine.models.NamedPipeElDescrG
 import afpma.firecalc.engine.models.PipeChain_15544_Strict
 import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeff_13384
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
+import afpma.firecalc.engine.UnslottedFixture
 import afpma.firecalc.engine.ops.en13384.ThermalMecaFlu_13384
 
 import cats.syntax.all.*
@@ -52,7 +54,7 @@ import org.scalatest.matchers.should.*
 // import afpma.firecalc.engine.ops.en13384.MecaFlu_EN13384
 // import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
 
-class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
+class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers with UnslottedFixture {
 
     import ChimneyPipe_Module.*
 
@@ -118,9 +120,10 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                             201.degreesCelsius,
                             1.kg_per_m3.some,
                             3.1.m_per_s.some,
-                            FlueGas
+                            FlueGas,
+                            SlotContext.forSlot(SlotIndex.unsafe(0))
                         )(using p, en15544.en13384_application)
-                r.toOption shouldBe defined
+                r.toOption `shouldBe` defined
             }
         }
 
@@ -140,7 +143,10 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 given DynamicFrictionCoeffOp[NamedPipeElDescrG[ThermalPipeDescr_13384.DirectionChange]] =
                     DynamicFrictionCoeffOp.fromFunction[NamedPipeElDescrG[ThermalPipeDescr_13384.DirectionChange]]:
                         np =>
-                            val dc13384 = DynamicFrictionCoeff_13384()(using ChimneyPipeT)
+                            val dc13384 = DynamicFrictionCoeff_13384()(using
+                                ChimneyPipeT,
+                                SlotContext.forSlot(SlotIndex.unsafe(0))
+                            )
                             import dc13384.given
                             DynamicFrictionCoeffOp
                                 .apply[ThermalPipeDescr_13384.DirectionChange]
@@ -154,7 +160,8 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                     last_pipe_velocity    = 5.24.m_per_s.some, // for PG calculation
                     last_AirSpaceDetailed = None,
                     last_InnerGeom        = None,
-                    prevO                 = None
+                    prevO                 = None,
+                    sc                    = SlotContext.forSlot(SlotIndex.unsafe(0))
                 )(using en13384)
                 succeed
             }
@@ -172,14 +179,14 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
         import afpma.firecalc.engine.ops.en13384.DynamicFrictionCoeffOpForPipeChain
 
         def makeDfc(elements: Vector[NamedPipeElDescrG[FlowOnlyPipeDescr_13384.PipeElDescr]]) = {
-            val dc13384 = DynamicFrictionCoeff_13384()(using FluePipeT)
+            val dc13384 = DynamicFrictionCoeff_13384()(using FluePipeT, SlotContext.forSlot(SlotIndex.unsafe(0)))
             import dc13384.given
             val dcDfc: DynamicFrictionCoeffOp[FlowOnlyPipeDescr_13384.DirectionChange] =
                 DynamicFrictionCoeffOp.apply[FlowOnlyPipeDescr_13384.DirectionChange]
             DynamicFrictionCoeffOpForPipeChain[
                 FlowOnlyPipeDescr_13384.PipeElDescr,
                 FlowOnlyPipeDescr_13384.DirectionChange
-            ](elements, dcDfc)
+            ](elements, dcDfc, summon[SlotContext])
         }
 
         def findSplitMerge90(elements: Vector[NamedPipeElDescrG[FlowOnlyPipeDescr_13384.PipeElDescr]]) =
@@ -221,8 +228,8 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             val firstSplit    = splitMerges.head
             val zeta          = chainAwareDfc.dynamicFrictionCoeff(firstSplit)
 
-            zeta.isValid shouldBe true
-            zeta.toOption.get.value shouldBe 0.0
+            zeta.isValid `shouldBe` true
+            zeta.toOption.get.value `shouldBe` 0.0
         }
 
         "SplitMerge90 mid-chain (after other elements) gets zeta=1.4" in {
@@ -260,8 +267,8 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             val midSplit      = splitMerges.head
             val zeta          = chainAwareDfc.dynamicFrictionCoeff(midSplit)
 
-            zeta.isValid shouldBe true
-            zeta.toOption.get.value shouldBe 1.4
+            zeta.isValid `shouldBe` true
+            zeta.toOption.get.value `shouldBe` 1.4
         }
 
         "SplitMerge90 as last element is rejected" in {
@@ -294,11 +301,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             val lastSplit     = splitMerges.head
             val result        = chainAwareDfc.dynamicFrictionCoeff(lastSplit)
 
-            result.isValid shouldBe false
+            result.isValid `shouldBe` false
             result.toEither.left.toOption.get.exists {
                 case _: SplitMerge90AtEndOfChain => true
                 case _ => false
-            } shouldBe true
+            } `shouldBe` true
         }
 
         "SplitMerge90 not in pipe chain returns DirectionChangeNotInPipeChain" in {
@@ -346,11 +353,11 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 )
             // Querying with a SplitMerge90 not in the pipe should return an error
             val result = chainAwareDfc.dynamicFrictionCoeff(rogueSplit)
-            result.isValid shouldBe false
+            result.isValid `shouldBe` false
             result.toEither.left.toOption.get.exists {
                 case _: DirectionChangeNotInPipeChain => true
                 case _ => false
-            } shouldBe true
+            } `shouldBe` true
         }
         "Single-element chain: SplitMerge90 gets zeta=0.0" in {
             val shape = PipeShape.Circle(20.cm)
@@ -372,8 +379,8 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
             val onlySplit     = splitMerges.head
             val zeta          = chainAwareDfc.dynamicFrictionCoeff(onlySplit)
 
-            zeta.isValid shouldBe true
-            zeta.toOption.get.value shouldBe 0.0
+            zeta.isValid `shouldBe` true
+            zeta.toOption.get.value `shouldBe` 0.0
         }
 
         "Non-SplitMerge90 delegates to dcDfc" in {
@@ -415,8 +422,8 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers {
                 )
             val zeta = chainAwareDfc.dynamicFrictionCoeff(coude)
 
-            zeta.isValid shouldBe true
-            zeta.toOption.get.value should be > 0.0
+            zeta.isValid `shouldBe` true
+            zeta.toOption.get.value `should` be > 0.0
         }
     }
 

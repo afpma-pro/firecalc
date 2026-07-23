@@ -21,6 +21,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en15544.std
+import afpma.firecalc.engine.standard.{SlotContext, SlotIndex}
 import afpma.firecalc.engine.wood_combustion.WoodCombustionImpl
 
 import coulomb.*
@@ -140,7 +141,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
         incremental
             .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
             .define(airIntakeDescr*)
-            .toFullDescr()
+            .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0))                      )
             .extractPipe
 
     override def airIntakeDescriptors = airIntakeDescr
@@ -193,7 +194,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
                 innerShape                (rectangle(37.2.cm, 0.4.cm), preventAutoSectionGeometryChange = true                  ),
                 addSectionHorizontal      ("injecteurs", 1.5.cm                                                                 )
             )
-            .toFullDescr()
+            .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0))                               )
             .extractPipe
 
     val firebox_mean_temp = 750.degreesCelsius
@@ -209,7 +210,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
                 layer             (e = 1.cm, λ = 1.3.W_per_mK),
                 addSectionVertical("foyer P05", 58.3.cm      )
             )
-            .toFullDescr()
+            .toFullDescr         (using SlotContext.forSlot(SlotIndex.unsafe(0))                      )
             .extractPipe
 
     val firebox_output_temp = 785.degreesCelsius

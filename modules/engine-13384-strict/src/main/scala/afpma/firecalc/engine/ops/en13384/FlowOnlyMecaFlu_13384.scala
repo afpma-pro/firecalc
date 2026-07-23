@@ -24,7 +24,7 @@ import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.ops.Position.*
-import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.standard.{MecaFlu_Error, SlotContext}
 import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.ops.MecaFluOps
 
@@ -55,7 +55,8 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         temp_start        : TCelsius,
         last_pipe_velocity: Option[FlowVelocity],
         last_InnerGeom    : Option[PipeShape],
-        prevO             : Option[PipeSectionResult[PipeElDescr]]
+        prevO             : Option[PipeSectionResult[PipeElDescr]],
+        sc                : SlotContext
     )(using
         alg: EN13384_1_A1_2019_Application_Alg,
         dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]]
@@ -67,7 +68,8 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
             temp_start,
             last_pipe_velocity,
             last_InnerGeom,
-            prevO
+            prevO,
+            sc
         ) {
             override given en13384      : EN13384_1_A1_2019_Application_Alg                          = alg
             override given chainAwareDfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] = dfc
@@ -79,7 +81,8 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         hamf              : HeatingAppliance.MassFlows,
         temp_start        : TCelsius,
         last_pipe_velocity: Option[FlowVelocity],
-        gas               : Gas
+        gas               : Gas,
+        sc                : SlotContext
     )(using params: Params_13384, alg: EN13384_1_A1_2019_Application_Alg): Either[MecaFlu_Error, PipeResult] =
         MecaFluOps.catchMecaFluErrors(fd.pipeType):
             new FlowOnlyMecaFlu_13384_PipeResult_Impl(
@@ -89,24 +92,11 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
                 temp_start,
                 last_pipe_velocity,
                 gas,
-                params
+                params,
+                sc
             ) {
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
             }
-
-    override def makePipeResult(
-        ctx   : MecaFluPipeContext[PipeElDescr],
-        params: Params_13384
-    )(using appCtx: MecaFluAppContext): Either[MecaFlu_Error, PipeResult] =
-        val ctx13384 = appCtx.asInstanceOf[MecaFlu_13384_AppCtx]
-        makePipeResult(
-            ctx.fullDescr,
-            ctx13384.hafg,
-            ctx13384.hamf,
-            ctx.gasTempStart,
-            ctx.lastPipeVelocity,
-            ctx.gas
-        )(using params, ctx13384.en13384)
 
 private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
@@ -115,12 +105,12 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
     temp_start        : TCelsius,
     last_pipe_velocity: Option[FlowVelocity], // careful: last PIPE value, not last PIPE SECTION
     last_InnerGeom    : Option[PipeShape],
-    prevO             : Option[PipeSectionResult[PipeElDescr]]
+    prevO             : Option[PipeSectionResult[PipeElDescr]],
+    sc                : SlotContext
 ) extends PipeSectionResult[PipeElDescr]
     with MecaFlu_13384_DynamicFriction[PipeElDescr]:
 
-    val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()(using gp.pipeEl.typ)
-
+    val dynamicFrictionCoeff_13384 = DynamicFrictionCoeff_13384()(using gp.pipeEl.typ, sc)
     given chainAwareDfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
         scala.compiletime.deferred
 
@@ -297,7 +287,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
 
     val v_zetaO_dynamicFriction: ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] =
         gp.pipeEl.el match
-            case _ : StraightSection                                  =>
+            case _ : StraightSection        =>
                 (None, 0.0.pascals).validNel
             case PressureDiff(pa, _) =>
                 val pd = en13384.P_R_dynamicPressure_calc(
@@ -311,12 +301,15 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
                 val pu = pa
                 val zeta_eq: ζ = pu / (pd * se)
                 (Some(zeta_eq), pu).validNel
-            case el: DirectionChange                                  =>
+            case el: DirectionChange        =>
                 val zetaResult = chainAwareDfc.dynamicFrictionCoeff(
                     NamedPipeElDescrG(gp.pipeEl.idx, gp.pipeEl.typ, gp.pipeEl.name, el, gp.pipeEl.nf)
                 )
                 handleDynamicFrictionResult(zetaResult, gp.pipeEl.typ)
-            case el: (SectionGeometryChange | SingularFlowResistance) =>
+            case el: SectionGeometryChange  =>
+                import dynamicFrictionCoeff_13384.given
+                handleDynamicFrictionResult(el.dynamicFrictionCoeff, gp.pipeEl.typ)
+            case el: SingularFlowResistance =>
                 import dynamicFrictionCoeff_13384.given
                 handleDynamicFrictionResult(el.dynamicFrictionCoeff, gp.pipeEl.typ)
 
@@ -357,7 +350,8 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
     temp_start        : TCelsius,
     last_pipe_velocity: Option[FlowVelocity],
     gas               : Gas,
-    params            : Params_13384
+    params            : Params_13384,
+    sc                : SlotContext
 ) extends PipeResult.WithSections:
     import FlowOnlyMecaFlu_13384_PipeResult_Impl.MapState
 
@@ -365,9 +359,9 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
 
     private val _out =
 
-        val dcDfc          = DynamicFrictionCoeff_13384()(using fd.pipeType)
+        val dcDfc          = DynamicFrictionCoeff_13384()(using fd.pipeType, sc)
         import dcDfc.given
-        val _chainAwareDfc = dcDfc.makeChainAwareDfc[PipeElDescr, DirectionChange](fd.elements)
+        val _chainAwareDfc = dcDfc.makeChainAwareDfc[PipeElDescr, DirectionChange](fd.elements, sc)
 
         val initS = MapState(
             gas_temp_start = temp_start,
@@ -385,7 +379,8 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
                 st.gas_temp_start,
                 last_pipe_velocity,
                 last_InnerGeom,
-                prevO
+                prevO,
+                sc
             )(using en13384, _chainAwareDfc)
             val nextS: MapState = st.copy(
                 gas_temp_start = psr.gas_temp_end,

@@ -15,6 +15,7 @@ import afpma.firecalc.engine.ops.DynamicFrictionCoeffOp.*
 import afpma.firecalc.engine.ops.en15544.FlowOnlyDynamicFrictionCoeff_15544
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError
 import afpma.firecalc.engine.standard.FluePipeShapeSequenceError.*
+import afpma.firecalc.engine.standard.SlotContext
 
 import cats.data.*
 import cats.data.Validated.*
@@ -58,16 +59,20 @@ private[dynfrict] object RegularStraightSection:
             case ShortOrRegular.Regular => Some(s)
 
 private[dynfrict] final case class FWindow(
-    nm3 : Option[Named[S_or_DC]], // n-3
-    nm2 : Option[Named[S_or_DC]], // n-2
-    nm1 : Option[Named[S_or_DC]], // n-1
-    curr: Named[DirectionChange], // n
-    np1 : Option[Named[S_or_DC]], // n+1
-    np2 : Option[Named[S_or_DC]], // n+2
-    np3 : Option[Named[S_or_DC]]  // n+3
-)                                         (sectionTyp: PipeType)(using FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory) {
+    nm3            : Option[Named[S_or_DC]], // n-3
+    nm2            : Option[Named[S_or_DC]], // n-2
+    nm1            : Option[Named[S_or_DC]], // n-1
+    curr           : Named[DirectionChange], // n
+    np1            : Option[Named[S_or_DC]], // n+1
+    np2            : Option[Named[S_or_DC]], // n+2
+    np3            : Option[Named[S_or_DC]]  // n+3
+)                                         (using
+    sectionTyp     : PipeType,
+    sc             : SlotContext,
+    dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+) {
 
-    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp)
+    val flowOnlyDynamicFrictionCoeff_15544 = FlowOnlyDynamicFrictionCoeff_15544()(using sectionTyp, sc)
 
     def coeffs_curr(using alg: ShortSectionAlg): ValidatedNel[Err, ζ] =
         // if (nm3 && nm1) or (nm1 && np1) or (np1 && np3) are "short" sections
@@ -121,7 +126,7 @@ private[dynfrict] final case class FWindow(
                         o_dc12      = curr.t.some,
                         o_dc12_name = curr.name.some,
                         sectionTyp
-                    )
+                    )(using sc)
                 )
                 val w_np1_opt = ζ_np2_level_n_opt.map(ζ_np2_level_n =>
                     ShortSection.PipeDescrWindow.from   (
@@ -132,7 +137,7 @@ private[dynfrict] final case class FWindow(
                         o_dc12      = np2.map(_.t.asInstanceOf[DirectionChange]),
                         o_dc12_name = np2.map(_.name),
                         sectionTyp
-                    )
+                    )(using sc)
                 )
 
                 val r_nm1_v_opt = w_nm1_opt.map(x => x.andThen(y => alg.resultFromWindow(y)))
@@ -186,10 +191,12 @@ private[dynfrict] final case class FWindow(
     extension (n_sdc: Option[Named[S_or_DC]])
         def unsafePipeName   : String                       = n_sdc.map(_.name).getOrElse("<pipe name undefined")
         def ζ_level_0        : ValidatedNel[Err, Option[ζ]] =
-            n_sdc.map(_.t).map(flowOnlyDynamicFrictionCoeff_15544.whenRegularFor) match
-                case Some(Valid(c))       => Some(c).validNel
-                case Some(i @ Invalid(_)) => i
-                case None                 => None.validNel
+            n_sdc match
+                case Some(n) =>
+                    flowOnlyDynamicFrictionCoeff_15544.whenRegularFor(n.t) match
+                        case Valid(c)       => Some(c).validNel
+                        case i @ Invalid(_) => i
+                case None    => None.validNel
         def isDirectionChange: Boolean                      = n_sdc match
             case Some(_ @Named(_, _: DirectionChange)) => true
             case _                                     => false
@@ -221,8 +228,12 @@ private[dynfrict] final case class FWindow(
             _ <- check(!(nm2.isDirectionChange && nm1.isDirectionChange))(
                 TwoSuccessDirectionChangeNotAllowed(nm2.unsafePipeName, nm1.unsafePipeName)
             )
-            _ <- check(!nm1.isDirectionChange)                           (TwoSuccessDirectionChangeNotAllowed(nm1.unsafePipeName, curr.name))
-            _ <- check(!np1.isDirectionChange)                           (TwoSuccessDirectionChangeNotAllowed(curr.name, np1.unsafePipeName))
+            _ <- check(!nm1.isDirectionChange)                           (
+                TwoSuccessDirectionChangeNotAllowed(nm1.unsafePipeName, curr.name)
+            )
+            _ <- check(!np1.isDirectionChange)                           (
+                TwoSuccessDirectionChangeNotAllowed(curr.name, np1.unsafePipeName)
+            )
             _ <- check(!(np1.isDirectionChange && np2.isDirectionChange))(
                 TwoSuccessDirectionChangeNotAllowed(np1.unsafePipeName, np2.unsafePipeName)
             )
@@ -266,7 +277,9 @@ private[dynfrict] object FWindow:
         np1 : Option[Named[S_or_DC]], // n+1
         np2 : Option[Named[S_or_DC]], // n+2
         np3 : Option[Named[S_or_DC]]  // n+3
-    )(sectionTyp: PipeType)(using
-        FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
+    )(using
+        sectionTyp     : PipeType,
+        sc             : SlotContext,
+        dynFrictFactory: FlowOnlyDynamicFrictionCoeff_15544.DynFrict13384Factory
     ): Either[FluePipeShapeSequenceError, FWindow] =
-        FWindow(nm3, nm2, nm1, curr, np1, np2, np3)(sectionTyp).makeChecks
+        FWindow(nm3, nm2, nm1, curr, np1, np2, np3)(using sectionTyp, sc, dynFrictFactory).makeChecks

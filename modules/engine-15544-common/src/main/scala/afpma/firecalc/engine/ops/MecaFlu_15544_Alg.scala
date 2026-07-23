@@ -7,10 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
 import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
-import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
-import afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg
-import afpma.firecalc.engine.models.gtypedefs.z_geodetical_height
 
 /** Intermediate algebra for EN15544-based fluid mechanics calculations. */
 trait MecaFlu_15544_Alg extends MecaFluAlg with HasTypeMembers_15544_Alg:
@@ -30,22 +27,3 @@ trait MecaFlu_15544_Alg extends MecaFluAlg with HasTypeMembers_15544_Alg:
     override type Params = DraftCondition
 
     type DirectionChangeT <: Matchable
-
-/** EN15544 application context — carries load quantity, geodetical height, etc. */
-trait MecaFlu_15544_AppCtx extends MecaFluAppContext:
-    def en15544     : EN15544_V_2023_Application_Alg
-    def loadQty     : LoadQty
-    def zGeo        : z_geodetical_height
-    def shortSection: ShortSectionAlg
-
-object MecaFlu_15544_AppCtx:
-    def apply(
-        _en15544     : EN15544_V_2023_Application_Alg,
-        _loadQty     : LoadQty,
-        _zGeo        : z_geodetical_height,
-        _shortSection: ShortSectionAlg
-    ): MecaFlu_15544_AppCtx = new MecaFlu_15544_AppCtx:
-        def en15544      = _en15544
-        def loadQty      = _loadQty
-        def zGeo         = _zGeo
-        def shortSection = _shortSection

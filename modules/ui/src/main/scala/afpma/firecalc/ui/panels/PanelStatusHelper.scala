@@ -5,26 +5,32 @@
 
 package afpma.firecalc.ui.panels
 
-import afpma.firecalc.domain.IsBackendForbidden
-import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
-import afpma.firecalc.engine.models.{ElementPredicates, PipeType}
-import afpma.firecalc.engine.models.geometry.PipeFrame
-import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
-import afpma.firecalc.engine.standard.ResultsNotComputed
-import afpma.firecalc.engine.standard.HasSectionTypError
-import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
-import afpma.firecalc.engine.standard.InvalidConstraint
-import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.i18n.implicits.I18N
 import afpma.firecalc.i18n.showUsingLocale
-import io.taig.babel.Locale
+
+import afpma.firecalc.engine.models.ElementPredicates
+import afpma.firecalc.engine.models.SlotBuildResult
+import afpma.firecalc.engine.models.geometry.PipeFrame
+import afpma.firecalc.engine.standard.ErrorTarget
+import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
+import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
+import afpma.firecalc.engine.standard.InvalidConstraint
+import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.ResultsNotComputed
+import afpma.firecalc.engine.standard.TargetedError
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 
 import cats.data.*
 import cats.data.Validated.Valid
 import cats.syntax.all.*
 
 import com.raquo.airstream.core.Signal
+
+import afpma.firecalc.domain.IsBackendForbidden
+import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
+import afpma.firecalc.domain.NbOfFlows
+import io.taig.babel.Locale
 
 object PanelStatusHelper:
 
@@ -37,6 +43,7 @@ object PanelStatusHelper:
         case object DirectionIncompatible           extends PanelWarning
         case object AirIntakePipeMissing            extends PanelWarning
         case object FireboxSplitDirectionOverridden extends PanelWarning
+        case class UnmergedFlowsAtExit(nFlows: Int) extends PanelWarning
 
     /** CSS text class name for warnings. */
     def textClsNameForWarnings: String = "text-warning"
@@ -53,6 +60,8 @@ object PanelStatusHelper:
                 I18N.firebox.air_intake_pipe_missing_warning
             case PanelWarning.FireboxSplitDirectionOverridden =>
                 I18N.direction_badge.firebox_split_direction_overridden_warning
+            case PanelWarning.UnmergedFlowsAtExit(n)          =>
+                I18N.split_merge.chimney_unmerged_flows_at_exit(n.toString)
 
     // ── PanelError ADT ─────────────────────────────────────────────
 
@@ -99,16 +108,16 @@ object PanelStatusHelper:
                     else ().validNel
 
     /**
-     * Pure predicate: returns a warning when `slotIndex == 0` and the first
+     * Pure predicate: returns a warning when `isFirstSlot` and the first
      * real element (skipping property ops) is a split.
      */
     def fireboxSplitWarning[E](
-        slotIndex : Int,
-        elems     : Seq[E],
-        isSplit   : E => Boolean,
-        isProperty: E => Boolean
+        isFirstSlot: Boolean,
+        elems      : Seq[E],
+        isSplit    : E => Boolean,
+        isProperty : E => Boolean
     ): ValidatedNel[PanelWarning, Unit] =
-        if slotIndex != 0 then ().validNel
+        if !isFirstSlot then ().validNel
         else
             ElementPredicates.startsWith(elems, isProperty, isSplit) match
                 case true  => PanelWarning.FireboxSplitDirectionOverridden.invalidNel
@@ -116,16 +125,44 @@ object PanelStatusHelper:
 
     /**
      * Build a firebox split direction override warning signal.
-     * Fires when slotIndex == 0 and the first real element (skipping property ops) is a split.
+     * Fires when isFirstSlot and the first real element (skipping property ops) is a split.
      */
     def fireboxSplitWarningSignal[E](
-        slotIndex  : Int,
+        isFirstSlot: Boolean,
         elemsSignal: Signal[Seq[E]],
         isSplit    : E => Boolean,
         isProperty : E => Boolean
     ): Signal[ValidatedNel[PanelWarning, Unit]] =
-        if slotIndex != 0 then Signal.fromValue(().validNel                                                        )
-        else elemsSignal.map                   (elems => fireboxSplitWarning(slotIndex, elems, isSplit, isProperty))
+        if !isFirstSlot then Signal.fromValue(().validNel                                                          )
+        else elemsSignal.map                 (elems => fireboxSplitWarning(isFirstSlot, elems, isSplit, isProperty))
+
+    /**
+     * Pure predicate: warns when the last slot in the chain has unmerged flows.
+     * Suppressed if not the last slot, if upstream failed, or if n_flows <= 1.
+     */
+    def unmergedFlowsWarning(
+        finalNFlows    : NbOfFlows,
+        upstreamFailure: Boolean,
+        isLastSlot     : Boolean
+    ): ValidatedNel[PanelWarning, Unit] =
+        if !isLastSlot || upstreamFailure || finalNFlows.unwrap <= 1 then ().validNel
+        else PanelWarning.UnmergedFlowsAtExit(finalNFlows.unwrap).invalidNel
+
+    /**
+     * Build an unmerged flows at exit warning signal.
+     * Only active for the last slot; reads finalNFlows from SlotBuildResult.
+     */
+    def unmergedFlowsWarningSignal(
+        isLastSlot         : Boolean,
+        slotBuildResultsSig: Signal[Vector[SlotBuildResult]],
+        slotIndex          : Int
+    ): Signal[ValidatedNel[PanelWarning, Unit]] =
+        if !isLastSlot then Signal.fromValue(().validNel)
+        else
+            slotBuildResultsSig.map: results =>
+                results.lift(slotIndex) match
+                    case Some(r) => unmergedFlowsWarning(r.finalNFlows, r.upstreamFailure, isLastSlot)
+                    case None    => ().validNel
 
     private def clsNameForErrors(errs: NonEmptyList[MCalc_Error])(prefix: String): String =
         val isWarning = errs.toList.forall:
@@ -157,23 +194,25 @@ object PanelStatusHelper:
     def tooltipStyleClsNameForPanelErrors(errs: NonEmptyList[PanelError]): String =
         clsNameForPanelErrors(errs)(prefix = "tooltip-")
 
-    def keepGlobalErrorsOrErrorsSpecificToSectionTyp[A](
-        keepSectionTyp: PipeType => Boolean
-    )(
-        vnel: ValidatedNel[MCalc_Error, A]
-    ): ValidatedNel[MCalc_Error, A] =
+    /**
+     * Filter errors using the scope-containment model.
+     *
+     * For `TargetedError` instances, uses `scope.sees(error.target)`.
+     * `InvalidConstraint` extracts pipe type from nested errors for scoping.
+     * Global errors (not `TargetedError` and not `InvalidConstraint`) are kept.
+     * `ResultsNotComputed` is always filtered out.
+     */
+    def filterErrors[A](scope: PanelScope, vnel: ValidatedNel[MCalc_Error, A]): ValidatedNel[MCalc_Error, A] =
         vnel match
             case Validated.Valid(a)     => a.validNel
             case Validated.Invalid(nel) =>
                 val errs = nel.filter:
                     case ResultsNotComputed => false
-                    case ic: InvalidConstraint  =>
-                        ic.sectionTyp.fold(true)(keepSectionTyp)
-                    case x : HasSectionTypError =>
-                        if (keepSectionTyp(x.sectionTyp)) true else false
-                    case _ => true
-                if (errs.nonEmpty)
-                    NonEmptyList.fromListUnsafe(errs).invalid
+                    case te: TargetedError     => scope.sees(te.target)
+                    case ic: InvalidConstraint =>
+                        ic.sectionTyp.fold(true)(pt => scope.sees(ErrorTarget.TypeTarget(pt)))
+                    case _ => true // Global errors are kept
+                if errs.nonEmpty then NonEmptyList.fromListUnsafe(errs).invalid
                 else
-                    // errs is empty : we have errors related to other sections
+                    // All errors belong to other panels — show meta-error
                     ErrorsInOtherSectionType.invalidNel

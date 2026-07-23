@@ -200,7 +200,10 @@ object I18nData_DirectionsAddElement:
         symmetryPlaneAzimuth                    : String,
         collinearVectors                        : String,
         azimuthRequired                         : String,
-        offset                                  : String
+        offset                                  : String,
+        not_yet_implemented_air_intake          : StringFormat2,
+        not_yet_implemented_air_intake_tooltip  : String,
+        chimney_unmerged_flows_at_exit          : StringFormat1
     )
 
     case class TechnicalSpecficiations(

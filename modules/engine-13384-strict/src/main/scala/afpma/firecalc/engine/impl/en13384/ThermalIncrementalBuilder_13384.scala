@@ -12,8 +12,10 @@ import afpma.firecalc.units.coulombutils.{*, given}
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.domain.FireboxCoordinateSystem.FireboxOrigin
+
 import afpma.firecalc.engine.FlowAreaConservation
-import afpma.firecalc.engine.alg.{IncrementalBuilderAlg, SplitMerge90Validator, SplitGeometryValidator}
+import afpma.firecalc.engine.alg.IncrementalBuilderAlg
 import afpma.firecalc.engine.alg.en13384.IncrementalBuilderAlg_13384
 import afpma.firecalc.engine.impl.common.IncrementalPipeDefModule_Common
 import afpma.firecalc.engine.impl.common.instances.ChannelsDSL_13384_Instances.given
@@ -31,7 +33,9 @@ import afpma.firecalc.engine.models.geometry.PositionTracker
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.*
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.validation.AirIntakeValidation
 import afpma.firecalc.engine.standard.ShapeNotMaterialized.Operation
+import afpma.firecalc.engine.alg.{SplitMerge90Validator, SplitGeometryValidator}
 import afpma.firecalc.engine.typeclasses.*
 
 import cats.data.*
@@ -175,12 +179,12 @@ trait ThermalIncrementalBuilder_13384
     /** Inner geometry in effect after folding the first n descriptors — used by UI prefill. */
     extension (piDescr: PipeIncrDescr)
         def innerShapeAtPrefix(n: Int): Option[PipeShape] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.flatMap(stateOps.getInnerShape)
 
         /** Number of flows in effect after folding the first n descriptors. */
         def nFlowsAtPrefix(n: Int): Option[NbOfFlows] =
-            val prefixResult = piDescr.propsStateAtPrefix(n)
+            val prefixResult = piDescr.propsStateAtPrefix(n)(using SlotContext.unslotted)
             prefixResult.toOption.map(stateOps.getNFlows)
 
     override protected def mkInitPropsState(iPipeIncrDescr: PipeIncrDescr): PropsState =
@@ -223,39 +227,53 @@ trait ThermalIncrementalBuilder_13384
         incrDescrs: Vector[Id_IncrDescr],
         finalState: PropsState,
         seed      : PipeBuildSeed
-    ): ValidatedResult[Unit] =
-        val hasGeometry = incrDescrs.exists:
+    )(using sc: SlotContext): ValidatedResult[Unit] =
+        val airIntakeValidation = AirIntakeValidation.validateAirIntakeConstraints(pt, incrDescrs)
+
+        val hasGeometry        = incrDescrs.exists:
             case (_, _: AddElement) => true
             case _ => false
-        if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
-        else
-            val hasFinalDir = incrDescrs.exists:
-                case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
-                case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
-                case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
-                case _ => false
+        val geometryValidation =
+            if hasGeometry && finalState.initialFrame.isEmpty then GeometryWithoutInitialDirection(pt).invalidNel
+            else ().validNel
+
+        val hasFinalDir        = incrDescrs.exists:
+            case (_, dc: AddDirectionChange                     ) => dc.absDir.isDefined
+            case (_, _: SplitSingleFlowIntoTwoFlowsWith90DegTurn) => true
+            case (_, _: MergeTwoFlowsIntoSingleWith90DegTurn    ) => true
+            case _ => false
+        val finalDirValidation =
             if hasFinalDir && finalState.initialFrame.isEmpty then FinalDirWithoutInitialDirection(pt).invalidNel
-            else
-                val posResult       = PositionTracker.computeThermal13384(
-                    incrDescrs.map(_._2).toSeq,
-                    PipeInitialDirection.default,
-                    finalState.initialFrame,
-                    seed.positionContext.flatMap(_.startPoint).getOrElse(Vec3(0, 0, 0)),
-                    splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
-                )
-                val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
-                val splits          = posResult.splitMergePositions.filter(_.isSplit)
-                val splitValidation = NonEmptyList.fromList(splits.toList) match
-                    case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
-                    case None     => ().validNel
-                val positionErrors: ValidatedResult[Unit] =
-                    if posResult.errors.isEmpty then ().validNel
-                    else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
-                (splitValidation |+| mergeValidation |+| positionErrors).as(())
+            else ().validNel
+
+        // If geometry validation fails, skip position-dependent validations
+        if geometryValidation.isEmpty then (airIntakeValidation |+| geometryValidation |+| finalDirValidation).as(())
+        else
+            val posResult       = PositionTracker.computeThermal13384(
+                incrDescrs.map(_._2).toSeq,
+                PipeInitialDirection.default,
+                finalState.initialFrame,
+                seed.positionContext
+                    .flatMap(_.startPoint)
+                    .getOrElse(FireboxOrigin),
+                splitPosition = seed.positionContext.flatMap(_.slot0FireboxSplitPosition)
+            )
+            val mergeValidation = SplitMerge90Validator.validateAllMergePositions(posResult.splitMergePositions, pt)
+            val splits          = posResult.splitMergePositions.filter(_.isSplit)
+            val splitValidation = NonEmptyList.fromList(splits.toList) match
+                case Some(ne) => SplitGeometryValidator.validateSplitPositions(ne, posResult, pt)
+                case None     => ().validNel
+            val positionErrors  =
+                if posResult.errors.isEmpty then ().validNel
+                else posResult.errors.map(e => SymmetryPlaneAzimuthMissing(pt, e).invalidNel).sequence.map(_ => ())
+            (airIntakeValidation |+| geometryValidation |+| finalDirValidation |+| splitValidation |+| mergeValidation |+| positionErrors)
+                .as(())
 
     override protected def mkFullElementsDescr(
         prevs   : PipeFullDescr,
         convStep: ConversionStep
+    )(using
+        sc: SlotContext
     )(
         id_addElementOp: (IdIncr, AddElement)
     ): CtxValidatedResult[NonEmptyList[(IdIncr, NamedPipeElDescr)]] =
@@ -299,7 +317,13 @@ trait ThermalIncrementalBuilder_13384
 
             case op: AddDirectionChange =>
                 stateOps
-                    .validateMaterialized(st, Operation.AddDirectionChange, pt, idIncr.unwrap, addElementOp.name)
+                    .validateMaterialized(
+                        st,
+                        Operation.AddDirectionChange,
+                        pt,
+                        idIncr.unwrap,
+                        addElementOp.name
+                    )
                     .andThen { _ =>
                         given DirectionChangeCtx_13384 = DirectionChangeCtx_13384(
                             stateOps.getInnerShape(st),
@@ -313,7 +337,13 @@ trait ThermalIncrementalBuilder_13384
 
             case op: AddSectionChange =>
                 stateOps
-                    .validateMaterialized(st, Operation.AddSectionChange, pt, idIncr.unwrap, addElementOp.name)
+                    .validateMaterialized(
+                        st,
+                        Operation.AddSectionChange,
+                        pt,
+                        idIncr.unwrap,
+                        addElementOp.name
+                    )
                     .andThen { _ =>
                         given SectionGeometryChangeCtx_13384 =
                             SectionGeometryChangeCtx_13384(
@@ -405,7 +435,7 @@ trait ThermalIncrementalBuilder_13384
     override protected def updateStateBeforeConversionStep(
         propsState: PropsState,
         convStep  : ConversionStep
-    ): ValidatedResult[PropsState] =
+    )(using sc: SlotContext): ValidatedResult[PropsState] =
         // Use the AddElement's idIncr for elementIndex in errors — it is the physical
         // element that the pre-element ops target, so the error points to the element
         // the user sees (and can fix) rather than the preceding SetInnerShape row.
@@ -424,13 +454,14 @@ trait ThermalIncrementalBuilder_13384
                 g     : PipeShape
             ): ValidatedNel[IncrementalValidation_Error, PropsState] =
                 vState.andThen { st =>
-                    stateOps.validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, elemName).andThen {
-                        _ =>
+                    stateOps
+                        .validateMaterialized(st, Operation.SetInnerShape, pt, nextElemIdIncr, elemName)
+                        .andThen { _ =>
                             FlowAreaConservation
                                 .validateSetInnerShape(st, g, pt, nextElemIdIncr, elemName)(using stateOps)
                                 .toValidatedNel
                                 .map(s => stateOps.setInnerShape(s, g))
-                    }
+                        }
                 }
             atom match
                 case SetInnerShape(g)                                 =>
@@ -453,7 +484,9 @@ trait ThermalIncrementalBuilder_13384
                 case SetMaterial(lm)                                  =>
                     vState.map(_.modify(_.roughness).setTo(lm.roughness.some))
                 case SetLayer(e, lambda)                              =>
-                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt)))
+                    val vGeom = vState.andThen(
+                        _.getValidated(stateOps.getInnerShape, LayerRequiresSectionGeometry(pt))
+                    )
                     vGeom.andThen: geom =>
                         vState.map(
                             _.modify(_.layers)
@@ -462,7 +495,8 @@ trait ThermalIncrementalBuilder_13384
                                 .setTo(geom.expandGeomWithThickness(e).some)
                         )
                 case SetLayers(ldescrs)                               =>
-                    val vGeom = vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
+                    val vGeom =
+                        vState.andThen(_.getValidated(stateOps.getInnerShape, LayersRequireInnerShape(pt)))
 
                     vGeom andThen: geom =>
                         vState.map(
@@ -513,7 +547,7 @@ trait ThermalIncrementalBuilder_13384
             IncrementalValidation_Error,
             PropsState
         ]
-    ): ValidatedNel[IncrementalValidation_Error, PropsState] =
+    )(using sc: SlotContext): ValidatedNel[IncrementalValidation_Error, PropsState] =
         val LinedFlue(_, liner, airSpace, casing) = lf
 
         // Apply liner's non-layer props (material, inner shape, roughness, etc.)
