@@ -18,8 +18,12 @@ import scala.scalajs.js
  * The error is caught downstream by `.recoverToTry`, but the unhandled rejection
  * message persists in the console.
  *
- * This fork wraps the raw promise with `.catch(e => Promise.reject(e))` to give
- * the promise a handler from creation, preventing the unhandled rejection.
+ * This fork attaches a no-op rejection handler to the fetch promise at creation,
+ * so the browser never reports an unhandled rejection — neither when the rejection
+ * beats the deferred `fireValue` (throttled timers / busy main thread), nor when
+ * the stream is stopped in the deferral window and downstream handlers never attach.
+ * Promise reactions are independent: the handlers `JsPromiseStream` attaches later
+ * still receive the rejection, so downstream `.recoverToTry` keeps working.
  *
  * Simplified fork: abort stream functionality removed (not used in this codebase).
  */
@@ -101,20 +105,18 @@ class SafeFetchStream(
     override protected val topoRank: Int = 1
 
     override protected def onWillStart(): Unit =
-        // KEY FIX: Wrap the raw fetch promise with .catch() to prevent unhandled rejections.
-        // The original FetchStream calls dom.Fetch.fetch() directly, leaving the promise
-        // without a handler until downstream .recoverToTry catches it. This causes the
-        // browser to log "Uncaught (in promise)" even though the error is handled.
-        // By wrapping with .catch(e => Promise.reject(e)), we give the promise a handler
-        // from creation, preventing the unhandled rejection.
-        val rawPromise = dom.Fetch.fetch(url, requestInit)
-        val safePromise: js.Promise[dom.Response] =
-            rawPromise.`catch`[dom.Response]((error: Any) =>
-                new js.Promise[dom.Response]((_, rejectFn) => rejectFn(error))
-            )
+        // Guard: mark the promise as handled AT CREATION so the browser never reports
+        // "Uncaught (in promise)". Wrapping with .catch(e => Promise.reject(e)) does NOT
+        // work — the derived promise rejects with the same error and has the same exposure
+        // (verified empirically: identical console-error counts to the raw pattern).
+        // The no-op handler does not consume the error for downstream: JsPromiseStream's
+        // .then(onF, onR), attached when it starts, is an independent reaction and still
+        // receives the rejection.
+        val promise = dom.Fetch.fetch(url, requestInit)
+        promise.`catch`((_: Any) => ()): Unit
 
         js.timers.setTimeout(0) {
-            Transaction(fireValue(safePromise, _))
+            Transaction(fireValue(promise, _))
         }
 
 end SafeFetchStream

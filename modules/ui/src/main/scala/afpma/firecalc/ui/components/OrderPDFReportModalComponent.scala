@@ -27,6 +27,7 @@ import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.BillingLanguage
 import afpma.firecalc.ui.models.schema.v1.BillingInfoWithLanguage
 import afpma.firecalc.ui.utils.PaymentsBackendApiConnectivity
+import afpma.firecalc.ui.utils.SafeFetchStream
 
 import cats.syntax.show.toShow
 
@@ -218,7 +219,7 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
             customer        = customerInfo
         )
         val requestBody = createPurchaseIntentRequest.asJson.noSpaces
-        FetchStream
+        SafeFetchStream
             .post(
                 url = UIConfig.Endpoints.createPurchaseIntent,
                 init => {
@@ -335,7 +336,7 @@ case class OrderPDFReportModalComponent()(using DisplayUnits, Locale) extends Co
                 val requestBody = verifyRequest.asJson.noSpaces
 
                 // Make the POST request with proper headers and handle both success and error responses
-                FetchStream
+                SafeFetchStream
                     .post(
                         url = UIConfig.Endpoints.verifyAndProcess,
                         init => {
