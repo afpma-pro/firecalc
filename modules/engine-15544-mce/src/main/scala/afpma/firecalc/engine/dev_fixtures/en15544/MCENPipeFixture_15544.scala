@@ -118,14 +118,14 @@ object MCENPipeFixture_15544
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        h11_profondeurDuFoyer            = 33.2.cm,
-        h12_largeurDuFoyer               = 33.2.cm,
-        h13_hauteurDuFoyer               = 51.9.cm,
-        h66_coeffPerteDeChargePorte      = 0.3.unitless,
-        h67_sectionCumuleeEntreeAirPorte = 94.cm2,
-        h71_largeurVitre                 = 15.cm,
-        h72_hauteurVitre                 = 20.cm,
-        ash_pit_height                   = 5.cm
+        firebox_depth_B                       = 33.2.cm,
+        firebox_width_A                       = 33.2.cm,
+        firebox_height_H                      = 51.9.cm,
+        pressure_loss_coefficient_from_door   = 0.3.unitless,
+        total_air_intake_surface_area_on_door = 94.cm2,
+        glass_width                           = 15.cm,
+        glass_height                          = 20.cm,
+        ash_pit_height_AF                     = 5.cm
     )
 
     // ── Legacy 3-pipe descriptors (required by WithPipeChain_15544_MCE) ──────────
@@ -329,14 +329,14 @@ object MCENPipeFixture_15544_CFCF
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        h11_profondeurDuFoyer            = 33.2.cm,
-        h12_largeurDuFoyer               = 33.2.cm,
-        h13_hauteurDuFoyer               = 51.9.cm,
-        h66_coeffPerteDeChargePorte      = 0.3.unitless,
-        h67_sectionCumuleeEntreeAirPorte = 94.cm2,
-        h71_largeurVitre                 = 15.cm,
-        h72_hauteurVitre                 = 20.cm,
-        ash_pit_height                   = 5.cm
+        firebox_depth_B                       = 33.2.cm,
+        firebox_width_A                       = 33.2.cm,
+        firebox_height_H                      = 51.9.cm,
+        pressure_loss_coefficient_from_door   = 0.3.unitless,
+        total_air_intake_surface_area_on_door = 94.cm2,
+        glass_width                           = 15.cm,
+        glass_height                          = 20.cm,
+        ash_pit_height_AF                     = 5.cm
     )
 
     // ── Legacy 3-pipe descriptors (required by WithPipeChain_15544_MCE) ──

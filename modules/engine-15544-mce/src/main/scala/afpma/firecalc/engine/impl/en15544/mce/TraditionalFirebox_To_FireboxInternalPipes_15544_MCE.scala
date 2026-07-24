@@ -33,13 +33,13 @@ object TraditionalFirebox_To_FireboxInternalPipes_15544_MCE
                 .withInitialDirection(PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
                 .define(
                     pipeLocation                  (PipeLocation.HeatedArea   ), // added for EN13384
-                    innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
+                    innerShape(rectangle(firebox_depth_B, firebox_width_A)),
                     layer                         (e = 1.cm, λ = 1.3.W_per_mK), // added for EN13384
                     roughness                     (3.mm                      ), // TOFIX: 3mm or 2mm ???
                     addFlowResistance_crossSection(
                         "porte",
-                        h66_coeffPerteDeChargePorte,
-                        h67_sectionCumuleeEntreeAirPorte
+                        pressure_loss_coefficient_from_door,
+                        total_air_intake_surface_area_on_door
                     )
                 )
                 .toFullDescr(using SlotContext.unslotted)

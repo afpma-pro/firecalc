@@ -38,28 +38,34 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
             import CombustionAirPipe_Module_15544.*
             import firebox.*
 
-            val TOFIX_ARBITRARY_LENGTH = 15.cm
+            // TOCHECK TOFIX
+            val air_manifold_arbitrary_length = 15.cm
 
             // val DEFAULT_LAYER = layer(e = 1.cm, λ = 1.3.W_per_mK) // added for EN13384, not applicable to EN 15544
 
             val start_00_common = Seq(
-                roughness(3.mm)
+                roughness(3.mm) // TOCHECK
                 // pipeLocation        (PipeLocation.HeatedArea            ), // added for EN13384, not applicable for EN 15544
             )
 
-            val CHAMBRE_DETENTE_INNER_SHAPE =
-                innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = h11_profondeurDuFoyer - 6.cm))
+            val air_manifold_inner_shape =
+                innerShape(
+                    rectangle(
+                        a = firebox_width_A - 6.cm, // TOCHECK
+                        b = firebox_depth_B - 6.cm // TOCHECK
+                    )
+                )
 
             lazy val start_01_version_1 = Seq(
                 // just a 90° turn before going up in chambre de détente
-                CHAMBRE_DETENTE_INNER_SHAPE,
+                air_manifold_inner_shape,
                 // DEFAULT_LAYER, // not applicable en EN 15544
                 addSectionHorizontal("-", 0.cm), // so that a turn is allowed by the engine
 
                 // other possible approximation :
                 // - air intake -> center of chambre de détente
-                // innerShape(rectangle(a = h12_largeurDuFoyer - 6.cm, b = TOFIX_ARBITRARY_LENGTH * 2.0)), // switch width to depth if Right or Left
-                // addSectionHorizontal("-", (h11_profondeurDuFoyer - 6.cm) / 2.0)
+                // innerShape(rectangle(a = firebox_width_A - 6.cm, b = air_manifold_arbitrary_length * 2.0)), // switch width to depth if Right or Left
+                // addSectionHorizontal("-", (firebox_depth_B - 6.cm) / 2.0)
 
                 addSharpAngle_90deg(
                     "angle vif 90°",
@@ -67,16 +73,16 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 ), // Up
 
                 // center of chambre de détente | down limit of chambre de détente -> floor / red-line
-                CHAMBRE_DETENTE_INNER_SHAPE,
+                air_manifold_inner_shape,
                 addSectionVertical (
                     "chambre de détente (-> Haut)",
-                    TOFIX_ARBITRARY_LENGTH
+                    air_manifold_arbitrary_length
                 ) // TOFIX (source: CalculPdM v0.2.34)
             )
 
             lazy val air_intake_equivalent_shape =
                 circle(
-                    arriveeAirGeometryOpt
+                    actual_air_intake_pipe_shape_opt
                         .map(_.perimeterWetted)
                         .getOrElse(
                             throw new IllegalStateException(
@@ -94,7 +100,7 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
                 // Up + length = W/2
                 addSectionVertical  (
                     "vers centre chambre de détente",
-                    h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0
+                    air_manifold_height_W / 2.0
                 ),
 
                 // Turn 90°
@@ -105,13 +111,13 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
 
                 innerShape(
                     rectangle(
-                        a = c24_largeurDesColonnesAirLaterales * 2.0 + c25_largeurDesColonnesAirArrieres,
-                        b = h75_hauteurArriveeConduitAir_DessousSoleFoyer_W
+                        a = air_columns_total_width_side_wall * 2.0 + air_columns_total_width_rear_wall,
+                        b = air_manifold_height_W
                     )
                 ),
                 addSectionHorizontal(
                     "vers colonnes d'air",
-                    (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0) / 4.0 + h77_epaisseurParoiInterneFoyer_D1 + h78_largeurEspaceInterparoisDuFoyer_S / 2.0
+                    (2.0 * firebox_width_A / 2.0 + 2.0 * firebox_depth_B / 2.0) / 4.0 + inner_wall_thickness_D1 + air_column_thickness_S / 2.0
                 ),
                 addSharpAngle_90deg (
                     "virage au pied des colonnes d'air",
@@ -120,13 +126,13 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
 
                 innerShape(
                     rectangle(
-                        a = 2 * c24_largeurDesColonnesAirLaterales + c25_largeurDesColonnesAirArrieres,
-                        b = c11_largeurEspaceInterParoisFoyer_S
+                        a = 2 * air_columns_total_width_side_wall + air_columns_total_width_rear_wall,
+                        b = air_column_thickness_S
                     )
                 ),
                 addSectionVertical  (
                     "remontée dans les colonnes d'air",
-                    h75_hauteurArriveeConduitAir_DessousSoleFoyer_W / 2.0 + h76_epaisseurSole + c18_hauteurEntreLesInjecteurs_Y * 2.0
+                    air_manifold_height_W / 2.0 + firebox_floor_thickness + distance_between_air_injectors_Y * 2.0
                 ),
                 addSharpAngle_90deg (
                     "virage 90° avant injecteur",
@@ -135,17 +141,17 @@ object EcolabeledToFireboxInternalPipes_15544_Strict
 
                 innerShape(
                     rectangle(
-                        a = c19_largeurDesInjecteursLateraux * 4.0 * 2.0
-                            + c20_largeurDesInjecteursArrieres * 4.0
-                            + c21_largeurDesInjecteursSousPorte
-                            - 8.0 * c12_largeurRenfortMedianLateraux
-                            - 4.0 * c13_largeurRenfortMedianArriere,
-                        b = c15_hauterDesInjecteurs
+                        a = injector_width_side_wall_Ls * 4.0 * 2.0
+                            + injector_width_rear_wall_Lr * 4.0
+                            + injector_width_door_wall_Lt
+                            - 8.0 * width_between_two_air_columns_sides_E
+                            - 4.0 * width_between_two_air_columns_rear_E,
+                        b = injector_height_Z
                     )
                 ),
                 addSectionHorizontal(
                     "injecteurs",
-                    c10_epaisseurParoiInterneDuFoyer + c11_largeurEspaceInterParoisFoyer_S / 2.0
+                    inner_wall_thickness_D1 + air_column_thickness_S / 2.0
                 )
             )
 

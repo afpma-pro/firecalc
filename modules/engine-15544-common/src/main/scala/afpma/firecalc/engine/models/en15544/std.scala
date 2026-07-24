@@ -284,7 +284,7 @@ object std:
 
                         (I18N.firebox.typ                                              :: "" :: I18N.firebox_names.custom_lab_tested :: Nil) ::
                             (I18N.firebox.traditional.firebox_floor_shape              :: "" :: dimensions.base.showP                :: Nil) ::
-                            (I18N.firebox.firebox_height                               :: "" :: dimensions.height.to_cm.showP        :: Nil) ::
+                            (I18N.firebox.firebox_height_H                             :: "" :: dimensions.height.to_cm.showP        :: Nil) ::
                             (I18N.en15544.terms_xtra.height_of_the_lowest_opening.name :: "" :: height_of_lowest_opening.to_cm.showP :: Nil) ::
                             (I18N.firebox.traditional.glass_surface_area               :: "" :: glass_area.showP                     :: Nil) ::
                             Nil

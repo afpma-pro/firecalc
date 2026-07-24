@@ -35,16 +35,16 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
             import CombustionAirPipe_Module_15544.*
             import firebox.*
 
-            firebox.origineArriveeAir match
-                case AFPMA_PRSE.OutsideAirLocationInHeater.FromBottom =>
+            firebox.air_intake_direction match
+                case AFPMA_PRSE.AirIntakeDirection.FromBottom =>
                     val fullDescr = CombustionAirPipe_Module_15544.incremental
                         .withInitialDirection                                 (PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up))
                         .define(
-                            innerShape          (arriveeAirGeometry                          ),
-                            roughness           (3.mm                                        ),
+                            innerShape          (actual_air_intake_pipe_shape             ),
+                            roughness           (3.mm                                     ),
                             addSectionVertical  (
                                 "remontée dans chambre de détente",
-                                (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U) / 2.0
+                                (outside_air_inlet_lip_U - height_of_air_feed_to_columns_W) / 2.0
                             ),
                             addSharpAngle_90deg (
                                 "virage vers colonnes d'air",
@@ -52,19 +52,19 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                             ), // Left
                             innerShape(
                                 rectangle(
-                                    a = arriveeAirGeometry.perimeterWetted,
-                                    b = (h93_hauteurEmbaseDessousSoleFoyer_V - h94_hauteurDepassementArriveeAirFoyer_U)
+                                    a = actual_air_intake_pipe_shape.perimeterWetted,
+                                    b = (outside_air_inlet_lip_U - height_of_air_feed_to_columns_W)
                                 )
                             ),
                             addSectionHorizontal(
                                 "longueur jusqu'au milieu des colonnes d'air",
-                                (2.0 * h12_largeurDuFoyer / 2.0 + 2.0 * h11_profondeurDuFoyer / 2.0           ) / 4.0 + 7.1.cm
+                                (2.0 * firebox_width_A / 2.0 + 2.0 * firebox_depth_B / 2.0) / 4.0 + 7.1.cm
                             ),
                             addSharpAngle_90deg (
                                 "virage au pied des colonnes d'air",
                                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Up)
                             ), // Up
-                            roughness           (2.mm                                        ),
+                            roughness           (2.mm                                     ),
                             innerShape(
                                 rectangle(
                                     a = 3.2.cm,
@@ -72,19 +72,19 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                         // TOFIX: found in CalculPdM-v0.2.30
                                         // - why division by 4.0 ??
                                         // - 6.6cm or 6.5cm ??
-                                        6.5.cm * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
+                                        6.5.cm * (nb_of_air_columns_feeding_firebox + nb_of_air_columns_feeding_door / 4.0)
                                 )
                             ),
                             // b = 6.5.cm * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte))), // use this instead ?
                             addSectionVertical  (
                                 "remontée dans les colonnes d'air",
-                                h91_hauteurDuCendrier_AF + h92_epaisseurSole_S + h93_hauteurEmbaseDessousSoleFoyer_V - h95_hauteurPassageVersColonneAir_W / 2.0 + 13.5.cm
+                                ash_pit_height_AF + firebox_floor_thickness + outside_air_inlet_lip_U - air_manifold_height_V / 2.0 + 13.5.cm
                             ),
                             addSharpAngle_90deg (
                                 "virage avant canal horizontal injecteur",
                                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)
                             ), // Right
-                            roughness           (1.mm                                        ),
+                            roughness           (1.mm                                     ),
                             innerShape(
                                 rectangle(
                                     a =
@@ -95,10 +95,10 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                         // TOFIX: found in CalculPdM-v0.2.30
                                         // - why 6,6cm ? not 6,5cm ?
                                         // - why x4 and /4 ?
-                                        6.6.cm * 4 * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
+                                        6.6.cm * 4 * (nb_of_air_columns_feeding_firebox + nb_of_air_columns_feeding_door / 4.0)
                                 )
                             ),
-                            addSectionHorizontal("canal injecteurs horizontal 1/3", 2.cm     ),
+                            addSectionHorizontal("canal injecteurs horizontal 1/3", 2.cm  ),
                             innerShape(
                                 rectangle(
                                     a =
@@ -108,12 +108,12 @@ object AFPMA_PRSEToFireboxInternalPipes_15544_Strict
                                     b =
                                         // TOFIX: found in CalculPdM-v0.2.30
                                         // - why x4 and /4 ?
-                                        7.9.cm * 4 * (h96_nbColonnesAirFoyer + h97_nbColonnesAirPorte / 4.0)
+                                        7.9.cm * 4 * (nb_of_air_columns_feeding_firebox + nb_of_air_columns_feeding_door / 4.0)
                                 )
                             ),
-                            addSectionHorizontal("canal injecteurs horizontal 2/3", 2.cm     ),
-                            innerShape          (firebox.geometrieEquivalenteDesInjecteursAir),
-                            addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm   )
+                            addSectionHorizontal("canal injecteurs horizontal 2/3", 2.cm  ),
+                            innerShape          (firebox.equiv_geometry_of_air_columns    ),
+                            addSectionHorizontal("canal injecteurs horizontal 3/3", 1.5.cm)
                         )
                         .toFullDescr(using SlotContext.unslotted)
                     CombustionAirPipe_Module_15544.FullDescrResult.extractPipe(fullDescr                                                           )

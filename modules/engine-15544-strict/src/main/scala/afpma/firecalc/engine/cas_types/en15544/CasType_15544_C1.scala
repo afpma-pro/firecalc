@@ -78,15 +78,15 @@ object CasType_15544_C1
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        h11_profondeurDuFoyer       = 33.2.cm,
-        h12_largeurDuFoyer          = 33.2.cm,
-        h13_hauteurDuFoyer          = 51.3.cm,
-        h66_coeffPerteDeChargePorte =
+        firebox_depth_B                     = 33.2.cm,
+        firebox_width_A                     = 33.2.cm,
+        firebox_height_H                    = 51.3.cm,
+        pressure_loss_coefficient_from_door =
             0.3.unitless, // ??? in basic2plus, not specified in EN15544 (what about in some test report ?)
-        h67_sectionCumuleeEntreeAirPorte = 92.cm2,
-        h71_largeurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                 = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        ash_pit_height                   = 5.cm
+        total_air_intake_surface_area_on_door = 92.cm2,
+        glass_width                           = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        glass_height                          = 0.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height_AF                     = 5.cm
     )
 
     override def postFireboxInitialDirection = Some(

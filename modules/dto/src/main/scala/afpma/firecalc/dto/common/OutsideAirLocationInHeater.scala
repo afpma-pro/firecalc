@@ -15,4 +15,4 @@ object OutsideAirLocationInHeater:
     type FromBottom = FromBottom.type
 
     given ShowUsingLocale[OutsideAirLocationInHeater] =
-        showUsingLocale(_ => I18N.firebox.afpma_prse.outside_air_location_from_bottom)
+        showUsingLocale(_ => I18N.firebox.afpma_prse.air_intake_direction_from_bottom)

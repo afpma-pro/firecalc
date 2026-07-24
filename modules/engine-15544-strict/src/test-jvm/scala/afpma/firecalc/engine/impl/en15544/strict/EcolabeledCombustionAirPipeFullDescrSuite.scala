@@ -36,6 +36,17 @@ import org.scalatest.matchers.should.Matchers
  * air-intake shape) into a human-readable table.
  *
  * Fixture values are taken from CasType_15544_C3 (golden fixture).
+ *
+ * Variable suffixes (from source code):
+ *   A  = firebox_width_A                                  (firebox width)
+ *   B  = firebox_depth_B                                  (firebox depth)
+ *   W  = air_manifold_height_W                            (air manifold height)
+ *   S  = air_column_thickness_S                           (air column thickness)
+ *   Y  = distance_between_air_injectors_Y                 (injector spacing)
+ *   Z  = injector_height_Z                                (injector height)
+ *   D1 = inner_wall_thickness_D1                          (inner wall thickness)
+ *   Ls = injector_width_side_wall_Ls                      (lateral injector width)
+ *   Lr = injector_width_rear_wall_Lr                      (rear injector width)
  */
 class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matchers:
 
@@ -91,52 +102,52 @@ class EcolabeledCombustionAirPipeFullDescrSuite extends AnyFreeSpec with Matcher
     )
 
     private def makeV1(p: EcolabeledFixtureParams): Ecolabeled_V1 =
-        Ecolabeled_V1                                     (
-            pn_reduced                                      = p.heatOutputReduced,
-            h11_profondeurDuFoyer                           = p.fireboxDepth,
-            h12_largeurDuFoyer                              = p.fireboxWidth,
-            h13_hauteurDuFoyer                              = p.fireboxHeight,
-            h70_largeurPorteDansMaconnerie                  = p.doorOpeningWidth,
-            h71_largeurVitre                                = p.glassWidth,
-            h72_hauteurVitre                                = p.glassHeight,
-            h74_hauteur_de_cendrier_AF                      = p.ashPitHeight,
-            h75_hauteurArriveeConduitAir_DessousSoleFoyer_W = p.airManifoldHeight,
-            h76_epaisseurSole                               = p.fireboxFloorThickness,
-            h77_epaisseurParoiInterneFoyer_D1               = p.innerWallThickness,
-            epaisseurParoiExterneFoyer_D2                   = p.outerWallThickness,
-            h78_largeurEspaceInterparoisDuFoyer_S           = p.airColumnThickness,
-            h79_largeurRenfortMedianLateraux                = p.widthBetweenAirColumnsSides,
-            h80_largeurRenfortMedianArriere                 = p.widthBetweenAirColumnsRear,
-            r1                                              = p.reinforcementOffsetR1,
-            r2                                              = p.reinforcementOffsetR2,
-            r3                                              = p.reinforcementOffsetR3,
-            h82_hauteurDesInjecteurs_Z                      = p.injectorHeight,
-            h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = p.heightFirstRowInjectors
+        Ecolabeled_V1                             (
+            pn_reduced                              = p.heatOutputReduced,
+            firebox_depth_B                         = p.fireboxDepth,
+            firebox_width_A                         = p.fireboxWidth,
+            firebox_height_H                        = p.fireboxHeight,
+            door_opening_width                      = p.doorOpeningWidth,
+            glass_width                             = p.glassWidth,
+            glass_height                            = p.glassHeight,
+            ash_pit_height_AF                       = p.ashPitHeight,
+            air_manifold_height_W                   = p.airManifoldHeight,
+            firebox_floor_thickness                 = p.fireboxFloorThickness,
+            inner_wall_thickness_D1                 = p.innerWallThickness,
+            outer_wall_thickness_D2                 = p.outerWallThickness,
+            air_column_thickness_S                  = p.airColumnThickness,
+            width_between_two_air_columns_sides_E   = p.widthBetweenAirColumnsSides,
+            width_between_two_air_columns_rear_E    = p.widthBetweenAirColumnsRear,
+            reinforcement_bars_offset_in_corners_R1 = p.reinforcementOffsetR1,
+            reinforcement_bars_offset_in_corners_R2 = p.reinforcementOffsetR2,
+            reinforcement_bars_offset_in_corners_R3 = p.reinforcementOffsetR3,
+            injector_height_Z                       = p.injectorHeight,
+            height_of_first_row_of_air_injectors_X  = p.heightFirstRowInjectors
         )
 
     private def makeV2(p: EcolabeledFixtureParams): Ecolabeled_V2 =
-        Ecolabeled_V2                                     (
-            pn_reduced                                      = p.heatOutputReduced,
-            arriveeAirGeometry                              = PipeShape.Circle(20.cm),
-            h11_profondeurDuFoyer                           = p.fireboxDepth,
-            h12_largeurDuFoyer                              = p.fireboxWidth,
-            h13_hauteurDuFoyer                              = p.fireboxHeight,
-            h70_largeurPorteDansMaconnerie                  = p.doorOpeningWidth,
-            h71_largeurVitre                                = p.glassWidth,
-            h72_hauteurVitre                                = p.glassHeight,
-            h74_hauteur_de_cendrier_AF                      = p.ashPitHeight,
-            h75_hauteurArriveeConduitAir_DessousSoleFoyer_W = p.airManifoldHeight,
-            h76_epaisseurSole                               = p.fireboxFloorThickness,
-            h77_epaisseurParoiInterneFoyer_D1               = p.innerWallThickness,
-            epaisseurParoiExterneFoyer_D2                   = p.outerWallThickness,
-            h78_largeurEspaceInterparoisDuFoyer_S           = p.airColumnThickness,
-            h79_largeurRenfortMedianLateraux                = p.widthBetweenAirColumnsSides,
-            h80_largeurRenfortMedianArriere                 = p.widthBetweenAirColumnsRear,
-            r1                                              = p.reinforcementOffsetR1,
-            r2                                              = p.reinforcementOffsetR2,
-            r3                                              = p.reinforcementOffsetR3,
-            h82_hauteurDesInjecteurs_Z                      = p.injectorHeight,
-            h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = p.heightFirstRowInjectors
+        Ecolabeled_V2                             (
+            pn_reduced                              = p.heatOutputReduced,
+            actual_air_intake_pipe_shape            = PipeShape.Circle(20.cm),
+            firebox_depth_B                         = p.fireboxDepth,
+            firebox_width_A                         = p.fireboxWidth,
+            firebox_height_H                        = p.fireboxHeight,
+            door_opening_width                      = p.doorOpeningWidth,
+            glass_width                             = p.glassWidth,
+            glass_height                            = p.glassHeight,
+            ash_pit_height_AF                       = p.ashPitHeight,
+            air_manifold_height_W                   = p.airManifoldHeight,
+            firebox_floor_thickness                 = p.fireboxFloorThickness,
+            inner_wall_thickness_D1                 = p.innerWallThickness,
+            outer_wall_thickness_D2                 = p.outerWallThickness,
+            air_column_thickness_S                  = p.airColumnThickness,
+            width_between_two_air_columns_sides_E   = p.widthBetweenAirColumnsSides,
+            width_between_two_air_columns_rear_E    = p.widthBetweenAirColumnsRear,
+            reinforcement_bars_offset_in_corners_R1 = p.reinforcementOffsetR1,
+            reinforcement_bars_offset_in_corners_R2 = p.reinforcementOffsetR2,
+            reinforcement_bars_offset_in_corners_R3 = p.reinforcementOffsetR3,
+            injector_height_Z                       = p.injectorHeight,
+            height_of_first_row_of_air_injectors_X  = p.heightFirstRowInjectors
         )
 
     // ── Formatting helpers ───────────────────────────────────────────────

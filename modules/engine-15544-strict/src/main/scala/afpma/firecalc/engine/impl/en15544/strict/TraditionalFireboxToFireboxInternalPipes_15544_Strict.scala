@@ -33,12 +33,12 @@ object TraditionalFireboxToFireboxInternalPipes_15544_Strict
             val fullDescr = CombustionAirPipe_Module_15544.incremental
                 .withInitialDirection                                 (PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal))
                 .define(
-                    innerShape(rectangle(h11_profondeurDuFoyer, h12_largeurDuFoyer)),
+                    innerShape(rectangle(firebox_depth_B, firebox_width_A)),
                     roughness        (3.mm), // TOFIX: 3mm or 2mm ???
                     addFlowResistance(
                         "porte",
-                        h66_coeffPerteDeChargePorte,
-                        cross_section = h67_sectionCumuleeEntreeAirPorte
+                        pressure_loss_coefficient_from_door,
+                        cross_section = total_air_intake_surface_area_on_door
                     )
                 )
                 .toFullDescr(using SlotContext.unslotted)

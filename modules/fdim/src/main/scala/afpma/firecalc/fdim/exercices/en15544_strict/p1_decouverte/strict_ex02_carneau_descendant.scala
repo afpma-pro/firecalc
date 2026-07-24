@@ -48,14 +48,14 @@ object strict_ex02_carneau_descendant
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        h11_profondeurDuFoyer            = 33.2.cm,
-        h12_largeurDuFoyer               = 33.2.cm,
-        h13_hauteurDuFoyer               = 51.9.cm,
-        h66_coeffPerteDeChargePorte      = 0.3.unitless,
-        h67_sectionCumuleeEntreeAirPorte = 94.cm2,
-        h71_largeurVitre                 = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        h72_hauteurVitre                 = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
-        ash_pit_height                   = 5.cm
+        firebox_depth_B                       = 33.2.cm,
+        firebox_width_A                       = 33.2.cm,
+        firebox_height_H                      = 51.9.cm,
+        pressure_loss_coefficient_from_door   = 0.3.unitless,
+        total_air_intake_surface_area_on_door = 94.cm2,
+        glass_width                           = 15.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        glass_height                          = 20.cm, // TODO: à spécifier (nouveauté EN15544:2023)
+        ash_pit_height_AF                     = 5.cm
     )
 
     override def postFireboxInitialDirection = Some(

@@ -31,6 +31,7 @@ import magnolia1.Transl
 
 sealed trait Ecolabeled extends CertifiedDesign:
 
+    // TOCHECK
     override val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = 0.5
     override val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = 2.0
 
@@ -40,75 +41,65 @@ sealed trait Ecolabeled extends CertifiedDesign:
     override def max_load         = None
 
     val pn_reduced: HeatOutputReduced
-    val co2_dry_nominal: σ_CO2         = 7.05.percent // TOFIX
+    val co2_dry_nominal: σ_CO2         = 7.05.percent // TOCHECK
     val co2_dry_lowest : Option[σ_CO2] = None
-    val arriveeAirGeometryOpt                          : Option[PipeShape]
-    val h11_profondeurDuFoyer                          : QtyD[Meter]
-    val h12_largeurDuFoyer                             : QtyD[Meter]
-    val h13_hauteurDuFoyer                             : QtyD[Meter]
-    val h70_largeurPorteDansMaconnerie                 : Length
-    val h71_largeurVitre                               : Length
-    val h72_hauteurVitre                               : Length
-    val h74_hauteur_de_cendrier_AF                     : Length
-    val h75_hauteurArriveeConduitAir_DessousSoleFoyer_W: Length
-    val h76_epaisseurSole                              : Length
-    val h77_epaisseurParoiInterneFoyer_D1              : Length
-    val epaisseurParoiExterneFoyer_D2                  : Length
-    val h78_largeurEspaceInterparoisDuFoyer_S          : Length
-    private val air_column_thickness_door_wall_St = h78_largeurEspaceInterparoisDuFoyer_S // TOCHECK
-    val h79_largeurRenfortMedianLateraux: Length
-    val h80_largeurRenfortMedianArriere : Length
-    val r1                              : Length
-    val r2                              : Length
-    val r3                              : Length
-    val h82_hauteurDesInjecteurs_Z      : Length
-    private val injector_height_door_wall_Zt: Length = h82_hauteurDesInjecteurs_Z // TOCHECK
-    val h83_hauteurEntreLaSoleEtLe1erInjecteur_X: Length
-    val version                                 : Ecolabeled.Version
+    val actual_air_intake_pipe_shape_opt: Option[PipeShape]
+    val firebox_depth_B                 : Length
+    val firebox_width_A                 : Length
+    val firebox_height_H                : Length
+    val door_opening_width              : Length
+    val glass_width                     : Length
+    val glass_height                    : Length
+    val ash_pit_height_AF               : Length
+    val air_manifold_height_W           : Length
+    val firebox_floor_thickness         : Length
+    val inner_wall_thickness_D1         : Length
+    val outer_wall_thickness_D2         : Length
+    val air_column_thickness_S          : Length
+    private val air_column_thickness_door_wall_St = air_column_thickness_S // TOCHECK
+    val width_between_two_air_columns_sides_E  : Length
+    val width_between_two_air_columns_rear_E   : Length
+    val reinforcement_bars_offset_in_corners_R1: Length
+    val reinforcement_bars_offset_in_corners_R2: Length
+    val reinforcement_bars_offset_in_corners_R3: Length
+    val injector_height_Z                      : Length
+    private val injector_height_door_wall_Zt: Length = injector_height_Z // TOCHECK
+    val height_of_first_row_of_air_injectors_X: Length
+    val version                               : Ecolabeled.Version
 
     val outputs: Ecolabeled.Outputs = Ecolabeled.Outputs(
-        distance_between_air_injectors_Y  = c18_hauteurEntreLesInjecteurs_Y,
-        injector_width_rear_wall_Lr       = c20_largeurDesInjecteursArrieres,
-        injector_width_side_wall_Ls       = c19_largeurDesInjecteursLateraux,
-        injector_width_door_wall_Lt       = c21_largeurDesInjecteursSousPorte,
+        distance_between_air_injectors_Y  = distance_between_air_injectors_Y,
+        injector_width_rear_wall_Lr       = injector_width_rear_wall_Lr,
+        injector_width_side_wall_Ls       = injector_width_side_wall_Ls,
+        injector_width_door_wall_Lt       = injector_width_door_wall_Lt,
         injector_height_door_wall_Zt      = injector_height_door_wall_Zt,
         air_column_thickness_door_wall_St = air_column_thickness_door_wall_St
     )
 
     override val dimensions: Dimensions = Dimensions(
         base   = Dimensions.Base.Squared(
-            width = h12_largeurDuFoyer,
-            depth = h11_profondeurDuFoyer
+            width = firebox_width_A,
+            depth = firebox_depth_B
         ),
-        height = h13_hauteurDuFoyer
+        height = firebox_height_H
     )
-    override val glass_area: GlassArea  = h71_largeurVitre * h72_hauteurVitre
+    override val glass_area: GlassArea  = glass_width * glass_height
 
-    lazy val c2_largeurFoyer               = h12_largeurDuFoyer
-    lazy val c3_profondeurFoyer            = h11_profondeurDuFoyer
-    lazy val c4_largeurPorteDansMaconnerie = h70_largeurPorteDansMaconnerie
-    lazy val c7_hauteurDeCendrier          = h74_hauteur_de_cendrier_AF
+    lazy val distance_between_air_injectors_Y =
+        // TOCHECK: check Y formula
+        (-0.257142 * height_of_first_row_of_air_injectors_X.toUnit[Centi * Meter].value + 10.585714).cm
 
-    lazy val c10_epaisseurParoiInterneDuFoyer    = h77_epaisseurParoiInterneFoyer_D1
-    lazy val c11_largeurEspaceInterParoisFoyer_S = h78_largeurEspaceInterparoisDuFoyer_S
-    lazy val c12_largeurRenfortMedianLateraux    = h79_largeurRenfortMedianLateraux
-    lazy val c13_largeurRenfortMedianArriere     = h80_largeurRenfortMedianArriere
+    lazy val injector_width_side_wall_Ls =
+        firebox_depth_B - 9.cm // TOCHECK: should be `firebox_depth_B - reinforcement_bars_offset_in_corners_R2 - reinforcement_bars_offset_in_corners_R3` ?
+    lazy val injector_width_rear_wall_Lr =
+        firebox_width_A - 9.cm // TOCHECK: should be `firebox_width_A - 2.0 * reinforcement_bars_offset_in_corners_R1` ?
 
-    lazy val c15_hauterDesInjecteurs = h82_hauteurDesInjecteurs_Z
+    lazy val injector_width_door_wall_Lt = door_opening_width - 6.cm // TOCHECK
 
-    lazy val c18_hauteurEntreLesInjecteurs_Y =
-        // TODO: check Y formula
-        (-0.257142 * h83_hauteurEntreLaSoleEtLe1erInjecteur_X.toUnit[Centi * Meter].value + 10.585714).cm
-
-    lazy val c19_largeurDesInjecteursLateraux = c3_profondeurFoyer - 9.cm
-    lazy val c20_largeurDesInjecteursArrieres = c2_largeurFoyer - 9.cm
-
-    lazy val c21_largeurDesInjecteursSousPorte = c4_largeurPorteDansMaconnerie - 6.cm
-
-    lazy val c24_largeurDesColonnesAirLaterales =
-        c3_profondeurFoyer - r2 - c12_largeurRenfortMedianLateraux - r3
-    lazy val c25_largeurDesColonnesAirArrieres  =
-        c2_largeurFoyer - 2.0 * r1 - c13_largeurRenfortMedianArriere
+    lazy val air_columns_total_width_side_wall =
+        firebox_depth_B - reinforcement_bars_offset_in_corners_R2 - width_between_two_air_columns_sides_E - reinforcement_bars_offset_in_corners_R3
+    lazy val air_columns_total_width_rear_wall =
+        firebox_width_A - 2.0 * reinforcement_bars_offset_in_corners_R1 - width_between_two_air_columns_rear_E
 
 end Ecolabeled
 
@@ -154,162 +145,165 @@ object Ecolabeled:
             val version_details = x.version match
                 case Version.V1 => Nil
                 case Version.V2 => (
-                    I.version_2_air_intake_shape :: "" :: x.arriveeAirGeometryOpt.map(_.showP).getOrElse("-") :: Nil
+                    I.version_2_air_intake_shape :: "" :: x.actual_air_intake_pipe_shape_opt
+                        .map(_.showP)
+                        .getOrElse("-")          :: Nil
                 )
             val list            =
-                (I18N.firebox.typ                              :: ""   :: I18N.firebox_names.ecolabeled_v1                            :: Nil) ::
-                    (I.version                                 :: ""   :: version                                                     :: Nil) ::
+                (I18N.firebox.typ                              :: ""   :: I18N.firebox_names.ecolabeled_v1                        :: Nil) ::
+                    (I.version                                 :: ""   :: version                                                 :: Nil) ::
                     version_details                            ::
-                    (I18N.firebox.firebox_width                :: "A"  :: h12_largeurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I18N.firebox.firebox_depth                :: "B"  :: h11_profondeurDuFoyer.to_cm.showP                           :: Nil) ::
-                    (I18N.firebox.firebox_height               :: "H"  :: h13_hauteurDuFoyer.to_cm.showP                              :: Nil) ::
-                    (I.door_opening_width                      :: ""   :: h70_largeurPorteDansMaconnerie.to_cm.showP                  :: Nil) ::
-                    (I.glass_width                             :: ""   :: h71_largeurVitre.to_cm.showP                                :: Nil) ::
-                    (I.glass_height                            :: ""   :: h72_hauteurVitre.to_cm.showP                                :: Nil) ::
-                    (I.ash_pit_height_AF                       :: "AF" :: h74_hauteur_de_cendrier_AF.to_cm.showP                      :: Nil) ::
-                    (I.air_manifold_height_W                   :: "W"  :: h75_hauteurArriveeConduitAir_DessousSoleFoyer_W.to_cm.showP :: Nil) ::
-                    (I.firebox_floor_thickness                 :: ""   :: h76_epaisseurSole.to_cm.showP                               :: Nil) ::
-                    (I.inner_wall_thickness_D1                 :: "D1" :: h77_epaisseurParoiInterneFoyer_D1.to_cm.showP               :: Nil) ::
-                    (I.air_column_thickness_S                  :: "S"  :: h78_largeurEspaceInterparoisDuFoyer_S.to_cm.showP           :: Nil) ::
-                    (I.width_between_two_air_columns_sides_E   :: "E"  :: h79_largeurRenfortMedianLateraux.to_cm.showP                :: Nil) ::
-                    (I.width_between_two_air_columns_rear_E    :: "E"  :: h80_largeurRenfortMedianArriere.to_cm.showP                 :: Nil) ::
-                    (I.reinforcement_bars_offset_in_corners_R1 :: "R1" :: r1.to_cm.showP                                              :: Nil) ::
-                    (I.reinforcement_bars_offset_in_corners_R2 :: "R2" :: r2.to_cm.showP                                              :: Nil) ::
-                    (I.reinforcement_bars_offset_in_corners_R3 :: "R3" :: r3.to_cm.showP                                              :: Nil) ::
-                    (I.injector_height_Z                       :: "Z"  :: h82_hauteurDesInjecteurs_Z.to_mm.showP                      :: Nil) ::
-                    (I.distance_between_air_injectors_Y        :: "Y"  :: x.outputs.distance_between_air_injectors_Y.to_cm.showP      :: Nil) ::
-                    (I.injector_width_rear_wall_Lr             :: "Lr" :: x.outputs.injector_width_rear_wall_Lr.to_cm.showP           :: Nil) ::
-                    (I.injector_width_side_wall_Ls             :: "Ls" :: x.outputs.injector_width_side_wall_Ls.to_cm.showP           :: Nil) ::
-                    (I.injector_width_door_wall_Lt             :: "Lt" :: x.outputs.injector_width_door_wall_Lt.to_cm.showP           :: Nil) ::
-                    (I.injector_height_door_wall_Zt            :: "Zt" :: x.outputs.injector_height_door_wall_Zt.to_mm.showP          :: Nil) ::
-                    (I.air_column_thickness_door_wall_St       :: "St" :: x.outputs.air_column_thickness_door_wall_St.to_cm.showP     :: Nil) ::
-                    (I.height_of_first_row_of_air_injectors_X  :: "X"  :: h83_hauteurEntreLaSoleEtLe1erInjecteur_X.to_cm.showP        :: Nil) ::
+                    (I18N.firebox.firebox_width_A              :: "A"  :: firebox_width_A.to_cm.showP                             :: Nil) ::
+                    (I18N.firebox.firebox_depth_B              :: "B"  :: firebox_depth_B.to_cm.showP                             :: Nil) ::
+                    (I18N.firebox.firebox_height_H             :: "H"  :: firebox_height_H.to_cm.showP                            :: Nil) ::
+                    (I.door_opening_width                      :: ""   :: door_opening_width.to_cm.showP                          :: Nil) ::
+                    (I.glass_width                             :: ""   :: glass_width.to_cm.showP                                 :: Nil) ::
+                    (I.glass_height                            :: ""   :: glass_height.to_cm.showP                                :: Nil) ::
+                    (I.ash_pit_height_AF                       :: "AF" :: ash_pit_height_AF.to_cm.showP                           :: Nil) ::
+                    (I.air_manifold_height_W                   :: "W"  :: air_manifold_height_W.to_cm.showP                       :: Nil) ::
+                    (I.firebox_floor_thickness                 :: ""   :: firebox_floor_thickness.to_cm.showP                     :: Nil) ::
+                    (I.inner_wall_thickness_D1                 :: "D1" :: inner_wall_thickness_D1.to_cm.showP                     :: Nil) ::
+                    (I.outer_wall_thickness_D2                 :: "D2" :: outer_wall_thickness_D2.to_cm.showP                     :: Nil) ::
+                    (I.air_column_thickness_S                  :: "S"  :: air_column_thickness_S.to_cm.showP                      :: Nil) ::
+                    (I.width_between_two_air_columns_sides_E   :: "E"  :: width_between_two_air_columns_sides_E.to_cm.showP       :: Nil) ::
+                    (I.width_between_two_air_columns_rear_E    :: "E"  :: width_between_two_air_columns_rear_E.to_cm.showP        :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners_R1 :: "R1" :: reinforcement_bars_offset_in_corners_R1.to_cm.showP     :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners_R2 :: "R2" :: reinforcement_bars_offset_in_corners_R2.to_cm.showP     :: Nil) ::
+                    (I.reinforcement_bars_offset_in_corners_R3 :: "R3" :: reinforcement_bars_offset_in_corners_R3.to_cm.showP     :: Nil) ::
+                    (I.injector_height_Z                       :: "Z"  :: injector_height_Z.to_mm.showP                           :: Nil) ::
+                    (I.distance_between_air_injectors_Y        :: "Y"  :: x.outputs.distance_between_air_injectors_Y.to_cm.showP  :: Nil) ::
+                    (I.injector_width_rear_wall_Lr             :: "Lr" :: x.outputs.injector_width_rear_wall_Lr.to_cm.showP       :: Nil) ::
+                    (I.injector_width_side_wall_Ls             :: "Ls" :: x.outputs.injector_width_side_wall_Ls.to_cm.showP       :: Nil) ::
+                    (I.injector_width_door_wall_Lt             :: "Lt" :: x.outputs.injector_width_door_wall_Lt.to_cm.showP       :: Nil) ::
+                    (I.injector_height_door_wall_Zt            :: "Zt" :: x.outputs.injector_height_door_wall_Zt.to_mm.showP      :: Nil) ::
+                    (I.air_column_thickness_door_wall_St       :: "St" :: x.outputs.air_column_thickness_door_wall_St.to_cm.showP :: Nil) ::
+                    (I.height_of_first_row_of_air_injectors_X  :: "X"  :: height_of_first_row_of_air_injectors_X.to_cm.showP      :: Nil) ::
                     Nil
             list.filter(_.nonEmpty)
 
 object Ecolabeled_V1:
     def apply(
-        pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-        h11_profondeurDuFoyer                          : QtyD[Meter],
-        h12_largeurDuFoyer                             : QtyD[Meter],
-        h13_hauteurDuFoyer                             : QtyD[Meter],
-        h70_largeurPorteDansMaconnerie                 : Length,
-        h71_largeurVitre                               : Length,
-        h72_hauteurVitre                               : Length,
-        h74_hauteur_de_cendrier_AF                     : Length,
-        h75_hauteurArriveeConduitAir_DessousSoleFoyer_W: Length,
-        h76_epaisseurSole                              : Length,
-        h77_epaisseurParoiInterneFoyer_D1              : Length,
-        epaisseurParoiExterneFoyer_D2                  : Length,
-        h78_largeurEspaceInterparoisDuFoyer_S          : Length,
-        h79_largeurRenfortMedianLateraux               : Length,
-        h80_largeurRenfortMedianArriere                : Length,
-        r1                                             : Length,
-        r2                                             : Length,
-        r3                                             : Length,
-        h82_hauteurDesInjecteurs_Z                     : Length,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
+        pn_reduced                             : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
+        firebox_depth_B                        : Length,
+        firebox_width_A                        : Length,
+        firebox_height_H                       : Length,
+        door_opening_width                     : Length,
+        glass_width                            : Length,
+        glass_height                           : Length,
+        ash_pit_height_AF                      : Length,
+        air_manifold_height_W                  : Length,
+        firebox_floor_thickness                : Length,
+        inner_wall_thickness_D1                : Length,
+        outer_wall_thickness_D2                : Length,
+        air_column_thickness_S                 : Length,
+        width_between_two_air_columns_sides_E  : Length,
+        width_between_two_air_columns_rear_E   : Length,
+        reinforcement_bars_offset_in_corners_R1: Length,
+        reinforcement_bars_offset_in_corners_R2: Length,
+        reinforcement_bars_offset_in_corners_R3: Length,
+        injector_height_Z                      : Length,
+        height_of_first_row_of_air_injectors_X : Length
     ): Ecolabeled_V1 =
         new Ecolabeled_V1_or_V2_Impl(
             pn_reduced,
             None,
-            h11_profondeurDuFoyer,
-            h12_largeurDuFoyer,
-            h13_hauteurDuFoyer,
-            h70_largeurPorteDansMaconnerie,
-            h71_largeurVitre,
-            h72_hauteurVitre,
-            h74_hauteur_de_cendrier_AF,
-            h75_hauteurArriveeConduitAir_DessousSoleFoyer_W,
-            h76_epaisseurSole,
-            h77_epaisseurParoiInterneFoyer_D1,
-            epaisseurParoiExterneFoyer_D2,
-            h78_largeurEspaceInterparoisDuFoyer_S,
-            h79_largeurRenfortMedianLateraux,
-            h80_largeurRenfortMedianArriere,
-            r1,
-            r2,
-            r3,
-            h82_hauteurDesInjecteurs_Z,
-            h83_hauteurEntreLaSoleEtLe1erInjecteur_X
+            firebox_depth_B,
+            firebox_width_A,
+            firebox_height_H,
+            door_opening_width,
+            glass_width,
+            glass_height,
+            ash_pit_height_AF,
+            air_manifold_height_W,
+            firebox_floor_thickness,
+            inner_wall_thickness_D1,
+            outer_wall_thickness_D2,
+            air_column_thickness_S,
+            width_between_two_air_columns_sides_E,
+            width_between_two_air_columns_rear_E,
+            reinforcement_bars_offset_in_corners_R1,
+            reinforcement_bars_offset_in_corners_R2,
+            reinforcement_bars_offset_in_corners_R3,
+            injector_height_Z,
+            height_of_first_row_of_air_injectors_X
         ) with Ecolabeled_V1 {
             override val firebox_type: Locale ?=> String = I18N.firebox_names.ecolabeled_v1
         }
 
 object Ecolabeled_V2:
     def apply(
-        pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-        arriveeAirGeometry                             : PipeShape,
-        h11_profondeurDuFoyer                          : QtyD[Meter],
-        h12_largeurDuFoyer                             : QtyD[Meter],
-        h13_hauteurDuFoyer                             : QtyD[Meter],
-        h70_largeurPorteDansMaconnerie                 : Length,
-        h71_largeurVitre                               : Length,
-        h72_hauteurVitre                               : Length,
-        h74_hauteur_de_cendrier_AF                     : Length,
-        h75_hauteurArriveeConduitAir_DessousSoleFoyer_W: Length,
-        h76_epaisseurSole                              : Length,
-        h77_epaisseurParoiInterneFoyer_D1              : Length,
-        epaisseurParoiExterneFoyer_D2                  : Length,
-        h78_largeurEspaceInterparoisDuFoyer_S          : Length,
-        h79_largeurRenfortMedianLateraux               : Length,
-        h80_largeurRenfortMedianArriere                : Length,
-        r1                                             : Length,
-        r2                                             : Length,
-        r3                                             : Length,
-        h82_hauteurDesInjecteurs_Z                     : Length,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
+        pn_reduced                             : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
+        actual_air_intake_pipe_shape           : PipeShape,
+        firebox_depth_B                        : Length,
+        firebox_width_A                        : Length,
+        firebox_height_H                       : Length,
+        door_opening_width                     : Length,
+        glass_width                            : Length,
+        glass_height                           : Length,
+        ash_pit_height_AF                      : Length,
+        air_manifold_height_W                  : Length,
+        firebox_floor_thickness                : Length,
+        inner_wall_thickness_D1                : Length,
+        outer_wall_thickness_D2                : Length,
+        air_column_thickness_S                 : Length,
+        width_between_two_air_columns_sides_E  : Length,
+        width_between_two_air_columns_rear_E   : Length,
+        reinforcement_bars_offset_in_corners_R1: Length,
+        reinforcement_bars_offset_in_corners_R2: Length,
+        reinforcement_bars_offset_in_corners_R3: Length,
+        injector_height_Z                      : Length,
+        height_of_first_row_of_air_injectors_X : Length
     ): Ecolabeled_V2 =
         new Ecolabeled_V1_or_V2_Impl(
             pn_reduced,
-            Some(arriveeAirGeometry),
-            h11_profondeurDuFoyer,
-            h12_largeurDuFoyer,
-            h13_hauteurDuFoyer,
-            h70_largeurPorteDansMaconnerie,
-            h71_largeurVitre,
-            h72_hauteurVitre,
-            h74_hauteur_de_cendrier_AF,
-            h75_hauteurArriveeConduitAir_DessousSoleFoyer_W,
-            h76_epaisseurSole,
-            h77_epaisseurParoiInterneFoyer_D1,
-            epaisseurParoiExterneFoyer_D2,
-            h78_largeurEspaceInterparoisDuFoyer_S,
-            h79_largeurRenfortMedianLateraux,
-            h80_largeurRenfortMedianArriere,
-            r1,
-            r2,
-            r3,
-            h82_hauteurDesInjecteurs_Z,
-            h83_hauteurEntreLaSoleEtLe1erInjecteur_X
+            Some(actual_air_intake_pipe_shape),
+            firebox_depth_B,
+            firebox_width_A,
+            firebox_height_H,
+            door_opening_width,
+            glass_width,
+            glass_height,
+            ash_pit_height_AF,
+            air_manifold_height_W,
+            firebox_floor_thickness,
+            inner_wall_thickness_D1,
+            outer_wall_thickness_D2,
+            air_column_thickness_S,
+            width_between_two_air_columns_sides_E,
+            width_between_two_air_columns_rear_E,
+            reinforcement_bars_offset_in_corners_R1,
+            reinforcement_bars_offset_in_corners_R2,
+            reinforcement_bars_offset_in_corners_R3,
+            injector_height_Z,
+            height_of_first_row_of_air_injectors_X
         ) with Ecolabeled_V2 {
             override val firebox_type: Locale ?=> String = I18N.firebox_names.ecolabeled_v2
         }
 
 /** 'Ecolabeled' Firebox according to EN15544 */
 private sealed abstract class Ecolabeled_V1_or_V2_Impl(
-    val pn_reduced                                     : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-    val arriveeAirGeometryOpt                          : Option[PipeShape], // defined only for V2
-    val h11_profondeurDuFoyer                          : QtyD[Meter],
-    val h12_largeurDuFoyer                             : QtyD[Meter],
-    val h13_hauteurDuFoyer                             : QtyD[Meter],
-    val h70_largeurPorteDansMaconnerie                 : Length,
-    val h71_largeurVitre                               : Length,
-    val h72_hauteurVitre                               : Length,
-    val h74_hauteur_de_cendrier_AF                     : Length,
-    val h75_hauteurArriveeConduitAir_DessousSoleFoyer_W: Length,
-    val h76_epaisseurSole                              : Length,
-    val h77_epaisseurParoiInterneFoyer_D1              : Length,
-    val epaisseurParoiExterneFoyer_D2                  : Length,
-    val h78_largeurEspaceInterparoisDuFoyer_S          : Length,
-    val h79_largeurRenfortMedianLateraux               : Length,
-    val h80_largeurRenfortMedianArriere                : Length,
-    val r1                                             : Length,
-    val r2                                             : Length,
-    val r3                                             : Length,
-    val h82_hauteurDesInjecteurs_Z                     : Length,
-    val h83_hauteurEntreLaSoleEtLe1erInjecteur_X       : Length
+    val pn_reduced                             : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
+    val actual_air_intake_pipe_shape_opt       : Option[PipeShape], // defined only for V2
+    val firebox_depth_B                        : Length,
+    val firebox_width_A                        : Length,
+    val firebox_height_H                       : Length,
+    val door_opening_width                     : Length,
+    val glass_width                            : Length,
+    val glass_height                           : Length,
+    val ash_pit_height_AF                      : Length,
+    val air_manifold_height_W                  : Length,
+    val firebox_floor_thickness                : Length,
+    val inner_wall_thickness_D1                : Length,
+    val outer_wall_thickness_D2                : Length,
+    val air_column_thickness_S                 : Length,
+    val width_between_two_air_columns_sides_E  : Length,
+    val width_between_two_air_columns_rear_E   : Length,
+    val reinforcement_bars_offset_in_corners_R1: Length,
+    val reinforcement_bars_offset_in_corners_R2: Length,
+    val reinforcement_bars_offset_in_corners_R3: Length,
+    val injector_height_Z                      : Length,
+    val height_of_first_row_of_air_injectors_X : Length
 ) extends Ecolabeled {
     type Self = Ecolabeled
-    def height_of_lowest_opening: Length = h74_hauteur_de_cendrier_AF
+    def height_of_lowest_opening: Length = ash_pit_height_AF
 }

@@ -52,7 +52,7 @@ given traditionalConstraints: FireboxConstraints[TraditionalFirebox] =
                 case None            => MissingFlowRate :: Nil
                 case Some(flow_rate) =>
                     val injection_velocity_rate    =
-                        flow_rate / firebox.h67_sectionCumuleeEntreeAirPorte
+                        flow_rate / firebox.total_air_intake_surface_area_on_door
                     val injector_velocity_rate_min = 2.m_per_s
                     val injector_velocity_rate_max = 4.m_per_s
                     if      (injection_velocity_rate < injector_velocity_rate_min)

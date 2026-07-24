@@ -51,26 +51,26 @@ object strict_ex03_cas_pratique
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox: Ecolabeled = Ecolabeled_V1(
-        pn_reduced                                      = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
-        h11_profondeurDuFoyer                           = 54.cm,
-        h12_largeurDuFoyer                              = 54.cm,
-        h13_hauteurDuFoyer                              = 80.cm,
-        h70_largeurPorteDansMaconnerie                  = 54.cm,
-        h71_largeurVitre                                = 50.cm,
-        h72_hauteurVitre                                = 40.cm,
-        h74_hauteur_de_cendrier_AF                      = 8.cm,
-        h75_hauteurArriveeConduitAir_DessousSoleFoyer_W = 11.cm,
-        h76_epaisseurSole                               = 10.cm,
-        h77_epaisseurParoiInterneFoyer_D1               = 6.cm,
-        epaisseurParoiExterneFoyer_D2                   = 6.cm,
-        h78_largeurEspaceInterparoisDuFoyer_S           = 3.5.cm,
-        h79_largeurRenfortMedianLateraux                = 3.cm,
-        h80_largeurRenfortMedianArriere                 = 3.cm,
-        r1                                              = 3.cm,
-        r2                                              = 3.cm,
-        r3                                              = 3.cm,
-        h82_hauteurDesInjecteurs_Z                      = 0.8.cm,
-        h83_hauteurEntreLaSoleEtLe1erInjecteur_X        = 10.cm
+        pn_reduced                              = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
+        firebox_depth_B                         = 54.cm,
+        firebox_width_A                         = 54.cm,
+        firebox_height_H                        = 80.cm,
+        door_opening_width                      = 54.cm,
+        glass_width                             = 50.cm,
+        glass_height                            = 40.cm,
+        ash_pit_height_AF                       = 8.cm,
+        air_manifold_height_W                   = 11.cm,
+        firebox_floor_thickness                 = 10.cm,
+        inner_wall_thickness_D1                 = 6.cm,
+        outer_wall_thickness_D2                 = 6.cm,
+        air_column_thickness_S                  = 3.5.cm,
+        width_between_two_air_columns_sides_E   = 3.cm,
+        width_between_two_air_columns_rear_E    = 3.cm,
+        reinforcement_bars_offset_in_corners_R1 = 3.cm,
+        reinforcement_bars_offset_in_corners_R2 = 3.cm,
+        reinforcement_bars_offset_in_corners_R3 = 3.cm,
+        injector_height_Z                       = 0.8.cm,
+        height_of_first_row_of_air_injectors_X  = 10.cm
     )
 
     override def postFireboxInitialDirection = Some(

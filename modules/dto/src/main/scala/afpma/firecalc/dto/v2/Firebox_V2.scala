@@ -33,13 +33,13 @@ object Firebox_V2:
     case class Traditional(
         @Transl(I(_.firebox.tested.heat_output_reduced))
         heat_output_reduced                  : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-        @Transl(I(_.firebox.firebox_depth))
+        @Transl(I(_.firebox.firebox_depth_B))
         firebox_depth                        : Length,
-        @Transl(I(_.firebox.firebox_width))
+        @Transl(I(_.firebox.firebox_width_A))
         firebox_width                        : Length,
-        @Transl(I(_.firebox.firebox_height))
+        @Transl(I(_.firebox.firebox_height_H))
         firebox_height                       : Length,
-        @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
+        @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors_X))
         height_of_first_row_of_air_injectors : Length,
         @Transl(I(_.firebox.traditional.pressure_loss_coefficient_from_door))
         pressure_loss_coefficient_from_door  : QtyD[1],
@@ -59,13 +59,13 @@ object Firebox_V2:
         version                             : Either["Version 1", "Version 2"],
         @Transl(I(_.firebox.ecolabeled.version_2_air_intake_shape))
         air_intake_shape                    : Option[PipeShape], // defined only for V2
-        @Transl(I(_.firebox.firebox_depth))
+        @Transl(I(_.firebox.firebox_depth_B))
         firebox_depth                       : Length,
-        @Transl(I(_.firebox.firebox_width))
+        @Transl(I(_.firebox.firebox_width_A))
         firebox_width                       : Length,
-        @Transl(I(_.firebox.firebox_height))
+        @Transl(I(_.firebox.firebox_height_H))
         firebox_height                      : Length,
-        @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
+        @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors_X))
         height_of_first_row_of_air_injectors: Length,
         @Transl(I(_.firebox.ecolabeled.door_opening_width))
         door_opening_width                  : Length,
@@ -99,34 +99,34 @@ object Firebox_V2:
     case class AFPMA_PRSE(
         @Transl(I(_.firebox.tested.heat_output_reduced))
         heat_output_reduced                  : HeatOutputReduced.NotDefined | HeatOutputReduced.HalfOfNominal,
-        @Transl(I(_.firebox.afpma_prse.outside_air_location_in_heater))
+        @Transl(I(_.firebox.afpma_prse.air_intake_direction))
         outside_air_location_in_heater       : OutsideAirLocationInHeater,
-        @Transl(I(_.firebox.afpma_prse.outside_air_conduit_shape))
+        @Transl(I(_.firebox.afpma_prse.actual_air_intake_pipe_shape))
         outside_air_conduit_shape            : PipeShape,
-        @Transl(I(_.firebox.firebox_depth))
+        @Transl(I(_.firebox.firebox_depth_B))
         firebox_depth                        : Length,
-        @Transl(I(_.firebox.firebox_width))
+        @Transl(I(_.firebox.firebox_width_A))
         firebox_width                        : Length,
-        @Transl(I(_.firebox.firebox_height))
+        @Transl(I(_.firebox.firebox_height_H))
         firebox_height                       : Length,
-        @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors))
+        @Transl(I(_.firebox.afpma_prse.height_of_first_row_of_air_injectors_X))
         height_of_first_row_of_air_injectors : Length,
         @Transl(I(_.firebox.traditional.glass_width))
         glass_width                          : Length,
         @Transl(I(_.firebox.traditional.glass_height))
         glass_height                         : Length,
-        @Transl(I(_.firebox.afpma_prse.ash_pit_height))
+        @Transl(I(_.firebox.afpma_prse.ash_pit_height_AF))
         ash_pit_height                       : Length,
-        @Transl(I(_.firebox.afpma_prse.floor_thickness))
+        @Transl(I(_.firebox.afpma_prse.firebox_floor_thickness))
         floor_thickness                      : Length,
-        @Transl(I(_.firebox.afpma_prse.combustion_air_manifold_height))
+        @Transl(I(_.firebox.afpma_prse.air_manifold_height_V))
         combustion_air_manifold_height       : Length,
-        @Transl(I(_.firebox.afpma_prse.outside_air_inlet_lip))
+        @Transl(I(_.firebox.afpma_prse.outside_air_inlet_lip_U))
         outside_air_inlet_lip                : Length,
-        @Transl(I(_.firebox.afpma_prse.height_of_air_feed_to_columns))
+        @Transl(I(_.firebox.afpma_prse.height_of_air_feed_to_columns_W))
         height_of_air_feed_to_columns        : Length,
-        @Transl(I(_.firebox.afpma_prse.number_of_air_columns_feeding_firebox))
+        @Transl(I(_.firebox.afpma_prse.nb_of_air_columns_feeding_firebox))
         number_of_air_columns_feeding_firebox: Int,
-        @Transl(I(_.firebox.afpma_prse.number_of_air_columns_feeding_door))
+        @Transl(I(_.firebox.afpma_prse.nb_of_air_columns_feeding_door))
         number_of_air_columns_feeding_door   : Int
     ) extends Firebox_V2

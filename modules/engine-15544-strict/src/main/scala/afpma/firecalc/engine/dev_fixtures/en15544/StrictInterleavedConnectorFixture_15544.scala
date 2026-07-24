@@ -90,14 +90,14 @@ object StrictInterleavedConnectorFixture_15544
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
     val firebox = TraditionalFirebox(
-        h11_profondeurDuFoyer            = 33.2.cm,
-        h12_largeurDuFoyer               = 33.2.cm,
-        h13_hauteurDuFoyer               = 51.3.cm,
-        h66_coeffPerteDeChargePorte      = 0.3.unitless,
-        h67_sectionCumuleeEntreeAirPorte = 92.cm2,
-        h71_largeurVitre                 = 0.cm,
-        h72_hauteurVitre                 = 0.cm,
-        ash_pit_height                   = 5.cm
+        firebox_depth_B                       = 33.2.cm,
+        firebox_width_A                       = 33.2.cm,
+        firebox_height_H                      = 51.3.cm,
+        pressure_loss_coefficient_from_door   = 0.3.unitless,
+        total_air_intake_surface_area_on_door = 92.cm2,
+        glass_width                           = 0.cm,
+        glass_height                          = 0.cm,
+        ash_pit_height_AF                     = 5.cm
     )
 
     // ── Legacy 3-pipe descriptors (required by WithPipeChain_15544_Strict) ────────

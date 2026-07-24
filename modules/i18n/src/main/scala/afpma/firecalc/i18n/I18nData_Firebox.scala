@@ -11,9 +11,9 @@ import io.taig.babel.StringFormat3
 object I18nData_Firebox:
 
     case class Firebox_15544(
-        firebox_depth                              : String,
-        firebox_width                              : String,
-        firebox_height                             : String,
+        firebox_depth_B                            : String,
+        firebox_width_A                            : String,
+        firebox_height_H                           : String,
         ash_pit_height                             : String,
         afpma_prse                                 : Firebox_15544.AFPMA_PRSE,
         base_geometry                              : String,
@@ -34,17 +34,17 @@ object I18nData_Firebox:
     object Firebox_15544:
 
         case class AFPMA_PRSE(
-            outside_air_location_in_heater       : String,
-            outside_air_location_from_bottom     : String,
-            outside_air_conduit_shape            : String,
-            height_of_first_row_of_air_injectors : String,
-            ash_pit_height                       : String,
-            floor_thickness                      : String,
-            combustion_air_manifold_height       : String,
-            outside_air_inlet_lip                : String,
-            height_of_air_feed_to_columns        : String,
-            number_of_air_columns_feeding_firebox: String,
-            number_of_air_columns_feeding_door   : String
+            air_intake_direction                  : String,
+            air_intake_direction_from_bottom      : String,
+            actual_air_intake_pipe_shape          : String,
+            height_of_first_row_of_air_injectors_X: String,
+            ash_pit_height_AF                     : String,
+            firebox_floor_thickness               : String,
+            air_manifold_height_V                 : String,
+            outside_air_inlet_lip_U               : String,
+            height_of_air_feed_to_columns_W       : String,
+            nb_of_air_columns_feeding_firebox     : String,
+            nb_of_air_columns_feeding_door        : String
         )
 
         case class Ecolabeled(

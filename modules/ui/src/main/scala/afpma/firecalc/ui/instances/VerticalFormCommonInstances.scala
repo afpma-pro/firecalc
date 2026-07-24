@@ -346,7 +346,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given DF[PipeShape]                                                      = horizontal_form.horizontal_form_PipeShape.hideFieldName
             .wrappedInto(c =>
                 FieldsetLabelAndContent  (
-                    label   = I18N.firebox.afpma_prse.outside_air_conduit_shape,
+                    label   = I18N.firebox.afpma_prse.actual_air_intake_pipe_shape,
                     content = c
                 )
             )
@@ -355,7 +355,7 @@ class VerticalFormCommonInstances(using DisplayUnits, Locale):
         given DF[PosLength]                  = vertical_form_PosLength_cm
         given DF[OutsideAirLocationInHeater] = FormDerivation.mk_AlwaysValid: (va, _) =>
             FieldsetLabelAndContent(
-                label = I18N.firebox.afpma_prse.outside_air_location_in_heater,
+                label = I18N.firebox.afpma_prse.air_intake_direction,
                 SelectAndOptionsOnly.single(
                     va.now(),
                     asDisabled = false
