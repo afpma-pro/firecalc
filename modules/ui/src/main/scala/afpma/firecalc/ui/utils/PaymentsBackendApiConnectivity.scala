@@ -12,7 +12,6 @@ import afpma.firecalc.ui.config.UIConfig
 import com.raquo.airstream.core.EventStream
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.flatten.FlattenStrategy.allowFlatMap
-import com.raquo.airstream.web.FetchStream
 
 import scala.scalajs.js
 import scala.util.Failure
@@ -110,7 +109,7 @@ object PaymentsBackendApiConnectivity:
      * @return EventStream emitting InternetConnected if successful, InternetDisconnected otherwise
      */
     def verifyInternetAccess()(using Locale): EventStream[InternetStatus] =
-        FetchStream
+        SafeFetchStream
             .get(INTERNET_CHECK_URL)
             .map(_ => InternetConnected: InternetStatus)
             .recoverToTry
@@ -154,7 +153,7 @@ object PaymentsBackendApiConnectivity:
     def checkHttpStatus200(
         url: String = UIConfig.Endpoints.healthcheck
     )(using Locale): EventStream[Either[NetworkError, String]] =
-        FetchStream
+        SafeFetchStream
             .get(url)
             .map(responseText => Right(responseText): Either[NetworkError, String])
             .recoverToTry
@@ -267,12 +266,13 @@ object PaymentsBackendApiConnectivity:
             }
 
     /**
-     * Creates a polling EventStream that performs health checks at regular intervals.
+     * Creates a polling EventStream that performs health checks with exponential backoff.
      *
      * The polling starts when the trigger signal emits true, and stops when it emits false.
-     * While polling, it performs a health check every POLLING_INTERVAL_MS milliseconds.
+     * Uses EventBus-driven self-scheduling with exponential backoff:
+     * - On success: 2s interval
+     * - On failure: 2s → 4s → 8s → cap at 8s
      *
-     * If a network error occurs, the polling continues (retrying).
      * If a JSON validation error occurs, the polling stops and emits Disconnected.
      *
      * @param pollingTrigger Signal that controls when to start (true) and stop (false) polling
@@ -283,43 +283,7 @@ object PaymentsBackendApiConnectivity:
         pollingTrigger: Signal[Boolean],
         url           : String = UIConfig.Endpoints.healthcheck
     )(using locale: Locale): EventStream[ConnectivityResult] =
-        pollingTrigger.changes.flatMapSwitch { (shouldPoll: Boolean) =>
-            if shouldPoll then
-                // Create a var to track if we should stop polling
-                var shouldContinuePolling = true
-
-                // scalajs.js.Dynamic.global.console.log("creating new polling stream")
-
-                // Create the polling stream
-                val pollingStream = EventStream
-                    .periodic(POLLING_INTERVAL_MS)
-                    .map(_ => ())
-                    .flatMapMerge { _ =>
-                        if shouldContinuePolling then
-                            performFullConnectivityCheck(url)(using locale).map { result =>
-                                // Stop polling on JSON validation errors
-                                result match {
-                                    case PartialConnection(_, BackendDisconnected(JsonValidationError(_))) =>
-                                        shouldContinuePolling = false
-                                    case _                                                                 => ()
-                                }
-                                result
-                            }
-                        else EventStream.empty
-                    }
-
-                // Start with immediate check
-                EventStream.merge(
-                    performFullConnectivityCheck(url)(using locale),
-                    pollingStream
-                )
-            else
-                // When polling is disabled, emit a disconnected state
-                EventStream.fromValue(
-                    CheckDisabled,
-                    emitOnce = true
-                )
-        }
+        ConnectivityPolling.createPollingStream(pollingTrigger, url)(using locale)
 
     /**
      * Creates the main connectivity signal that can be used throughout the application.
