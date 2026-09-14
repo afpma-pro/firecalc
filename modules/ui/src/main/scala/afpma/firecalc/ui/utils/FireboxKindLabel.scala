@@ -14,13 +14,13 @@ import io.taig.babel.Locale
 /**
  * Localized display name for a [[FireboxKind]].
  *
- * The per-kind availability messages (Q11) must name the kind the user selected,
+ * The per-kind availability messages must name the kind the user selected,
  * and they must name it the same way the firebox picker does. Both read
  * `I18N.firebox_names`, mirroring `FireboxCalcService`'s server-side
  * `kindDisplayName`, so a message and the selector can never disagree.
  *
  * Exhaustive over `FireboxKind` including the parameterised `BlackBox`, whose
- * own `name` is its display name — no catch-all (invariant 9).
+ * own `name` is its display name — no catch-all.
  */
 object FireboxKindLabel:
 

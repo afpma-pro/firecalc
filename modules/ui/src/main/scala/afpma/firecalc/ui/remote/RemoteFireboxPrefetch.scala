@@ -55,8 +55,8 @@ import io.taig.babel.Locale
 import org.scalajs.dom
 
 /**
- * The remote firebox pre-fetch subsystem (S5.4), extracted from
- * `Variables.scala` (T1.3).
+ * The remote firebox pre-fetch subsystem, extracted from
+ * `Variables.scala`.
  *
  * Owns the ENTIRE feature: the single atomic state map, the pre-fetch
  * orchestration (request construction, decode + wire→engine conversion, cache
@@ -74,8 +74,8 @@ import org.scalajs.dom
  * The subsystem is started from the frontend boot path:
  * [[prefetchRemoteDataBinder]] is mounted by `Frontend.app.amend(...)` next to
  * the six sibling subscriptions, so "is this feature wired?" is answerable by
- * reading the boot path (resolves escalation C1: the observer was previously an
- * unreferenced `lazy val` that nothing forced).
+ * reading the boot path — the binder is mounted, not an unreferenced
+ * `lazy val` that nothing would force.
  */
 object RemoteFireboxPrefetch:
 
@@ -86,14 +86,14 @@ object RemoteFireboxPrefetch:
     ]
 
     /**
-     * Per-kind provenance AND payload of remote firebox data (Q11: partial
+     * Per-kind provenance AND payload of remote firebox data (partial
      * assembly). A kind with no entry is
      * [[afpma.firecalc.ui.utils.RemoteDataState.Absent]].
      *
      * The verdict derived from this map lives in the pure
      * [[afpma.firecalc.ui.utils.RemoteFireboxAvailability]] (unit-tested),
      * which has no case that computes a `Remote`-configured kind locally — the
-     * IP-protection rule (Q0.1-A) is expressed in its result type, not in a
+     * IP-protection rule is expressed in its result type, not in a
      * convention here.
      */
     private val remoteDataStatesVar: Var[Map[FireboxKind, RemoteDataState[StrictRemoteData]]] =
@@ -116,16 +116,15 @@ object RemoteFireboxPrefetch:
     )
 
     /**
-     * The seam through which the pre-fetch obtains its calculation client
-     * (ticket 12 gate).
+     * The seam through which the pre-fetch obtains its calculation client.
      *
      * Production wiring is the shared JS/fetch adapter ([[FetchCalcClient]]).
      * Acceptance tests substitute a fake that implements the very same
      * [[FireboxCalcClient]] interface the browser uses in production, so the
      * real pre-fetch machinery — request construction, cycle suppression,
      * fingerprint-cache read/write, verdict recording — runs against scripted
-     * HTTP outcomes rather than an in-process Austrian fake (SPEC_02 testing
-     * decision 1: the normative seam, not a shared in-process Austrian core).
+     * HTTP outcomes rather than an in-process Austrian fake: the seam is the
+     * real client interface, not a shared in-process Austrian core.
      */
     private[ui] var calcClientFactory: FireboxCalcClientConfig => PrefetchClient =
         config =>
@@ -187,8 +186,8 @@ object RemoteFireboxPrefetch:
     /**
      * The closed `FireboxKind` of a project firebox DTO.
      *
-     * Exhaustive over `Firebox_V4`'s five sealed subtypes — no catch-all
-     * (invariant 9). This is the single UI-side kind resolution: the wire kind
+     * Exhaustive over `Firebox_V4`'s five sealed subtypes — no catch-all.
+     * This is the single UI-side kind resolution: the wire kind
      * sent to the server derives from it via
      * [[WireConversions.toWireFireboxKind]], so the two cannot disagree.
      */
@@ -201,9 +200,8 @@ object RemoteFireboxPrefetch:
 
     /**
      * Bumped whenever the pre-fetch should be attempted again without any
-     * project edit — today only by the browser's `online` event (Q10-d part A),
-     * so returning connectivity retries automatically instead of requiring a
-     * reload.
+     * project edit — today only by the browser's `online` event, so returning
+     * connectivity retries automatically instead of requiring a reload.
      */
     private val prefetchRetryTickVar: Var[Int] = Var(0)
 
@@ -215,7 +213,7 @@ object RemoteFireboxPrefetch:
 
     /**
      * One pre-fetch cycle for the CURRENT project firebox against an explicit
-     * per-kind source configuration (ticket 12 gate seam).
+     * per-kind source configuration.
      *
      * This is the exact cycle the production binder runs on every project
      * change — availability check, per-kind source resolution, strict
@@ -284,26 +282,26 @@ object RemoteFireboxPrefetch:
     /**
      * Perform the async HTTP pre-fetch to the remote Firebox Calculation API,
      * with early offline detection, built-in retry + exponential backoff
-     * (via `FetchCalcClient`), and a per-project response cache (fix-plan
-     * Phase 5 / deviation 8, Q7.2-B; Q10-d).
+     * (via `FetchCalcClient`), and a per-project response cache.
      *
      * Uses the shared `FetchCalcClient` adapter which handles POST serialization,
      * retry policy, timeout (30s), and `AbortController` cancellation.
      *
-     * Four outcomes, all recorded against THIS kind only (Q11), so another
+     * Four outcomes, all recorded against THIS kind only, so another
      * kind's results are never affected:
      *
      *  - '''Live''' — a response arrived. The decoded response is re-serialized
      *    and cached under (project id, kind) with a fingerprint of the request
      *    that produced it.
-     *  - '''Cached''' — the network path is over and failed, but the cache
-     *    holds a response computed from an identical request. It is replayed
-     *    and labelled `Cached`, so the UI can show *when* it was computed
-     *    instead of passing stale numbers off as live.
+     *  - '''Cached''' — the cache holds a response computed from an identical
+     *    request. It is replayed optimistically before the network path starts,
+     *    or after the network path has failed; a successful fetch then upgrades
+     *    `Cached` → `Live`. This allows the UI to show results immediately,
+     *    labelled with their computation date.
      *  - '''Failed''' — neither network nor cache produced anything. The kind
-     *    is marked unavailable; it is NOT computed locally (Q0.1-A: Austrian
-     *    kinds are network-only, a silent local fallback would defeat IP
-     *    protection).
+     *    is marked unavailable; it is NOT computed locally: the Austrian kinds
+     *    are network-only, and a silent local fallback would defeat IP
+     *    protection.
      *  - '''Rejected''' — a reachable service answered with a geometry
      *    pre-check verdict. The kind stays available (the service is not
      *    down — the project's inputs are), so it is NOT marked `Failed` and
@@ -332,12 +330,12 @@ object RemoteFireboxPrefetch:
         val cycleToken = startCycle(kind)
 
         // The wire kind derives from the single DTO→kind match above via the
-        // total bijection — the two mappings cannot disagree (T1.3).
+        // total bijection — the two mappings cannot disagree.
         val wireKind = WireConversions.toWireFireboxKind(kind)
 
         // Build the FireboxCalcRequest from the current engine state.
         //
-        // Round 3 (D4): the request carries the operating envelope so the server
+        // The request carries the operating envelope so the server
         // can derive site-conditioned densities/flows for the `AsResult` kinds
         // (Ecolabeled). The altitude comes from the project's `localConditions`
         // (the DTO already carries it). Per-draft-condition outside-temperature
@@ -349,7 +347,7 @@ object RemoteFireboxPrefetch:
         // the envelope the remote path answers `Invalid(MissingOperatingEnvelope)`
         // for Ecolabeled.
         import afpma.firecalc.units.others.sunits.SUnits.given
-        // Round 3 (D1): the EN 15544 params the server needs to build its
+        // The EN 15544 params the server needs to build its
         // ConstraintContext, read off the built strict application so the
         // remote request stays in lockstep with the local computation.
         // `m_B` is the charge mass the application actually uses
@@ -425,8 +423,11 @@ object RemoteFireboxPrefetch:
         def degrade(unavailableMsg: String, logLine: String): Unit =
             dom.console.warn(s"[S5.4] $logLine")
             if !serveFromCache() then setRemoteDataState(kind, RemoteDataState.Failed(unavailableMsg))
+        // Stale-while-revalidate: optimistically replay a fingerprint-matching
+        // entry before any network I/O; a successful fetch below upgrades it to Live.
+        serveFromCache()
 
-        // Q10-d part A: the browser reports no network interface, so every attempt
+        // The browser reports no network interface, so every attempt
         // in the ladder would fail on DNS. Skip it and degrade immediately; the
         // `online` listener re-triggers this pre-fetch when connectivity returns.
         if NetworkStatus.isReportedOffline then
@@ -511,15 +512,15 @@ object RemoteFireboxPrefetch:
      * The user-visible degrade banner for a failed firebox-calc prefetch.
      *
      * A geometry pre-check rejection carries the failed checks as per-item
-     * details; surface them, qualified by the firebox kind (spec US4/US6/US7),
-     * instead of the generic banner. The classification is delegated to the
+     * details; surface them, qualified by the firebox kind, instead of the
+     * generic banner. The classification is delegated to the
      * canonical [[CalculationFailure.preCheckDetails]] predicate on the shared
      * ADT — gated on the documented status/discriminator pairing TOGETHER WITH
      * non-empty details, NOT on details presence alone — so a 400
      * malformed_request that also carries items is never mistaken for a geometry
-     * verdict (US11), and it gives the payments report consumer (ticket 03) the
-     * same classification to key off, so the two surfaces cannot drift once it
-     * adopts it. Every other failure keeps the existing generic banner (US14).
+     * verdict, and it gives the payments report consumer the same classification
+     * to key off, so the two surfaces cannot drift once it adopts it. Every other
+     * failure keeps the existing generic banner.
      */
     private def unavailableMessageFor(kindLabel: String, failure: CalculationFailure)(using
         Locale
@@ -534,12 +535,14 @@ object RemoteFireboxPrefetch:
     // =========================================================================
 
     /**
-     * Canonical active-kind projection used by both public data signals.
+     * The ACTIVE firebox kind's computation verdict, as a signal.
      *
-     * The optional timestamp comes directly from [[KindComputation.Remote]]:
-     * `None` means live data and `Some(savedAtMs)` means cached data.
+     * One shared projection over the state map + the selected firebox: the
+     * cached-at, prefetched-data and in-flight signals below are trivial maps
+     * over it, so a new [[KindComputation]] variant forces a decision at
+     * exactly this one site instead of silently missing three consumers.
      */
-    private lazy val activeRemoteComputationSig: Signal[Option[(Option[Double], StrictRemoteData)]] =
+    private lazy val activeKindComputationSig: Signal[KindComputation[StrictRemoteData]] =
         remoteDataStatesSig
             .combineWith(firebox_var.signal)
             .map: (states, currentFirebox) =>
@@ -547,12 +550,7 @@ object RemoteFireboxPrefetch:
                     fireboxKindOf(currentFirebox),
                     UIConfig.fireboxEngineSource,
                     states
-                ) match
-                    case KindComputation.Remote(cachedAtMs, data) => Some(cachedAtMs -> data)
-                    case KindComputation.Local                    => None
-                    case KindComputation.Pending(_)               => None
-                    case KindComputation.Unavailable(_, _)        => None
-                    case KindComputation.Rejected(_, _)           => None
+                )
 
     /**
      * Signal carrying pre-fetched remote firebox data for the ACTIVE firebox
@@ -567,7 +565,7 @@ object RemoteFireboxPrefetch:
      * state.
      */
     lazy val prefetchedRemoteDataSig: Signal[Option[StrictRemoteData]] =
-        activeRemoteComputationSig.map(_.map(_._2))
+        activeKindComputationSig.map(_.projection.data)
 
     /**
      * When the currently held remote data came from cache rather than the
@@ -577,10 +575,10 @@ object RemoteFireboxPrefetch:
      * cached numbers MUST be labelled with their age, never presented as live.
      */
     lazy val prefetchedRemoteCachedAtSig: Signal[Option[Double]] =
-        activeRemoteComputationSig.map(_.flatMap(_._1))
+        activeKindComputationSig.map(_.projection.cachedAt)
 
     /**
-     * The kinds whose remote data is genuinely missing — and only those (Q11).
+     * The kinds whose remote data is genuinely missing — and only those.
      *
      * Empty in the all-local configuration and while a fetch is in flight. A
      * failure recorded for one kind grows this set by exactly that kind, which
@@ -589,6 +587,18 @@ object RemoteFireboxPrefetch:
     lazy val unavailableFireboxKindsSig: Signal[Set[FireboxKind]] =
         remoteDataStatesSig.map: states =>
             RemoteFireboxAvailability.unavailableKinds(UIConfig.fireboxEngineSource, states)
+
+    /**
+     * Whether a remote fetch for the ACTIVE firebox kind is still in flight.
+     *
+     * True while that kind's [[KindComputation]] is `Pending` — a
+     * Remote-configured kind with no recorded outcome yet. Since the
+     * optimistic replay, this window only exists on a cache miss.
+     * Drives the "Connecting…" banner notice; mutually exclusive with the
+     * cached notice for the active kind.
+     */
+    lazy val prefetchInFlightSig: Signal[Boolean] =
+        activeKindComputationSig.map(_.projection.inFlight)
 
     /**
      * Remove the tracked client for a kind if the generation still matches.
@@ -604,7 +614,7 @@ object RemoteFireboxPrefetch:
     /**
      * Pure wire-to-Strict conversion: `FireboxCalcResponse` → `StrictRemoteData`.
      *
-     * Uses typed module-specific converters — no casts (invariant 9).
+     * Uses typed module-specific converters — no casts.
      * Extracted to object level so it is scannable and testable in isolation.
      */
     private def convertResponse(
@@ -637,5 +647,4 @@ object RemoteFireboxPrefetch:
                 reportData                = calcResponse.reportData
             )
         }
-
 end RemoteFireboxPrefetch

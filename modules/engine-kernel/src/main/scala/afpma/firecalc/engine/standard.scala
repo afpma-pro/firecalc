@@ -96,16 +96,61 @@ given ShowUsingLocale[MCalc_Error] = showUsingLocale:
     case ErrorsInOtherSectionType => I18N.builder_errors.errors_in_other_section_type
     case e: FireboxTypeDisabledError     => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
     case e: FireboxGeometryRejectedError => e.show // Uses ShowUsingLocale[FireboxGeometryRejectedError]
-    case ResultsNotComputed => I18N.builder_errors.results_not_computed
+    case e: RemoteFireboxUnavailable     => e.show // Uses ShowUsingLocale[RemoteFireboxUnavailable]
+    case RemoteFireboxPending => I18N.builder_errors.remote_firebox_pending
+    case ResultsNotComputed   => I18N.builder_errors.results_not_computed
 
 // Unexpected Error
 case class UnexpectedDevError(msg: String) extends MCalc_Error
 
 /**
- * Signals that computation results are not yet available (debounce window or project switch).
- * Filtered from panel error displays — consumers should treat as "no data".
+ * An error state reporting that the calculation pipeline holds no result: the
+ * computation is still pending, or the remote service that owns it could not
+ * answer. Both ride the error channel because they travel with the computation
+ * result, but neither is an input problem the user can fix.
+ *
+ * Sealed: the family is closed here, so a consumer of the error channel can
+ * classify all of it with one case, and a new member still needs a render case
+ * in the `ShowUsingLocale[MCalc_Error]` dispatch — open over `MCalc_Error`,
+ * with no catch-all.
  */
-case object ResultsNotComputed extends MCalc_Error
+sealed trait NoResultError extends MCalc_Error
+
+/**
+ * A no-result state carrying no user-actionable information: a result is
+ * expected (a fetch in flight, a debounce window, a project switch) and
+ * consumers must treat it as "no data yet", never as an error to display.
+ */
+sealed trait PendingStateError extends NoResultError
+
+/**
+ * The remote firebox calculation has not concluded: a fetch for the kind is in
+ * flight, so its data is not available yet. Transient — the fetch ends either
+ * with data, with [[RemoteFireboxUnavailable]], or with a geometry verdict.
+ */
+case object RemoteFireboxPending extends PendingStateError
+
+/**
+ * Results are not available for the current computation: the engine is inside
+ * its debounce window, or the result on hand was computed for a project that is
+ * no longer the active one.
+ */
+case object ResultsNotComputed extends PendingStateError
+
+/**
+ * The remote firebox calculation service could not provide the kind's data and
+ * nothing usable was cached, so the kind cannot be computed at all. Terminal,
+ * unlike [[RemoteFireboxPending]]: the fetch is over, and the reason is the
+ * user-facing verdict rather than an internal invariant violation.
+ *
+ * `reason` is already localized — it is built where the project locale is in
+ * scope, by the producer that knows which service and which kind failed.
+ */
+case class RemoteFireboxUnavailable(reason: String) extends NoResultError
+
+object RemoteFireboxUnavailable:
+    given ShowUsingLocale[RemoteFireboxUnavailable] = showUsingLocale: e =>
+        e.reason
 
 /**
  * Restriction — certain slot topologies are not yet supported in the flue region

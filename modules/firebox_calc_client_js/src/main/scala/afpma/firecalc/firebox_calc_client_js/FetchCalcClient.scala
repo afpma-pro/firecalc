@@ -42,7 +42,11 @@ class FetchCalcClient private (
     private val baseUri     : String         = config.baseUri
     private val appKeyHeader: Option[String] = config.appKey
 
-    // Track the current abort controller for cancellation
+    // Cancellation state. `cancelled` is a one-shot latch: once set by
+    // [[cancel]] it is never cleared, permanently disabling the retry ladder
+    // for the lifetime of this client (post-cancel calls run with zero
+    // retries). `currentController` is the in-flight abort controller, if any.
+    private var cancelled        : Boolean                    = false
     private var currentController: dom.AbortController | Null = null
 
     /** Discover served firebox kinds (`GET /v1/kinds`). */
@@ -72,10 +76,19 @@ class FetchCalcClient private (
     /**
      * Cancel the in-flight request (if any).
      *
-     * Aborts the current transport operation and returns the failure
-     * as a [[CalculationFailure.TransportError]] with an AbortError cause.
+     * Aborts the current transport operation. The already-dispatched attempt
+     * still completes — its future resolves to a
+     * [[CalculationFailure.TransportError]] with an AbortError cause, it is
+     * never left pending.
+     *
+     * This is a terminal, one-shot operation: it latches `cancelled` for the
+     * lifetime of this client, permanently disabling the retry ladder. Every
+     * subsequent [[getKinds]] / [[calculate]] call runs with zero retries.
+     * A cancelled client is not reusable for retried traffic — create a new
+     * client to restore the configured retry policy.
      */
     def cancel: Unit =
+        cancelled = true
         val ctrl = currentController
         if ctrl != null then ctrl.abort()
 
@@ -89,7 +102,7 @@ class FetchCalcClient private (
         def loop(remaining: Int, delayMs: Long): Future[A] =
             attempt.flatMap { result =>
                 result match
-                    case Left(CalculationFailure.TransportError(_)) if remaining > 0 =>
+                    case Left(CalculationFailure.TransportError(_)) if remaining > 0 && !cancelled =>
                         sleep(delayMs).flatMap(_ =>
                             loop(
                                 remaining - 1,
@@ -97,7 +110,7 @@ class FetchCalcClient private (
                                     .min(config.retryPolicy.maxDelay.toMillis)
                             )
                         )
-                    case _                                                           =>
+                    case _                                                                         =>
                         Future.successful(result)
             }
 

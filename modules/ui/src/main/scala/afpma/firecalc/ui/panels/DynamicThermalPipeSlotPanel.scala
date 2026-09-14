@@ -72,7 +72,7 @@ final case class DynamicThermalPipeSlotPanel(
 
     type Out = Any // type-erased
     // `sectionType` is only consumed via `==` in the base class (see
-    // `PanelStatusHelper.filterErrors`), so a singleton
+    // `PanelStatusHelper.verdict`), so a singleton
     // path-dependent type (`pipeTypeVal.type`) would buy us nothing and force an
     // unchecked cast. Widen to `PipeType` — equality is all we need.
     type PT  = PipeType

@@ -124,8 +124,7 @@ object UIConfig {
     )
 
     /**
-     * Resolve the per-kind engine source from the two remote-calc vars
-     * (fix-plan Phase 1, §6), built via
+     * Resolve the per-kind engine source from the two remote-calc vars, built via
      * [[FireboxEngineSourceConfig.fromRemoteKeys]] so unknown kind keys are
      * reported rather than silently dropped.
      *
@@ -149,7 +148,7 @@ object UIConfig {
             case _ => FireboxEngineSourceConfig.AllLocal
 
     /**
-     * Per-kind firebox engine source (fix-plan Phase 1, §6), built from
+     * Per-kind firebox engine source, built from
      * `VITE_FIREBOX_REMOTE_KINDS` (comma-separated kebab-case kind keys) and
      * `VITE_FIREBOX_CALC_BASE_URL` (shared remote base URL). Missing/empty
      * vars → `AllLocal` (see [[resolveEngineSource]]).
@@ -158,8 +157,8 @@ object UIConfig {
         resolveEngineSource(ViteEnv.fireboxRemoteKinds, ViteEnv.fireboxCalcBaseUrl)
 
     /**
-     * Retry/backoff tunables for the firebox-calc UI pre-fetch (fix-plan
-     * Phase 5, deviation 8 / Q7.2-B). Mirrors the `InvoiceRetryConfig` shape.
+     * Retry/backoff tunables for the firebox-calc UI pre-fetch. Mirrors the
+     * `InvoiceRetryConfig` shape.
      * `RemoteFireboxPrefetch` derives `FireboxCalcClientConfig` per-call from
      * these values and the `fireboxEngineSource`.
      */
@@ -177,7 +176,7 @@ object UIConfig {
         )
 
     /**
-     * Report the resolved engine source per firebox kind at boot (Q4).
+     * Report the resolved engine source per firebox kind at boot.
      *
      * Mirrors [[logAvailability]]'s single-line `label — key=value ...` shape so
      * the two configuration lines read alike in the console. Kinds are listed in

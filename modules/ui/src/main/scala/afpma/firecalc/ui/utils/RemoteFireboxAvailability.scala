@@ -11,9 +11,9 @@ import afpma.firecalc.engine.alg.en15544.FireboxKind
 
 /**
  * Provenance AND payload of the remote firebox data the UI currently holds for
- * one kind (Q11: per-kind, so one kind's remote failure cannot block another).
+ * one kind — per-kind, so one kind's remote failure cannot block another.
  *
- * The payload travels inside the state (T1.3): "this slot holds one kind's
+ * The payload travels inside the state: "this slot holds one kind's
  * data" is a fact of the type — a kind/data mismatch is unrepresentable, not
  * guarded. `D` is the engine-side remote-data record in production and a stub
  * in unit tests.
@@ -27,7 +27,8 @@ enum RemoteDataState[+D]:
     case Live(data: D)
 
     /**
-     * Replayed from the per-project cache after the network path failed.
+     * Replayed from the per-project cache after the network path failed, or
+     * optimistically before it starts (stale-while-revalidate).
      *
      * `savedAtMs` is when the cached response was originally computed; the UI
      * MUST surface it rather than present cached numbers as live.
@@ -53,7 +54,7 @@ enum RemoteDataState[+D]:
  * engine source and the remote data currently held for it.
  *
  * There is deliberately no case that computes a `Remote`-configured kind with
- * the local engine. That is the IP-protection rule (Q0.1-A) expressed in the
+ * the local engine. That is the IP-protection rule expressed in the
  * type: "unavailable" and "pending" are honest outcomes, a silent local
  * fallback is not.
  */
@@ -91,8 +92,45 @@ enum KindComputation[+D]:
      */
     case Rejected(kind: FireboxKind, reason: String) extends KindComputation[Nothing]
 
+    /**
+     * The single exhaustive dispatch over the verdict's shape.
+     *
+     * The UI's derived signals (prefetched data, cached-at, in-flight) are
+     * trivial maps over [[projection]], so a new [[KindComputation]] variant
+     * forces a decision here instead of silently missing them.
+     *
+     * Returns a [[KindComputationProjection]] (named fields) rather than a
+     * tuple, so the three consumer signals stay self-documenting. The
+     * projection type is covariant in `D` (see its scaladoc), which is what
+     * makes it legal as the return type of this covariant enum.
+     */
+    def projection: KindComputationProjection[D] = this match
+        case KindComputation.Remote(cachedAtMs, data) => KindComputationProjection(Some(data), cachedAtMs, false)
+        case KindComputation.Local                    => KindComputationProjection(None, None, false)
+        case KindComputation.Pending(_)               => KindComputationProjection(None, None, true)
+        case KindComputation.Unavailable(_, _)        => KindComputationProjection(None, None, false)
+        case KindComputation.Rejected(_, _)           => KindComputationProjection(None, None, false)
+
 /**
- * Per-kind resolution of "can the UI serve this kind right now?" (Q11).
+ * The three facts the UI derives from one active-kind verdict: the remote
+ * payload (if any), the cache timestamp (if replayed from cache), and whether
+ * the fetch is still in flight.
+ *
+ * Covariant in `D` so it is legal as the return type of
+ * [[KindComputation.projection]] on the covariant enum. It must be a top-level
+ * type with its own `+D` — not a case class nested in the enum (that would put
+ * the enum's covariant `D` in a contravariant constructor position) and not an
+ * invariant top-level type (that would put `D` in an invariant position at the
+ * `projection` return site).
+ */
+final case class KindComputationProjection[+D](
+    data    : Option[D],
+    cachedAt: Option[Double],
+    inFlight: Boolean
+)
+
+/**
+ * Per-kind resolution of "can the UI serve this kind right now?".
  *
  * Pure and DOM-free so the whole decision — including the never-fall-back-local
  * invariant — is unit-testable without a browser. `Variables.scala` holds the
@@ -117,8 +155,8 @@ object RemoteFireboxAvailability:
      * Resolve what may be computed for `kind`.
      *
      * A `Local`-configured kind is `Local` whatever the remote state says: that
-     * is what makes the registry assemble *partially* instead of failing whole
-     * (Q11). A `Remote`-configured kind never resolves to `Local`.
+     * is what makes the registry assemble *partially* instead of failing whole.
+     * A `Remote`-configured kind never resolves to `Local`.
      */
     def computationFor[D](
         kind        : FireboxKind,
@@ -177,10 +215,10 @@ object RemoteFireboxAvailability:
     /**
      * The kinds that are genuinely missing their remote data — and only those.
      *
-     * This is the complement that makes Q11 observable: a failure recorded for
-     * one kind must never grow this set beyond that kind. Geometry rejections
-     * (`Rejected`) are deliberately excluded: the service is available, only
-     * the project's inputs are not.
+     * This is the complement that makes per-kind assembly observable: a failure
+     * recorded for one kind must never grow this set beyond that kind. Geometry
+     * rejections (`Rejected`) are deliberately excluded: the service is available,
+     * only the project's inputs are not.
      */
     def unavailableKinds[D](
         sourceConfig: FireboxEngineSourceConfig,

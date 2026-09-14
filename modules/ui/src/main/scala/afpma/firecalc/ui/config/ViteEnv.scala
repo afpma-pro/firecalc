@@ -113,7 +113,7 @@ object ViteEnv {
         ImportMetaEnv.VITE_FIREBOX_AVAIL_DOOR15A_CATALOG_BACKEND
     )
 
-    /** Comma-separated kebab-case kind keys to compute remotely (fix-plan Phase 1). `None` if the var is unset. */
+    /** Comma-separated kebab-case kind keys to compute remotely. `None` if the var is unset. */
     def fireboxRemoteKinds: Option[String] = envToOption(ImportMetaEnv.VITE_FIREBOX_REMOTE_KINDS)
 
     /** Shared base URL for the remote Firebox Calculation API. `None` if the var is unset. */
@@ -130,7 +130,7 @@ object ViteEnv {
      */
     private def envToOption(v: js.UndefOr[String]): Option[String] = v.toOption
 
-    /** Max retry attempts for the firebox-calc UI pre-fetch (fix-plan Phase 5). `None` if the var is unset. */
+    /** Max retry attempts for the firebox-calc UI pre-fetch. `None` if the var is unset. */
     def fireboxPrefetchMaxRetries: Option[String] = envToOption(ImportMetaEnv.VITE_FIREBOX_PREFETCH_MAX_RETRIES)
 
     /** Base backoff delay (ms) for the firebox-calc UI pre-fetch. `None` if the var is unset. */

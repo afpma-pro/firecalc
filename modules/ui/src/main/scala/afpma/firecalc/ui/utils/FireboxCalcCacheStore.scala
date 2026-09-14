@@ -12,7 +12,7 @@ import io.circe.syntax.*
 import org.scalajs.dom
 
 /**
- * `localStorage` adapter for the firebox-calc response cache (Q10-d part B).
+ * `localStorage` adapter for the firebox-calc response cache.
  *
  * Deliberately thin: every decision — key shape, fingerprinting, hit/miss
  * classification, size budget — lives in the pure [[FireboxCalcCache]] and is

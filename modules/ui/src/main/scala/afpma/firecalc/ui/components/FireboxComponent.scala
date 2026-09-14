@@ -97,7 +97,7 @@ case class FireboxComponent(
         dual.given_dual_Length_cm.form(disabled = DISABLED_TRUE_SIG)
 
     /**
-     * Form for the remote Ecolabeled outputs wire type (fix-plan Phase 1, dev. 9).
+     * Form for the remote Ecolabeled outputs wire type.
      * Gives [[afpma.firecalc.firebox_calc_api.WireEcolabeledOutputs]] a production
      * consumer so the panel can render from prefetched remote data when the kind
      * is configured `Remote`. Field-by-field string forms (non-blocking).
@@ -114,7 +114,7 @@ case class FireboxComponent(
             .combineWith(prefetchedRemoteDataSig)
             .map:
                 case (fb: Firebox.Ecolabeled, remoteDataOpt) =>
-                    // Ecolabeled is remote-only (ticket 11): the operating-point
+                    // Ecolabeled is remote-only: the operating-point
                     // outputs originate exclusively in a `POST /v1/calculate`
                     // response. Render them from the prefetched remote data when
                     // present; otherwise render nothing — there is no local

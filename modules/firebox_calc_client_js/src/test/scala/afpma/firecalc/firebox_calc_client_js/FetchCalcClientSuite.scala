@@ -381,6 +381,31 @@ class FetchCalcClientSuite extends AnyFlatSpec with Matchers {
         }
     }
 
+    it should "stop rescheduling retries immediately upon cancel()" in {
+        var attemptCount = 0
+        val mockFetch: (String, RequestInit) => js.Promise[Response] = { (_, _) =>
+            attemptCount += 1
+            rejectResponse("Persistent network error")
+        }
+
+        val retryConfig = RetryPolicy(
+            maxAttempts   = 5,
+            initialDelay  = scala.concurrent.duration.FiniteDuration(10, scala.concurrent.duration.MILLISECONDS),
+            maxDelay      = scala.concurrent.duration.FiniteDuration(100, scala.concurrent.duration.MILLISECONDS),
+            backOffFactor = 1.0
+        )
+        val client      = FetchCalcClient(config(retryPolicy = retryConfig), mockFetch)(using ec)
+
+        val fut = client.getKinds
+        client.cancel
+
+        fut.map { result =>
+            val failure = result.left.toOption.get
+            failure shouldBe a[CalculationFailure.TransportError]
+            attemptCount shouldBe 1
+        }
+    }
+
     // =====================================================================
     // URL Construction
     // =====================================================================

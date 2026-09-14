@@ -75,7 +75,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
         results_en15544_strict_sig.flatMapVNelE: strict =>
             strict.primary.validateFireboxSpecificConstraints
 
-    // ── S5.4: Remote constraint pending state ──────────────────────
+    // ── Remote constraint pending state ────────────────────────────
 
     /**
      * The (term, reason) pairs of constraints the remote service could not
@@ -115,7 +115,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
     private def demoteGeometryRejection[A](v: VNelMcalcErr[A]): VNelMcalcErr[A] =
         v match
             case Validated.Invalid(nel) =>
-                val kept = nel.toList.filterNot(_.isInstanceOf[FireboxGeometryRejectedError])
+                val kept = nel.toList.filterNot {
+                    case _: FireboxGeometryRejectedError => true
+                    case _ => false
+                }
                 if kept.isEmpty then ErrorsInOtherSectionType.invalidNel
                 else NonEmptyList.fromListUnsafe(kept).invalid
             case _                      => v
@@ -141,7 +144,7 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 if filtered.nonEmpty then NonEmptyList.fromListUnsafe(filtered).invalid
                 else ().validNel[MCalc_Error]
 
-    // ── S5.4: Pending indicator helpers ────────────────────────────
+    // ── Pending indicator helpers ───────────────────────────────────
 
     private def pendingTermLabel(term: ConstraintTerm): String =
         term match
@@ -189,6 +192,26 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                     )
             ),
             element    = span(cls := "text-base-content/50 inline-block animate-spin", lucide.`loader-circle`),
+            ttPosition = "tooltip-bottom"
+        ).node
+
+    /**
+     * Render the error-list tooltip (header + one line per error).
+     * Shared by the two firebox status icons (constraints + pressures).
+     */
+    private def renderErrorsTooltip(errs: NonEmptyList[MCalc_Error]): HtmlElement =
+        DaisyUITooltip (
+            ttContent  = ul(
+                cls := "list",
+                li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
+                errs.toList.toSeq.map: err =>
+                    li(cls := "list-row text-xs", err.show)
+            ),
+            element    = span(
+                cls := PanelStatusHelper.textClsNameFoErrors(errs),
+                lucide.`circle-x`
+            ),
+            ttStyle    = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
             ttPosition = "tooltip-bottom"
         ).node
 
@@ -275,54 +298,20 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                         None
 
                             val statusCons =
-                                if !typeAvail then div(lucide.`circle-check`)
+                                if !typeAvail then div             (lucide.`circle-check`)
                                 else
-                                    PanelStatusHelper
-                                        .filterErrors(
-                                            fireboxScope,
-                                            all_cons
-                                        ) match
-                                        case Validated.Valid(_)      => div(lucide.`circle-check`)
-                                        case Validated.Invalid(errs) =>
-                                            DaisyUITooltip (
-                                                ttContent  = ul(
-                                                    cls := "list",
-                                                    li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                                                    errs.toList.toSeq.map: err =>
-                                                        li(cls := "list-row text-xs", err.show)
-                                                ),
-                                                element    = span(
-                                                    cls := PanelStatusHelper.textClsNameFoErrors(errs),
-                                                    lucide.`circle-x`
-                                                ),
-                                                ttStyle    = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
-                                                ttPosition = "tooltip-bottom"
-                                            ).node
+                                    PanelStatusHelper.statusElement(
+                                        PanelStatusHelper.verdict(fireboxScope, all_cons),
+                                        renderErrorsTooltip
+                                    )
 
                             val statusOther =
-                                if !typeAvail then div(lucide.`circle-check`)
+                                if !typeAvail then div             (lucide.`circle-check`)
                                 else
-                                    PanelStatusHelper
-                                        .filterErrors(
-                                            fireboxScope,
-                                            fb_press_avail
-                                        ) match
-                                        case Validated.Valid(_)      => div(lucide.`circle-check`)
-                                        case Validated.Invalid(errs) =>
-                                            DaisyUITooltip (
-                                                ttContent  = ul(
-                                                    cls := "list",
-                                                    li(cls := "text-xs", s"${I18N.headers.constraints_validation} :"),
-                                                    errs.toList.toSeq.map: err =>
-                                                        li(cls := "list-row text-xs", err.show)
-                                                ),
-                                                element    = span(
-                                                    cls := PanelStatusHelper.textClsNameFoErrors(errs),
-                                                    lucide.`circle-x`
-                                                ),
-                                                ttStyle    = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
-                                                ttPosition = "tooltip-bottom"
-                                            ).node
+                                    PanelStatusHelper.statusElement(
+                                        PanelStatusHelper.verdict(fireboxScope, fb_press_avail),
+                                        renderErrorsTooltip
+                                    )
                             // Spinning loader-circle for verdicts the remote service could not
                             // evaluate yet; the tooltip lists term + reason.
                             val pendingIcon =

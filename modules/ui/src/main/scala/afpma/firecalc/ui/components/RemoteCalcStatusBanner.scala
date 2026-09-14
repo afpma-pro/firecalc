@@ -5,30 +5,41 @@
 
 package afpma.firecalc.ui.components
 
+import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.RemoteFireboxPending
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchInFlightSig
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchedRemoteCachedAtSig
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.unavailableFireboxKindsSig
 import afpma.firecalc.ui.utils.FireboxKindLabel
+
+import cats.syntax.show.*
 
 import com.raquo.laminar.api.L.*
 
 import io.taig.babel.Locale
 
 /**
- * Honest status of the remote firebox calculation (Q10-d part B / Q11).
+ * Honest status of the remote firebox calculation.
  *
- * Two mutually compatible notices, both silent in the default all-local
- * configuration:
+ * Three notices, all silent in the default all-local configuration:
  *
- *  - '''Cached''' — results currently on screen were replayed from this device's
- *    cache, with the timestamp of the response that produced them. Required by
- *    Q10-d: cached numbers MUST NOT be presented as live.
- *  - '''Unavailable kinds''' — the kinds whose remote data is genuinely missing,
- *    named individually, plus the explicit reassurance that every other kind
- *    still calculates (Q11). Deliberately not a blocking dialog: blocking is
- *    what the per-kind assembly replaces.
+ *  - '''Connecting''' — a remote fetch for the active kind is in flight and
+ *    nothing matched in the cache; the sections show their carry-over or
+ *    nothing, and this names what the UI is actually waiting for. Mutually
+ *    exclusive with the cached notice for the active kind: a cache hit is
+ *    served synchronously, so `Pending` only occurs on a miss.
+ *  - '''Cached''' — results currently on screen were replayed from this
+ *    device's cache, with the timestamp of the response that produced them.
+ *    Cached numbers MUST NOT be presented as live.
+ *  - '''Unavailable kinds''' — the kinds whose remote data is genuinely
+ *    missing, named individually, plus the explicit reassurance that every
+ *    other kind still calculates. Deliberately not a blocking dialog:
+ *    blocking is what the per-kind assembly replaces.
  */
 final case class RemoteCalcStatusBanner()(using Locale) extends Component:
 
@@ -39,6 +50,14 @@ final case class RemoteCalcStatusBanner()(using Locale) extends Component:
     private def formatSavedAt(savedAtMs: Double): String =
         val date = new scala.scalajs.js.Date(savedAtMs)
         s"${date.toLocaleDateString()} ${date.toLocaleTimeString()}"
+
+    private lazy val connectingNotice: Signal[Option[HtmlElement]] =
+        prefetchInFlightSig.map: inFlight =>
+            Option.when(inFlight):
+                div(
+                    cls := "alert alert-info shadow-lg text-xs py-1 px-2",
+                    span((RemoteFireboxPending: MCalc_Error).show)
+                )
 
     private lazy val cachedNotice: Signal[Option[HtmlElement]] =
         prefetchedRemoteCachedAtSig.map:
@@ -64,6 +83,7 @@ final case class RemoteCalcStatusBanner()(using Locale) extends Component:
     lazy val node: HtmlElement =
         div(
             cls := "flex flex-col items-end gap-1",
+            child.maybe <-- connectingNotice,
             child.maybe <-- cachedNotice,
             child.maybe <-- unavailableNotice
         )

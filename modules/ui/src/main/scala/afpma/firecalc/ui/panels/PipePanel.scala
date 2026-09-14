@@ -676,14 +676,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
             .map: (vnel, idsMappingOpt, elemsSize, forbiddenDtos) =>
                 val reverseMap = buildReverseIdsMap(idsMappingOpt, elemsSize)
 
-                // Collect engine errors for this section
+                // Scope-filter the error channel into a verdict. The verdict
+                // carries the decision, so the render branch below consults it
+                // once — no sentinel predicate.
+                val verdict = PanelStatusHelper.verdict(panelScope, vnel)
+
+                // Engine errors for this section, derived from the verdict.
+                // `Neutral` and `Ok` carry no user-actionable engine errors.
                 val engineErrs: List[PanelStatusHelper.PanelError] =
-                    PanelStatusHelper
-                        .filterErrors(panelScope, vnel) match
-                        case Validated.Invalid(errs @ NonEmptyList(_, _)) =>
+                    verdict match
+                        case PanelVerdict.Shown(errs)  =>
                             errs.toList.map: err =>
                                 PanelStatusHelper.PanelError.EngineError(remapErrorSectionId(err, reverseMap))
-                        case _                                            => Nil
+                        case PanelVerdict.OtherSection =>
+                            List(PanelStatusHelper.PanelError.EngineError(ErrorsInOtherSectionType))
+                        case _                         => Nil
 
                 // Add forbidden DTO errors
                 val dtoErrs: List[PanelStatusHelper.PanelError] =
@@ -693,7 +700,12 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
 
                 val allErrs: List[PanelStatusHelper.PanelError] = engineErrs ++ dtoErrs
 
-                if allErrs.nonEmpty then
+                // The render decision, derived in exactly one place from the
+                // verdict: a pending-only channel with no forbidden DTO errors
+                // is neutral (no icon, no message); otherwise show errors if
+                // any, else the healthy check.
+                if verdict == PanelVerdict.Neutral && dtoErrs.isEmpty then span(cls := "")
+                else if allErrs.nonEmpty then
                     val nel        = NonEmptyList.fromListUnsafe(allErrs)
                     val textCls    = PanelStatusHelper.textClsNameForPanelErrors(nel)
                     val tooltipCls = PanelStatusHelper.tooltipStyleClsNameForPanelErrors(nel)

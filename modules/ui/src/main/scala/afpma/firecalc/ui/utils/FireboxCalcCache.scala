@@ -14,7 +14,7 @@ import io.circe.generic.semiauto.deriveEncoder
 
 /**
  * One cached firebox-calc response, keyed per (project, kind) and stamped with
- * the fingerprint of the request that produced it (Q10-d, part B).
+ * the fingerprint of the request that produced it.
  *
  * `fingerprint` is the whole point of the record: a response computed for
  * *different* firebox geometry is worse than no cache at all, because the UI
@@ -47,8 +47,8 @@ object FireboxCalcCacheEntry:
     given Decoder[FireboxCalcCacheEntry] = deriveDecoder
 
 /**
- * Pure key/fingerprint/validation logic for the firebox-calc response cache
- * (Q10-d part B). No `localStorage`, no DOM — the storage adapter lives in
+ * Pure key/fingerprint/validation logic for the firebox-calc response cache.
+ * No `localStorage`, no DOM — the storage adapter lives in
  * `FireboxCalcCacheStore`, which is a thin shell over this.
  *
  * Design decisions, stated once here:

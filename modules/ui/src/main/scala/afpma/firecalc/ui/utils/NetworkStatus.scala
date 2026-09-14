@@ -9,7 +9,7 @@ import org.scalajs.dom
 
 /**
  * Minimal facade over the browser's connectivity signals, for the firebox-calc
- * pre-fetch's fail-fast path (Q10-d, part A).
+ * pre-fetch's fail-fast path.
  *
  * Mirrors the existing idiom in
  * [[PaymentsBackendApiConnectivity.isNavigatorOnline]] (`dom.window.navigator.onLine`)

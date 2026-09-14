@@ -17,20 +17,38 @@ import afpma.firecalc.engine.standard.ErrorsInOtherSectionType
 import afpma.firecalc.engine.standard.IncompatibleDirectionInPipe
 import afpma.firecalc.engine.standard.InvalidConstraint
 import afpma.firecalc.engine.standard.MCalc_Error
-import afpma.firecalc.engine.standard.ResultsNotComputed
+import afpma.firecalc.engine.standard.PendingStateError
 import afpma.firecalc.engine.standard.TargetedError
 import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 
 import cats.data.*
 import cats.data.Validated.Valid
 import cats.syntax.all.*
-
 import com.raquo.airstream.core.Signal
+import com.raquo.laminar.api.L.*
+import afpma.firecalc.ui.icons.lucide
 
 import afpma.firecalc.domain.IsBackendForbidden
 import afpma.firecalc.domain.IsBackendForbidden.ForbiddenDtoFound
 import afpma.firecalc.domain.NbOfFlows
 import io.taig.babel.Locale
+
+/**
+ * The outcome of scoping a panel's error channel: which verdict the panel
+ * should render.
+ *
+ * - `Ok`: the computation is valid; the panel renders its healthy state.
+ * - `Shown`: real errors this scope sees; the panel renders them.
+ * - `OtherSection`: a real error exists but lives in another section; the
+ *   panel renders the meta-error ("what to fix lives elsewhere").
+ * - `Neutral`: only pending system states ride the channel; the panel renders
+ *   neutral (no icon, no message).
+ */
+enum PanelVerdict:
+    case Ok
+    case Shown(errs: NonEmptyList[MCalc_Error])
+    case OtherSection
+    case Neutral
 
 object PanelStatusHelper:
 
@@ -195,24 +213,61 @@ object PanelStatusHelper:
         clsNameForPanelErrors(errs)(prefix = "tooltip-")
 
     /**
-     * Filter errors using the scope-containment model.
+     * Scope-filter the panel's error channel into a verdict.
      *
      * For `TargetedError` instances, uses `scope.sees(error.target)`.
      * `InvalidConstraint` extracts pipe type from nested errors for scoping.
      * Global errors (not `TargetedError` and not `InvalidConstraint`) are kept.
-     * `ResultsNotComputed` is always filtered out.
+     *
+     * Precedence:
+     *  1. valid result → `Ok`;
+     *  2. real errors this scope sees → `Shown` (reals only);
+     *  3. otherwise, a real error hidden in another scope → `OtherSection`
+     *     (the `ErrorsInOtherSectionType` meta-error, "what to fix lives elsewhere");
+     *  4. otherwise every member was a pending state → `Neutral`. A pending fetch
+     *     or debounce window is not "an error in another section", so the
+     *     meta-error must NOT fire for them.
+     *
+     * Sentinel classification keys off the sealed [[PendingStateError]] family:
+     * only its members are neutral system states; everything else (including the
+     * terminal [[RemoteFireboxUnavailable]]) is a real error. A new member of the
+     * family reads as neutral here without an edit.
      */
-    def filterErrors[A](scope: PanelScope, vnel: ValidatedNel[MCalc_Error, A]): ValidatedNel[MCalc_Error, A] =
+    def verdict[A](scope: PanelScope, vnel: ValidatedNel[MCalc_Error, A]): PanelVerdict =
         vnel match
-            case Validated.Valid(a)     => a.validNel
+            case Validated.Valid(_)     => PanelVerdict.Ok
             case Validated.Invalid(nel) =>
-                val errs = nel.filter:
-                    case ResultsNotComputed => false
-                    case te: TargetedError     => scope.sees(te.target)
-                    case ic: InvalidConstraint =>
-                        ic.sectionTyp.fold(true)(pt => scope.sees(ErrorTarget.TypeTarget(pt)))
-                    case _ => true // Global errors are kept
-                if errs.nonEmpty then NonEmptyList.fromListUnsafe(errs).invalid
-                else
-                    // All errors belong to other panels — show meta-error
-                    ErrorsInOtherSectionType.invalidNel
+                def sees(e: MCalc_Error): Boolean =
+                    e match
+                        case te: TargetedError     => scope.sees(te.target)
+                        case ic: InvalidConstraint =>
+                            ic.sectionTyp.fold(true)(pt => scope.sees(ErrorTarget.TypeTarget(pt)))
+                        case _ => true // Global errors are kept
+                val realErrors = nel.toList.filterNot {
+                    case _: PendingStateError => true
+                    case _ => false
+                }
+                val visible = realErrors.filter(sees)
+                if visible.nonEmpty then PanelVerdict.Shown(NonEmptyList.fromListUnsafe(visible))
+                else if realErrors.length != visible.length then PanelVerdict.OtherSection
+                else PanelVerdict.Neutral
+
+    /**
+     * Map a verdict to the status element a panel renders. The panel supplies
+     * how to render the "shown errors" case (tooltip content); the helper owns
+     * the decision-to-element mapping for the other cases, so decision and
+     * rendering share one owner.
+     *
+     * `OtherSection` is rendered through the same "shown errors" renderer with
+     * the meta-error as content — the meta-error is just a special error, and
+     * the panel's tooltip renderer is generic over the error list.
+     */
+    def statusElement(
+        verdict    : PanelVerdict,
+        renderShown: NonEmptyList[MCalc_Error] => HtmlElement
+    ): HtmlElement =
+        verdict match
+            case PanelVerdict.Ok           => div(lucide.`circle-check`)
+            case PanelVerdict.Neutral      => span(cls := "")
+            case PanelVerdict.OtherSection => renderShown(NonEmptyList.one(ErrorsInOtherSectionType))
+            case PanelVerdict.Shown(errs)  => renderShown(errs)

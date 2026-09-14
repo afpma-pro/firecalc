@@ -15,6 +15,7 @@ object I18nData_ErrorsWarnings:
 
     case class BuilderErrors(
         errors_in_other_section_type: String,
+        remote_firebox_pending      : String,
         results_not_computed        : String
     )
 
