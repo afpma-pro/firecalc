@@ -5,6 +5,10 @@
 
 package afpma.firecalc.dto
 
+import afpma.firecalc.utils.yaml.YamlDocumentText
+import afpma.firecalc.utils.yaml.YamlPrintGuard
+import afpma.firecalc.utils.yaml.YamlStringRepair
+
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -30,13 +34,13 @@ trait CustomYAMLEncoderDecoder[A]:
             } catch
                 case e =>
                     Failure(e)
-        jsonEncodedTry.map(yamlPrinter.print)
+        jsonEncodedTry.map(j => YamlPrintGuard.guard(yamlPrinter.print(j)))
 
     def decodeFromYaml(y: String): Try[A] =
-        yamlParser.parse(y) match
+        yamlParser.parse(YamlDocumentText.withTrailingNewline(y)) match
             case Left(pf)          => Failure(pf)
             case Right(parsedYaml) =>
-                val j = PressureLossTableStorage.decode(parsedYaml).noSpaces
+                val j = YamlStringRepair.repair(PressureLossTableStorage.decode(parsedYaml)).noSpaces
                 try
                     decode[A](j) match
                         case Left(err)    => Failure(err)

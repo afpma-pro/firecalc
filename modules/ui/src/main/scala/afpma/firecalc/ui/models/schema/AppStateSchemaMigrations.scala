@@ -15,6 +15,8 @@ import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4
 import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5
 import afpma.firecalc.ui.models.schema.v6.AppStateSchema_V6
 import afpma.firecalc.ui.models.schema.v7.AppStateSchema_V7
+import afpma.firecalc.utils.yaml.YamlDocumentText
+import afpma.firecalc.utils.yaml.YamlStringRepair
 
 import scala.util.Failure
 import scala.util.Success
@@ -233,14 +235,18 @@ object AppStateSchemaMigrations:
                 None
 
     /**
-     * Parse YAML and canonicalise the `pressure_loss_table_raw` field.
+     * Parse YAML, canonicalise the `pressure_loss_table_raw` field, then JSON-unescape every string.
      *
      * Legacy and poisoned tables (real separators, or the backslash-escape runs a save/open
-     * cycle used to leave behind) heal here, so every version decoder below sees the
-     * canonical TSV form.
+     * cycle used to leave behind) heal in the first pass, so every version decoder below sees
+     * the canonical TSV form. [[YamlStringRepair.repair]] must stay the OUTER pass: run first,
+     * it would rewrite the poisoned runs into real TAB/LF and hide them from the healer.
      */
     private def parseYaml(yaml: String): Either[io.circe.ParsingFailure, io.circe.Json] =
-        yamlParser.parse(yaml).map(PressureLossTableStorage.decode)
+        yamlParser
+            .parse(YamlDocumentText.withTrailingNewline(yaml))
+            .map(PressureLossTableStorage.decode)
+            .map(YamlStringRepair.repair)
 
     /**
      * Detect schema version from YAML using manual JSON navigation.

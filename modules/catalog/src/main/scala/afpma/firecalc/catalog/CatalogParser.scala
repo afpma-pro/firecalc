@@ -7,6 +7,8 @@ package afpma.firecalc.catalog
 
 import afpma.firecalc.dto.PressureLossTableStorage
 import afpma.firecalc.dto.all.FireCalc_Version
+import afpma.firecalc.utils.yaml.YamlDocumentText
+import afpma.firecalc.utils.yaml.YamlStringRepair
 
 import io.circe.Json
 import io.circe.yaml.scalayaml.parser as yamlParser
@@ -33,13 +35,18 @@ object CatalogParser:
             file    <- decodeAndMigrate(json, version)
         yield file
 
-    /** Parse the YAML and canonicalise `pressure_loss_table_raw` (heals legacy and poisoned catalogs). */
+    /**
+     * Parse the YAML, canonicalise `pressure_loss_table_raw` (heals legacy and poisoned
+     * catalogs), then JSON-unescape every string — [[YamlStringRepair.repair]] stays outer:
+     * run first it would hide the poisoned escape runs from the healer.
+     */
     private def parseYaml(yamlString: String): Either[CatalogParseError, Json] =
         yamlParser
-            .parse(yamlString)
+            .parse(YamlDocumentText.withTrailingNewline(yamlString))
             .left
             .map(e => CatalogParseError.InvalidFile(e.getMessage))
             .map(PressureLossTableStorage.decode)
+            .map(YamlStringRepair.repair)
 
     private def detectVersion(json: Json): Option[FireCalc_Version] =
         json.hcursor.downField("catalog_version").as[FireCalc_Version].toOption

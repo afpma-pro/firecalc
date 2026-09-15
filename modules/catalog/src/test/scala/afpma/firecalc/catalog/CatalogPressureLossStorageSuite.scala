@@ -96,4 +96,22 @@ class CatalogPressureLossStorageSuite extends FunSuite:
         assertEquals(tableOf(reParsed), canonicalTable       )
         assertEquals(CatalogWriter.toYaml(reParsed), exported)
 
+    test("the full writer/parser route round-trips a free-text field carrying a backslash"):
+        // Issue 01/02 acceptance for the .fcalc-db route specifically: `reference` (a plain
+        // free-text field) holds a Windows path with real backslashes. Writer -> parser must
+        // return it byte-exact (the old codec would have doubled it), and the export must be a
+        // fixed point. CatalogWriter/Parser now run the guard + repair passes.
+        val pathRef = "C:\\Users\\poele"
+        val yamlIn  = catalogYaml(canonicalTable).replace("STORAGE-001", pathRef)
+        val file    = parse(yamlIn)
+
+        import CatalogCategoryInstances.given
+        val entryRef = file.entriesFor[Firebox.Door15aFirebox_Catalog].head.reference
+        assertEquals(entryRef, pathRef)
+
+        val exported = CatalogWriter.toYaml(file)
+        val reParsed = parse(exported)
+        assertEquals(reParsed.entriesFor[Firebox.Door15aFirebox_Catalog].head.reference, pathRef)
+        assertEquals(CatalogWriter.toYaml(reParsed), exported                                   )
+
 end CatalogPressureLossStorageSuite

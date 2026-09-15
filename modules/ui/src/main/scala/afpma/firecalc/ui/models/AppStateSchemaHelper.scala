@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.models
 
 import afpma.firecalc.dto.PressureLossTableStorage
+import afpma.firecalc.utils.yaml.YamlPrintGuard
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.ui.models.schema.AppStateSchemaLoader
 import afpma.firecalc.ui.models.schema.v7.AppStateSchema_V7
@@ -32,7 +33,7 @@ object AppStateSchemaHelper:
     def encodeToYaml(schema: AppStateSchema): Try[String] =
         try
             val json = PressureLossTableStorage.encode(schema.asJson)
-            Success(yamlPrinter.print(json))
+            Success(YamlPrintGuard.guard(yamlPrinter.print(json)))
         catch
             case e: Exception =>
                 scala.scalajs.js.Dynamic.global.console.log(s"Failed to encode schema: ${e.getMessage()}")

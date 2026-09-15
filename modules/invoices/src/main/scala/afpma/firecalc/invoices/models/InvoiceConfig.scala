@@ -6,6 +6,9 @@
 package afpma.firecalc.invoices.models
 
 import afpma.firecalc.payments.shared.api.ProductCopyConfig
+import afpma.firecalc.utils.yaml.YamlDocumentText
+import afpma.firecalc.utils.yaml.YamlPrintGuard
+import afpma.firecalc.utils.yaml.YamlStringRepair
 
 import scala.util.Failure
 import scala.util.Success
@@ -100,13 +103,13 @@ object InvoiceConfig:
                 val xj = x.asJson
                 Success(xj)
             } catch case e => Failure(e)
-        jsonEncodedTry.map(yamlPrinter.print)
+        jsonEncodedTry.map(j => YamlPrintGuard.guard(yamlPrinter.print(j)))
 
     def decodeFromYaml(y: String): Try[InvoiceConfig] =
-        yamlParser.parse(y) match
+        yamlParser.parse(YamlDocumentText.withTrailingNewline(y)) match
             case Left(pf)          => Failure(pf)
             case Right(parsedYaml) =>
-                val j = parsedYaml.noSpaces
+                val j = YamlStringRepair.repair(parsedYaml).noSpaces
                 try
                     decode[InvoiceConfig](j) match
                         case Left(err)    => Failure(err)

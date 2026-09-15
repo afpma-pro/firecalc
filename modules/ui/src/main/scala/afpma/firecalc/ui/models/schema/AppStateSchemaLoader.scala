@@ -10,6 +10,8 @@ import scala.util.Success
 import scala.util.Try
 
 import afpma.firecalc.dto.PressureLossTableStorage
+import afpma.firecalc.utils.yaml.YamlDocumentText
+import afpma.firecalc.utils.yaml.YamlStringRepair
 
 import io.circe.parser.decode
 import io.circe.yaml.scalayaml.parser as yamlParser
@@ -25,11 +27,11 @@ object AppStateSchemaLoader:
      * Returns Success with schema or Failure with error.
      */
     def loadFromYaml(yaml: String): Try[AppStateSchema] =
-        yamlParser.parse(yaml) match
+        yamlParser.parse(YamlDocumentText.withTrailingNewline(yaml)) match
             case Left(parseFailure) =>
                 Failure(new Exception(s"Failed to parse YAML: ${parseFailure.getMessage()}"))
             case Right(json)        =>
-                decode[AppStateSchema](PressureLossTableStorage.decode(json).noSpaces) match
+                decode[AppStateSchema](YamlStringRepair.repair(PressureLossTableStorage.decode(json)).noSpaces) match
                     case Left(decodeError) =>
                         Failure(new Exception(s"Failed to decode schema: ${decodeError.getMessage()}"))
                     case Right(schema)     =>

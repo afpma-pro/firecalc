@@ -6,6 +6,7 @@
 package afpma.firecalc.catalog
 
 import afpma.firecalc.dto.PressureLossTableStorage
+import afpma.firecalc.utils.yaml.YamlPrintGuard
 
 import io.circe.Json
 import io.circe.syntax.*
@@ -23,4 +24,4 @@ object CatalogWriter:
             ("catalog_version"  -> Json.fromInt(file.catalog_version.unwrap)) ::
                 ("catalog_name" -> file.catalog_name.asJson                 ) ::
                 sectionFields
-        yamlPrinter.print(PressureLossTableStorage.encode(Json.obj(allFields*)))
+        YamlPrintGuard.guard(yamlPrinter.print(PressureLossTableStorage.encode(Json.obj(allFields*))))

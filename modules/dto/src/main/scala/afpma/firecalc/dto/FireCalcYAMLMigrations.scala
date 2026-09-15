@@ -15,6 +15,10 @@ import afpma.firecalc.dto.v5.FireCalcYAML_V5
 import afpma.firecalc.dto.v6.FireCalcYAML_V6
 import afpma.firecalc.dto.v7.FireCalcYAML_V7
 
+import afpma.firecalc.utils.yaml.YamlDocumentText
+import afpma.firecalc.utils.yaml.YamlPrintGuard
+import afpma.firecalc.utils.yaml.YamlStringRepair
+
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -117,11 +121,11 @@ object FireCalcYAMLMigrations:
      * @return Either[String, FireCalcYAML] - Left with error message, Right with migrated schema
      */
     def decodeAndMigrate(yaml: String): Either[String, FireCalcYAML] =
-        yamlParser.parse(yaml) match
+        yamlParser.parse(YamlDocumentText.withTrailingNewline(yaml)) match
             case Left(parseError) =>
                 Left(s"Failed to parse YAML: ${parseError.getMessage()}")
             case Right(json)      =>
-                decodeAndMigrateJson(PressureLossTableStorage.decode(json))
+                decodeAndMigrateJson(YamlStringRepair.repair(PressureLossTableStorage.decode(json)))
 
     /**
      * Decode JSON and migrate to latest FireCalcYAML version.
@@ -276,7 +280,7 @@ object FireCalcYAMLMigrations:
     def encodeToYaml(fc: FireCalcYAML): Either[String, String] =
         try
             val json = PressureLossTableStorage.encode(fc.asJson)
-            Right(yamlPrinter.print(json))
+            Right(YamlPrintGuard.guard(yamlPrinter.print(json)))
         catch
             case e: Exception =>
                 Left(s"Failed to encode to YAML: ${e.getMessage()}")
