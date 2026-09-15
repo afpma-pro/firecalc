@@ -13,6 +13,7 @@ import afpma.firecalc.dto.v7.FlowOnlyPipeDescr_15544_V4
 import afpma.firecalc.dto.v7.ThermalPipeDescr_13384_V4
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7.*
+import afpma.firecalc.dto.common.PipeShape.Circle
 
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.*
 import afpma.firecalc.engine.models.geometry.ChainEditDispatcher.PropagationStrategy.*
@@ -47,12 +48,17 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     val adLeft : AbsoluteDirection = absDir(Left, Horizontal)
     val adRear : AbsoluteDirection = absDir(Rear, Horizontal)
     val adDown : AbsoluteDirection = AbsoluteDirection(None, Down)
+    val adUp   : AbsoluteDirection = AbsoluteDirection(None, Up)
 
     private val rearInitialFrame = Some(PipeFrame.initial(Vec3.Rear))
 
     // A FlueSlot element that is a direction-change (pinned)
     def bend(angleDeg: Double, pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V4 =
         FDElem15.AddSharpeAngle_0_to_180("b", angleDeg.degrees, pin)
+
+    /** A FlueSlot split/merge element — also a 90° direction change (see `IsDirectionChange`). */
+    def mergeFlow(pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V4 =
+        FDElem15.MergeTwoFlowsIntoSingleWith90DegTurn("m", pin, Circle(0.18.meters))
 
     // A FlueSlot element that is NOT a direction change (plain section)
     def sectionNamed(name: String): FlowOnlyPipeDescr_15544_V4 =
@@ -118,6 +124,198 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         val old = simpleFlue(bend(90.0, None))
         val upd = simpleFlue(bend(45.0, None))
         ChainEditDispatcher.detectEdit(old, upd) shouldBe None
+    }
+
+    it should "return None for a pure reorder of two direction-change elements (up/down chevron swap)" in {
+        // Regression: swapping two direction-change elements used to be reported as a DirectionEdit
+        // at the first differing index (both sides of that index are direction changes, both turning
+        // 90°), and the dispatcher then spliced the moved element over the pre-edit chain there —
+        // destroying the element that sat at it. This is the reported case: an "Angle vif" moved up
+        // over a "Fusionner en 1 flux", which the scan conflates because a merge is a 90° direction
+        // change too. Both pins come from the reporter's project.
+        val old     = simpleFlue(
+            mergeFlow(Some(adRight)), // the merge the user moves down with
+            bend(90.0, Some(adUp)) // the angle the user moves up   (e.g. "vers remontée")
+        )
+        val swapped = simpleFlue(
+            bend(90.0, Some(adUp)),
+            mergeFlow(Some(adRight))
+        )
+        ChainEditDispatcher.detectEdit(old, swapped) shouldBe None
+    }
+
+    it should "return None for a pure reorder of two same-kind direction-change elements" in {
+        val old     = simpleFlue(
+            bend(90.0, Some(adLeft)),
+            bend(90.0, Some(adDown))
+        )
+        val swapped = simpleFlue(
+            bend(90.0, Some(adDown)),
+            bend(90.0, Some(adLeft))
+        )
+        ChainEditDispatcher.detectEdit(old, swapped) shouldBe None
+    }
+
+    it should "return None for a reorder that differs in kind, pin and angle at once" in {
+        // Same elements, permuted: no positional pairing can turn this into an element edit.
+        val old     = simpleFlue(
+            bend(45.0, Some(adLeft)),
+            mergeFlow(Some(adRight)),
+            bend(90.0, None        )
+        )
+        val rotated = simpleFlue(
+            mergeFlow(Some(adRight)),
+            bend(90.0, None        ),
+            bend(45.0, Some(adLeft))
+        )
+        ChainEditDispatcher.detectEdit(old, rotated) shouldBe None
+    }
+
+    it should "return None for a reorder of duplicate-valued elements" in {
+        // The value-equal copies make the sequences differ positionally while the multiset does not.
+        val old     = simpleFlue(
+            bend(90.0, Some(adLeft)),
+            bend(90.0, Some(adLeft)),
+            mergeFlow(Some(adRight))
+        )
+        val swapped = simpleFlue(
+            bend(90.0, Some(adLeft)),
+            mergeFlow(Some(adRight)),
+            bend(90.0, Some(adLeft))
+        )
+        ChainEditDispatcher.detectEdit(old, swapped) shouldBe None
+    }
+
+    it should "return None when a slot move swaps two whole flue slots" in {
+        // A slot move is a reorder one level up: the up/down chevrons move a whole slot, and both
+        // sequences hold the same slots, so there is no element edit to attribute. Before the guard
+        // this returned a cross-paired DirectionEdit naming slot B's pin as the edit's old value and
+        // slot A's as the new one, and `apply` then rotated the chain by the delta between those two
+        // unrelated elements.
+        val old     = twoSlotChain(Seq(section(), bend(90.0, Some(adDown))), Seq(section(), bend(90.0, Some(adLeft))))
+        val swapped = Seq(old(1), old(0), old(2))
+        ChainEditDispatcher.detectEdit(old, swapped) shouldBe None
+    }
+
+    it should "return None when a slot move swaps flue slots of different lengths" in {
+        // Lengths differ (4 vs 1 elements), so before the guard the longer slot looked like a
+        // descriptor-level insertion into the shorter one.
+        val old     = twoSlotChain(
+            Seq(section(), bend(90.0, Some(adDown)), section(), bend(90.0, Some(adLeft))),
+            Seq(sectionNamed("short"))
+        )
+        val swapped = Seq(old(1), old(0), old(2))
+        ChainEditDispatcher.detectEdit(old, swapped) shouldBe None
+    }
+
+    it should "still report an angle edit made inside one slot of a multi-slot chain" in {
+        // Only slots that the content matching leaves over are scanned; an element edit within a slot
+        // changes that slot's value, so it is a leftover and detection proceeds as before.
+        val old = twoSlotChain(Seq(section(), bend(90.0, Some(adRight))), Seq(section(), bend(90.0, Some(adLeft))))
+        val nw  = twoSlotChain(Seq(section(), bend(45.0, Some(adRight))), Seq(section(), bend(90.0, Some(adLeft))))
+        ChainEditDispatcher.detectEdit(old, nw) shouldBe Some(
+            AngleEdit(ChainCoord(0, 1), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
+        )
+    }
+
+    it should "attribute an edit that rides in the same window as a slot move to the moved slot" in {
+        // One chevron click plus one angle keystroke inside the same debounce window: the slots are
+        // swapped AND slot A's angle is now 45°. Slots are paired by content, so the leftover old slot
+        // is A itself and the leftover new index is where A now sits: the edit is measured against A's
+        // own 90°/Down. Pairing by position instead read the edit as B's pin (`Left`) at index 0 and
+        // overwrote B through the dispatcher's rewrite.
+        val old = twoSlotChain(Seq(section(), bend(90.0, Some(adDown))), Seq(section(), bend(90.0, Some(adLeft))))
+        val nw  = Seq(old(1), FlueSlot(Seq(section(), bend(45.0, Some(adDown)))), ChimneySlot(Seq.empty))
+        // The coordinate is read off the moved slot's NEW position (`newDescr.indexOf`), so its bend —
+        // the second descriptor element — lands at elemIdx 1.
+        ChainEditDispatcher.detectEdit(old, nw) shouldBe Some(
+            AngleEdit(ChainCoord(1, 1), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adDown)
+        )
+    }
+
+    it should "still attribute the first edit when two slots differ at once" in {
+        // Two slots changed at once, each against its own pre-edit values: the correspondence between
+        // leftovers is a guess, and pairing them in order keeps the previous behaviour — report the
+        // first edit in ascending new index rather than silently dropping both.
+        val old = twoSlotChain(Seq(section(), bend(90.0, Some(adRight))), Seq(section(), bend(90.0, Some(adLeft))))
+        val nw  = twoSlotChain(Seq(section(), bend(45.0, Some(adRight))), Seq(section(), bend(45.0, Some(adLeft))))
+        ChainEditDispatcher.detectEdit(old, nw) shouldBe Some(
+            AngleEdit(ChainCoord(0, 1), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
+        )
+    }
+
+    it should "return None when the window replaced two direction-change values at once" in {
+        // Attribution would be a guess, so nothing is reported — the user's sequence stands.
+        val old = simpleFlue(bend(90.0, Some(adRight)), mergeFlow(Some(adRight)))
+        val nw  = simpleFlue(bend(45.0, Some(adLeft)), mergeFlow(Some(adFront)))
+        ChainEditDispatcher.detectEdit(old, nw) shouldBe None
+    }
+
+    it should "still report the angle edit when the window also carries a change to another element" in {
+        // A keystroke can land in the same debounce window as a rename or a move. Only direction-change
+        // elements are the dispatcher's business, so the angle edit is still attributable.
+        val old = simpleFlue(sectionNamed("A"), bend(90.0, Some(adRight)))
+        val nw  = simpleFlue(sectionNamed("B"), bend(45.0, Some(adRight)))
+        ChainEditDispatcher.detectEdit(old, nw) shouldBe Some(
+            AngleEdit(ChainCoord(0, 1), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
+        )
+    }
+
+    it should "propagate that edit without reverting the rename riding with it" in {
+        val old  = simpleFlue(sectionNamed("A"), bend(90.0, Some(adRight)), bend(90.0, Some(adRear)))
+        val nw   = simpleFlue(sectionNamed("B"), bend(45.0, Some(adRight)), bend(90.0, Some(adRear)))
+        val edit = ChainEditDispatcher.detectEdit(old, nw).getOrElse(fail("expected the angle edit"))
+
+        val result = ChainEditDispatcher(old, nw, edit, RigidRotation, initialFrame = rearInitialFrame)
+        val descr  = result(0).asInstanceOf[FlueSlot].descr
+
+        descr should contain(sectionNamed("B")) // the rename survives the rewrite
+        descr should not contain sectionNamed("A") // the baseline's copy is not resurrected
+        descr(2) should not equal old(0).asInstanceOf[FlueSlot].descr(2) // downstream pin rotated
+    }
+
+    it should "pair a move-plus-edit snapshot with the edited element's own old values" in {
+        // The reported pair again, but with the moved element's angle also changed in the same window.
+        // The edit must be measured against the element's *own* pre-edit pin (`Up`), never against the
+        // merge the move displaced (`Right`) — that cross-pairing is what fed the absDir recomputation
+        // and overwrote the merge.
+        val old = simpleFlue(mergeFlow(Some(adRight)), bend(90.0, Some(adUp)))
+        val nw  = simpleFlue(bend(45.0, Some(adUp)), mergeFlow(Some(adRight)))
+
+        ChainEditDispatcher.detectEdit(old, nw) shouldBe Some(
+            AngleEdit(ChainCoord(0, 0), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adUp)
+        )
+    }
+
+    it should "keep every element when a move rides along with an element edit" in {
+        val old  = simpleFlue(mergeFlow(Some(adRight)), bend(90.0, Some(adUp)))
+        val nw   = simpleFlue(bend(45.0, Some(adUp)), mergeFlow(Some(adRight)))
+        val edit = ChainEditDispatcher.detectEdit(old, nw).getOrElse(fail("expected the angle edit"))
+
+        val result = ChainEditDispatcher(old, nw, edit, RigidRotation, initialFrame = rearInitialFrame)
+        val descr  = result(0).asInstanceOf[FlueSlot].descr
+
+        descr should have size 2
+        descr(1) shouldBe mergeFlow(Some(adRight)) // the displaced merge is untouched
+        descr.head match
+            case b: FDElem15.AddSharpeAngle_0_to_180 =>
+                val userAngle = bend(45.0, None).asInstanceOf[FDElem15.AddSharpeAngle_0_to_180].angle
+                b.angle shouldBe userAngle // the user's 45°, not the 90° it had before the move
+                b.absDir should not be None // re-derived by the AngleEdit pose contract
+            case other => fail(s"expected the edited angle, got $other")
+    }
+
+    it should "not revert the elements a snapshot carries alongside the edit" in {
+        // The snapshot is authoritative: anything the user's sequence holds besides the edited element
+        // must survive the rewrite instead of being rebuilt from the baseline.
+        val edit = AngleEdit(ChainCoord(0, 1), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adRight)
+        val pre  = simpleFlue(sectionNamed("stale"), bend(90.0, Some(adRight)))
+        val nw   = simpleFlue(sectionNamed("user"), bend(45.0, Some(adRight)))
+
+        val result = ChainEditDispatcher(pre, nw, edit, RigidRotation, initialFrame = rearInitialFrame)
+
+        result(0).asInstanceOf[FlueSlot].descr should contain(sectionNamed("user"))
+        result(0).asInstanceOf[FlueSlot].descr should not contain sectionNamed("stale")
     }
 
     it should "detect DirectionEdit when only absDir changes" in {
@@ -296,10 +494,13 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
 
     "ChainEditDispatcher.apply" should
         "DirectionEdit + RigidRotation: downstream pinned elements rotate" in {
+            // Consistent snapshot: pre and new differ at the edit site only. The pre-edit pin (`Right`)
+            // is evaluated against the *user's* incoming frame, so the pin change really does turn the
+            // chain's outgoing direction (Right -> Front) and the downstream pin must follow.
             val coord  = ChainCoord(slotIdx = 0, elemIdx = 1)
             val pre    = simpleFlue(
-                bend(90.0, Some(adRight)),
                 bend(90.0, Some(adFront)),
+                bend(90.0, Some(adRight)),
                 bend(90.0, Some(adRear) )
             )
             val newS   = simpleFlue(
@@ -310,14 +511,25 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
             val edit   = DirectionEdit(coord, oldAbsDir = Some(adRight), newAbsDir = Some(adFront))
             val result = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
 
-            // The downstream pinned element (idx=2) should have been rigidly rotated
             val preD    = pre(0).asInstanceOf[FlueSlot].descr
             val resultD = result(0).asInstanceOf[FlueSlot].descr
-            // Edited element is patched
+            // Edited element is the one the user wrote
             resultD(1) shouldBe newS(0).asInstanceOf[FlueSlot].descr(1)
-            // Downstream pins are preserved by the current rotation path when no rotation is induced.
-            resultD(2) shouldBe preD(2)
+            // The downstream pinned element is rigidly rotated: its old pin (`Rear`) cannot survive a
+            // 90° turn of the outgoing direction.
+            resultD(2) should not equal preD(2)
         }
+
+    it should "DirectionEdit: downstream pins are left alone when the outgoing direction is unchanged" in {
+        // Unpinned in both states: nothing turns, so nothing downstream moves.
+        val coord  = ChainCoord(slotIdx = 0, elemIdx = 0)
+        val pre    = simpleFlue(bend(90.0, None), bend(90.0, Some(adRear)))
+        val newS   = simpleFlue(bend(90.0, None), bend(90.0, Some(adRear)))
+        val edit   = DirectionEdit(coord, oldAbsDir = None, newAbsDir = None)
+        val result = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
+
+        result shouldBe newS
+    }
 
     // ── Idempotency ───────────────────────────────────────────────────
 

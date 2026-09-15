@@ -28,9 +28,11 @@ import coulomb.policy.standard.given
  *
  *     apply(preEdit, newSlots, edit, strategy) => Seq[PostFireboxPipeDescrSlot_V7]
  *
- * `preEdit` is the pristine baseline; `newSlots` is the raw user-written snapshot
- * (only the edited element is read from it - downstream is reconstructed from
- * `preEdit` so strategy cycling is idempotent).
+ * `newSlots` is the user-written snapshot and is authoritative for the chain's element sequence:
+ * it is what the chain becomes. `preEdit` is consulted only for insertions — rebuilding downstream
+ * from it would revert the user's element order (the chevron moves are reorders, not edits) and
+ * resurrect every element a move displaced. Propagation measures its rotation against the edit's
+ * own old values, never against the element that happened to sit at the edit's index in `preEdit`.
  *
  * Default is [[PropagationStrategy.RigidRotation]] - the only strategy that is
  * mathematically total across all chain shapes.
@@ -112,13 +114,17 @@ object ChainEditDispatcher:
             case ie: InsertEdit =>
                 handleInsert(preEdit, newSlots, ie, initialFrame)
             case _ =>
-                val patched = patchEdited(preEdit, newSlots, edit.coord)
                 // Edit-site invariant: on an AngleEdit the edited element's absDir is ALWAYS
                 // recomputed from (new_angle + current_(side,θ) + frame). Strategy only governs
                 // downstream. (`posePreserveIfAngle` is a no-op on DirectionEdit.)
-                val posed   = posePreserveIfAngle(patched, edit, initialFrame)
+                //
+                // The snapshot is authoritative: it is what the chain becomes. It is also the only
+                // sequence that still carries the user's element order — the chevron moves are
+                // reorders, and rebuilding downstream from `preEdit` would revert that order and
+                // resurrect the element a move displaced.
+                val posed = posePreserveIfAngle(newSlots, edit, initialFrame)
                 strategy match
-                    case RigidRotation => rigidRotateDownstream(preEdit, posed, edit.coord, initialFrame)
+                    case RigidRotation => rigidRotateDownstream(posed, edit, initialFrame)
 
     /**
      * Rotate every pinned `absDir` in the entire chain by the rigid rotation
@@ -178,6 +184,13 @@ object ChainEditDispatcher:
      * Both slot-level and descriptor-level insertions produce `InsertEdit` with
      * `InsertKind` distinguishing the source. The dispatcher uses this in `handleInsert`
      * instead of integer-comparison heuristics.
+     *
+     * An element edit is reported only when the snapshot replaced exactly one *direction-change*
+     * element value — the only shape the dispatcher can faithfully propagate. Changes to other
+     * elements are ignored (never attributed positionally); a pure reorder (the same elements,
+     * permuted by the up/down chevrons) is NOT an edit and yields `None`; so does a window that
+     * replaced two direction-change values at once. That holds at slot granularity too: slots are
+     * matched by content, never by position, so moving a whole slot is not an edit either.
      */
     def detectEdit(
         oldSlots: Seq[PostFireboxPipeDescrSlot_V7],
@@ -243,6 +256,36 @@ object ChainEditDispatcher:
         ): Boolean =
             oldSlots.iterator.zip(newSlots.iterator).take(len).forall((o, n) => o.ordinal == n.ordinal)
 
+        /**
+         * The slots that may carry an element edit, paired by content: each new slot with the old slot it
+         * matches, in ascending new index.
+         *
+         * Position is not slot identity. A whole-slot move (the up/down chevrons) permutes `slots`, so
+         * zipping the two sequences pairs a slot with a *different* slot's content and fabricates an edit
+         * across slot identity — measured as a cross-paired `DirectionEdit` when the swapped slots hold the
+         * same number of elements and as a phantom descriptor-level `InsertEdit` when they do not, either
+         * of which `apply` then propagates as a rotation of unrelated pins.
+         *
+         * Slots equal by construction are matched first and dropped: they cannot hold an edit, so they scan
+         * empty on any index — a pure reorder therefore leaves nothing to scan and reports nothing. What the
+         * matching leaves over is paired in order, which attributes a reorder riding in the same debounce
+         * window as an element edit to the moved slot itself: the leftover old slot is the edited one and
+         * the leftover new index is where it now sits. Several leftovers on each side make the
+         * correspondence a guess; pairing them in order keeps the previous behaviour there rather than
+         * silently dropping a legitimate edit.
+         */
+        private def unmatchedSlotPairs(
+            oldSlots: Seq[PostFireboxPipeDescrSlot_V7],
+            newSlots: Seq[PostFireboxPipeDescrSlot_V7]
+        ): Seq[(Int, PostFireboxPipeDescrSlot_V7, PostFireboxPipeDescrSlot_V7)] =
+            val unmatchedOld = scala.collection.mutable.ArrayBuffer.from(oldSlots)
+            val leftoverNew  = scala.collection.mutable.ArrayBuffer.empty[Int]
+            newSlots.zipWithIndex.foreach { (n, i) =>
+                val oldIdx = unmatchedOld.indexOf(n)
+                if oldIdx >= 0 then unmatchedOld.remove(oldIdx) else leftoverNew += i
+            }
+            unmatchedOld.zip(leftoverNew).map((o, i) => (i, o, newSlots(i))).sortBy(_._1).toSeq
+
         /** Phase 2: detect edits based on classified structure. */
         private def detectFromStructure(
             structure: StructureDiff,
@@ -251,12 +294,12 @@ object ChainEditDispatcher:
         ): Option[ChainEdit] =
             structure match
                 case StructureDiff.SameStructure =>
-                    // Element-level diff within existing slots.
-                    oldSlots
-                        .zip(newSlots)
-                        .iterator
-                        .zipWithIndex
-                        .flatMap { case ((o, n), i) => scanSlot(i, o, n) }
+                    // Element-level diff within existing slots, on slots paired by content rather than by
+                    // position: a whole-slot move (the up/down chevrons) is a reorder at this level, and
+                    // pairing by position would read whatever slot now sits at a moved slot's old index as
+                    // that slot's edit. Slot appends and count changes are handled by phase 1.
+                    unmatchedSlotPairs(oldSlots, newSlots).iterator
+                        .flatMap { case (i, o, n) => scanSlot(i, o, n) }
                         .nextOption()
 
                 case StructureDiff.SlotAppended(slotIdx) =>
@@ -314,6 +357,31 @@ object ChainEditDispatcher:
                 case (ChimneySlot(o), ChimneySlot(n)        ) => scanDescr[ThermalPipeDescr_13384_V4](slotIdx, o, n)
                 case _ => Iterator.empty
 
+        /**
+         * Classify a single element replacement.
+         *
+         * `oldElem` was the element at the edit site before the snapshot; `newElem` is what the user
+         * wrote. The pair comes from the multiset difference between the two sequences, so an element
+         * is only ever compared with *itself*. A positional pairing would compare an element with
+         * whatever neighbour now sits at its index — fabricating the edit's old angle/direction (which
+         * `posePreserveIfAngle` then feeds into the absDir recomputation) and destroying that neighbour
+         * through the dispatcher's rewrite.
+         */
+        private def classifyReplacement[E](
+            slotIdx : Int,
+            newDescr: Seq[E],
+            oldElem : E,
+            newElem : E
+        )(using ext: FrameReplay.ElemExtractors[E]): Option[ChainEdit] =
+            (ext.asDirectionChange.lift(oldElem), ext.asDirectionChange.lift(newElem)) match
+                case (Some((oldAng, oldAbs)), Some((newAng, newAbs))) =>
+                    val coord = ChainCoord(slotIdx, newDescr.indexOf(newElem))
+                    if oldAng != newAng then
+                        oldAbs.map                    (oa => AngleEdit(coord, oldAng.toUnit[Degree].value, newAng.toUnit[Degree].value, oa))
+                    else if oldAbs != newAbs then Some(DirectionEdit(coord, oldAbs, newAbs)                                                )
+                    else None
+                case _ => None
+
         private def scanDescr[E](slotIdx: Int, oldDescr: Seq[E], newDescr: Seq[E])(using
             ext: FrameReplay.ElemExtractors[E]
         ): Iterator[ChainEdit] =
@@ -326,30 +394,78 @@ object ChainEditDispatcher:
                     InsertEdit(ChainCoord(slotIdx, idx), angleDeg, InsertKind.DescriptorLevel)
                 }.iterator
             else
-                oldDescr.iterator.zip(newDescr.iterator).zipWithIndex.flatMap { case ((o, n), eIdx) =>
-                    val coord = ChainCoord(slotIdx, eIdx)
-                    (ext.asDirectionChange.lift(o), ext.asDirectionChange.lift(n)) match
-                        case (Some((oldAng, oldAbs)), Some((newAng, newAbs))) =>
-                            if oldAng != newAng then
-                                oldAbs.map                    (oa =>
-                                    AngleEdit(coord, oldAng.toUnit[Degree].value, newAng.toUnit[Degree].value, oa)
-                                )
-                            else if oldAbs != newAbs then Some(DirectionEdit(coord, oldAbs, newAbs))
-                            else None
-                        case _ => None
-                }
+                // Equal length: report an edit only when exactly one *direction-change* element value was
+                // replaced — changes to other elements are not this dispatcher's business, so they are
+                // filtered out rather than attributed positionally. This keeps a keystroke that lands in
+                // the same debounce window as a move or a rename reportable, while a window that replaced
+                // two direction-change values stays silent (attributing one of them would be a guess).
+                // A move (up/down chevrons) is a *reorder*: both sequences hold the same elements, so the
+                // delta is empty and nothing is reported.
+                val replacedOld = oldDescr.diff(newDescr).filter(ext.asDirectionChange.isDefinedAt)
+                val replacedNew = newDescr.diff(oldDescr).filter(ext.asDirectionChange.isDefinedAt)
+                if replacedOld.length == 1 && replacedNew.length == 1 then
+                    classifyReplacement(slotIdx, newDescr, replacedOld.head, replacedNew.head).iterator
+                else Iterator.empty
 
     // ── Stages ─────────────────────────────────────────────────────────
 
-    /** Splice `newSlots(coord).elem(coord)` into `preEdit` - pristine downstream guaranteed. */
-    private def patchEdited(
-        preEdit : Seq[PostFireboxPipeDescrSlot_V7],
-        newSlots: Seq[PostFireboxPipeDescrSlot_V7],
-        coord   : ChainCoord
+    /**
+     * Rigid-rotate downstream pins by the rotation carrying the edit's pre-edit outgoing direction to
+     * its post-edit outgoing direction.
+     *
+     * The pre-edit direction is rebuilt from the edit's own old values at the edit site
+     * ([[oldExitDirection]]), not read out of a baseline sequence: on a snapshot that also carries a
+     * reorder, whatever sits at that index in the baseline is an unrelated element, and the measured
+     * rotation would be spurious.
+     *
+     * Propagates through the ENTIRE chain from the edit site onward, including the chimney.
+     * When the terminal connector is empty the flue directly abuts the chimney; stopping at
+     * the chimney boundary would break frame continuity and leave any chimney pin unreachable.
+     */
+    private def rigidRotateDownstream(
+        current     : Seq[PostFireboxPipeDescrSlot_V7],
+        edit        : ChainEdit,
+        initialFrame: Option[PipeFrame]
     ): Seq[PostFireboxPipeDescrSlot_V7] =
-        val s = coord.slotIdx
-        if s < 0 || s >= preEdit.length || s >= newSlots.length then preEdit
-        else preEdit.updated(s, patchSlotElem(preEdit(s), newSlots(s), coord.elemIdx))
+        val coord = edit.coord
+        if coord.slotIdx < 0 || coord.slotIdx >= current.length then current
+        else
+            (oldExitDirection(current, edit, initialFrame), exitDirection(current, coord, initialFrame)) match
+                case (Some(oldDir), Some(newDir)) =>
+                    val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
+                    rotateDownstream(current, coord.slotIdx, coord.elemIdx, axis, angleRad)
+                case _ => current
+
+    /**
+     * Outgoing direction at the edit site as it was *before* the edit, evaluated on the current chain.
+     *
+     * The chain supplies the incoming frame (and, for a direction edit, the unchanged angle); the
+     * replaced values come from the edit itself. Together they yield the pre-edit exit direction
+     * without needing the pre-edit sequence — which a reorder no longer preserves.
+     */
+    private def oldExitDirection(
+        slots       : Seq[PostFireboxPipeDescrSlot_V7],
+        edit        : ChainEdit,
+        initialFrame: Option[PipeFrame]
+    ): Option[Vec3] =
+        val coord = edit.coord
+        if coord.slotIdx < 0 || coord.slotIdx >= slots.length then None
+        else
+            edit match
+                case ae: AngleEdit     =>
+                    incomingFrameAt(slots, coord, initialFrame).map { frame =>
+                        val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(ae.oldAbsDir)
+                        val target = Vec3.fromAzimuthElevation(azDeg, elDeg)
+                        frame.applyBendForFinalDir(ae.oldAngleDeg, target).direction
+                    }
+                case de: DirectionEdit =>
+                    // The angle is unchanged: only the pin differs from what the user just wrote.
+                    val withOldPin = slots.updated(
+                        coord.slotIdx,
+                        slots(coord.slotIdx).withAbsDirAt(coord.elemIdx, de.oldAbsDir)
+                    )
+                    exitDirection(withOldPin, coord, initialFrame)
+                case _ => None
 
     private def posePreserveIfAngle(
         slots       : Seq[PostFireboxPipeDescrSlot_V7],
@@ -373,27 +489,6 @@ object ChainEditDispatcher:
                     case None    => slots
             case _ : DirectionEdit => slots
             case _ : InsertEdit    => slots
-
-    /**
-     * Rigid-rotate downstream pins by the rotation carrying pre-edit outgoing → post-edit outgoing.
-     *
-     * Propagates through the ENTIRE chain from the edit site onward, including the chimney.
-     * When the terminal connector is empty the flue directly abuts the chimney; stopping at
-     * the chimney boundary would break frame continuity and leave any chimney pin unreachable.
-     */
-    private def rigidRotateDownstream(
-        preEdit     : Seq[PostFireboxPipeDescrSlot_V7],
-        current     : Seq[PostFireboxPipeDescrSlot_V7],
-        coord       : ChainCoord,
-        initialFrame: Option[PipeFrame]
-    ): Seq[PostFireboxPipeDescrSlot_V7] =
-        if coord.slotIdx < 0 || coord.slotIdx >= current.length then current
-        else
-            (exitDirection(preEdit, coord, initialFrame), exitDirection(current, coord, initialFrame)) match
-                case (Some(oldDir), Some(newDir)) =>
-                    val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
-                    rotateDownstream(current, coord.slotIdx, coord.elemIdx, axis, angleRad)
-                case _ => current
 
     /**
      * Shared downstream rotation helper (Finding 3).
@@ -498,20 +593,6 @@ object ChainEditDispatcher:
         slots(coord.slotIdx)
             .replay(enteringFrames(slots, initialFrame)(coord.slotIdx), upTo = coord.elemIdx)
             .map(_.direction)
-
-    private def patchSlotElem(
-        oldS: PostFireboxPipeDescrSlot_V7,
-        newS: PostFireboxPipeDescrSlot_V7,
-        eIdx: Int
-    ): PostFireboxPipeDescrSlot_V7 =
-        def patch[E](o: Seq[E], n: Seq[E]): Seq[E] =
-            if eIdx >= 0 && eIdx < o.length && eIdx < n.length then o.updated(eIdx, n(eIdx)) else o
-        (oldS, newS) match
-            case (FlueSlot(o), FlueSlot(n)              ) => FlueSlot       (patch(o, n))
-            case (ThermalFlueSlot(o), ThermalFlueSlot(n)) => ThermalFlueSlot(patch(o, n))
-            case (ConnectorSlot(o), ConnectorSlot(n)    ) => ConnectorSlot  (patch(o, n))
-            case (ChimneySlot(o), ChimneySlot(n)        ) => ChimneySlot    (patch(o, n))
-            case _ => oldS // slot-variant mismatch: structural, not a propagation edit
 
     /**
      * Extensions that eat the 4-way slot-variant dispatch. Every primitive that operates
