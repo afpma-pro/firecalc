@@ -239,7 +239,9 @@ trait FloatingLabelInputs:
                 L.placeholder := placeholder,
                 controlled(
                     value <-- stringOptVar.signal.map(_.getOrElse("")),
-                    onInput.mapToValue.map(s => Option.when(s.nonEmpty)(s)) --> stringOptVar.writer
+                    onInput.mapToValue
+                        .map(withoutControlChars)
+                        .map(s => Option.when(s.nonEmpty)(s)) --> stringOptVar.writer
                 )
             )
             fieldNameOpt match

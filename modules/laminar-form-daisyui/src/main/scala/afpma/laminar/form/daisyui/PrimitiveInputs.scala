@@ -53,7 +53,9 @@ trait PrimitiveInputs:
                         input          (
                             tpe           := "text",
                             cls           := "grow",
-                            onInput.mapToValue.map(x => if (x.nonEmpty) Some(x) else None) --> codeOptVar.writer,
+                            onInput.mapToValue
+                                .map(withoutControlChars)
+                                .map(x => if (x.nonEmpty) Some(x) else None) --> codeOptVar.writer,
                             maxlengthAttr := "6",
                             inputmodeAttr := "numeric",
                             requiredAttr  := true,
@@ -109,6 +111,7 @@ trait PrimitiveInputs:
             L.placeholder := placeholder,
             value <-- valueOptVar.signal.map(_.getOrElse("")),
             onInput.mapToValue
+                .map(withoutControlChars)
                 .map(s => if (s.isEmpty()) None else Some(s)) --> valueOptVar.writer
         )
 
@@ -148,6 +151,7 @@ trait PrimitiveInputs:
             listAttr      := datalistId,
             value <-- valueOptVar.signal.map(_.getOrElse("")),
             onInput.mapToValue
+                .map(withoutControlChars)
                 .map(s => if (s.isEmpty()) None else Some(s)) --> valueOptVar.writer,
             onFocus --> Observer[org.scalajs.dom.FocusEvent](_ => valueOptVar.set(None)),
             onClick --> Observer[org.scalajs.dom.MouseEvent](_ => valueOptVar.set(None))

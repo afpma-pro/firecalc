@@ -135,6 +135,11 @@ object RemoteOnlyFireboxes_Strict:
          * Pressure loss for the current (mB, SB) pair, interpolated from the
          * catalog datasheet — the generic `PressureLossTSVTableString`, mirroring
          * the proprietary model's `pressure_loss` member.
+         *
+         * `Left(Some(reason))` covers both a readable table without a value for
+         * this pair and a structurally unusable one; the caller distinguishes the
+         * two (`combustionAirContribution` reports the latter as
+         * `PressureLossTableCorrupted`).
          */
         def pressure_loss: Either[Option[InterpolationError], Pressure] =
             dto.load_size_nominal match
@@ -245,7 +250,14 @@ object RemoteOnlyFireboxes_Strict:
                     case Left(None)         =>
                         PressureLossMustBeDefined(CombustionAirPipeT).invalidNel
                     case Left(Some(reason)) =>
-                        PressureLossTableError(reason, CombustionAirPipeT).invalidNel
+                        // A field that is not a canonical TSV table at all (the
+                        // `;`/`|` storage form reaching the engine undecoded, a
+                        // truncated blob, a header without columns or without data
+                        // rows) has no table to interpolate: report the dedicated
+                        // "corrupted" error rather than a generic interpolation miss.
+                        if PressureLossTSVTableString.isStructurallyCorrupted(firebox.dto.pressure_loss_table_raw)
+                        then PressureLossTableCorrupted(CombustionAirPipeT).invalidNel
+                        else PressureLossTableError(reason, CombustionAirPipeT).invalidNel
 
             override def constraints(
                 firebox: Door15aCatalogCarrier,

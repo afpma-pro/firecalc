@@ -116,3 +116,68 @@ final case class PressureLossTSVTableString(
                 case Left(e)  => Left(e)
 
 end PressureLossTSVTableString
+
+/**
+ * Structural usability of a raw pressure-loss field.
+ *
+ * The engine consumes the canonical TSV form only (real `\t` fields, real `\n`
+ * rows). Any other shape — the `;`/`|` storage form, a truncated or garbage
+ * payload, a header without columns or a header without data rows — cannot be
+ * read as a table; reaching the engine in that state means a decode path was
+ * bypassed, and the caller reports it as such rather than as an interpolation
+ * miss.
+ *
+ * The check is a single allocation-free pass: it never applies the
+ * escape-normalising regex of `TSVTableString.normalize`, so a poisoned payload
+ * is not silently rewritten into a table here.
+ */
+object PressureLossTSVTableString:
+
+    /**
+     * `true` when the field cannot possibly yield a table: a single line (a
+     * header with no data rows, or plain garbage), nothing but blanks after the
+     * first row separator, or no usable column in the header row.
+     *
+     * A blank field is *not* flagged — the caller keeps reporting it as "must be
+     * defined" (`PressureLossMustBeDefined`). A well-formed table (a
+     * tab-separated header plus at least one non-blank data row) is never
+     * flagged, even when its cells are sparse or its values are out of the
+     * expected range.
+     *
+     * A single pass over the string, without a regex (so a poisoned payload
+     * cannot drive backtracking) and without an intermediate copy.
+     */
+    def isStructurallyCorrupted(raw: String): Boolean =
+        if !hasNonBlank(raw, 0, raw.length) then false // blank: "not defined", not corruption
+        else
+            val headerEnd = raw.indexOf('\n')
+            headerEnd < 0 || !hasNonBlank(raw, headerEnd + 1, raw.length) || !hasUsableColumn(raw, 0, headerEnd)
+
+    /** `true` when `[from, until)` holds at least one non-whitespace character. */
+    private def hasNonBlank(s: String, from: Int, until: Int): Boolean =
+        var i     = from
+        var found = false
+        while i < until && !found do
+            found = !s.charAt(i).isWhitespace
+            i += 1
+        found
+
+    /**
+     * `true` when the header row holds at least one non-blank cell after the
+     * label cell (`mb_in_kg/sb_in_cm`), i.e. at least one SB column.
+     */
+    private def hasUsableColumn(s: String, from: Int, until: Int): Boolean =
+        var seenTab  = false
+        var nonBlank = false
+        var usable   = false
+        var i        = from
+        while i < until do
+            if s.charAt(i) == '\t' then
+                if seenTab && nonBlank then usable = true
+                seenTab                            = true
+                nonBlank                           = false
+            else if !s.charAt(i).isWhitespace then nonBlank = true
+            i += 1
+        usable || (seenTab && nonBlank)
+
+end PressureLossTSVTableString

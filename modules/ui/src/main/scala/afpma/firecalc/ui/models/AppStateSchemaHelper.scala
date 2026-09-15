@@ -5,6 +5,7 @@
 
 package afpma.firecalc.ui.models
 
+import afpma.firecalc.dto.PressureLossTableStorage
 import afpma.firecalc.ui.models.schema.AppStateSchema
 import afpma.firecalc.ui.models.schema.AppStateSchemaLoader
 import afpma.firecalc.ui.models.schema.v7.AppStateSchema_V7
@@ -30,7 +31,7 @@ object AppStateSchemaHelper:
     /** Encode schema to YAML */
     def encodeToYaml(schema: AppStateSchema): Try[String] =
         try
-            val json = schema.asJson
+            val json = PressureLossTableStorage.encode(schema.asJson)
             Success(yamlPrinter.print(json))
         catch
             case e: Exception =>

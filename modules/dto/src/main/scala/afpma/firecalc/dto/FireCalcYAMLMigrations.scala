@@ -121,7 +121,7 @@ object FireCalcYAMLMigrations:
             case Left(parseError) =>
                 Left(s"Failed to parse YAML: ${parseError.getMessage()}")
             case Right(json)      =>
-                decodeAndMigrateJson(json)
+                decodeAndMigrateJson(PressureLossTableStorage.decode(json))
 
     /**
      * Decode JSON and migrate to latest FireCalcYAML version.
@@ -275,7 +275,7 @@ object FireCalcYAMLMigrations:
      */
     def encodeToYaml(fc: FireCalcYAML): Either[String, String] =
         try
-            val json = fc.asJson
+            val json = PressureLossTableStorage.encode(fc.asJson)
             Right(yamlPrinter.print(json))
         catch
             case e: Exception =>

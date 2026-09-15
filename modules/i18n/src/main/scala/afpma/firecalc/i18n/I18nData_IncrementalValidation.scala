@@ -42,10 +42,11 @@ object I18nData_IncrementalValidation:
         )
 
         case class PropertyMustBeDefined(
-            section_geometry         : String,
-            next_section_length      : String,
-            pressure_loss            : String,
-            pressure_loss_table_error: StringFormat1
+            section_geometry             : String,
+            next_section_length          : String,
+            pressure_loss                : String,
+            pressure_loss_table_error    : StringFormat1,
+            pressure_loss_table_corrupted: String
         )
 
         case class Prerequisites(

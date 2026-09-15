@@ -145,6 +145,17 @@ case class PressureLossMustBeDefined(sectionTyp: PipeType)                      
 case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType) extends PropertyMustBeDefined
 
 /**
+ * The pressure-loss table itself cannot be read: the stored field is neither a
+ * canonical TSV table nor blank (a `;`/`|` storage-form value that reached the
+ * engine undecoded, a truncated blob, a header without columns, a header
+ * without data rows). Distinct from [[PressureLossTableError]], which reports a
+ * *readable* table that simply has no value for the requested (mB, SB) pair —
+ * here there is nothing to interpolate at all, and the user's remedy is to have
+ * the file repaired or to re-import the firebox.
+ */
+case class PressureLossTableCorrupted(sectionTyp: PipeType) extends PropertyMustBeDefined
+
+/**
  * A remote calculation service reported a contribution it could not produce
  * (round-3 decision D5: missing `m_B` or missing operating envelope yields a
  * pending/invalid contribution, NOT a failed request). Carries the service's
@@ -167,6 +178,8 @@ object PropertyMustBeDefined:
             I18N.incremental_validation.property_must_be_defined.pressure_loss
         case e: PressureLossTableError         =>
             I18N.incremental_validation.property_must_be_defined.pressure_loss_table_error(e.err.show)
+        case _: PressureLossTableCorrupted     =>
+            I18N.incremental_validation.property_must_be_defined.pressure_loss_table_corrupted
         case e: RemoteContributionInvalid      =>
             e.message
 

@@ -9,7 +9,12 @@ import io.circe.{parser}
 import io.circe.syntax.*
 import Codecs.given
 
+import afpma.firecalc.domain.PipeShape
 import afpma.firecalc.dto.all.HeatOutputReduced
+import afpma.firecalc.dto.v4.EmissionValues_DTO
+import afpma.firecalc.dto.v4.EmissionsAndEfficiencyValues_DTO
+import afpma.firecalc.dto.v4.PolluantName
+import afpma.firecalc.dto.v4.TestEmissionValue_DTO
 import afpma.firecalc.dto.v5.Firebox_V4
 import afpma.firecalc.units.coulombutils.*
 
@@ -890,5 +895,66 @@ class FireboxFieldEncodingSuite extends AnyFreeSpec with Matchers {
                 }
             case Right(_) =>
                 fail("Expected decoding to fail for an unrecognized unit string")
+    }
+
+    // =========================================================================
+    // pressure_loss_table_raw — the wire keeps the canonical table
+    // =========================================================================
+
+    /** Door15aCatalog firebox carrying `table` verbatim. */
+    private def door15a(table: String): Firebox_V4.Door15aFirebox_Catalog =
+        Firebox_V4.Door15aFirebox_Catalog                  (
+            reference                   = "wire-table-test",
+            firebox_depth               = 1.0.cm,
+            firebox_width               = 1.0.cm,
+            firebox_height              = 1.0.cm,
+            load_size_nominal           = Some(15.0.kg),
+            sb                          = 2.4.withUnit[Centimeter],
+            sb_min                      = None,
+            sb_max                      = None,
+            mb_min                      = Some(10.0.kg),
+            mb_max                      = Some(40.0.kg),
+            pressure_loss_table_raw     = table,
+            expectedAirIntakePipeShapes = List(PipeShape.Circle(10.0.cm)),
+            actualAirIntakePipeShape    = PipeShape.Circle(10.0.cm),
+            co2_dry_nominal             = 0.1.percent,
+            co2_dry_lowest              = None,
+            emissions_values            = EmissionsAndEfficiencyValues_DTO(
+                firebox_name                = "wire-table-test",
+                accredited_or_notified_body = "wire-table-test",
+                test_reports                = Nil,
+                emissions_values            = EmissionValues_DTO(
+                    co   = TestEmissionValue_DTO(PolluantName.CO, None, "", 0.0.percent),
+                    dust = TestEmissionValue_DTO(PolluantName.Dust, None, "", 0.0.percent),
+                    ogc  = TestEmissionValue_DTO(PolluantName.OGC, None, "", 0.0.percent),
+                    nox  = TestEmissionValue_DTO(PolluantName.NOx, None, "", 0.0.percent)
+                )
+            ),
+            glass_area                  = 1.0.cm2,
+            height_of_lowest_opening    = 1.0.cm,
+            heat_output_reduced         = HeatOutputReduced.NotDefined,
+            image                       = None
+        )
+
+    "Door15aCatalog pressure_loss_table_raw keeps real tabs and newlines on the wire" in {
+        // The YAML storage form (`;` between fields, `|` between rows) must never reach the
+        // wire: the remote service interpolates the canonical TSV, and JSON expresses the
+        // separators as ordinary JSON escapes.
+        val table = "mb_in_kg/sb_in_cm\t1.6\t2.4\n10\t4\t3\n25\t22\t20"
+        val req   = FireboxCalcRequest(
+            apiVersion         = ApiVersion.v1,
+            kind               = WireFireboxKind.Door15aCatalog,
+            firebox            = door15a(table),
+            params             = Standard15544Params(None, None),
+            airIntakePipeShape = None,
+            locale             = "en",
+            standard           = WireStandardVariant.Strict,
+            operatingEnvelope  = None
+        )
+        val json  = req.asJson.noSpaces
+
+        json should include("\"pressure_loss_table_raw\":\"mb_in_kg/sb_in_cm\\t1.6\\t2.4\\n10\\t4\\t3\\n25\\t22\\t20\"")
+        json should not include "|"
+        parser.decode[FireboxCalcRequest](json) shouldBe Right(req)
     }
 }

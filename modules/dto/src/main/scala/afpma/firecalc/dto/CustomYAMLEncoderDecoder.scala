@@ -25,7 +25,7 @@ trait CustomYAMLEncoderDecoder[A]:
     def encodeToYaml(x: A): Try[String] =
         val jsonEncodedTry =
             try {
-                val xj = x.asJson
+                val xj = PressureLossTableStorage.encode(x.asJson)
                 Success(xj)
             } catch
                 case e =>
@@ -36,7 +36,7 @@ trait CustomYAMLEncoderDecoder[A]:
         yamlParser.parse(y) match
             case Left(pf)          => Failure(pf)
             case Right(parsedYaml) =>
-                val j = parsedYaml.noSpaces
+                val j = PressureLossTableStorage.decode(parsedYaml).noSpaces
                 try
                     decode[A](j) match
                         case Left(err)    => Failure(err)

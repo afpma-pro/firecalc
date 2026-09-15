@@ -540,7 +540,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
     )
     .jvmConfigure(
         _.settings(
-            Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "test-jvm" / "scala"
+            Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala"
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))

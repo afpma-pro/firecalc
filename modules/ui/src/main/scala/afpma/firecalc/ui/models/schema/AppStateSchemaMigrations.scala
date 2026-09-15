@@ -5,6 +5,7 @@
 
 package afpma.firecalc.ui.models.schema
 
+import afpma.firecalc.dto.PressureLossTableStorage
 import afpma.firecalc.ui.models.AppStateSchemaHelper
 import afpma.firecalc.ui.models.schema.common.AppStateSchema_Version
 import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1
@@ -232,6 +233,16 @@ object AppStateSchemaMigrations:
                 None
 
     /**
+     * Parse YAML and canonicalise the `pressure_loss_table_raw` field.
+     *
+     * Legacy and poisoned tables (real separators, or the backslash-escape runs a save/open
+     * cycle used to leave behind) heal here, so every version decoder below sees the
+     * canonical TSV form.
+     */
+    private def parseYaml(yaml: String): Either[io.circe.ParsingFailure, io.circe.Json] =
+        yamlParser.parse(yaml).map(PressureLossTableStorage.decode)
+
+    /**
      * Detect schema version from YAML using manual JSON navigation.
      *
      * Parses YAML to JSON, then navigates to the "version" field using cursor operations.
@@ -241,7 +252,7 @@ object AppStateSchemaMigrations:
      * @return Some(version) if detected, None if parsing fails or version not found
      */
     private def detectVersion(yaml: String): Option[Int] =
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(jsonValue) =>
                 // Navigate to version field using cursor
                 val versionCursor = jsonValue.hcursor.downField("version")
@@ -262,7 +273,7 @@ object AppStateSchemaMigrations:
     /** Decode V1 schema from YAML string. */
     private def decodeV1(yaml: String): Try[AppStateSchema_V1] =
         import afpma.firecalc.ui.models.schema.v1.AppStateSchema_V1.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V1] match
                     case Right(schema) => Success(schema)
@@ -272,7 +283,7 @@ object AppStateSchemaMigrations:
     /** Decode V2 schema from YAML string. */
     private def decodeV2(yaml: String): Try[AppStateSchema_V2] =
         import afpma.firecalc.ui.models.schema.v2.AppStateSchema_V2.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V2] match
                     case Right(schema) => Success(schema)
@@ -282,7 +293,7 @@ object AppStateSchemaMigrations:
     /** Decode V3 schema from YAML string. */
     private def decodeV3(yaml: String): Try[AppStateSchema_V3] =
         import afpma.firecalc.ui.models.schema.v3.AppStateSchema_V3.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V3] match
                     case Right(schema) => Success(schema)
@@ -292,7 +303,7 @@ object AppStateSchemaMigrations:
     /** Decode V4 schema from YAML string. */
     private def decodeV4(yaml: String): Try[AppStateSchema_V4] =
         import afpma.firecalc.ui.models.schema.v4.AppStateSchema_V4.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V4] match
                     case Right(schema) => Success(schema)
@@ -302,7 +313,7 @@ object AppStateSchemaMigrations:
     /** Decode V5 schema from YAML string. */
     private def decodeV5(yaml: String): Try[AppStateSchema_V5] =
         import afpma.firecalc.ui.models.schema.v5.AppStateSchema_V5.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V5] match
                     case Right(schema) => Success(schema)
@@ -312,7 +323,7 @@ object AppStateSchemaMigrations:
     /** Decode V6 schema from YAML string. */
     private def decodeV6(yaml: String): Try[AppStateSchema_V6] =
         import afpma.firecalc.ui.models.schema.v6.AppStateSchema_V6.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V6] match
                     case Right(schema) => Success(schema)
@@ -333,7 +344,7 @@ object AppStateSchemaMigrations:
     /** Decode V7 schema from YAML string. */
     private def decodeV7(yaml: String): Try[AppStateSchema_V7] =
         import afpma.firecalc.ui.models.schema.v7.AppStateSchema_V7.given
-        yamlParser.parse(yaml) match
+        parseYaml(yaml) match
             case Right(json) =>
                 json.as[AppStateSchema_V7] match
                     case Right(schema) => Success(schema)

@@ -287,4 +287,40 @@ class PressureLossTSVTableStringSuite extends AnyFlatSpec with Matchers:
         sparseTable.interpolate(mb, sb) shouldBe a[Left[?, ?]]
     }
 
+    // ── isStructurallyCorrupted ─────────────────────────────────────
+
+    "isStructurallyCorrupted" should "not flag the canonical table" in {
+        PressureLossTSVTableString.isStructurallyCorrupted(rawTable) shouldBe false
+    }
+
+    it should "not flag a sparse table whose cells are mostly empty" in {
+        PressureLossTSVTableString.isStructurallyCorrupted(sparseRawTable) shouldBe false
+    }
+
+    it should "not flag a blank field (blank means 'not defined', not corruption)" in {
+        PressureLossTSVTableString.isStructurallyCorrupted("") shouldBe false
+        PressureLossTSVTableString.isStructurallyCorrupted("  \n \t ") shouldBe false
+    }
+
+    it should "flag the ';'/'|' storage form when it reaches the engine undecoded" in {
+        val storageForm = "mb_in_kg/sb_in_cm;1.6;2.4;3.2;4.0|10;4;3;2;1|25;22;20;18;16"
+
+        PressureLossTSVTableString.isStructurallyCorrupted(storageForm) shouldBe true
+    }
+
+    it should "flag a payload with a header but no data row" in {
+        PressureLossTSVTableString.isStructurallyCorrupted("mb_in_kg/sb_in_cm\t1.6\t2.4\t3.2\t4.0") shouldBe true
+        PressureLossTSVTableString.isStructurallyCorrupted("mb_in_kg/sb_in_cm\t1.6\t2.4\t3.2\t4.0\n") shouldBe true
+        PressureLossTSVTableString.isStructurallyCorrupted("mb_in_kg/sb_in_cm\t1.6\t2.4\n \t \n") shouldBe true
+    }
+
+    it should "flag garbage that carries no tab-separated header" in {
+        PressureLossTSVTableString.isStructurallyCorrupted("hello") shouldBe true
+        PressureLossTSVTableString.isStructurallyCorrupted("mb_in_kg/sb_in_cm\\t1.6\\n10\\t4") shouldBe true
+    }
+
+    it should "flag a header row with no usable column" in {
+        PressureLossTSVTableString.isStructurallyCorrupted("mb_in_kg/sb_in_cm\t\t\n10\t4") shouldBe true
+    }
+
 end PressureLossTSVTableStringSuite

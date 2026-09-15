@@ -29,10 +29,7 @@ door_15a_fireboxes:
     mb_max:
       value: "25.0"
       unit: "kilogram"
-    pressure_loss_table_raw: |
-      mb_in_kg/sb_in_cm 1.6     2.4     3.2     4.0
-      10 4       3       2       1
-      25 22      20      18      16
+    pressure_loss_table_raw: "mb_in_kg/sb_in_cm;1.6;2.4;3.2;4.0|10;4;3;2;1|25;22;20;18;16"
     expectedAirIntakePipeShapes:
       - Circle:
           diameter:
