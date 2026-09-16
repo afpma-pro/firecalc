@@ -3,6 +3,7 @@
 .DS_Store
 .idea
 .metals
+.scala-build/
 dist
 docu/
 modules/ui/.vite
