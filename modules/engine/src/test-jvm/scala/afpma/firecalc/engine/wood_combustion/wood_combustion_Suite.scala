@@ -15,16 +15,15 @@ import afpma.firecalc.engine.testutil.SnapshotAssert
 import coulomb.*
 import coulomb.policy.standard.given
 
-import java.nio.file.Paths
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
 class wood_combustion_Suite extends AnyFreeSpec with Matchers:
 
-    private val snapshotDir = Paths.get(
-        "modules/engine/src/test/resources/snapshots/wood_combustion_Suite"
-    )
+    private def snapshotPath(name: String): java.nio.file.Path =
+        java.nio.file.Paths.get(
+            getClass.getClassLoader.getResource(s"snapshots/wood_combustion_Suite/$name").toURI
+        )
 
     val wl = 14.kg
     val wm = afpma.firecalc.engine.wood_combustion.Wood.HumidMass(wl)
@@ -154,9 +153,8 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
             val cif = afpma.firecalc.engine.wood_combustion.CombustionInputs
                 .byMassFlow(wm.toHumidMassFlow(combDuration))(mix(lambda = 1.6))
 
-            sb.append(s"${cif.output_perfect_massflow_tot.showP}\n")
-
-            SnapshotAssert.assertMatches(sb.toString, snapshotDir.resolve("mass_flow.txt"))
+            sb.append                   (s"${cif.output_perfect_massflow_tot.showP}\n")
+            SnapshotAssert.assertMatches(sb.toString, snapshotPath("mass_flow.txt")   )
 
             cif.output_perfect_massflow_tot.toUnit[Gram / Second].value `shouldEqual` (exp_mass_flow.value +- 0.1)
         }
@@ -221,9 +219,8 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
                               |
                               | H2O : ${fgH2O.showP} (en volume)
                               |""".stripMargin)
-                sb.append("\n")
-
-                SnapshotAssert.assertMatches(sb.toString, snapshotDir.resolve("sigma_co2_wet_or_dry.txt"))
+                sb.append                   ("\n"                                                 )
+                SnapshotAssert.assertMatches(sb.toString, snapshotPath("sigma_co2_wet_or_dry.txt"))
 
                 fgCO2_dry.value shouldEqual (7.05 +- 1.0)
             }
@@ -251,14 +248,13 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
             val fg_co2_dry_2 = wood.co2_dry_from_o2_dry(fg_o2_dry_2)
 
             val sb = new StringBuilder
-            sb.append(s"co2 max dry = ${wood.co2_max_dry} \n"               )
-            sb.append(s"co2 max wet = ${wood.co2_max_wet} \n"               )
-            sb.append(s"fg_o2_dry_2 = $fg_o2_dry_2 \n"                      )
-            sb.append(s"lambdafromO2dry = $lambdafromO2dry\n"               )
-            sb.append(s"lambda2 = $lambda2 par rapport à 2.95 ???\n"        )
-            sb.append(s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %\n")
-
-            SnapshotAssert.assertMatches(sb.toString, snapshotDir.resolve("lambda_from_co2_dry_7_05.txt"))
+            sb.append                   (s"co2 max dry = ${wood.co2_max_dry} \n"                  )
+            sb.append                   (s"co2 max wet = ${wood.co2_max_wet} \n"                  )
+            sb.append                   (s"fg_o2_dry_2 = $fg_o2_dry_2 \n"                         )
+            sb.append                   (s"lambdafromO2dry = $lambdafromO2dry\n"                  )
+            sb.append                   (s"lambda2 = $lambda2 par rapport à 2.95 ???\n"           )
+            sb.append                   (s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %\n"   )
+            SnapshotAssert.assertMatches(sb.toString, snapshotPath("lambda_from_co2_dry_7_05.txt"))
 
             lambda2 shouldBe >(0.0)
         }
@@ -284,13 +280,12 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
             val fg_co2_dry_2 = wood.co2_dry_from_lambda(1.85)
 
             val sb = new StringBuilder
-            sb.append(s"co2 max dry = ${wood.co2_max_dry} \n"               )
-            sb.append(s"co2 max wet = ${wood.co2_max_wet} \n"               )
-            sb.append(s"fg_o2_dry_2 = $fg_o2_dry_2 \n"                      )
-            sb.append(s"lambda2 = $lambda2 par rapport à 2.95 ???\n"        )
-            sb.append(s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %\n")
-
-            SnapshotAssert.assertMatches(sb.toString, snapshotDir.resolve("lambda_from_co2_dry_12.txt"))
+            sb.append                   (s"co2 max dry = ${wood.co2_max_dry} \n"                )
+            sb.append                   (s"co2 max wet = ${wood.co2_max_wet} \n"                )
+            sb.append                   (s"fg_o2_dry_2 = $fg_o2_dry_2 \n"                       )
+            sb.append                   (s"lambda2 = $lambda2 par rapport à 2.95 ???\n"         )
+            sb.append                   (s"fg_co2_dry_2 = $fg_co2_dry_2 par rapport à 7.05 %\n" )
+            SnapshotAssert.assertMatches(sb.toString, snapshotPath("lambda_from_co2_dry_12.txt"))
 
             lambda2 shouldBe >(0.0)
         }
@@ -313,7 +308,7 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
                 val lambda = 2.0
 
                 val sb = new StringBuilder
-                sb.append(s""" V_a   = ${wood.V_a.showP}
+                sb.append                   (s""" V_a   = ${wood.V_a.showP}
                               |
                               | V_CO2 = ${wood.V_CO2.showP}
                               | V_H2O = ${wood.V_H2O.showP}
@@ -335,9 +330,8 @@ class wood_combustion_Suite extends AnyFreeSpec with Matchers:
                               | fluegas_h2o_for_lambda(${lambda})  = ${wood.fluegas_h2o_for_lambda(lambda).showP}
                               |
                               |""".stripMargin)
-                sb.append("\n")
-
-                SnapshotAssert.assertMatches(sb.toString, snapshotDir.resolve("wood_volume_check.txt"))
+                sb.append                   ("\n"                                              )
+                SnapshotAssert.assertMatches(sb.toString, snapshotPath("wood_volume_check.txt"))
 
                 wood.V_a.value should be > (0.0)
             }

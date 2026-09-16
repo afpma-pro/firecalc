@@ -1,0 +1,23 @@
+# Build artifacts (produced by deploy script, not committed)
+artifacts/
+
+# Runtime configs with credentials
+configs/
+
+# Database files (transactional data)
+databases/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.defaults
+
+# Docker compose symlinks
+docker-compose.yml
+
+# Build and Let's Encrypt directories (created by deploy/init scripts)
+.build/
+.certbot/
+.certs/
+certbot-webroot/

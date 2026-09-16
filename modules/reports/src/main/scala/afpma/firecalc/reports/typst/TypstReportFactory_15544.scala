@@ -66,7 +66,7 @@ abstract class TypstReportFactory_15544(
     // Derive given for WithParams_13384 methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)
     given en15544_app.Params_15544 = atParams.params
 
-    val CURRENT_DATE_TIME = LocalDateTime.now(ZoneId.of("Europe/Paris"))
+    protected def currentDateTime: LocalDateTime = LocalDateTime.now(ZoneId.of("Europe/Paris"))
 
     import TypShow.given
 
@@ -156,12 +156,12 @@ abstract class TypstReportFactory_15544(
             |      align(top + right)[
             |        *${stove_proj_15544_strict.project.reference.sanitized}* \\
             |        #let dt = datetime(
-            |          year: ${CURRENT_DATE_TIME.getYear()},
-            |          month: ${CURRENT_DATE_TIME.getMonthValue()},
-            |          day: ${CURRENT_DATE_TIME.getDayOfMonth()},
-            |          hour: ${CURRENT_DATE_TIME.getHour()},
-            |          minute: ${CURRENT_DATE_TIME.getMinute()},
-            |          second: ${CURRENT_DATE_TIME.getSecond()},
+            |          year: ${currentDateTime.getYear()},
+            |          month: ${currentDateTime.getMonthValue()},
+            |          day: ${currentDateTime.getDayOfMonth()},
+            |          hour: ${currentDateTime.getHour()},
+            |          minute: ${currentDateTime.getMinute()},
+            |          second: ${currentDateTime.getSecond()},
             |        )
             |        CALC_ID : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \\
             |        Date : #dt.display("[day]/[month]/[year] [hour repr:24]:[minute]:[second]") \\

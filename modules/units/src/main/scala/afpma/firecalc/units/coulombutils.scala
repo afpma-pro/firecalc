@@ -399,6 +399,8 @@ object coulombutils:
             fromString("N.s/m²")
         given showUnit_SquareMeters                     : ShowUnit[(Meter ^ 2)]                           =
             fromString("m²")
+        given showUnit_CubicMeters                      : ShowUnit[(Meter ^ 3)]                           =
+            fromString("m³")
         given showUnit_SquareMeterKelvin_per_Watt_alias : ShowUnit[SquareMeterKelvinPerWatt]              =
             fromString("m²K/W")
         given showUnit_SquareMeterKelvin_per_Watt       : ShowUnit[(Meter ^ 2) * Kelvin / Watt]           =

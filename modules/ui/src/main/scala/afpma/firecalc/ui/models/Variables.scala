@@ -19,6 +19,7 @@ import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
+import afpma.firecalc.engine.models.FireboxSplitFrame
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeType
 import afpma.firecalc.engine.models.PipesResult_15544
@@ -33,10 +34,10 @@ import afpma.firecalc.engine.models.geometry.PipeFrame
 import afpma.firecalc.engine.models.geometry.PipePositionComputer
 import afpma.firecalc.engine.models.geometry.PipePositionResult
 import afpma.firecalc.engine.models.geometry.PositionTracker
-import afpma.firecalc.engine.models.geometry.SlotIntrospector
-import afpma.firecalc.engine.models.geometry.SlotIntrospector.{SplitQueryResult, SlotIntrospectionResult}
-import afpma.firecalc.engine.models.FireboxSplitFrame
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
+import afpma.firecalc.engine.models.geometry.SlotIntrospector
+import afpma.firecalc.engine.models.geometry.SlotIntrospector.SlotIntrospectionResult
+import afpma.firecalc.engine.models.geometry.SlotIntrospector.SplitQueryResult
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top_min
 import afpma.firecalc.engine.standard.*
@@ -54,6 +55,8 @@ import afpma.firecalc.ui.models.project.ProjectManager.activeProjectIdVar
 import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
 import afpma.firecalc.ui.models.schema.LocalStorageKeys
 import afpma.firecalc.ui.utils.*
+import afpma.firecalc.ui.remote.RemoteFireboxPrefetch
+import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.StrictRemoteData
 
 import cats.data.Validated
 import cats.data.Validated.Valid
@@ -73,6 +76,8 @@ import scala.util.*
 
 import afpma.firecalc.domain.AirDistributionBox
 import afpma.firecalc.domain.FireboxCoordinateSystem
+
+// ── S5.4: Remote firebox engine pre-fetch ──────────────────────────
 
 // ============================================================================
 // UNIFIED APPLICATION STATE SCHEMA
@@ -191,13 +196,16 @@ val air_intake_incrdescr_var =
     )
 
 // EngineStateHelper
-
 val engineStateHelperVar =
-    engineStateVar.zoomLazy(FireCalcYAML_Loader.apply)((engineState, _) => engineState)
+    engineStateVar.zoomLazy(yaml => FireCalcYAML_Loader(yaml))((engineState, _) => engineState)
 
 val air_intake_vnel_signal          = engineStateHelperVar.signal.map(_.airIntakePipe)
 val air_intake_mappings_vnel_signal =
     engineStateHelperVar.signal.map(_.airIntakePipeMappings)
+
+// ── S5.4: Remote firebox pre-fetch — extracted to
+// afpma.firecalc.ui.remote.RemoteFireboxPrefetch (T1.3). Panels import its
+// signals directly; this file only consumes the state map below.
 
 // Firebox
 
@@ -612,21 +620,62 @@ lazy val postFireboxPipeResults_sig: Signal[VNelMcalcErr[Vector[(PipeType, PipeR
  * During the debounce window after a project switch, the signal returns
  * `ResultsNotComputed` (filtered from panel displays) instead of stale
  * values from the previous project.
+ *
+ * Q11 (partial assembly): the remote verdict consulted here is the one recorded
+ * for THIS project's firebox kind, never a global flag. A `Remote` kind whose
+ * fetch failed yields an error for that kind alone; every other kind — in
+ * particular every `Local` kind — keeps computing normally. No branch computes a
+ * `Remote`-configured kind with the local engine (Q0.1-A: Austrian kinds are
+ * network-only, a silent local fallback would defeat IP protection); that
+ * guarantee comes from [[KindComputation]] having no such case, not from a
+ * convention here. The remote payload arrives THROUGH the dispatch seam
+ * (`KindComputation.Remote(_, data)`), so serving one kind's data for another
+ * is unrepresentable (T1.3).
  */
 lazy val resultsWithProjectSig: Signal[(ProjectId, VNelMcalcErr[EN15544_Strict_Application])] =
     engineStateHelperVar.signal
-        .combineWith(activeProjectIdVar.signal)
+        .combineWith(activeProjectIdVar.signal, RemoteFireboxPrefetch.remoteDataStatesSig)
         .composeChanges(_.debounce(LAMINAR_COMPUTE_RESULTS_DELAY_MS))
-        .map { (helper, projectIdOpt) =>
+        .map { (helper, projectIdOpt, remoteStates) =>
             val projectId      = projectIdOpt.getOrElse(ProjectId(""))
             val currentFirebox = helper.fcProj.firebox
-            val result         =
+            val currentKind    = RemoteFireboxPrefetch.fireboxKindOf(currentFirebox)
+
+            /** Build the application, optionally with remote data. */
+            def build(remoteData: Option[StrictRemoteData]): VNelMcalcErr[EN15544_Strict_Application] =
+                scala.util.Try(helper.make_en15544_Strict_Application(remoteData)) match
+                    case scala.util.Success(r) => r
+                    case scala.util.Failure(e) => Validated.invalidNel(UnexpectedDevError(e.getMessage))
+
+            val result =
                 if !UIConfig.uiAvailability.allows(currentFirebox) then
                     Validated.invalidNel(FireboxTypeDisabledError(currentFirebox.typeName))
                 else
-                    scala.util.Try(helper.make_en15544_Strict_Application) match
-                        case scala.util.Success(r) => r
-                        case scala.util.Failure(e) => Validated.invalidNel(UnexpectedDevError(e.getMessage))
+                    RemoteFireboxAvailability.computationFor(
+                        currentKind,
+                        UIConfig.fireboxEngineSource,
+                        remoteStates
+                    ) match
+                        case KindComputation.Local                  =>
+                            // Configured local: the historical synchronous path,
+                            // unaffected by any other kind's remote outcome.
+                            build(None)
+                        case KindComputation.Remote(_, data)        =>
+                            // Data for THIS kind, carried by the seam itself.
+                            build(Some(data))
+                        case KindComputation.Pending(_)             =>
+                            // Fetch in flight: not an error and not a licence to
+                            // compute locally — simply not available yet.
+                            Validated.invalidNel(ResultsNotComputed)
+                        case KindComputation.Unavailable(_, reason) =>
+                            // Terminal: remote-only kind with neither a response
+                            // nor a fingerprint-matching cache entry.
+                            Validated.invalidNel(UnexpectedDevError(reason))
+                        case KindComputation.Rejected(_, reason)    =>
+                            // Geometry verdict from a healthy service: a firebox-scoped
+                            // application error, surfaced in the firebox constraints
+                            // status only — not a development error.
+                            Validated.invalidNel(FireboxGeometryRejectedError(reason))
             (projectId, result)
         }
 

@@ -25,6 +25,23 @@ upstream ui_upstream {
 upstream api_upstream {
     server backend:8181;
 }
+# Upstream for standalone calculation backend
+upstream calc_upstream {
+    server calc-backend:9000;
+}
+
+# =============================================================================
+# CORS for the firebox calculation API (ticket 21)
+# =============================================================================
+# The browser UI (UI domain) calls GET /v1/kinds and POST /v1/calculate
+# cross-origin on the API domain. The private calc backend deliberately has
+# no CORS middleware, so nginx supplies the headers here. The allowed origin
+# is the UI origin (envsubst inserts ${UI_DOMAIN}). Any other Origin maps to
+# empty and receives no Access-Control-Allow-Origin header.
+map $http_origin $firecalc_cors_origin {
+    default "";
+    "https://${UI_DOMAIN}" "https://${UI_DOMAIN}";
+}
 
 # =============================================================================
 # Server Block: UI Domain (HTTPS)
@@ -122,6 +139,68 @@ server {
         add_header Cache-Control "no-store, no-cache, must-revalidate" always;
     }
 
+    # Firebox calculation API (unauthenticated, CPU-bound solver)
+    # CORS (ticket 21): the browser UI calls these two endpoints cross-origin
+    # from the UI domain. $firecalc_cors_origin maps the request Origin to the
+    # allowed UI origin (empty otherwise — no CORS headers are emitted and the
+    # browser rejects the response). Preflights are answered here and never
+    # forwarded to the calc backend.
+    location = /v1/calculate {
+        limit_req zone=firebox_calc burst=5 nodelay;
+        limit_req_status 429;
+
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $firecalc_cors_origin always;
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Content-Type, X-Firecalc-App-Key" always;
+            add_header Access-Control-Max-Age 86400 always;
+            add_header Content-Length 0;
+            add_header Content-Type "text/plain charset=UTF-8";
+            return 204;
+        }
+
+        add_header Access-Control-Allow-Origin $firecalc_cors_origin always;
+        add_header Access-Control-Expose-Headers "X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After" always;
+        add_header Vary "Origin" always;
+
+        proxy_pass http://calc_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP $remote_addr;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+    }
+
+    location = /v1/kinds {
+        limit_req zone=firebox_calc burst=10 nodelay;
+        limit_req_status 429;
+
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $firecalc_cors_origin always;
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Content-Type, X-Firecalc-App-Key" always;
+            add_header Access-Control-Max-Age 86400 always;
+            add_header Content-Length 0;
+            add_header Content-Type "text/plain charset=UTF-8";
+            return 204;
+        }
+
+        add_header Access-Control-Allow-Origin $firecalc_cors_origin always;
+        add_header Access-Control-Expose-Headers "X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After" always;
+        add_header Vary "Origin" always;
+
+        proxy_pass http://calc_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP $remote_addr;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
     # Payment redirect pages (HTML — need inline styles/scripts)
     location = /v1/payment_complete {
         add_header X-Frame-Options "DENY" always;
@@ -182,6 +261,10 @@ upstream api_upstream_http {
     server backend:8181;
 }
 
+upstream calc_upstream_http {
+    server calc-backend:9000;
+}
+
 server {
     listen 80 default_server;
     server_name ${UI_DOMAIN} ${API_DOMAIN};
@@ -193,9 +276,15 @@ server {
         try_files $uri =404;
     }
 
-    # Backend healthcheck — proxied to backend, bypasses HTTPS redirect
+    # Payments backend healthcheck — proxied to backend, bypasses HTTPS redirect
     location = /healthcheck {
         proxy_pass http://api_upstream_http/v1/healthcheck;
+        proxy_http_version 1.1;
+    }
+
+    # Calculation backend healthcheck — proxied to calc-backend, bypasses HTTPS redirect
+    location = /calc-healthcheck {
+        proxy_pass http://calc_upstream_http/health;
         proxy_http_version 1.1;
     }
 

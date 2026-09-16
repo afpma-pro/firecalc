@@ -1,0 +1,45 @@
+# =============================================================================
+# FireCalc Calculation Backend — Docker Image
+# =============================================================================
+# Standalone calculation server container. No payments dependencies, no
+# database mounts, no Typst — just a JRE and the calculation assembly JAR.
+#
+# Artifact is expected in the build context `artifacts/` directory,
+# produced by the deploy script from the pinned private source ref in VERSIONS.
+#
+# Health endpoint: GET /health
+# Calculation endpoints: GET /v1/kinds, POST /v1/calculate
+# =============================================================================
+
+FROM eclipse-temurin:21-jre-jammy
+
+# Install curl for health checks
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root application user
+RUN groupadd -r -g 999 appuser && \
+    useradd -r -u 999 -g appuser -d /app -s /sbin/nologin -c "Application user" appuser
+
+WORKDIR /app
+
+# Copy pre-built assembly JAR from artifacts/ (flat path)
+COPY artifacts/firecalc-calc-server-assembly.jar /app/firecalc-calc-server-assembly.jar
+
+# Create mount point for configuration (read-only)
+# Configuration file: firebox-calc-server.conf (HOCON, private repository)
+RUN mkdir -p /app/configs && \
+    chown -R appuser:appuser /app/configs && \
+    chmod 700 /app/configs
+
+USER appuser
+
+# Expose calculation server port
+EXPOSE 9000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:9000/health || exit 1
+
+CMD ["java", "-jar", "/app/firecalc-calc-server-assembly.jar"]

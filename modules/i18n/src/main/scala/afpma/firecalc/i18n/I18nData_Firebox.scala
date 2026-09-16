@@ -77,6 +77,12 @@ object I18nData_Firebox:
             injector_width_door_wall_Lt              : String,
             injector_height_door_wall_Zt             : String,
             air_column_thickness_door_wall_St        : String,
+            air_manifold_inner_width                 : String,
+            air_manifold_inner_depth                 : String,
+            air_columns_cross_section_width          : String,
+            air_injectors_cross_section_width        : String,
+            air_columns_rise_length                  : String,
+            air_intake_equivalent_shape              : String,
             computed_values                          : String
         )
 

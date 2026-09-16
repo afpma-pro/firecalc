@@ -18,7 +18,7 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
  * The `firebox` parameter is passed explicitly to allow firebox-specific
  * formula overrides (though the default instance ignores it).
  */
-trait FireboxFormulas[-F <: Firebox_15544]:
+trait FireboxFormulas[-F]:
 
     extension (firebox: F)
         /** Section "4.3.1.1" – Firebox surface area O_BR */

@@ -1,0 +1,147 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# =============================================================================
+# FireCalc — Docker Compose (Behind-Proxy Mode, without Calculation Server)
+# =============================================================================
+# Behind-proxy deployment: external reverse proxy (e.g., nginx-proxy-manager)
+# handles TLS termination. Inner nginx serves plain HTTP on the Docker network
+# only — no host ports exposed. No calc-server — all calculations run locally
+# in the payments backend.
+#
+# To activate this mode, create a symlink:
+#   cd firecalc-docker && ln -s docker-compose.behind-proxy.no-calc.yml docker-compose.yml
+#
+# Usage:
+#   docker compose up -d              # Start all services in detached mode
+#   docker compose logs -f backend    # View backend logs
+#   docker compose down               # Stop and remove containers
+#
+# Build images (first time or after artifact update):
+#   docker compose build
+#
+# Environment Variables (via .env file):
+#   FIRECALC_ENV    - Environment name (staging, production, etc.)
+#
+# Note: UI_DOMAIN and API_DOMAIN are NOT needed in this mode.
+# The outer proxy handles domain routing and TLS.
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Backend Service — FireCalc Payments API
+  # ===========================================================================
+  backend:
+    image: firecalc-${FIRECALC_ENV}-backend:latest
+    container_name: firecalc-${FIRECALC_ENV}-backend
+    restart: unless-stopped
+
+    environment:
+      - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
+
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./databases:/app/databases:rw
+
+    networks:
+      - firecalc
+    expose:
+      - "8181"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # UI Server — Static File Server (pre-built image)
+  # ===========================================================================
+  ui-server:
+    image: firecalc-${FIRECALC_ENV}-ui:latest
+    container_name: firecalc-${FIRECALC_ENV}-ui-server
+    restart: unless-stopped
+
+    networks:
+      - firecalc
+    expose:
+      - "80"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # Nginx Internal Gateway (Behind-Proxy Mode, no calc upstream)
+  # ===========================================================================
+  nginx:
+    image: firecalc-${FIRECALC_ENV}-nginx:latest
+    container_name: firecalc-${FIRECALC_ENV}-nginx
+    restart: unless-stopped
+
+    # No host ports — Docker network only
+    expose:
+      - "80"
+
+    volumes:
+      - ./nginx/templates/behind-proxy.no-calc.tpl:/etc/nginx/nginx.conf.tpl:ro
+      - ./nginx/shared:/etc/nginx/conf.d/shared:ro
+      - nginx-generated:/etc/nginx/generated
+    environment:
+      - FIRECALC_MODE=no-calc
+    depends_on:
+      ui-server:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+    networks:
+      - firecalc
+      - proxy
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  firecalc:
+    driver: bridge
+
+  # External network shared with nginx-proxy-manager (NPM)
+  # Allows NPM to reach the inner nginx container directly
+  proxy:
+    external: true
+
+volumes:
+  nginx-generated:
+    driver: local

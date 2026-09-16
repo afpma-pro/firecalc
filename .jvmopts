@@ -4,3 +4,7 @@
 -XX:MaxInlineLevel=32
 -Duser.language=en                                                                                                                   
 -Duser.country=US 
+# Suppress JDK 24+ Unsafe deprecation from scala-library backward-compat shim (JEP 498)
+--sun-misc-unsafe-memory-access=allow
+# Suppress JDK 24+ JNI warning from java-typst → questdb jar-jni (JEP 472)
+--enable-native-access=ALL-UNNAMED

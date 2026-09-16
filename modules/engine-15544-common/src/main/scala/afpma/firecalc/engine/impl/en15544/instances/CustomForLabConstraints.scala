@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.impl.en15544.instances
 
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Traditional.CustomForLab
 
@@ -15,4 +16,6 @@ import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Traditional.Custom
  * Extends the default constraint set.
  */
 given customForLabConstraints: FireboxConstraints[CustomForLab] =
-    new FireboxConstraints_Strict[CustomForLab] {}
+    new FireboxConstraints_Strict[CustomForLab]:
+
+        override def kind: FireboxKind = FireboxKind.CustomForLab

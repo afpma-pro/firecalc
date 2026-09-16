@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+
+# =============================================================================
+# FireCalc Nginx Reverse Proxy — Docker Image
+# =============================================================================
+# Lightweight nginx container for routing traffic between frontend and
+# backend services. Configuration templates are processed at startup via
+# envsubst to substitute domain placeholders.
+# =============================================================================
+
+FROM nginx:1.27-alpine
+RUN apk add --no-cache curl gettext
+
+COPY nginx/entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Create writable directory for generated nginx configuration
+# (entrypoint writes processed config here at container startup)
+RUN mkdir -p /etc/nginx/generated && chown nginx:nginx /etc/nginx/generated
+
+# Drop root — run nginx worker processes as the nginx user
+USER nginx
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

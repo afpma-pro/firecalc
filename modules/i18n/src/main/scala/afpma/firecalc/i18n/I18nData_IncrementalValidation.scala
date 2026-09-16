@@ -19,6 +19,7 @@ object I18nData_IncrementalValidation:
         property_must_be_defined  : IncrementalValidation.PropertyMustBeDefined,
         prerequisites             : IncrementalValidation.Prerequisites,
         conflicts                 : IncrementalValidation.Conflicts,
+        non_positive_pipe_geometry: IncrementalValidation.NonPositivePipeGeometry,
         forbidden_element_position: IncrementalValidation.ForbiddenElementPosition
     )
 
@@ -76,6 +77,10 @@ object I18nData_IncrementalValidation:
             shape_not_materialized                 : StringFormat1,
             element_ref                            : StringFormat2,
             consecutive_direction_changes          : StringFormat2
+        )
+
+        case class NonPositivePipeGeometry(
+            message: StringFormat2
         )
 
         case class ForbiddenElementPosition(

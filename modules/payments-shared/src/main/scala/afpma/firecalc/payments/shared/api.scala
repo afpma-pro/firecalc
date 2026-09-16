@@ -44,5 +44,5 @@ val VerifyAndProcessRequest = v1.VerifyAndProcessRequest
 type VerifyAndProcessResponse = v1.VerifyAndProcessResponse
 val VerifyAndProcessResponse = v1.VerifyAndProcessResponse
 
-type ErrorResponseEnvelope = v1.ErrorResponseEnvelope
-val ErrorResponseEnvelope = v1.ErrorResponseEnvelope
+type ErrorResponseEnvelope = afpma.firecalc.firebox_calc_api.ErrorResponseEnvelope
+val ErrorResponseEnvelope = afpma.firecalc.firebox_calc_api.ErrorResponseEnvelope

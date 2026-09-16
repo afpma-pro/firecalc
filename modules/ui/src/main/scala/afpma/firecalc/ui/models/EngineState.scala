@@ -13,8 +13,6 @@ import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7
 
-import afpma.firecalc.engine.cas_types.en15544.v20241001.CasPratique_15544_FDIM_EX_03
-import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 import afpma.firecalc.engine.cas_types.en15544.v20241001.ExampleProject_15544
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers
@@ -57,54 +55,6 @@ object EngineState:
                 PostFireboxPipeDescrSlot_V7.FlueSlot     (ExampleProject_15544.accumulateur_descr        ),
                 PostFireboxPipeDescrSlot_V7.ConnectorSlot(ExampleProject_15544.conduit_raccordement_descr),
                 PostFireboxPipeDescrSlot_V7.ChimneySlot  (ExampleProject_15544.conduit_fumees_descr      )
-            )
-        )
-    )
-
-    lazy val init_as_CasType_15544_C3: EngineState = FireCalcYAML_V7(
-        locale                         = Locale(Languages.Fr),
-        display_units                  = DisplayUnits.SI,
-        standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
-        project_description            = ProjectDescr(
-            reference = CasType_15544_C3.project.reference,
-            date      = CasType_15544_C3.project.date,
-            country   = CasType_15544_C3.project.country
-        ),
-        local_conditions               = CasType_15544_C3.localConditions,
-        stove_params                   = CasType_15544_C3.stoveParams,
-        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(CasType_15544_C3.conduit_air_descr),
-        firebox                        = CasType_15544_C3.foyer_descr.transformInto[Firebox.Ecolabeled](using
-            FireboxTransformers.transformer_inv_Ecolabeled
-        ),
-        post_firebox_pipes             = FramedPostFireboxPipes.fromLegacySlots(
-            Seq(
-                PostFireboxPipeDescrSlot_V7.FlueSlot     (CasType_15544_C3.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot_V7.ConnectorSlot(CasType_15544_C3.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot_V7.ChimneySlot  (CasType_15544_C3.conduit_fumees_descr      )
-            )
-        )
-    )
-
-    lazy val init_as_CasPratique_15544_FDIM_EX_03: EngineState = FireCalcYAML_V7(
-        locale                         = Locale(Languages.Fr),
-        display_units                  = DisplayUnits.SI,
-        standard_or_computation_method = StandardOrComputationMethod.EN_15544_2023,
-        project_description            = ProjectDescr(
-            reference = CasPratique_15544_FDIM_EX_03.project.reference,
-            date      = CasPratique_15544_FDIM_EX_03.project.date,
-            country   = CasPratique_15544_FDIM_EX_03.project.country
-        ),
-        local_conditions               = CasPratique_15544_FDIM_EX_03.localConditions,
-        stove_params                   = CasPratique_15544_FDIM_EX_03.stoveParams,
-        air_intake_pipes               = FramedAirIntakePipes.fromLegacy(CasPratique_15544_FDIM_EX_03.conduit_air_descr),
-        firebox                        = CasPratique_15544_FDIM_EX_03.foyer_descr.transformInto[Firebox.Ecolabeled](using
-            FireboxTransformers.transformer_inv_Ecolabeled
-        ),
-        post_firebox_pipes             = FramedPostFireboxPipes.fromLegacySlots(
-            Seq(
-                PostFireboxPipeDescrSlot_V7.FlueSlot     (CasPratique_15544_FDIM_EX_03.accumulateur_descr        ),
-                PostFireboxPipeDescrSlot_V7.ConnectorSlot(CasPratique_15544_FDIM_EX_03.conduit_raccordement_descr),
-                PostFireboxPipeDescrSlot_V7.ChimneySlot  (CasPratique_15544_FDIM_EX_03.conduit_fumees_descr      )
             )
         )
     )

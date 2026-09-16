@@ -3,9 +3,10 @@
  * Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
  */
 import I18nGenerator._
-import scala.io.Source
+import org.scalajs.jsenv.nodejs.NodeJSEnv
 import org.scalajs.linker.interface.ModuleSplitStyle
 import sbtassembly.MergeStrategy
+import scala.io.Source
 
 // Custom task keys for product copy YAML management
 lazy val genYamlTemplate = taskKey[Unit](
@@ -33,7 +34,23 @@ ThisBuild / startYear        := Some(2025)
 ThisBuild / licenses         := Seq("AGPL-3.0-or-later" -> url("https://www.gnu.org/licenses/agpl-3.0.html"))
 ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 
-lazy val engine_version        = "0.3.0-b25-SNAPSHOT"
+// Engine line version. Two names, deliberately:
+//   engine_version_default — the literal the Makefile scrapes (Makefile: ENGINE_VERSION).
+//                          Keep it quoted on that same line; the scrape is text-based.
+//   engine_version         — what the build uses. Defaults to the moving -SNAPSHOT for the
+//                          daily loop; FIRECALC_PUBLISH_VERSION overrides it with a pinned
+//                          SHA-stamped coordinate (`0.3.0-b25+<sha7>`, ADR-0007). Read once
+//                          when the build loads, so it must be set in the environment of the
+//                          JVM that loads build.sbt (a warm sbt --client server keeps the
+//                          value it loaded with). See docs/dev/README.md,
+//                          "Publishing the engine artifacts".
+val engine_version_default = "0.3.0-b25-SNAPSHOT"
+lazy val engine_version    =
+    sys.env
+        .get("FIRECALC_PUBLISH_VERSION")
+        .orElse(sys.props.get("FIRECALC_PUBLISH_VERSION"))
+        .getOrElse(engine_version_default)
+
 lazy val reports_base_version  = "0.9.0-b25-SNAPSHOT"
 lazy val payments_base_version = "0.9.0-b25-SNAPSHOT"
 lazy val ui_base_version       = "0.9.0-b25-SNAPSHOT"
@@ -46,11 +63,68 @@ lazy val reports_version  = s"${reports_base_version}+engine-${engine_version}"
 lazy val payments_version = s"${payments_base_version}+reports-${reports_base_version}+engine-${engine_version}"
 lazy val ui_version       = s"${ui_base_version}+engine-${engine_version}"
 
+// ============================================================================
+// Engine artifact publishing (ADR-0007: public engine as a pinned dependency)
+// ============================================================================
+// The 14 modules granted to the private repository as binary artifacts
+// (docs/licensing/afpma-dual-license-grant.md §1), listed by JVM sbt project id.
+// This Seq is the single allowlist source; its consumers are listed at the
+// `grantedEngineJvm` definition below.
+//
+// JVM-only by construction: every granted module is a crossProject with
+// `.withoutSuffixFor(JVMPlatform)`, so the JVM project id is the bare name below
+// and the Scala.js side carries a "JS" suffix (engine_kernelJS, unitsJS, ...) —
+// never in the allowlist, therefore never published.
+lazy val engine_publish_jvm_ids = Seq(
+    "i18n_utils",
+    "i18n",
+    "utils",
+    "units",
+    "domain",
+    "dto",
+    "firebox_calc_api",
+    "engine_kernel",
+    "engine",
+    "engine_13384_common",
+    "engine_13384_strict",
+    "engine_15544_common",
+    "engine_15544_strict",
+    "engine_15544_mce"
+)
+
+// Default-deny: publishing is off for the whole build. `commonSettings` re-enables
+// it for exactly `engine_publish_jvm_ids`; projects without commonSettings (root)
+// inherit this value.
+ThisBuild / publish / skip := true
+
+// One command publishes the full granted closure to the local repository
+addCommandAlias(
+    "publishEngineLocal",
+    engine_publish_jvm_ids.map(id => s"$id/publishLocal").mkString(";")
+)
+
+// The one spelling of "this project is on the publish allowlist". Two consumers, both in
+// commonSettings, with opposite per-key polarity — `publish / skip` skips the NOT granted,
+// `Compile / packageDoc / publishArtifact` ships Scaladoc for the NOT granted (the granted
+// modules publish sources but not docs). (The allowlist Seq itself drives a third — the
+// `publishEngineLocal` alias maps over the Seq directly, not through this predicate.)
+// Must be a Def.setting: it reads `thisProject`.
+lazy val grantedEngineJvm = Def.setting(engine_publish_jvm_ids.contains(thisProject.value.id))
+
 // uncomment so that scala 3 traces are valid JSON (parallelExecution seems to procude badly formatted JSON traces)
 // parallelExecution in Global := false
 
 val commonSettings = Seq(
-    scalaVersion      := scala_version,
+    scalaVersion                           := scala_version,
+    // Default-deny publishing (ThisBuild / publish / skip := true above); the
+    // granted engine JVM projects listed in engine_publish_jvm_ids opt back in
+    // here. The crossProject JS sides carry a "JS" id suffix and stay skipped.
+    publish / skip                         := !grantedEngineJvm.value,
+    // publishLocal/publish ship sources but not Scaladoc for the granted modules:
+    // scaladoc over the macro-heavy engine line (-Xmax-inlines up to 64) is slow and
+    // nobody consumes it locally. Scoped to the allowlist (not ThisBuild) so future
+    // non-allowlist publishes are unaffected by this setting.
+    Compile / packageDoc / publishArtifact := !grantedEngineJvm.value,
     scalacOptions ++= Seq(
         // "-explain",
         // "-explain-cyclic",
@@ -79,7 +153,7 @@ val commonSettings = Seq(
 //     )
 //   }.value,
     // Output compilation scope marker for watch mode parsing
-    Compile / compile := {
+    Compile / compile                      := {
         val result = (Compile / compile).value
         System.err.println(s"[FIRECALC_COMPILE_DONE] module=${name.value}")
         result
@@ -140,6 +214,9 @@ lazy val root = (project in file("."))
         engine_13384_strict.jvm,
         engine_15544_common.js,
         engine_15544_common.jvm,
+        firebox_calc_api.js,
+        firebox_calc_api.jvm,
+        firebox_calc_testkit,
         engine_15544_strict.js,
         engine_15544_strict.jvm,
         engine_15544_mce.js,
@@ -351,6 +428,101 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
     .dependsOn(utils, i18n, units, domain)
 
 // =========
+// firebox_calc_api
+
+lazy val firebox_calc_api = crossProject(JVMPlatform, JSPlatform)
+    .withoutSuffixFor(JVMPlatform)
+    .crossType(CrossType.Pure)
+    .in(file("modules/firebox_calc_api"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-firebox_calc_api",
+        version := engine_version,
+        libraryDependencies ++= Seq        (
+            "io.circe"      %%% "circe-core"    % "0.14.13",
+            "io.circe"      %%% "circe-generic" % "0.14.13",
+            "org.scalatest" %%% "scalatest"     % "3.2.19" % "test"
+        )
+    )
+    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .dependsOn(utils, units, domain, dto)
+
+// =========
+// firebox_calc_testkit (public black-box contract test harness)
+//
+// JVM-only. Drives the normative HTTP seam (`GET /v1/kinds`, `POST /v1/calculate`)
+// against any conforming server — the Austrian-free in-process
+// `ReferenceConformingServer` for contract tests, or a live deployment for
+// cross-repository acceptance. It has NO Austrian/Strict implementation
+// dependency, no proprietary fixture, and no numerical oracle: numerical and
+// engine correctness is owned by the private repository (ticket 17).
+// The browser never links it; the UI exercises the remote path over HTTP via
+// `firebox_calc_client_js`.
+
+lazy val firebox_calc_testkit = (project in file("modules/firebox_calc_testkit"))
+    .settings   (
+        commonSettings,
+        name    := "firecalc-firebox_calc_testkit",
+        version := engine_version,
+        libraryDependencies ++= Seq           (
+            "org.scalatest" %% "scalatest"           % "3.2.19"  % "test",
+            // Real HTTP server for the raw-HTTP contract tests (findings 1–3):
+            // drives `ReferenceConformingServer` with `java.net.http.HttpClient`
+            // so request bodies the typed client cannot express (unknown kind,
+            // malformed field, oversized payload) and response headers
+            // (`X-RateLimit-*`, `Retry-After`) are observable on the wire.
+            "org.http4s"    %% "http4s-ember-server" % "0.23.30" % "test"
+        )
+    )
+    .dependsOn(
+        firebox_calc_api.jvm,
+        firebox_calc_client,
+        engine_15544_common.jvm
+    )
+// =========
+// firebox_calc_client (JVM http4s adapter for the shared calculation client)
+
+lazy val firebox_calc_client    = (project in file("modules/firebox_calc_client")   )
+    .settings   (
+        commonSettings,
+        name    := "firecalc-firebox_calc_client",
+        version := engine_version,
+        libraryDependencies ++= Seq             (
+            "org.http4s"    %% "http4s-ember-client"           % "0.23.30",
+            "org.http4s"    %% "http4s-circe"                  % "0.23.30",
+            "org.http4s"    %% "http4s-core"                   % "0.23.30",
+            "org.typelevel" %% "cats-effect"                   % "3.6.1",
+            "io.circe"      %% "circe-core"                    % "0.14.13",
+            "org.scalatest" %% "scalatest"                     % "3.2.19" % "test",
+            "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0"  % "test"
+        )
+    )
+    .dependsOn(firebox_calc_api.jvm)
+// =========
+// firebox_calc_client_js (JS/fetch adapter for the shared calculation client)
+//
+lazy val firebox_calc_client_js = (project in file("modules/firebox_calc_client_js"))
+    .enablePlugins(ScalaJSPlugin)
+    .settings                           (
+        commonSettings,
+        name                            := "firecalc-firebox_calc_client_js",
+        version                         := engine_version,
+        libraryDependencies ++= Seq  (
+            "org.scala-js"  %%% "scalajs-dom"  % "2.8.1",
+            "io.circe"      %%% "circe-core"   % "0.14.13",
+            "io.circe"      %%% "circe-parser" % "0.14.13",
+            "org.scalatest" %%% "scalatest"    % "3.2.19" % "test"
+        ),
+        scalaJSLinkerConfig ~= {
+            _.withModuleKind(ModuleKind.ESModule)
+        },
+        scalaJSUseMainModuleInitializer := false
+    )
+    .settings(jsSourceMapSettings)
+    .dependsOn(firebox_calc_api.js)
+// =========
+
+// =========
 // catalog
 
 lazy val catalog = crossProject(JVMPlatform, JSPlatform)
@@ -546,9 +718,11 @@ lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
         engine,
         engine_13384_common,
         engine_13384_strict,
+        firebox_calc_api,
         engine              % "test->test",
         engine_13384_common % "test->test",
-        engine_13384_strict % "test->test"
+        engine_13384_strict % "test->test",
+        firebox_calc_api    % "test->test"
     )
 
 lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
@@ -562,14 +736,13 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
         scalacOptions ++= Seq("-Xmax-inlines:32"),
         libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
     )
-    .jvmConfigure(
-        _.settings(
-            Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala",
-            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
-        )
-    )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("i18n"))
+    // Ticket 16: the Austrian engine instances, registry, calculation core,
+    // conversion, C3 cas-types, and NPipe fixture moved to the private
+    // repository (ticket 14). The public module is platform-uniform: the
+    // shared sources register generic remote-only carriers for the two
+    // proprietary kinds.
     .dependsOn(
         engine_15544_common,
         engine_13384_strict,
@@ -1076,6 +1249,19 @@ lazy val ui = (project in file("modules/ui"))
         ),
         testFrameworks += new TestFramework("utest.runner.Framework"),
 
+        // The emitted test bundle imports the Vite env bridge with the same
+        // specifier as the browser build ("/src/main/js/vite-env.js", a URL
+        // relative to the Vite root), which Node cannot resolve. Run the
+        // tests under a small in-repo ESM resolve hook that rewrites that
+        // one specifier to the in-repo bridge file (see
+        // modules/ui/test/vite-env-register.mjs and vite-env-loader.mjs).
+        // Without this, `sbt ui/test` only passes on machines that happen
+        // to have a filesystem-root copy of the bridge.
+        Test / jsEnv := {
+            val register = (baseDirectory.value / "test" / "vite-env-register.mjs").getAbsolutePath
+            new NodeJSEnv(NodeJSEnv.Config().withArgs(List("--import", register)))
+        },
+
         // common Scala.js config for dev / prod
         scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.ESModule) },
 
@@ -1121,7 +1307,6 @@ lazy val ui = (project in file("modules/ui"))
         engine.js,
         engine_13384_strict.js,
         engine_15544_strict.js,
-        engine_15544_mce.js,
         ui_i18n.js,
         payments_shared.js,
         catalog.js,
@@ -1129,7 +1314,8 @@ lazy val ui = (project in file("modules/ui"))
         graph,
         laminar_form_daisyui,
         laminar_form_coulomb,
-        laminar_form_i18n
+        laminar_form_i18n,
+        firebox_calc_client_js
     )
 
 // =========
@@ -1213,7 +1399,7 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
     )
     .jsConfigure(_.settings(jsSourceMapSettings: _*))
     .settings(watchI18nSources("payments-shared-i18n"))
-    .dependsOn(utils, dto, payments_shared_i18n)
+    .dependsOn(utils, dto, payments_shared_i18n, firebox_calc_api)
 
 // =========
 // payments-i18n
@@ -1452,7 +1638,8 @@ lazy val payments = (project in file("modules/payments"))
         payments_i18n,
         invoices,
         reports,
-        payments_shared.jvm
+        payments_shared.jvm,
+        firebox_calc_client
     )
 
 lazy val invoices = (project in file("modules/invoices"))

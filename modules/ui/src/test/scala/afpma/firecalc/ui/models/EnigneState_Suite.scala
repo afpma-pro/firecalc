@@ -36,11 +36,9 @@ class EnigneState_Suite extends AnyFreeSpec with Matchers:
         "V7 post-firebox invariant" - {
 
             val allStates: List[(String, EngineState)] = List(
-                "example_projet_15544"                 -> EngineState.example_projet_15544,
-                "init_as_CasType_15544_C3"             -> EngineState.init_as_CasType_15544_C3,
-                "init_as_CasPratique_15544_FDIM_EX_03" -> EngineState.init_as_CasPratique_15544_FDIM_EX_03,
-                "empty"                                -> EngineState.empty,
-                "minimal"                              -> EngineState.minimal
+                "example_projet_15544" -> EngineState.example_projet_15544,
+                "empty"                -> EngineState.empty,
+                "minimal"              -> EngineState.minimal
             )
 
             allStates.foreach { (name, state) =>

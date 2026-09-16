@@ -6,6 +6,7 @@
 package afpma.firecalc.engine.standard
 
 import afpma.firecalc.dto.FireboxAvailabilityExtensions.localizedTypeName
+import afpma.firecalc.engine.models.FireboxPipeT
 import afpma.firecalc.engine.models.PipeType
 
 import afpma.firecalc.i18n.ShowUsingLocale
@@ -93,7 +94,8 @@ given ShowUsingLocale[MCalc_Error] = showUsingLocale:
     case e: MecaFlu_Error               => e.show // Uses ShowUsingLocale[MecaFlu_Error]
     case e: IncrementalValidation_Error => e.show // Uses ShowUsingLocale[IncrementalValidation_Error]
     case ErrorsInOtherSectionType => I18N.builder_errors.errors_in_other_section_type
-    case e: FireboxTypeDisabledError => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
+    case e: FireboxTypeDisabledError     => e.show // Uses ShowUsingLocale[FireboxTypeDisabledError]
+    case e: FireboxGeometryRejectedError => e.show // Uses ShowUsingLocale[FireboxGeometryRejectedError]
     case ResultsNotComputed => I18N.builder_errors.results_not_computed
 
 // Unexpected Error
@@ -128,6 +130,14 @@ case class FireboxTypeDisabledError(typeName: String) extends MCalc_Error
 object FireboxTypeDisabledError:
     given ShowUsingLocale[FireboxTypeDisabledError] = showUsingLocale: e =>
         I18N.errors.firebox_type_disabled(e.typeName.localizedTypeName)
+
+// FireboxGeometryRejectedError — remote calc-service geometry pre-check verdict (firebox-scoped)
+case class FireboxGeometryRejectedError(reason: String) extends MCalc_Error, TargetedError:
+    def target: ErrorTarget = ErrorTarget.TypeTarget(FireboxPipeT)
+
+object FireboxGeometryRejectedError:
+    given ShowUsingLocale[FireboxGeometryRejectedError] = showUsingLocale: e =>
+        e.reason
 
 // ErrorsInOtherSectionType
 case object ErrorsInOtherSectionType extends MCalc_Error

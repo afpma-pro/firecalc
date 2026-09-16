@@ -20,7 +20,10 @@ Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 
 ## PublishLocal
 
-```sbt engine/publishLocal```
+```sbt publishEngineLocal```
+
+(allowlist alias: publishes the 14 granted engine-line JVM modules to
+`~/.ivy2/local/pro.afpma`; see `docs/dev/README.md` → "Publishing the engine artifacts")
 
 ## Testing
 

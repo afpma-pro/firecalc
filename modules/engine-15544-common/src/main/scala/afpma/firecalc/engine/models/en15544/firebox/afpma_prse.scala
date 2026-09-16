@@ -45,10 +45,9 @@ case class AFPMA_PRSE(
     air_manifold_height_V                 : Length,
     nb_of_air_columns_feeding_firebox     : Int,
     nb_of_air_columns_feeding_door        : Int,
-    override val co2_dry_nominal          : σ_CO2                        = 7.05.percent,
+    override val co2_dry_nominal          : σ_CO2                        = Firebox_15544.co2_dry_nominal_default,
     override val co2_dry_lowest           : Option[σ_CO2]                = None
 ) extends CertifiedDesign {
-    type Self = AFPMA_PRSE
 
     override val FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double = 0.5
     override val FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double = 2.0
@@ -80,30 +79,31 @@ case class AFPMA_PRSE(
             9.3.cm * 4 * (nb_of_air_columns_feeding_firebox + nb_of_air_columns_feeding_door / 4.0)
     )
 
+    override def showAsTableRows: Locale ?=> Seq[Seq[String]] =
+        val I = I18N.firebox.afpma_prse
+        (I18N.firebox.typ                             :: ""   :: I18N.firebox_names.afpma_prse                      :: Nil) ::
+            (I18N.firebox.firebox_depth_B             :: "B"  :: firebox_depth_B.to_cm.showP                        :: Nil) ::
+            (I18N.firebox.firebox_width_A             :: "A"  :: firebox_width_A.to_cm.showP                        :: Nil) ::
+            (I18N.firebox.firebox_height_H            :: "H"  :: firebox_height_H.to_cm.showP                       :: Nil) ::
+            (I.air_intake_direction                   :: ""   :: I.air_intake_direction_from_bottom                 :: Nil) ::
+            (I.actual_air_intake_pipe_shape           :: ""   :: actual_air_intake_pipe_shape.showP                 :: Nil) ::
+            (I18N.firebox.traditional.glass_width     :: "-"  :: glass_width.to_cm.showP                            :: Nil) ::
+            (I18N.firebox.traditional.glass_height    :: "-"  :: glass_height.to_cm.showP                           :: Nil) ::
+            (I.height_of_first_row_of_air_injectors_X :: "X"  :: height_of_first_row_of_air_injectors_X.to_cm.showP :: Nil) ::
+            (I.ash_pit_height_AF                      :: "AF" :: ash_pit_height_AF.to_cm.showP                      :: Nil) ::
+            (I.firebox_floor_thickness                :: ""   :: firebox_floor_thickness.to_cm.showP                :: Nil) ::
+            (I.outside_air_inlet_lip_U                :: "U"  :: outside_air_inlet_lip_U.to_cm.showP                :: Nil) ::
+            (I.height_of_air_feed_to_columns_W        :: "W"  :: height_of_air_feed_to_columns_W.to_cm.showP        :: Nil) ::
+            (I.air_manifold_height_V                  :: "V"  :: air_manifold_height_V.to_cm.showP                  :: Nil) ::
+            (I.nb_of_air_columns_feeding_firebox      :: ""   :: nb_of_air_columns_feeding_firebox.showP            :: Nil) ::
+            (I.nb_of_air_columns_feeding_door         :: ""   :: nb_of_air_columns_feeding_door.showP               :: Nil) ::
+            Nil
+
 }
 
 object AFPMA_PRSE:
     given showAsTable: io.taig.babel.Locale => ShowAsTable[AFPMA_PRSE] =
-        ShowAsTable.mkLightFor(I18N.headers.firebox_description): x =>
-            import x.*
-            val I = I18N.firebox.afpma_prse
-            (I18N.firebox.typ                             :: ""   :: I18N.firebox_names.afpma_prse                      :: Nil) ::
-                (I18N.firebox.firebox_depth_B             :: "B"  :: firebox_depth_B.to_cm.showP                        :: Nil) ::
-                (I18N.firebox.firebox_width_A             :: "A"  :: firebox_width_A.to_cm.showP                        :: Nil) ::
-                (I18N.firebox.firebox_height_H            :: "H"  :: firebox_height_H.to_cm.showP                       :: Nil) ::
-                (I.air_intake_direction                   :: ""   :: I.air_intake_direction_from_bottom                 :: Nil) ::
-                (I.actual_air_intake_pipe_shape           :: ""   :: actual_air_intake_pipe_shape.showP                 :: Nil) ::
-                (I18N.firebox.traditional.glass_width     :: "-"  :: glass_width.to_cm.showP                            :: Nil) ::
-                (I18N.firebox.traditional.glass_height    :: "-"  :: glass_height.to_cm.showP                           :: Nil) ::
-                (I.height_of_first_row_of_air_injectors_X :: "X"  :: height_of_first_row_of_air_injectors_X.to_cm.showP :: Nil) ::
-                (I.ash_pit_height_AF                      :: "AF" :: ash_pit_height_AF.to_cm.showP                      :: Nil) ::
-                (I.firebox_floor_thickness                :: ""   :: firebox_floor_thickness.to_cm.showP                :: Nil) ::
-                (I.outside_air_inlet_lip_U                :: "U"  :: outside_air_inlet_lip_U.to_cm.showP                :: Nil) ::
-                (I.height_of_air_feed_to_columns_W        :: "W"  :: height_of_air_feed_to_columns_W.to_cm.showP        :: Nil) ::
-                (I.air_manifold_height_V                  :: "V"  :: air_manifold_height_V.to_cm.showP                  :: Nil) ::
-                (I.nb_of_air_columns_feeding_firebox      :: ""   :: nb_of_air_columns_feeding_firebox.showP            :: Nil) ::
-                (I.nb_of_air_columns_feeding_door         :: ""   :: nb_of_air_columns_feeding_door.showP               :: Nil) ::
-                Nil
+        ShowAsTable.mkLightFor(I18N.headers.firebox_description)(_.showAsTableRows)
 
     enum AirIntakeDirection  :
         case FromBottom

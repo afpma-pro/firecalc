@@ -88,20 +88,13 @@ class ConfigPathResolverTest extends munit.FunSuite {
             val logoFile = configsDir.resolve("logo.png")
             Files.createFile(logoFile)
 
-            // Change working directory context for test
-            val originalUserDir = System.getProperty("user.dir")
-            try {
-                System.setProperty("user.dir", testDir.toString)
+            val logoPath = ConfigPathResolver.resolveLogoPath("reports", testDir)
 
-                val logoPath = ConfigPathResolver.resolveLogoPath("reports")
+            assert(logoPath.isDefined, "Should find logo file"                       )
+            assert(logoPath.get.toString.endsWith("logo.png"), "Should find PNG file")
 
-                assert(logoPath.isDefined, "Should find logo file"                       )
-                assert(logoPath.get.toString.endsWith("logo.png"), "Should find PNG file")
-            } finally {
-                System.setProperty("user.dir", originalUserDir)
-                // Clean up temp directory
-                deleteRecursively (testDir.toFile             )
-            }
+            // Clean up temp directory
+            deleteRecursively(testDir.toFile)
         } finally {
             originalProp match {
                 case Some(value) => sys.props.put("firecalc.env", value)
@@ -141,21 +134,14 @@ class ConfigPathResolverTest extends munit.FunSuite {
             val configFile = configsDir.resolve("test.conf")
             Files.createFile(configFile)
 
-            // Change working directory context for test
-            val originalUserDir = System.getProperty("user.dir")
-            try {
-                System.setProperty("user.dir", testDir.toString)
+            val exists = ConfigPathResolver.configExists("payments", "test.conf", testDir)
+            assertEquals(exists, true)
 
-                val exists = ConfigPathResolver.configExists("payments", "test.conf")
-                assertEquals(exists, true)
+            val notExists = ConfigPathResolver.configExists("payments", "nonexistent.conf", testDir)
+            assertEquals(notExists, false)
 
-                val notExists = ConfigPathResolver.configExists("payments", "nonexistent.conf")
-                assertEquals(notExists, false)
-            } finally {
-                System.setProperty("user.dir", originalUserDir)
-                // Clean up temp directory
-                deleteRecursively (testDir.toFile             )
-            }
+            // Clean up temp directory
+            deleteRecursively(testDir.toFile)
         } finally {
             originalProp match {
                 case Some(value) => sys.props.put("firecalc.env", value)

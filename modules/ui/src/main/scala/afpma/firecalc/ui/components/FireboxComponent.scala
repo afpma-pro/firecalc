@@ -16,6 +16,7 @@ import afpma.firecalc.ui.*
 import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchedRemoteDataSig
 
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
@@ -30,9 +31,6 @@ import afpma.laminar.form.Form.as_HtmlElement
 import afpma.laminar.form.FormConfig
 import afpma.laminar.form.FormRenderer
 import afpma.laminar.form.daisyui.DaisyUIVertical
-import afpma.laminar.form.derivation.FormDerivation
-import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
-import io.scalaland.chimney.dsl.*
 import io.taig.babel.Locale
 
 import afpma.firecalc.ui.config.UIConfig
@@ -98,19 +96,36 @@ case class FireboxComponent(
         import ValidateVarCommonInstances.valid_always.given_ValidateVar_AlwaysValid
         dual.given_dual_Length_cm.form(disabled = DISABLED_TRUE_SIG)
 
-    given Form[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs] =
-        import hastranslations.given
-        FormDerivation
-            .derived[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled.Outputs]
-            .autoOverwriteFieldNames
+    /**
+     * Form for the remote Ecolabeled outputs wire type (fix-plan Phase 1, dev. 9).
+     * Gives [[afpma.firecalc.firebox_calc_api.WireEcolabeledOutputs]] a production
+     * consumer so the panel can render from prefetched remote data when the kind
+     * is configured `Remote`. Field-by-field string forms (non-blocking).
+     */
+    given Form[afpma.firecalc.firebox_calc_api.WireEcolabeledOutputs] =
+        import afpma.laminar.form.derivation.FormDerivation
+        import afpma.laminar.form.derivation.FormDerivation.forString
+        import afpma.firecalc.ui.instances.ValidateVarCommonInstances.string.validOption_Always
+        import afpma.firecalc.ui.instances.defaultable.string.empty
+        FormDerivation.derived[afpma.firecalc.firebox_calc_api.WireEcolabeledOutputs]
 
     val outputResults = div(
-        child <-- firebox_var.signal.map:
-            case fb: Firebox.Ecolabeled =>
-                import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
-                val eco = fb.transformInto[afpma.firecalc.engine.models.en15544.firebox.Ecolabeled]
-                Var(eco.outputs).as_HtmlElement
-            case _ => emptyNode
+        child <-- firebox_var.signal
+            .combineWith(prefetchedRemoteDataSig)
+            .map:
+                case (fb: Firebox.Ecolabeled, remoteDataOpt) =>
+                    // Ecolabeled is remote-only (ticket 11): the operating-point
+                    // outputs originate exclusively in a `POST /v1/calculate`
+                    // response. Render them from the prefetched remote data when
+                    // present; otherwise render nothing — there is no local
+                    // Austrian engine to fall back to, and a missing response is
+                    // surfaced as an explicit remote failure upstream, never as a
+                    // locally recomputed value.
+                    remoteDataOpt
+                        .flatMap(_.reportData.ecolabeledOutputs)
+                        .fold(emptyNode): (w: afpma.firecalc.firebox_calc_api.WireEcolabeledOutputs) =>
+                            Var(w).as_HtmlElement
+                case _ => emptyNode
     )
 
 object FireboxComponent:

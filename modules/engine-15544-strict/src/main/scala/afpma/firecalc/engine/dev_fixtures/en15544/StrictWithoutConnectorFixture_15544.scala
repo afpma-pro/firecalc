@@ -59,8 +59,7 @@ object StrictWithoutConnectorFixture_15544
     import gtypedefs.ζ
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val language = Languages.Fr
 

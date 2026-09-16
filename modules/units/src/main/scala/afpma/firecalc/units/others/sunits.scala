@@ -34,15 +34,27 @@ object sunits:
             val su = mkShowUnitFull[Centimeter]
             new SUnit[Centimeter](_.centimeter)(using su)
 
+        given sunit_CubicMeter: SUnit[(Meter ^ 3)] =
+            val su = mkShowUnitFull[(Meter ^ 3)]
+            new SUnit[(Meter ^ 3)](_.cubic_meter)(using su)
+
         given sunit_Degree: SUnit[Degree] =
             val su  = ShowUnit.fromCoulombUnit[Degree]
             val suf = mkShowUnitFull[Degree]
             new SUnit[Degree](_.degree)(using suf, su)
 
+        given sunit_Density: SUnit[Kilogram / (Meter ^ 3)] =
+            val su = mkShowUnitFull[Kilogram / (Meter ^ 3)]
+            new SUnit[Kilogram / (Meter ^ 3)](_.density)(using su)
+
         given sunit_Foot: SUnit[Foot] =
             val su  = ShowUnit.fromCoulombUnit[Foot]
             val suf = mkShowUnitFull[Foot]
             new SUnit[Foot](_.foot)(using suf, su)
+
+        given sunit_FlowVelocity: SUnit[Meter / Second] =
+            val su = mkShowUnitFull[Meter / Second]
+            new SUnit[Meter / Second](_.flow_velocity)(using su)
 
         given sunit_Hour: SUnit[Hour] =
             val su = mkShowUnitFull[Hour]
@@ -132,8 +144,11 @@ object sunits:
             SUnits.sunit_BTU_per_Hour,
             SUnits.sunit_Celsius,
             SUnits.sunit_Centimeter,
+            SUnits.sunit_CubicMeter,
             SUnits.sunit_Degree,
+            SUnits.sunit_Density,
             SUnits.sunit_Foot,
+            SUnits.sunit_FlowVelocity,
             SUnits.sunit_Hour,
             SUnits.sunit_Minute,
             SUnits.sunit_Inch,

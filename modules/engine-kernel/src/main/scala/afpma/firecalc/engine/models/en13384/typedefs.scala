@@ -206,10 +206,39 @@ object typedefs:
             forTKelvin(whenDraftMin = whenDraftMin, whenDraftMax = whenDraftMax)
         def forTCelsius(whenDraftMinOrDraftMax: TCelsius)              : T_L_override =
             forTKelvin(whenDraftMinOrDraftMax = whenDraftMinOrDraftMax)
+
+        /**
+         * Build an override map from independently-optional per-draft-condition
+         * values. An absent value leaves that draft condition to the standard
+         * default; when BOTH are absent the result is [[none]] (no override at
+         * all), so the consumer's `getOrElse(Map.empty)` falls through to the
+         * standard formula for every condition.
+         */
+        def fromOptions(whenDraftMin: Option[TKelvin], whenDraftMax: Option[TKelvin]): T_L_override =
+            (whenDraftMin, whenDraftMax) match
+                case (None, None            ) => none
+                case (Some(tMin), Some(tMax)) => forTKelvin(tMin, tMax)
+                case (Some(tMin), None      ) =>
+                    Map[DraftCondition, T_L](DraftCondition.DraftMinOrPositivePressureMax -> tMin).some
+                case (None, Some(tMax)      ) =>
+                    Map[DraftCondition, T_L](DraftCondition.DraftMaxOrPositivePressureMin -> tMax).some
         extension (tlo: T_L_override)
-            def opaqueGetOrElse(alt: T_L_override)                     : T_L_override = tlo match
+            def opaqueGetOrElse(alt: T_L_override)                                   : T_L_override = tlo match
                 case Some(tlo) => tlo.some
                 case None      => alt
+
+        /**
+         * Merge this override OVER a default, per draft condition: every
+         * condition present in `tlo` wins; every ABSENT condition falls back
+         * to the default's value for that condition (never to the EN 13384
+         * standard default). `none` yields `default` exactly.
+         */
+        extension (tlo: T_L_override)
+            def mergeOver(default: T_L_override): T_L_override =
+                (tlo, default) match
+                    case (None, _            ) => default
+                    case (Some(_), None      ) => tlo
+                    case (Some(m), Some(defM)) => (defM ++ m).some
 
     // "5.7.1.3", "Température du l'air ambiant (T_u)"
 

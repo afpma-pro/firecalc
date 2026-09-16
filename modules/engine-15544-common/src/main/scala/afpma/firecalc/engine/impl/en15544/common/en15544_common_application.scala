@@ -17,11 +17,16 @@ import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
 // EN13384_1_A1_2019_Common_Application no longer imported — decoupled from engine-13384-strict
 import afpma.firecalc.engine.alg.en15544
+import afpma.firecalc.engine.alg.en15544.FireboxContribution
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Application_Alg
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
-import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxEngineFor
+import afpma.firecalc.engine.alg.en15544.FoldedVerdicts
+import afpma.firecalc.engine.alg.en15544.FireboxEngineRegistry
+import afpma.firecalc.engine.alg.en15544.NoFireboxEngineRegistered
+import afpma.firecalc.engine.alg.en15544.OpPoint
 import afpma.firecalc.engine.alg.en15544.StoveConstraintContext
 import afpma.firecalc.engine.impl.en16510.EN16510_1_2022_Formulas
 import afpma.firecalc.engine.models.*
@@ -52,6 +57,9 @@ import afpma.firecalc.engine.standard.MecaFlu_Error
 import scala.annotation.nowarn
 
 // import standard.dsl.CalculationF.compute
+import afpma.firecalc.firebox_calc_api.ConstraintVerdict
+import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 object EN15544_V_2023_Common_Application:
     type Error   = EN15544_V_2023_Application_Alg.ErrorGen
@@ -157,9 +165,100 @@ abstract class EN15544_V_2023_Common_Application
     // private val en15544_inputs = inputs
     final lazy val firebox: Firebox_15544 = inputs.design.firebox
 
-    /** Type-safe constraints access via the resolver (dispatches to subtype instance). */
-    protected lazy val fc: FireboxConstraints[firebox.Self] =
-        FireboxConstraintsResolver.resolve(firebox)
+    /**
+     * The firebox-engine registry for this standard variant.
+     *
+     * Declared abstract here because the registries live in the per-standard
+     * modules (`engine-15544-strict`, `engine-15544-mce`), which sit above this
+     * one: strict and MCE resolve different `FireboxEngine` instances for the same
+     * firebox, so the choice of registry IS the choice of standard.
+     *
+     * The descriptor type parameters are wildcards here on purpose. This module
+     * consumes only the engine's constraint surface, which is descriptor-agnostic;
+     * the pipe surface is consumed in the per-standard applications, where the
+     * descriptors are bound to concrete types.
+     */
+    protected def fireboxEngineRegistry: FireboxEngineRegistry[?, ?]
+
+    /**
+     * The engine resolved for this calculation's firebox, paired with it.
+     *
+     * `FB` never escapes the pair, so no cast is needed — see
+     * `FireboxEngineAny`'s scaladoc for why a `TypeTest` rather than an
+     * `isInstanceOf` guard supplies the runtime evidence.
+     */
+    protected lazy val fc: FireboxEngineFor[?, ?] =
+        fireboxEngineRegistry
+            .engineFor(firebox)
+            .fold(msg => throw new NoFireboxEngineRegistered(msg), identity)
+
+    /**
+     * The firebox-path result GRID supplied by the engine, if it declined to
+     * describe and dictated results instead.
+     *
+     * `fc` is descriptor-wildcarded, but `FireboxContribution.AsResult` does
+     * not mention `D`, so this match recovers fully-typed `(OpPoint,
+     * PipeResult)` entries without a cast. The grid is DATA on the
+     * contribution — the engine's `fireboxContribution(firebox)` signature is
+     * unchanged; operating-point selection happens at CONSUMPTION time, per
+     * params (see [[fireboxContributedResultAt]]).
+     */
+    protected lazy val fireboxContributedGrid: Option[NonEmptyList[(OpPoint, PipeResult)]] =
+        fc.engine
+            .fireboxContribution(fc.firebox)
+            .toOption
+            .collect:
+                case FireboxContribution.AsResult(grid) => grid
+
+    /** The combustion-air-path counterpart of [[fireboxContributedGrid]]. */
+    protected lazy val combustionAirContributedGrid: Option[NonEmptyList[(OpPoint, PipeResult)]] =
+        fc.engine
+            .combustionAirContribution(fc.firebox)
+            .toOption
+            .collect:
+                case FireboxContribution.AsResult(grid) => grid
+
+    /**
+     * The firebox-path `PipeResult` dictated by the engine at ONE operating
+     * point, if the engine contributed a result grid.
+     *
+     * Per-params by construction: each operating point of the solve consumes
+     * exactly its own grid entry — the once-computed, reused-across-grid
+     * lookup this replaces was the stale-wrong-answer bug the op-point-keyed
+     * `AsResult` eliminates.
+     *
+     * A covered-point miss (the engine contributed a grid that does not cover
+     * the operating point being solved) raises `UnexpectedDevError` naming the
+     * point. That state is unreachable when the producer built the grid over
+     * `OpPoint.axesFor(firebox)` — the error exists to make producer bugs
+     * loud, not as a control path.
+     */
+    protected def fireboxContributedResultAt(dc: DraftCondition, lq: LoadQty): VNelMcalcErr[Option[PipeResult]] =
+        contributedResultAt(fireboxContributedGrid, "firebox gas path", dc, lq)
+
+    /** The combustion-air-path counterpart of [[fireboxContributedResultAt]]. */
+    protected def combustionAirContributedResultAt(dc: DraftCondition, lq: LoadQty): VNelMcalcErr[Option[PipeResult]] =
+        contributedResultAt(combustionAirContributedGrid, "combustion-air path", dc, lq)
+
+    /** Shared grid-indexing body for the two contributed-result lookups. */
+    private def contributedResultAt(
+        gridOpt : Option[NonEmptyList[(OpPoint, PipeResult)]],
+        pathName: String,
+        dc      : DraftCondition,
+        lq      : LoadQty
+    ): VNelMcalcErr[Option[PipeResult]] =
+        gridOpt match
+            case None       => Validated.validNel(None)
+            case Some(grid) =>
+                val op = OpPoint(dc, lq)
+                grid.find(_._1 == op) match
+                    case Some((_, r)) => Validated.validNel(Some(r))
+                    case None         =>
+                        UnexpectedDevError(
+                            s"firebox engine contributed an AsResult grid for the $pathName that does not " +
+                                s"cover operating point $op; the grid MUST cover every operating point the " +
+                                s"standard evaluates for this firebox (build it over OpPoint.axesFor)"
+                        ).invalidNel
 
     /** Build the stove-level constraint context. */
     lazy val stoveConstraintContext: StoveConstraintContext =
@@ -178,6 +277,22 @@ abstract class EN15544_V_2023_Common_Application
             H_BR_min                       = firebox_sizing.H_BR_min,
             H_BR                           = firebox_sizing.H_BR,
             n_min                          = n_min
+        )
+
+    /**
+     * The project's actual air-intake pipe shape (last inner geometry of the
+     * air-intake pipe), or `None` when there is no ventilation opening.
+     *
+     * This is the single source of truth shared by the local constraint path
+     * (`CommonAtParams` builds its `FireboxConstraintContext` from it) and by
+     * remote clients: the UI reads it off the built application to populate
+     * `FireboxCalcRequest.airIntakePipeShape`, so local and remote agree.
+     */
+    lazy val airIntakePipeShape: Option[PipeShape] =
+        val p = inputs.pipes
+        p.AirIntakePipe_Module.foldPipeCanBe(p.airIntake)(
+            onNoVentilation = None,
+            onFullDescr     = fd => fd.lastInnerGeom
         )
 
     given convertResistanceCoefficientToError: Conversion[PressureLossCoeff.Err, ErrorGen] =
@@ -771,30 +886,54 @@ abstract class EN15544_V_2023_Common_Application
                     else Some(FluePipeLengthBelowMinimum(totalLen, lzMin.unwrap))
                 case _ => None
 
-        lazy val validateCitedConstraints: VNelMcalcErr[Unit] =
-            citedConstraints.checkFireboxConstraints
+        /**
+         * The engine's folded constraint verdicts.
+         *
+         * Only consulted when the resolved engine has no per-term algebra (a
+         * remotely computed firebox), where they are the sole authoritative
+         * source. Locale-independent as far as validation is concerned: the
+         * verdict messages were already localised by the side that folded
+         * them, and `EN` only labels the terms the fold names itself.
+         */
+        private lazy val foldedConstraintVerdicts: List[ConstraintVerdict] =
+            given Locale = Locales.en
+            fc.engine.constraints (
+                fc.firebox,
+                ctx  = Some(constraintContext),
+                fctx = fireboxConstraintContext
+            )
 
-        lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit] =
-            val fbCtx = FireboxConstraintContext(
+        private lazy val fireboxConstraintContext: FireboxConstraintContext =
+            FireboxConstraintContext                (
                 mB                 = m_B,
                 flow_rate          = V_L,
-                airIntakePipeShape = {
-                    val p = inputs.pipes
-                    p.AirIntakePipe_Module.foldPipeCanBe(p.airIntake)(
-                        onNoVentilation = None,
-                        onFullDescr     = fd => fd.lastInnerGeom
-                    )
-                }
+                airIntakePipeShape = airIntakePipeShape
             )
-            Validated
-                .fromOption(
-                    NonEmptyList.fromList(
-                        fc.internal_firebox_custom_constraints(firebox) :::
-                            fc.firebox_custom_constraints(firebox, fbCtx)
-                    ),
-                    ()
-                )
-                .swap
+
+        /**
+         * Cited §4.3 constraint violations.
+         *
+         * With a per-term algebra this checks each cited term locally. Without
+         * one (remote firebox) `checkFireboxConstraints` abstains and the
+         * engine's folded verdicts are reported instead — so a violated remote
+         * constraint still fails validation, and none is invented.
+         */
+        lazy val validateCitedConstraints: VNelMcalcErr[Unit] =
+            if fc.appliedConstraints.isDefined then citedConstraints.checkFireboxConstraints
+            else
+                NonEmptyList
+                    .fromList[MCalc_Error](FoldedVerdicts.citedErrors(foldedConstraintVerdicts))
+                    .fold(().validNel[MCalc_Error])(_.invalid)
+
+        /** Firebox-specific constraints; same local/folded split as above. */
+        lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit] =
+            val errors = fc.appliedConstraints match
+                case Some(alg) =>
+                    alg.internal_firebox_custom_constraints :::
+                        alg.firebox_custom_constraints(fireboxConstraintContext)
+                case None      =>
+                    FoldedVerdicts.fireboxSpecificErrors(foldedConstraintVerdicts)
+            NonEmptyList.fromList(errors).fold(().validNel[FireboxError])(_.invalid)
     end CommonAtParams
 
     // ─── Pre-built AtParams instances ───────────────────────────────────

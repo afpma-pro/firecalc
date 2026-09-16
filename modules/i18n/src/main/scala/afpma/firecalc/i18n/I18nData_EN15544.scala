@@ -8,11 +8,13 @@ package afpma.firecalc.i18n
 object I18nData_EN15544:
 
     case class EN15544(
-        angle_to_original_direction: String,
-        materials                  : EN15544_Materials,
-        pressure_requirements      : EN15544_PressureRequirements,
-        terms                      : EN15544_Terms,
-        terms_xtra                 : EN15544_Terms_Xtra
+        angle_to_original_direction              : String,
+        /** Shown in place of per-term detail that was computed remotely. */
+        constraints_detail_not_available_remotely: String,
+        materials                                : EN15544_Materials,
+        pressure_requirements                    : EN15544_PressureRequirements,
+        terms                                    : EN15544_Terms,
+        terms_xtra                               : EN15544_Terms_Xtra
     )
 
     case class EN15544_Materials(

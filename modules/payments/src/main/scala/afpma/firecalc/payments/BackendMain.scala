@@ -8,6 +8,9 @@ package afpma.firecalc.payments
 import java.io.File
 import java.nio.file.Files
 
+import afpma.firecalc.dto.FireCalcYAML
+import afpma.firecalc.dto.v5.Firebox_V4
+
 import afpma.firecalc.reports.EN15544ValidationException
 import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
 import afpma.firecalc.reports.PDFFileCreationException
@@ -25,18 +28,24 @@ import afpma.firecalc.payments.http.*
 import afpma.firecalc.payments.i18n.implicits.I18N_Payments
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
+import afpma.firecalc.payments.service.CalculationReportError
+import afpma.firecalc.payments.service.CalculationReportService
 import afpma.firecalc.payments.service.InvoiceNumberService
+import afpma.firecalc.payments.service.impl.CalculationReportServiceImpl
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.payments.shared.api.*
 import afpma.firecalc.payments.shared.api.ProductCatalogSelector
 import afpma.firecalc.payments.util.Base64StringDecoder
 import afpma.firecalc.payments.util.LogSanitizer
+
 import cats.effect.*
 import cats.syntax.all.*
 
 import scala.concurrent.ExecutionContext
 
+import afpma.firecalc.firebox_calc_api.FireboxCalcClientConfig
+import afpma.firecalc.firebox_calc_client.Http4sCalcClient
 import com.comcast.ip4s.*
 import io.taig.babel.Locale
 import org.http4s.*
@@ -56,54 +65,101 @@ object Main extends IOApp:
     given ExecutionContext   = ExecutionContext.global
 
     /**
-     * Helper method to generate a PDF report from a project file
+     * Helper method to generate a PDF report from a project file.
+     * Ecolabeled and Door15a catalog fireboxes use the remote calculation
+     * backend; every other firebox and YAML parse failures use the local report
+     * factory.
      * @param fileDesc The project file containing YAML content
      * @param locale The locale for internationalization
-     * @return IO[File] The generated PDF file
+     * @param asDraft whether the report should be marked as draft
+     * @param remoteService optional remote calculation service
+     * @return F[File] The generated PDF file
      */
-    def generatePdfReportBlocking[F[_]: Async](
-        fileDesc: FileDescriptionWithContent,
-        locale  : Locale,
-        asDraft : Boolean
+    def generatePdfReportBlocking[F[_]: Async: LiftIO](
+        fileDesc     : FileDescriptionWithContent,
+        locale       : Locale,
+        asDraft      : Boolean,
+        remoteService: Option[CalculationReportService] = None
     ): F[File] =
-        Async[F].blocking {
-            val yamlContent = Base64StringDecoder.decodeToString(fileDesc.content) match
-                case Right(content) => content
-                case Left(errorMsg) =>
-                    throw ReportFileAccessException(
-                        fileDesc.filename,
-                        s"base64_decoding (msg: $errorMsg)",
-                        None
+        // Decode YAML content (pure, no effect needed)
+        val yamlContent = Base64StringDecoder.decodeToString(fileDesc.content) match
+            case Right(content) => content
+            case Left(errorMsg) =>
+                throw ReportFileAccessException(
+                    fileDesc.filename,
+                    s"base64_decoding (msg: $errorMsg)",
+                    None
+                )
+
+        if isAustrianFireboxYaml(yamlContent) then
+            remoteService match
+                case Some(service) =>
+                    LiftIO[F].liftIO(
+                        service.generateRemotePdf(yamlContent, asDraft).flatMap {
+                            case Right(pdfFile) => IO.pure(pdfFile)
+                            case Left(err)      =>
+                                val (reason, cause) = err match
+                                    case CalculationReportError.YamlParsingError(r, c)   => (r, c)
+                                    case CalculationReportError.CalculationError(r, c)   => (r, c)
+                                    case CalculationReportError.PdfGenerationError(r, c) => (r, c)
+
+                                IO.raiseError(
+                                    new ReportFileAccessException(
+                                        fileDesc.filename,
+                                        s"remote_calculation: $reason",
+                                        cause
+                                    )
+                                )
+                        }
                     )
+                case None          =>
+                    Async[F].raiseError(
+                        new ReportFileAccessException(
+                            fileDesc.filename,
+                            "Austrian firebox detected but remote calculation service is not configured",
+                            None
+                        )
+                    )
+        else
+            // Use in-process engine for non-Austrian fireboxes (blocking path)
+            Async[F].blocking {
+                given Locale      = locale
+                val reportFactory = FireCalcReportFactory_15544_Strict.init()
 
-            given Locale = locale
-
-            val reportFactory = FireCalcReportFactory_15544_Strict.init()
-
-            // Propagate typed errors directly from the report factory
-            reportFactory.loadYAMLString(yamlContent) match {
-                case Left(err)            => throw err // Re-throw FireCalcReportError as-is
-                case Right(loadedFactory) =>
-                    loadedFactory.makePDF                 (
-                        isDraft                  = asDraft,
-                        checkPressureReq13384    = false,
-                        checkTemperatureReq13384 = false
-                    ) match {
-                        case Left(err)      => throw err // Re-throw FireCalcReportError as-is
-                        case Right(pdfFile) => pdfFile
-                    }
+                // Propagate typed errors directly from the report factory
+                reportFactory.loadYAMLString(yamlContent) match
+                    case Left(err)            => throw err // Re-throw FireCalcReportError as-is
+                    case Right(loadedFactory) =>
+                        loadedFactory.makePDF                 (
+                            isDraft                  = asDraft,
+                            checkPressureReq13384    = false,
+                            checkTemperatureReq13384 = false
+                        ) match
+                            case Left(err)      => throw err // Re-throw FireCalcReportError as-is
+                            case Right(pdfFile) => pdfFile
             }
-        }
 
-    def generatePdfReportAndInvoiceNumber[F[_]: Log4CatsLogger: Async](
+    /** Detects whether the parsed project uses a remotely calculated firebox. */
+    private def isAustrianFireboxYaml(yamlContent: String): Boolean =
+        import afpma.firecalc.dto.FireCalcYAMLMigrations
+        FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
+            case scala.util.Success(fc: FireCalcYAML) =>
+                fc.firebox match
+                    case _: Firebox_V4.Ecolabeled             => true
+                    case _: Firebox_V4.Door15aFirebox_Catalog => true
+                    case _ => false
+            case scala.util.Failure(_)                => false
+
+    def generatePdfReportAndInvoiceNumber[F[_]: Log4CatsLogger: Async: LiftIO](
         fileDesc            : FileDescriptionWithContent,
         context             : OrderCompletionContext,
         invoiceNumberService: InvoiceNumberService[F],
         locale              : Locale,
-        asDraft             : Boolean
+        asDraft             : Boolean,
+        remoteService       : Option[CalculationReportService] = None
     ): F[(File, String)] =
         val logger = Log4CatsLogger[F]
-        generatePdfReportBlocking(fileDesc, locale, asDraft)
+        generatePdfReportBlocking(fileDesc, locale, asDraft, remoteService)
             .flatMap { f =>
                 for
                     // PDF report generation successful
@@ -423,6 +479,17 @@ object Main extends IOApp:
                             productCopyConfig
                         )
 
+                        // Initialize remote calculation client for Austrian fireboxes
+                        calcClientConfig = FireboxCalcClientConfig(
+                            baseUri = paymentsConfig.calculationClientConfig.baseUri
+                        )
+                        _ <- logger.info(
+                            s"Calculation client configured: baseUri=${paymentsConfig.calculationClientConfig.baseUri}"
+                        )
+
+                        // Create the calculation client using the existing HTTP client
+                        calcClient = Http4sCalcClient(calcClientConfig, httpClient)
+
                         // Register order completion callbacks for 'Processing' state
                         _ <- orderService.registerCallbackForFinalStatus(
                             "project-to-report",
@@ -443,7 +510,8 @@ object Main extends IOApp:
                                                 )
                                             )
 
-                                        locale = context.customer.language.toLocale
+                                        locale                   = context.customer.language.toLocale
+                                        calculationReportService = new CalculationReportServiceImpl(calcClient, locale)
 
                                         // Try to process project file and generate PDF report
                                         _ <- logger.info(
@@ -454,7 +522,8 @@ object Main extends IOApp:
                                             context,
                                             invoiceNumberService,
                                             locale,
-                                            paymentsConfig.reportAsDraft
+                                            paymentsConfig.reportAsDraft,
+                                            Some(calculationReportService)
                                         )
 
                                         newContext = context

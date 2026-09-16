@@ -88,7 +88,47 @@ object Preview:
                     )
                     details.appended(summary).appended(empty_line)
                 case pres: PipeResult.WithoutSections =>
-                    Preview.fromPipeResultWithoutSections(pres).showValuesAsSeq :: empty_line :: Nil
+                    // A black-box (`AsResult`-backed) pipe arrives as a
+                    // `WithoutSections` result carrying real aggregate members:
+                    // render it as ONE labelled aggregate row (round-3 D9). A
+                    // noop/`useless` result (all-zero aggregates — an absent
+                    // optional pipe) keeps the plain single row, so existing
+                    // local reports are unchanged.
+                    if isSubstantiveAggregate(pres) then pres.toAggregateRow(I18N.subtotal) :: empty_line :: Nil
+                    else Preview.fromPipeResultWithoutSections(pres).showValuesAsSeq        :: empty_line :: Nil
+
+        /**
+         * Render a black-box (`AsResult`-backed) pipe as EXACTLY ONE aggregate
+         * row (round-3 decision D9).
+         *
+         * The row is sourced entirely from the `PipeResult` aggregate members —
+         * `lengthSum`, `heightSum`, ζ, `pu`, `pRs`, `pRg`, `ph`, temperatures,
+         * velocities — and carries an id/name label marking it as an
+         * aggregation. The descriptive-only columns a black-box result cannot
+         * know (per-section geometry, angle, roughness, thermal resistance, …)
+         * render blank. No detail rows are emitted: detail rows are precisely
+         * the withheld IP.
+         *
+         * Row rendering consumes the SAME aggregate members regardless of which
+         * operating point backs the result — the table is per-params exactly as
+         * the solve is; no cross-point mixing.
+         */
+        def toAggregateRow(aggregateLabel: String)(using Locale): Seq[String] =
+            Preview
+                .fromPipeResultWithoutSections(pres)
+                .copy(sectionId = aggregateLabel, sectionName = aggregateLabel)
+                .showValuesAsSeq
+
+    /**
+     * Whether a `WithoutSections` result carries substantive aggregate members
+     * (i.e. is a black-box `AsResult`-backed pipe) rather than being a
+     * noop/`useless` placeholder. A black-box pipe has physical extent
+     * (non-zero `lengthSum` or `heightSum`); a noop/`useless` result has
+     * neither. Checking `pu`/`ph` alone is too aggressive: a noop air-intake
+     * with a grille can carry non-zero `pu` while still being a placeholder.
+     */
+    private def isSubstantiveAggregate(pr: PipeResult): Boolean =
+        pr.lengthSum.value != 0.0 || pr.heightSum.value != 0.0
 
     def fromPipeSectionResult(
         psr: PipeSectionResult[?]
@@ -178,7 +218,7 @@ object Preview:
         )
 
     private def fromPipeResultWithoutSections(
-        prwo: PipeResult.WithoutSections
+        prwo: PipeResult
     )(using Locale): Preview =
         import prwo.*
         Preview      (
@@ -203,14 +243,14 @@ object Preview:
             density_middle    = density_middle,
             density_mean      = density_mean,
             dynamicPressure   = pd,
-            zeta              = None,
+            zeta              = ζ,
             dynamicFriction   = pu,
             roughness         = None,
             staticFriction    = pRs,
             vChangeFriction   = pRg,
             standingPressure  = ph,
-            length            = None,
-            elev_gain         = None,
+            length            = lengthSum.some,
+            elev_gain         = heightSum.some,
             angle             = None,
             innerShape        = None,
             pipeLoc           = None

@@ -39,6 +39,8 @@ trait PipeDescrAlg:
     ): PipeFullDescr =
         PipeFullDescrG(elements, pipeType)
 
+    def PipeFullDescr(descr: PipeFullDescrG[PipeElDescr]): PipeFullDescr = descr
+
     def isPipeFullDescr(@unchecked x: Any): Boolean = x.asMatchable match
         case _: PipeFullDescrG[?] => true
         case _: Any               => false

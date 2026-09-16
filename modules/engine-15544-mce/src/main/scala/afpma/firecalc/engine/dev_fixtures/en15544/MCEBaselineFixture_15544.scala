@@ -64,8 +64,7 @@ object MCEBaselineFixture_15544
     import gtypedefs.ζ
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val exercice_name =
         "v20241001 // dev fixture EN15544 MCE // baseline 3-pipe (chain path smoke test)"

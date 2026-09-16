@@ -42,6 +42,7 @@ final case class I18nData(
     en16510                        : EN16510,
     direction_badge                : DirectionBadge,
     errors                         : Errors,
+    firebox_api                    : FireboxApi,
     facing_type                    : FacingType,
     forbidden_dto                  : ForbiddenDto,
     headers                        : Headers,
@@ -124,6 +125,7 @@ object I18nData:
     type TopologyErrors        = I18nData_ErrorsWarnings.TopologyErrors
     type EN16510               = I18nData_ErrorsWarnings.EN16510
     type Warnings              = I18nData_ErrorsWarnings.Warnings
+    type FireboxApi            = I18nData_ErrorsWarnings.FireboxApi
     type TestReportI18n        = I18nData_ErrorsWarnings.TestReportI18n
     type TestEmissionValueI18n = I18nData_ErrorsWarnings.TestEmissionValueI18n
     type EmissionValuesI18n    = I18nData_ErrorsWarnings.EmissionValuesI18n

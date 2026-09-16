@@ -126,6 +126,52 @@ This installs a pre-commit hook that:
 
 See [`scripts/git-hooks/README.md`](../../scripts/git-hooks/README.md) for details.
 
+### Publishing the engine artifacts (local repository only)
+
+The 14 engine-line modules granted to `firecalc-firebox-austrian-api` as binary
+artifacts (ADR-0007, `docs/licensing/afpma-dual-license-grant.md` §1) are the only
+publishable projects in this repository — everything else (ui, payments, reports,
+laminar_*, ...) is `publish / skip := true`. One command publishes the full granted
+closure (JVM artifacts only; the Scala.js sides stay skipped):
+
+```bash
+# Daily dev loop — moving SNAPSHOT (the current `engine_version_default`, see build.sbt / `make check`):
+sbt --client publishEngineLocal
+
+# Shipped/committed pins — SHA-stamped version (ADR-0007 shape 0.3.0-b25+<sha7>):
+FIRECALC_PUBLISH_VERSION=0.3.0-b25+$(git rev-parse --short=7 HEAD) sbt --batch publishEngineLocal
+```
+
+Notes:
+
+- Artifacts land in `~/.ivy2/local/pro.afpma/` (Ivy layout — sbt's implicit Local
+  resolver; no remote registry is ever contacted, and there is no CI publishing).
+- `FIRECALC_PUBLISH_VERSION` is read when `build.sbt` loads, so the stamp MUST be
+  published with a fresh JVM (`sbt --batch`, or a new sbt shell). A warm
+  `sbt --client` server keeps the version it loaded with; the same value can also
+  be passed as a JVM system property (`-DFIRECALC_PUBLISH_VERSION=...`) at load time.
+- The version stamp propagates: the published ivy/pom metadata and
+  `afpma.firecalc.utils.BuildInfo.engineVersion` (generated source inside
+  firecalc-utils) carry the exact pinned string.
+- Caveat: the pin is not purely engine-scoped. In the JVM that loads it, it also
+  re-versions derived non-granted modules: `reports_version`, `payments_version` and
+  `ui_version` feed the `version` and `BuildInfo` strings of ui/payments/reports. Those
+  modules stay unpublished (`publish / skip`), so only their local build metadata moves.
+  One caveat on the caveat: `reports_version`, `payments_version` and `ui_version` are
+  also embedded in firecalc-utils' generated `BuildInfo` — and firecalc-utils IS a
+  granted, published module. So a pinned build's published firecalc-utils artifact
+  carries the pin-derived non-engine strings inside its BuildInfo source. This is
+  metadata only: it changes no dependency resolution and no artifact coordinates.
+- Allowlist source of truth: `engine_publish_jvm_ids` in `build.sbt` (drives three
+  consumers: the skip gating through `commonSettings`, the Scaladoc kill-switch
+  (`Compile / packageDoc / publishArtifact`, also in `commonSettings`), and the
+  `publishEngineLocal` alias).
+  Adding a module there is a licensing decision, not a build decision.
+
+Consumer side (private repo): declare `"pro.afpma" %% "firecalc-engine" % "<pin>"`
+(module names are `firecalc-*`; JVM-only, Scala 3.8.4) — no resolver entry is
+needed for publishLocal artifacts.
+
 ### Working with Database
 - See [DB_SQLITE3_MIGRATION_GUIDE.md](guides/DB_SQLITE3_MIGRATION_GUIDE.md) for schema changes
 

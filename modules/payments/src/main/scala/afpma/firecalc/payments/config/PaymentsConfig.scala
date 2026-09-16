@@ -12,7 +12,7 @@ import afpma.firecalc.domain.FireboxAvailability
 case class PaymentsConfig(
     environment                 : String,
     productCatalog              : String,
-    fireboxAvailability         : FireboxAvailability = FireboxAvailability.AllEnabled,
+    fireboxAvailability         : FireboxAvailability     = FireboxAvailability.AllEnabled,
     invoiceNumberPrefix         : String,
     invoiceNumberDigits         : Int,
     invoiceCounterStartingNumber: Int,
@@ -23,8 +23,9 @@ case class PaymentsConfig(
     adminConfig                 : AdminConfig,
     reportAsDraft               : Boolean,
     jwtConfig                   : JwtConfig,
-    loggingConfig               : LoggingConfig       = LoggingConfig(),
-    corsAllowedOrigins          : List[String]        = List("*") // SEC-016: validated fail-closed in ConfigLoader for non-dev
+    loggingConfig               : LoggingConfig           = LoggingConfig(),
+    corsAllowedOrigins          : List[String]            = List("*"), // SEC-016: validated fail-closed in ConfigLoader for non-dev
+    calculationClientConfig     : CalculationClientConfig = CalculationClientConfig()
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
     require(
@@ -96,3 +97,20 @@ object LoggingConfig:
             ValidLevels.contains(level.toUpperCase),
             s"Invalid log level '$level' for $context. Must be one of ${ValidLevels.mkString(", ")}"
         )
+
+/**
+ * Configuration for the shared calculation client used by the payments
+ * module to obtain calculation data for Austrian firebox PDF reports
+ * through the standalone HTTP backend (GET /v1/kinds, POST /v1/calculate).
+ *
+ * The default base URI targets the standalone calculation backend on its
+ * default port 9000 (private repository, `firebox-calc-server.conf`).
+ * Deployments override `calculation-client.base-uri` in the payments HOCON
+ * configuration — inside Docker this is `http://calc-backend:9000/v1`.
+ */
+case class CalculationClientConfig(
+    baseUri: String  = "http://localhost:9000/v1",
+    enabled: Boolean = true
+) {
+    require(baseUri.nonEmpty, "Calculation client baseUri cannot be empty")
+}

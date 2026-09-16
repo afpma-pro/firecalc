@@ -14,6 +14,7 @@ Core calculation engine for masonry heater design compliant with EN 13384 and EN
 - **[ENGINE.md](ENGINE.md)** - Engine development guide (compilation, testing, publishing)
 - **[Homologation.md](Homologation.md)** - Validation and homologation notes
 - **[EN13384_INTERPRETATION.md](EN13384_INTERPRETATION.md)** - Implementation notes and standard interpretations
+- **[CO2_DRY_NOMINAL_IMPACT.md](CO2_DRY_NOMINAL_IMPACT.md)** - EN 15544/EN 13384 parameter impact analysis
 
 ### Standards References
 
@@ -80,9 +81,13 @@ sbt "engine-13384-strict/testOnly *cas_types_13384_C16_Suite"
 ### Publishing
 
 ```bash
-# Publish to local Maven repository
-sbt engine/publishLocal
+# Publish the 14 granted engine-line modules (JVM artifacts) to the local
+# ivy repository (~/.ivy2/local/pro.afpma) — the allowlist alias, one command:
+sbt --client publishEngineLocal
 ```
+
+See `docs/dev/README.md` → "Publishing the engine artifacts" for the
+`FIRECALC_PUBLISH_VERSION` SHA-stamped pin shape used for committed pins.
 
 ## 🔧 Development
 

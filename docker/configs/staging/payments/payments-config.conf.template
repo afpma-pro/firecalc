@@ -72,6 +72,27 @@ payments {
       single-tested = true
       door15a-catalog = false
     }
+
+    # Remote calculation client (ticket 21 cutover)
+    # Payments obtains Austrian (Ecolabeled, Door15aCatalog) calculation data
+    # for PDF reports exclusively through the standalone firebox-calc backend
+    # over HTTP (GET /v1/kinds, POST /v1/calculate) — no local fallback and no
+    # response cache. Inside Docker point base-uri at the calc-backend service.
+    calculation-client {
+      base-uri = "http://calc-backend:9000/v1"
+      enabled = true
+    }
+
+    # Firebox engine source - per kind: local | { remote = "<baseUri>" }
+    # Omitting the block or a kind defaults to local (today's behaviour).
+    firebox-engine-source {
+      traditional     = local
+      ecolabeled      = local
+      afpma-prse      = local
+      single-tested   = local
+      door15a-catalog = local
+      custom-for-lab  = local
+    }
   }
 }
 

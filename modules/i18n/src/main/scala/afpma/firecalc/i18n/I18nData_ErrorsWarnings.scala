@@ -41,6 +41,11 @@ object I18nData_ErrorsWarnings:
         firebox_afpma_prse_not_validated: String
     )
 
+    case class FireboxApi(
+        missing_m_b               : String,
+        missing_operating_envelope: String
+    )
+
     case class TestReportI18n(
         _self: String,
         name : String,

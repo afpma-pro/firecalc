@@ -1,0 +1,14 @@
+# FireCalc Docker — Source Version Pins
+#
+# Each value is a Git commit SHA (full 40-char hex) from the `firebox-api` branch.
+# The deploy script clones each repo at the pinned ref before building artifacts.
+#
+# To update a pin after a release, replace the SHA and commit this file.
+
+# Public repository (AGPL-3.0)
+# Contains: payments backend, reports, invoices, UI (Scala.js + Vite)
+firecalc=162b2c8f3a36b60b2878a7f516605a7d6dbfdf4b
+
+# Private repository (AFPMA Proprietary)
+# Contains: firebox_calc_server (Austrian calculation engine)
+firecalc-firebox-austrian-api=b0681c6a63516b078dbac44b66fc0a0930b8d36f

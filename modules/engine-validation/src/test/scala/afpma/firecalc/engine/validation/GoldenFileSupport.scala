@@ -10,7 +10,18 @@ import org.scalatest.freespec.AnyFreeSpec
 trait GoldenFileSupport:
     self: AnyFreeSpec =>
 
-    private val validationBaseDir = java.nio.file.Paths.get("modules/engine/validation")
+    // Resolve repo root by walking up from user.dir to find build.sbt
+    private val repoRoot: java.nio.file.Path =
+        @annotation.tailrec
+        def walkUp(p: java.nio.file.Path): java.nio.file.Path =
+            if java.nio.file.Files.exists(p.resolve("build.sbt")) then p
+            else
+                p.getParent match
+                    case null       => p
+                    case parentPath => walkUp(parentPath)
+        walkUp(java.nio.file.Paths.get(System.getProperty("user.dir")))
+
+    private val validationBaseDir = repoRoot.resolve("modules/engine/validation")
 
     /** Load golden reference from classpath. Normalizes line endings to \n. */
     protected def loadGoldenFile(resourcePath: String): String =

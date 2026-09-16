@@ -19,25 +19,34 @@ The versioning system provides:
 
 | Environment | Footer Display | Tooltip | Console |
 |-------------|----------------|---------|---------|
-| **Development** | `0.1.0-dev+engine-0.2.4-SNAPSHOT-e3d4c6c1` | None | Full version |
-| **Staging** | `0.1.0-staging+engine-0.2.4-SNAPSHOT-e3d4c6c1` | None | Full version |
-| **Production** | `0.1.0+engine-0.2.4-SNAPSHOT` | Shows git hash | Full version |
+| **Development** | `<UI_BASE_VERSION>-dev+engine-<ENGINE_VERSION>-e3d4c6c1` | None | Full version |
+| **Staging** | `<UI_BASE_VERSION>-staging+engine-<ENGINE_VERSION>-e3d4c6c1` | None | Full version |
+| **Production** | `<UI_BASE_VERSION>+engine-<ENGINE_VERSION>` | Shows git hash | Full version |
+
+`<UI_BASE_VERSION>` / `<ENGINE_VERSION>` stand for the current SNAPSHOT defaults —
+`lazy val ui_base_version` and `val engine_version_default` in [`build.sbt`](build.sbt)
+(run `make check` to print the values in effect); `e3d4c6c1` is an illustrative git hash.
 
 ## How It Works
 
 ### Version Components
 
-1. **UI_BASE_VERSION** (`0.1.0`) - Hardcoded in [`build.sbt`](build.sbt:20)
-2. **ENGINE_VERSION** (`0.2.4-SNAPSHOT`) - Hardcoded in [`build.sbt`](build.sbt:17)
+1. **UI_BASE_VERSION** - the current `ui_base_version` SNAPSHOT; `lazy val ui_base_version` in [`build.sbt`](build.sbt)
+2. **ENGINE_VERSION** - the current `engine_version_default` SNAPSHOT (see build.sbt / `make check`); scraped from `val engine_version_default`
+   in [`build.sbt`](build.sbt). Deliberate two-name split: the Makefile scrape reads
+   `engine_version_default` (the moving default); `engine_version` is what the build
+   actually uses and may be pinned at build-load time via `FIRECALC_PUBLISH_VERSION`
+   (see [dev README](../README.md), "Publishing the engine artifacts") — the pin never
+   affects the scraped default.
 3. **GIT_HASH** (`b20-423-ge3d4c6c1`) - From `git describe --tags --always`
    - Format: `<tag>-<commits-since-tag>-g<hash>`
    - Example: `b20` (tag) + `423` (commits since) + `ge3d4c6c1` (hash)
 4. **UI_FULL_VERSION** - Assembled version with environment suffix
-   - Dev: `0.1.0-dev+engine-0.2.4-SNAPSHOT-b20-423-ge3d4c6c1`
-   - Staging: `0.1.0-staging+engine-0.2.4-SNAPSHOT-b20-423-ge3d4c6c1`
-   - Prod: `0.1.0+engine-0.2.4-SNAPSHOT-b20-423-ge3d4c6c1`
+   - Dev: `<UI_BASE_VERSION>-dev+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
+   - Staging: `<UI_BASE_VERSION>-staging+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
+   - Prod: `<UI_BASE_VERSION>+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
 
-**Note:** [`build.sbt`](build.sbt:1-1057) is the single source of truth. The Makefile extracts values directly from it via regex parsing.
+**Note:** [`build.sbt`](build.sbt) is the single source of truth. The Makefile extracts values directly from it via text scraping (a `grep` of the line holding `val engine_version_default`), so the quoted literal MUST stay on that same line.
 
 ### Build Process
 
@@ -81,20 +90,20 @@ cat modules/ui/firecalc-ui.js
 
 **Development/Staging:**
 - Footer: Full version with git hash visible
-- Console: `FireCalc UI Version: 0.1.0-dev+engine-0.2.4-SNAPSHOT-e3d4c6c1`
+- Console: `FireCalc UI Version: <UI_BASE_VERSION>-dev+engine-<ENGINE_VERSION>-e3d4c6c1`
 - Tooltip: None (already visible)
 
 **Production:**
-- Footer: Clean version `0.1.0+engine-0.2.4-SNAPSHOT © 2025, AFPMA`
+- Footer: Clean version `<UI_BASE_VERSION>+engine-<ENGINE_VERSION> © 2025, AFPMA`
 - Console: Full version with git hash
-- Tooltip: Hover shows `0.1.0+engine-0.2.4-SNAPSHOT-e3d4c6c1`
+- Tooltip: Hover shows `<UI_BASE_VERSION>+engine-<ENGINE_VERSION>-e3d4c6c1`
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | Version not updating | Run correct build target, clear browser cache |
-| Engine version empty | Verify `sbt 'print engine_version'` works |
+| Engine version empty | Check the scrape: `make check` should print `ENGINE_VERSION`; verify the quoted literal is still on the `val engine_version_default` line in `build.sbt` (the Makefile greps that text — `engine_version` is a build-use alias, not what is scraped) |
 | Git hash missing | Ensure you're in a git repo, check `git describe --tags --always` |
 | Wrong environment | Check Vite mode and `.env.*` files |
 

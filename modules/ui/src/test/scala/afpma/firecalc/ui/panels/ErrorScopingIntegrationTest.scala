@@ -178,4 +178,55 @@ class ErrorScopingIntegrationTest extends AnyFreeSpec with Matchers:
         filtered.toEither.left.get.head shouldBe ErrorsInOtherSectionType
     }
 
+    // ── FireboxGeometryRejectedError scoping ──
+
+    "Firebox panel MultiTypeScope sees FireboxGeometryRejectedError as itself, not the meta-error" in {
+        val scope    = PanelScope.MultiTypeScope(List(FireboxPipeT, CombustionAirPipeT))
+        val geoErr   = FireboxGeometryRejectedError("geometrie refusée")
+        val errors   = mkInvalid(geoErr)
+        val filtered = PanelStatusHelper.filterErrors[Unit](scope, errors)
+
+        filtered.isInvalid shouldBe true
+        // TypeTarget(FireboxPipeT) is in the multi-type list -> the real error is kept
+        filtered.toEither.left.get.head shouldBe geoErr
+    }
+
+    "CombustionAir TypeScope does NOT see FireboxGeometryRejectedError" in {
+        val scope    = PanelScope.TypeScope(CombustionAirPipeT)
+        val errors   = mkInvalid(FireboxGeometryRejectedError("geometrie refusée"))
+        val filtered = PanelStatusHelper.filterErrors[Unit](scope, errors)
+
+        // TypeScope(pt).sees(TypeTarget(tt)) is pt == tt: CombustionAirPipeT != FireboxPipeT
+        filtered.toEither.left.get.head shouldBe ErrorsInOtherSectionType
+    }
+
+    "AirIntake TypeScope does NOT see FireboxGeometryRejectedError" in {
+        val scope    = PanelScope.TypeScope(AirIntakePipeT)
+        val errors   = mkInvalid(FireboxGeometryRejectedError("geometrie refusée"))
+        val filtered = PanelStatusHelper.filterErrors[Unit](scope, errors)
+
+        filtered.toEither.left.get.head shouldBe ErrorsInOtherSectionType
+    }
+
+    "Flue SlotScope does NOT see FireboxGeometryRejectedError" in {
+        val scope    = PanelScope.SlotScope(FluePipeT, SlotIndex.unsafe(0))
+        val errors   = mkInvalid(FireboxGeometryRejectedError("geometrie refusée"))
+        val filtered = PanelStatusHelper.filterErrors[Unit](scope, errors)
+
+        filtered.toEither.left.get.head shouldBe ErrorsInOtherSectionType
+    }
+
+    "Mixed errors: Flue SlotScope keeps the flue error, drops the firebox geometry rejection" in {
+        val scope  = PanelScope.SlotScope(FluePipeT, SlotIndex.unsafe(0))
+        val errors = mkInvalid(
+            FireboxGeometryRejectedError("geometrie refusée"), // filtered
+            mkTargetedError(ErrorTarget.TypeTarget(FluePipeT)) // kept
+        )
+
+        val filtered = PanelStatusHelper.filterErrors[Unit](scope, errors)
+        filtered.isInvalid shouldBe true
+        // A scoped error remains -> no ErrorsInOtherSectionType meta-error
+        filtered.toEither.left.get.toList.map(getTarget) shouldBe List(ErrorTarget.TypeTarget(FluePipeT))
+    }
+
 end ErrorScopingIntegrationTest

@@ -24,7 +24,18 @@ export default defineConfig(({ mode }) => {
     // Construct the full backend URL for CSP
     const backendUrl = `${backendProtocol}://${backendHost}${backendPort && backendPort !== '443' && backendPort !== '80' ? ':' + backendPort : ''}`;
     
-    console.log(`[Vite Config] Mode: ${mode}, Backend URL for CSP: ${backendUrl}`);
+    // Remote firebox-calc origin (VITE_FIREBOX_CALC_BASE_URL): the browser must be
+    // allowed to reach the standalone firebox-calc server for the remote kinds.
+    // connect-src takes origins only, so any path prefix (e.g. /v1) is stripped.
+    // An unset or malformed value contributes nothing (all-local build).
+    const calcBaseUrl = env.VITE_FIREBOX_CALC_BASE_URL || '';
+    const calcOriginMatch = calcBaseUrl.match(/^(https?:\/\/[^/]+)/i);
+    const calcOrigin = calcOriginMatch ? calcOriginMatch[1] : '';
+    if (calcBaseUrl && !calcOrigin) {
+        console.warn(`[Vite Config] VITE_FIREBOX_CALC_BASE_URL is not an absolute http(s) URL; not added to connect-src: ${calcBaseUrl}`);
+    }
+    
+    console.log(`[Vite Config] Mode: ${mode}, Backend URL for CSP: ${backendUrl}` + (calcOrigin ? `, firebox-calc origin: ${calcOrigin}` : ''));
     
     return {
     base: "./",
@@ -107,9 +118,10 @@ export default defineConfig(({ mode }) => {
                     ? ''
                     : " frame-ancestors 'none'; base-uri 'self'; form-action 'self';";
 
-                const cspContent = `default-src 'self'; connect-src 'self' https://1.1.1.1 ${backendUrl}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;${hardeningDirectives}`;
+                const cspContent = `default-src 'self'; connect-src 'self' https://1.1.1.1 ${backendUrl}${calcOrigin ? ` ${calcOrigin}` : ''}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;${hardeningDirectives}`;
                 
                 console.log(`[CSP] ${mode} mode - Backend: ${backendUrl}`);
+                console.log(`[CSP] ${mode} mode - Firebox-calc: ${calcOrigin || '(not configured, all-local)'}`);
                 console.log(`[CSP] ${mode} mode - GitHub: ${githubSourceMaps ? 'enabled' : 'disabled'}`);
                 console.log(`[CSP] ${mode} mode - Script: ${scriptSrc}`);
                 

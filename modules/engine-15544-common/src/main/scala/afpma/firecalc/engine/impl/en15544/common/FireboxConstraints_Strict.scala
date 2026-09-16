@@ -16,6 +16,8 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxFormulas
+import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
@@ -29,8 +31,17 @@ import cats.syntax.all.*
 import coulomb.*
 import coulomb.policy.standard.given
 
+/**
+ * Generic default constraint instance.
+ *
+ * This given is the contravariant catch-all: it served the two unreachable
+ * fallback branches of the retired `FireboxConstraintsResolver` (`Traditional`
+ * and `CertifiedDesign`, both already covered by earlier, more specific arms).
+ * It is deliberately NOT a registry entry — registries list concrete model
+ * types — so its `kind` never participates in the duplicate/coverage check.
+ */
 given fireboxConstraints_Strict: FireboxConstraints[Firebox_15544] =
-    FireboxConstraints_Strict.make[Firebox_15544]
+    FireboxConstraints_Strict.make[Firebox_15544](FireboxKind.Traditional)
 
 /**
  * Default EN 15544 constraint instance for [[Firebox_15544]].
@@ -42,7 +53,8 @@ given fireboxConstraints_Strict: FireboxConstraints[Firebox_15544] =
  */
 object FireboxConstraints_Strict extends FireboxOps:
 
-    def make[F <: Firebox_15544] = new FireboxConstraints_Strict[F] {}
+    def make[F <: Firebox_15544](k: FireboxKind) = new FireboxConstraints_Strict[F]:
+        override def kind: FireboxKind = k
 
     def ifNotSingleTestedOf[A, B](
         firebox: Firebox_15544,
@@ -218,18 +230,22 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
 
     // ── Section "4.2.1" – fuel mass m_B ──────────────────────────────────
 
+    protected val DEFAULT_m_B_MIN: Mass = 10.kg
+    protected val DEFAULT_m_B_MAX: Mass = 40.kg
+
+    /**
+     * Minimum fuel mass constraint per EN 15544 §4.2.1 (default 10 kg).
+     * Every kind needing a different bound overrides this method
+     * (e.g. `EcolabeledConstraints` uses 6 kg).
+     * The previous type-match over `Traditional`/`SingleTested`/`CertifiedDesign`/`Door15aFirebox_Catalog`
+     * was unreachable for all four (each has an overriding instance)
+     * and became unsound when `Firebox_15544` was unsealed.
+     */
     override def m_B_constraints(
         firebox: F,
         ctx    : ConstraintContext
     ): Seq[Option[TermConstraint[m_B]]] =
-        val minConstraint: TermConstraint[m_B] =
-            firebox match
-                case _: Traditional            => TermConstraint.Min(10.kg)
-                case _: SingleTested           => TermConstraint.Min(5.kg)
-                case _: CertifiedDesign        => TermConstraint.Min(5.kg)
-                case _: Door15aFirebox_Catalog => TermConstraint.Min(10.kg)
-        val maxConstraint: TermConstraint[m_B] = TermConstraint.Max(40.kg)
-        Seq(Some(minConstraint), Some(maxConstraint))
+        Seq(Some(TermConstraint.Min(DEFAULT_m_B_MIN)), Some(TermConstraint.Max(DEFAULT_m_B_MAX)))
 
     // ── Section "4.2.2" – minimum load m_B_min ───────────────────────────
 
@@ -290,8 +306,10 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
             TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed]  (
                 value   = (),
                 isValid = _ =>
-                    if firebox.formulas.firebox_glass_surface_ratio_below_one_fifth(firebox)
-                    then Right                                                     (()     )
+                    val ff = summon[FireboxFormulas[Firebox_15544]]
+                    import ff.*
+                    if firebox.firebox_glass_surface_ratio_below_one_fifth
+                    then Right(())
                     else Left(GlassSurfaceRatioNotConfirmed())
             )
         )

@@ -12,6 +12,7 @@ import afpma.firecalc.units.coulombutils.{*, given}
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
@@ -32,14 +33,16 @@ import coulomb.policy.standard.given
 given traditionalConstraints: FireboxConstraints[TraditionalFirebox] =
     new FireboxConstraints_Strict[TraditionalFirebox]:
 
+        override def kind: FireboxKind = FireboxKind.Traditional
+
         /** Traditional: min=10kg, max=40kg. */
         override def m_B_constraints(
             firebox: TraditionalFirebox,
             ctx    : ConstraintContext
         ): Seq[Option[TermConstraint[m_B]]] =
             Seq(
-                Some(TermConstraint.Min[m_B](10.kg)),
-                Some(TermConstraint.Max[m_B](40.kg))
+                Some(TermConstraint.Min[m_B](DEFAULT_m_B_MIN)),
+                Some(TermConstraint.Max[m_B](DEFAULT_m_B_MAX))
             )
 
         /** Validates that the injector air velocity is within [2, 4] m/s. */

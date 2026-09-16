@@ -11,7 +11,9 @@ export FIRECALC_VITE_DEV_SERVER_PORT
 REPO_DIR ?= $(shell pwd | xargs echo -n)
 GIT_COMMIT_HASH ?= $(shell git rev-parse --short=8 HEAD)
 UI_BASE_VERSION ?= $(shell grep 'lazy val ui_base_version' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
-ENGINE_VERSION ?= $(shell grep 'lazy val engine_version' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
+# NOTE: scraped by text; must match the line holding the quoted default literal
+# in build.sbt (the publish pin override lives in engine_version, not here).
+ENGINE_VERSION ?= $(shell grep 'val engine_version_default' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 GITHUB_REPO_OWNER ?= $(shell grep 'lazy val githubOwner' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 
@@ -671,6 +673,5 @@ update-validation:
 		"modules/engine-validation/src/test/resources/validation/cas_types_15544/01 - Colonne ascendante.afpma.txt"
 	@cp "modules/engine/validation/cas_types_15544/current/02 - Kachelofen.afpma.txt" \
 		"modules/engine-validation/src/test/resources/validation/cas_types_15544/02 - Kachelofen.afpma.txt"
-	@cp "modules/engine/validation/cas_types_15544/current/03 - Cas pratique.afpma.txt" \
-		"modules/engine-validation/src/test/resources/validation/cas_types_15544/03 - Cas pratique.afpma.txt"
 	@echo "Golden files updated. Review with 'git diff' before committing."
+

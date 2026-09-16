@@ -76,6 +76,7 @@ Identical to the current `docker-compose.yml` with nginx volume paths updated to
 | Service | Image | Ports | Key Volumes |
 |---------|-------|-------|-------------|
 | `backend` | `firecalc-${FIRECALC_ENV}-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
+| `calc-backend` | `firecalc-${FIRECALC_ENV}-calc-server:latest` (built from `Dockerfile.calc-server`, private checkout context) | `9000` (expose, internal) | `./configs:/app/configs:ro` only — no database mounts |
 | `ui-server` | `nginx:alpine` | none (internal) | `../web/dist-app:/usr/share/nginx/html:ro`, `./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro` |
 | `nginx` | built from `Dockerfile.nginx` | `80:80`, `443:443` | `./nginx-standalone/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-standalone/proxy.conf.template:/etc/nginx/templates/nginx-proxy-custom.conf.template:ro`, `./nginx-standalone/default.conf:/etc/nginx/conf.d/default.conf:ro`, `letsencrypt-certs:/etc/letsencrypt:ro`, `certbot-webroot:/var/www/certbot:ro` |
 | `certbot` | `certbot/certbot:v2.11.0` | none | `letsencrypt-certs:/etc/letsencrypt`, `certbot-webroot:/var/www/certbot` |
@@ -88,9 +89,9 @@ Identical to the current `docker-compose.yml` with nginx volume paths updated to
 
 **Environment (nginx):** `UI_DOMAIN`, `API_DOMAIN`, `NGINX_ENVSUBST_FILTER=^(UI_DOMAIN|API_DOMAIN)$`
 
-**Healthcheck (nginx):** `curl -f http://localhost/healthcheck` (proxied to backend `/v1/healthcheck`)
+**Healthcheck (nginx):** `curl -f http://localhost/healthcheck && curl -f http://localhost/calc-healthcheck` (proxied to backend `/v1/healthcheck` and calc-backend `/health` independently)
 
-**depends_on:** `nginx` depends on `ui-server` (service_started) and `backend` (service_healthy)
+**depends_on:** `nginx` depends on `ui-server` (service_started), `backend` (service_healthy), and `calc-backend` (service_healthy)
 
 ### `docker-compose.behind-proxy.yml`
 
@@ -101,6 +102,7 @@ Same services except `certbot` is removed. Nginx has no host ports.
 | Service | Image | Ports | Key Volumes |
 |---------|-------|-------|-------------|
 | `backend` | `firecalc-${FIRECALC_ENV}-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
+| `calc-backend` | `firecalc-${FIRECALC_ENV}-calc-server:latest` (built from `Dockerfile.calc-server`, private checkout context) | `9000` (expose, internal) | `./configs:/app/configs:ro` only — no database mounts |
 | `ui-server` | `nginx:alpine` | none (internal) | `../web/dist-app:/usr/share/nginx/html:ro`, `./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro` |
 | `nginx` | built from `Dockerfile.nginx` | none (Docker network only, exposes 80 internally) | `./nginx-behind-proxy/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-behind-proxy/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro`, `./nginx-behind-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro` |
 
@@ -112,9 +114,9 @@ Same services except `certbot` is removed. Nginx has no host ports.
 
 **Environment (nginx):** none (no envsubst, no domain variables)
 
-**Healthcheck (nginx):** `curl -f http://localhost/healthcheck` (proxied to backend `/v1/healthcheck`)
+**Healthcheck (nginx):** `curl -f http://localhost/healthcheck && curl -f http://localhost/calc-healthcheck` (proxied to backend `/v1/healthcheck` and calc-backend `/health` independently)
 
-**depends_on:** `nginx` depends on `ui-server` (service_started) and `backend` (service_healthy)
+**depends_on:** `nginx` depends on `ui-server` (service_started), `backend` (service_healthy), and `calc-backend` (service_healthy)
 
 ---
 
@@ -128,7 +130,7 @@ Migrated from current `docker/nginx.conf` with no changes. Contains:
 - Events block (1024 connections)
 - HTTP block: mime types, logging, sendfile, tcp_nopush, keepalive, gzip
 - SSL defaults: TLSv1.2+1.3, strong ciphers, session cache, OCSP stapling
-- Rate-limit zones: `api_auth` (10r/s), `api_intent` (2r/s)
+- Rate-limit zones: `api_auth` (10r/s), `api_intent` (2r/s), `firebox_calc` (1r/s)
 - `include /etc/nginx/conf.d/*.conf`
 
 ### `nginx-standalone/proxy.conf.template`
@@ -173,6 +175,7 @@ http {
     # Rate Limiting Zones
     limit_req_zone $binary_remote_addr zone=api_auth:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=api_intent:10m rate=2r/s;
+    limit_req_zone $binary_remote_addr zone=firebox_calc:10m rate=1r/s;
 
     # Include server blocks
     include /etc/nginx/conf.d/*.conf;
@@ -270,6 +273,20 @@ server {
     location = /v1/purchase/create-intent {
         limit_req zone=api_intent burst=3 nodelay;
         limit_req_status 429;
+        # API security headers + proxy to api_upstream
+    }
+
+    # --- Firebox calculation API ---
+    location = /v1/calculate {
+        limit_req zone=firebox_calc burst=5 nodelay;
+        limit_req_status 429;
+        # API security headers + proxy to api_upstream
+    }
+
+    location = /v1/kinds {
+        limit_req zone=firebox_calc burst=10 nodelay;
+        limit_req_status 429;
+        add_header Cache-Control "public, max-age=3600" always;
         # API security headers + proxy to api_upstream
     }
 

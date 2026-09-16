@@ -1,0 +1,97 @@
+# =============================================================================
+# FireCalc Payments Backend — Docker Image
+# =============================================================================
+# Multi-stage build:
+#   Stage 1 (builder): Compiles Typst CLI from source (Rust toolchain).
+#   Stage 2 (runtime): Minimal JRE + pre-built JAR + Typst binary.
+#
+# Artifacts are expected in the build context `artifacts/` directory,
+# produced by the deploy script from the pinned source refs in VERSIONS.
+#
+# Health endpoint: GET /v1/healthcheck
+# =============================================================================
+
+# =============================================================================
+# Stage 1: Builder — Install Rust and compile Typst CLI
+# =============================================================================
+FROM eclipse-temurin:21-jre-jammy AS builder
+
+# Install build dependencies for compiling Typst from source
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        pkg-config \
+        build-essential \
+        libssl-dev \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust via rustup
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable && \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME
+
+# Install Typst CLI for PDF report/invoice generation
+RUN cargo install --locked typst-cli && \
+    typst --version
+
+# =============================================================================
+# Stage 2: Runtime — Final production image
+# =============================================================================
+FROM eclipse-temurin:21-jre-jammy AS runtime
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl sqlite3 ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root application user
+RUN groupadd -r -g 999 appuser && \
+    useradd -r -u 999 -g appuser -d /app -s /sbin/nologin -c "Application user" appuser
+
+WORKDIR /app
+
+# Copy Typst binary from builder (compiled binary only, no Rust toolchain)
+COPY --from=builder /usr/local/cargo/bin/typst /usr/local/bin/typst
+
+# Copy pre-built JAR from artifacts/ (flat path, not module path)
+COPY artifacts/firecalc-payments-assembly.jar /app/firecalc-payments-assembly.jar
+
+# Copy logos required by Typst for PDF generation
+# (deploy script places them in artifacts/ alongside the JARs)
+RUN mkdir -p /app/modules/invoices/configs /app/modules/reports/src/main/resources
+COPY artifacts/logo.png /app/modules/invoices/configs/logo.png
+COPY artifacts/logo.jpg /app/modules/reports/src/main/resources/logo.jpg
+
+# Create mount points for configuration and data persistence
+# - /app/configs: Application configuration files (YAML, CONF)
+# - /app/databases: SQLite database files
+# SEC: Database directory gets restrictive permissions (owner-only access)
+RUN mkdir -p /app/configs /app/databases && \
+    chown -R appuser:appuser /app && \
+    find /app/databases -type d -exec chmod 700 {} \; && \
+    find /app/databases -type f -exec chmod 600 {} \;
+
+# Install entrypoint script (fixes database permissions on startup, drops to appuser)
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Note: No USER directive — entrypoint.sh runs as root to fix permissions,
+# then drops to appuser via setpriv before exec'ing into Java.
+
+# Expose application port
+EXPOSE 8181
+
+# FIRECALC_ENV must be explicitly set at runtime:
+#   docker run -e FIRECALC_ENV=production ...
+# No default — application will fail fast if not provided
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8181/v1/healthcheck || exit 1
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["java", "-jar", "/app/firecalc-payments-assembly.jar"]

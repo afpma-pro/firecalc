@@ -71,8 +71,7 @@ object MCENPipeFixture_15544
     import gtypedefs.ζ
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val exercice_name =
         "v20241001 // dev fixture EN15544 MCE // N-pipe multi-ThermalFlueSlot (chain Stage 1 fold test)"
@@ -282,8 +281,7 @@ object MCENPipeFixture_15544_CFCF
     import gtypedefs.ζ
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val exercice_name =
         "v20241001 // dev fixture EN15544 MCE // N-pipe [C, F, C, F] head (Connector-first seed)"

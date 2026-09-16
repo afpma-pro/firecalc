@@ -9,21 +9,23 @@ import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 
-import afpma.firecalc.engine.impl.en15544.mce.*
+import afpma.firecalc.engine.alg.en15544.FireboxContribution
 import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Application
 import afpma.firecalc.engine.impl.en15544.mce.EN15544_MCE_Formulas
+import afpma.firecalc.engine.impl.en15544.mce.FireboxEngine_15544_MCE
 import afpma.firecalc.engine.impl.en15544.mce.HasTypeMembers_15544_MCE
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.Wood
 import afpma.firecalc.engine.models.en15544.FramedIncrAirIntakePipe_Thermal
 import afpma.firecalc.engine.models.en15544.FramedIncrPostFireboxPipes
 import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_MCE
 import afpma.firecalc.engine.models.en15544.Inputs_15544_MCE
+import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.gtypedefs.KindOfWood
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.UnexpectedDevError
 import afpma.firecalc.engine.standard.VNelMcalcErr
 import afpma.firecalc.engine.wood_combustion.*
 import afpma.firecalc.engine.wood_combustion.bs845.BS845_Impl
@@ -38,16 +40,45 @@ trait v0_2024_10_mce_members extends v0_2024_10_core:
         type CombustionAirPipe = CombustionAirPipe_Module_13384.PipeCanBe
         type FireboxPipe       = FireboxPipe_Module_13384.PipeCanBe
 
-        protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_MCE[FB]
-        protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_MCE[FB]
+        /**
+         * The bundled firebox engine for this project's firebox type.
+         *
+         * Replaces the former pair of injected pipe typeclasses
+         * (`toCombustionAirPipeTC` / `toFireboxPipeTC`): one summon instead of two,
+         * and the same instance now also carries constraints and formulas.
+         */
+        protected val fireboxEngine: FireboxEngine_15544_MCE[FB]
 
-        override def combustionAirPipe = {
-            given FireboxToCombustionAirPipe_15544_MCE[FB] = toCombustionAirPipeTC;
-            firebox.toCombustionAirPipe_FullDescr
-        }
-        override def fireboxPipe       = {
-            given FireboxToFireboxPipe_15544_MCE[FB] = toFireboxPipeTC; firebox.toFireboxPipe_FullDescr
-        }
+        override def combustionAirPipe =
+            fireboxEngine
+                .combustionAirContribution(firebox)
+                .andThen:
+                    case FireboxContribution.Without        => CombustionAirPipe_Module_13384.without.validNel
+                    case FireboxContribution.AsDescr(descr) => descr.validNel
+                    case FireboxContribution.AsResult(_)    =>
+                        UnexpectedDevError(
+                            "firebox engine returned AsResult for the combustion-air path; " +
+                                "that contribution is consumed in combustionAir_PipeResult and must not reach the descriptor seam"
+                        ).invalidNel
+
+        override def fireboxPipe =
+            fireboxEngine
+                .fireboxContribution(firebox)
+                .andThen:
+                    // No `Without` member on the firebox pipe module — a stove always
+                    // has a firebox gas path. See the strict counterpart.
+                    // `AsResult` is intercepted in firebox_PipeResult and never reaches here.
+                    case FireboxContribution.AsDescr(descr) => descr.validNel
+                    case FireboxContribution.Without        =>
+                        UnexpectedDevError(
+                            "firebox engine returned Without for the firebox gas path; " +
+                                "a stove always has a firebox gas path so this is an internal invariant violation"
+                        ).invalidNel
+                    case FireboxContribution.AsResult(_)    =>
+                        UnexpectedDevError(
+                            "firebox engine returned AsResult for the firebox gas path; " +
+                                "that contribution is consumed in firebox_PipeResult and must not reach the descriptor seam"
+                        ).invalidNel
 
     trait StoveProjectDescr_15544_MCE_Alg
         extends StoveProjectDescr_15544_Alg

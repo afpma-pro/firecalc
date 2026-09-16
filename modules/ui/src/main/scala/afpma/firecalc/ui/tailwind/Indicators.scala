@@ -26,6 +26,7 @@ final case class Indicators()(using Locale, DisplayUnits) extends Component:
         div(
             cls := "top-8 relative flex justify-end items-center gap-4",
             AppToasts           (),
+            afpma.firecalc.ui.components.RemoteCalcStatusBanner().node,
             EquilibriumIndicator(),
             EfficiencyIndicator (),
 

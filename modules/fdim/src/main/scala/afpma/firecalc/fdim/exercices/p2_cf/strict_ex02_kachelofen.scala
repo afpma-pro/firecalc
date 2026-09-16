@@ -29,8 +29,7 @@ object strict_ex02_kachelofen
     import gtypedefs.ζ
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val exercice_name: String = "exercices // p2_cf // ex02_kachelofen"
 

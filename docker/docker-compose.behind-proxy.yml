@@ -107,6 +107,52 @@ services:
       options:
         max-size: "10m"
         max-file: "30"
+  # ===========================================================================
+  # Calculation Backend Service - Standalone Firebox Calculation API
+  # ===========================================================================
+  # Independent calculation backend serving GET /v1/kinds and POST /v1/calculate.
+  # No payments dependencies, no database mounts — pure calculation engine.
+  # The assembly JAR is built in the private (non-AGPL) repository (ticket 14);
+  # the public repository no longer builds this module (ticket 20). Point the
+  # build context at the private checkout.
+  calc-backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.calc-server
+
+    image: firecalc-${FIRECALC_ENV}-calc-server:latest
+    container_name: firecalc-${FIRECALC_ENV}-calc-backend
+
+    restart: unless-stopped
+
+    environment:
+      - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
+
+    env_file:
+      - .env
+
+    volumes:
+      # Configuration files (read-only)
+      - ./configs:/app/configs:ro
+
+    networks:
+      - firecalc
+
+    expose:
+      - "9000"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
 
   # ===========================================================================
   # UI Static File Server
@@ -171,13 +217,15 @@ services:
         condition: service_started
       backend:
         condition: service_healthy
+      calc-backend:
+        condition: service_healthy
 
     networks:
       - firecalc
       - proxy
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      test: ["CMD-SHELL", "curl -f http://localhost/healthcheck && curl -f http://localhost/calc-healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -12,6 +12,7 @@ import cats.syntax.all.toTraverseOps
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en15544.StoveConstraints
+import afpma.firecalc.engine.alg.en15544.AppliedFireboxConstraints
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.std.*
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
@@ -36,39 +37,56 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
 
     // --- Resolved constraints (typeclass dispatch) ---
 
+    /**
+     * The resolved engine's per-term constraint algebra, when it has one.
+     *
+     * `None` for a remotely computed firebox: the algebra is not transmitted
+     * over the wire (see `FireboxEngineAny.foldedOnly`). Every `resolved_*`
+     * below is then `Seq.empty` — but that emptiness is NEVER read as "no
+     * constraints, therefore satisfied": [[citedConstraints]] pairs it with
+     * `perTermDetailAvailable = false`, and `validateCitedConstraints` reports
+     * the remote engine's folded verdicts instead.
+     */
+    private def appliedConstraints: Option[AppliedFireboxConstraints] = fc.appliedConstraints
+
+    /** Per-term detail is only available when the resolved engine owns the algebra. */
+    final def perTermConstraintDetailAvailable: Boolean = appliedConstraints.isDefined
+
+    private def perTerm[T](
+        f: AppliedFireboxConstraints => Seq[Option[TermConstraint[T]]]
+    ): Seq[Option[TermConstraint[T]]] =
+        appliedConstraints.fold(Seq.empty)(f)
+
     lazy val resolved_t_n_constraints: Seq[Option[TermConstraint[t_n]]] =
         import afpma.firecalc.engine.impl.en15544.common.defaultStoveConstraints
         StoveConstraints.summon.t_n_constraints(stoveConstraintContext)
 
     lazy val resolved_m_B_constraints: Seq[Option[TermConstraint[m_B]]] =
-        fc.m_B_constraints(firebox, constraintContext)
+        perTerm(_.m_B_constraints(constraintContext))
 
     lazy val resolved_m_B_min_constraints: Seq[Option[TermConstraint[m_B_min]]] =
-        fc.m_B_min_constraints(firebox, constraintContext)
+        perTerm(_.m_B_min_constraints(constraintContext))
 
     lazy val resolved_glassArea_constraints: Seq[Option[TermConstraint[GlassArea]]] =
-        fc.glassArea_constraints(firebox, constraintContext)
+        perTerm(_.glassArea_constraints(constraintContext))
 
     lazy val resolved_fireboxDimensionsBase_constraints: Seq[Option[TermConstraint[Dimensions.Base]]] =
-        fc.fireboxDimensions_Base_constraints(
-            firebox,
-            constraintContext
-        )
+        perTerm(_.fireboxDimensions_Base_constraints(constraintContext))
 
     lazy val resolved_h_br_constraints: Seq[Option[TermConstraint[H_BR]]] =
-        fc.h_br_constraints(firebox, constraintContext)
+        perTerm(_.h_br_constraints(constraintContext))
 
     lazy val resolved_λ_constraints: Seq[Option[TermConstraint[λ]]] =
-        fc.lambda_constraints(firebox, constraintContext)
+        perTerm(_.lambda_constraints(constraintContext))
 
     lazy val resolved_η_constraints: Seq[Option[TermConstraint[η]]] =
-        fc.eta_constraints(firebox, constraintContext)
+        perTerm(_.eta_constraints(constraintContext))
 
     lazy val resolved_height_of_lowest_opening_constraints: Seq[Option[TermConstraint[height_of_lowest_opening]]] =
-        fc.height_of_lowest_opening_constraints(
-            firebox,
-            constraintContext
-        )
+        perTerm(_.height_of_lowest_opening_constraints(constraintContext))
+
+    private lazy val resolved_firebox_glass_surface_ratio_constraint: Option[TermConstraint[Unit]] =
+        appliedConstraints.flatMap(_.firebox_glass_surface_ratio_constraint)
 
     def citedConstraints: CitedConstraints =
         import en15544_typedefs.{given_TermDef_Unit, given_TermDefDetails_Unit}
@@ -112,9 +130,14 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
                 resolved_height_of_lowest_opening_constraints
             ),
             firebox_glass_surface_ratio = CheckableConstraint.makeOption(
-                fc.firebox_glass_surface_ratio_constraint(firebox).map(_ => ()),
-                Seq(fc.firebox_glass_surface_ratio_constraint(firebox))
-            )
+                resolved_firebox_glass_surface_ratio_constraint.map(_ => ()                                        ),
+                Seq                                                (resolved_firebox_glass_surface_ratio_constraint)
+            ),
+            // False for a remotely computed firebox: every constraint above is
+            // empty because the per-term algebra never crossed the wire, NOT
+            // because the firebox has no constraints. Renderers must say so
+            // rather than show an empty — and so apparently clean — table.
+            perTermDetailAvailable      = perTermConstraintDetailAvailable
         )
 
     def validateDirectionReachability(): VNel[Unit] =
@@ -152,7 +175,17 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             // - extra conditions for EN 13384 ?
         ).sequence[VNel, Unit].map(_ => ())
 
-    final val techSpecs = TechnicalSpecficiations(
+    // Lazy on purpose: `P_n`/`m_B` throw for a MaxLoad project without
+    // `maximum_load`, and such projects MUST still build — the remote
+    // pre-fetch path degrades to a `m_B`-absent request (US18) and the server
+    // answers with `NotEvaluated(MissingMB)` verdicts. Forcing the snapshot
+    // at construction time would make the app object unbuildable and the
+    // request never leave the wire. The snapshot's only materializer is
+    // `CommonAtParams.outputs` (the sole `techSpecs` reference outside this
+    // declaration), so forcing it can throw exactly where `m_B`/`P_n` can:
+    // for an application without a sizing input — a state the UI form seed
+    // forbids at steady state and the payments guard names early.
+    final lazy val techSpecs = TechnicalSpecficiations(
         P_n,
         t_n,
         m_B,

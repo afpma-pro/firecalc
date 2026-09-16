@@ -15,6 +15,11 @@ import afpma.firecalc.engine.models.FireboxPipeT
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 
+import afpma.firecalc.firebox_calc_api.ConstraintOutcome
+import afpma.firecalc.firebox_calc_api.ConstraintTerm
+import afpma.firecalc.firebox_calc_api.ConstraintVerdict
+import afpma.firecalc.firebox_calc_api.NotEvaluatedReason
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
@@ -24,6 +29,7 @@ import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
+import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchedRemoteDataSig
 import afpma.firecalc.ui.utils.combineWithDistinct
 import afpma.firecalc.ui.utils.flatMapVNelE
 
@@ -69,6 +75,19 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
         results_en15544_strict_sig.flatMapVNelE: strict =>
             strict.primary.validateFireboxSpecificConstraints
 
+    // ── S5.4: Remote constraint pending state ──────────────────────
+
+    /**
+     * The (term, reason) pairs of constraints the remote service could not
+     * evaluate yet (e.g. the combustion-air pipe shape is not defined). Carries
+     * only `NotEvaluated` verdicts, so downstream never re-matches the outcome.
+     * Surfaced as a spinning loader-circle in the header; blocking violations stay in
+     * `statusCons` only.
+     */
+    lazy val pending_verdicts_sig: Signal[Option[List[(ConstraintTerm, NotEvaluatedReason)]]] =
+        prefetchedRemoteDataSig.map(_.map(_.constraints.collect:
+            case ConstraintVerdict(term, _, _, ConstraintOutcome.NotEvaluated(reason)) => term -> reason))
+
     // Type availability check (independent of engine computation)
     private lazy val firebox_type_avail_sig: Signal[Boolean] =
         firebox_var.signal.map(fb => UIConfig.uiAvailability.allows(fb))
@@ -88,6 +107,26 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
             .map: (avail, pressures) =>
                 if avail then pressures
                 else ().validNel
+            .map(demoteGeometryRejection)
+
+    // Helper: the geometry-rejection verdict belongs to the constraints status only.
+    // The pressures status must not repeat it; with nothing left to report it defers
+    // to the other-sections meta-error.
+    private def demoteGeometryRejection[A](v: VNelMcalcErr[A]): VNelMcalcErr[A] =
+        v match
+            case Validated.Invalid(nel) =>
+                val kept = nel.toList.filterNot(_.isInstanceOf[FireboxGeometryRejectedError])
+                if kept.isEmpty then ErrorsInOtherSectionType.invalidNel
+                else NonEmptyList.fromListUnsafe(kept).invalid
+            case _                      => v
+
+    // Helper: the two constraint signals carry the same application-level verdict
+    // (e.g. a remote geometry rejection), so combining them with `*>` would report
+    // it twice — collapse identical errors while keeping distinct ones.
+    private def distinctNelErrors(v: VNelMcalcErr[Unit]): VNelMcalcErr[Unit] =
+        v match
+            case Validated.Invalid(nel) => NonEmptyList.fromListUnsafe(nel.toList.distinct).invalid
+            case _                      => v
 
     // Helper: filter out FireboxTypeDisabledError so downstream validation
     // errors are not masked by the upstream type-availability gate.
@@ -102,13 +141,64 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                 if filtered.nonEmpty then NonEmptyList.fromListUnsafe(filtered).invalid
                 else ().validNel[MCalc_Error]
 
+    // ── S5.4: Pending indicator helpers ────────────────────────────
+
+    private def pendingTermLabel(term: ConstraintTerm): String =
+        term match
+            case ConstraintTerm.MB                    =>
+                I18N_UI.constraintVerdicts.labels.m_B
+            case ConstraintTerm.MBMin                 =>
+                I18N_UI.constraintVerdicts.labels.m_B_min
+            case ConstraintTerm.GlassArea             =>
+                I18N_UI.constraintVerdicts.labels.glassArea
+            case ConstraintTerm.FireboxBase           =>
+                I18N_UI.constraintVerdicts.labels.fireboxBase
+            case ConstraintTerm.H_BR                  =>
+                I18N_UI.constraintVerdicts.labels.H_BR
+            case ConstraintTerm.Lambda                =>
+                I18N_UI.constraintVerdicts.labels.lambda
+            case ConstraintTerm.HeightOfLowestOpening =>
+                I18N_UI.constraintVerdicts.labels.heightOfLowestOpening
+            case ConstraintTerm.GlassSurfaceRatio     =>
+                I18N_UI.constraintVerdicts.labels.glassSurfaceRatio
+            case ConstraintTerm.AirIntakePipeShape    =>
+                I18N_UI.constraintVerdicts.labels.airIntakePipeShape
+            case ConstraintTerm.NominalLoadInRange    =>
+                I18N_UI.constraintVerdicts.labels.nominalLoadInRange
+            case ConstraintTerm.Custom                =>
+                I18N_UI.constraintVerdicts.labels.custom
+
+    private def pendingReasonDisplay(reason: NotEvaluatedReason): String =
+        reason match
+            case NotEvaluatedReason.MissingMB            =>
+                I18N_UI.constraintVerdicts.notEvaluated.missingMB
+            case NotEvaluatedReason.MissingFlowRate      =>
+                I18N_UI.constraintVerdicts.notEvaluated.missingFlowRate
+            case NotEvaluatedReason.MissingTopologyShape =>
+                I18N_UI.constraintVerdicts.notEvaluated.missingTopologyShape
+
+    private def pendingIndicator(pending: List[(ConstraintTerm, NotEvaluatedReason)]): HtmlElement =
+        DaisyUITooltip (
+            ttContent  = ul(
+                cls := "list",
+                pending.map: (term, reason) =>
+                    val reasonLabel = pendingReasonDisplay(reason)
+                    li(
+                        cls := "list-row text-xs",
+                        s"${pendingTermLabel(term)}: ${I18N_UI.constraintVerdicts.pending} ($reasonLabel)"
+                    )
+            ),
+            element    = span(cls := "text-base-content/50 inline-block animate-spin", lucide.`loader-circle`),
+            ttPosition = "tooltip-bottom"
+        ).node
+
     lazy val all_cons_signal =
         firebox_type_avail_sig
             .combineWithDistinct(
                 cited_constraints_validation_sig
                     .combineWithDistinct(firebox_custom_constraints_sig)
                     .map: (v1, v2) =>
-                        v1 *> (v2: VNelMcalcErr[Unit])
+                        distinctNelErrors(v1 *> (v2: VNelMcalcErr[Unit]))
             )
             .map: (avail, cons) =>
                 if avail then stripFireboxTypeDisabledErrors(cons)
@@ -138,9 +228,10 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                             firebox_backend_avail_sig,
                             all_cons_signal,
                             firebox_pressures_avail_signal,
-                            airIntakeWarningSig
+                            airIntakeWarningSig,
+                            pending_verdicts_sig
                         )
-                        .map: (fb, typeAvail, backendAvail, all_cons, fb_press_avail, airIntakeWarning) =>
+                        .map: (fb, typeAvail, backendAvail, all_cons, fb_press_avail, airIntakeWarning, pending) =>
                             val typeDisabledIcon =
                                 if !typeAvail then
                                     Some(
@@ -232,12 +323,18 @@ final case class FireboxPanel()(using Locale, DisplayUnits) extends Component:
                                                 ttStyle    = PanelStatusHelper.tooltipStyleClsNameFoErrors(errs),
                                                 ttPosition = "tooltip-bottom"
                                             ).node
+                            // Spinning loader-circle for verdicts the remote service could not
+                            // evaluate yet; the tooltip lists term + reason.
+                            val pendingIcon =
+                                if typeAvail then pending.filter(_.nonEmpty).map(pendingIndicator)
+                                else None
 
                             val allChildren =
                                 List(
                                     statusCons,
                                     statusOther
                                 ) ++
+                                    pendingIcon.toList ++
                                     airIntakeWarningIcon.toList ++
                                     typeDisabledIcon.toList ++
                                     backendNotAvailableIcon.toList ++

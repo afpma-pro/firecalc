@@ -8,6 +8,7 @@ package afpma.firecalc.ui.i18n
 import afpma.firecalc.ui.i18n.I18nData_UI.*
 
 import io.taig.babel.StringFormat1
+import io.taig.babel.StringFormat2
 
 final case class I18nData_UI(
     badges               : Badges,
@@ -15,6 +16,7 @@ final case class I18nData_UI(
     catalog              : Catalog,
     client_project_data  : ClientProjectData,
     connectivity_status  : ConnectivityStatus,
+    constraintVerdicts   : ConstraintVerdicts,
     customer             : Customer,
     default_element_names: DefaultElementNames,
     default_names        : DefaultNames,
@@ -29,6 +31,7 @@ final case class I18nData_UI(
     pdf_ordering         : PDFOrdering,
     placeholders         : Placeholders,
     project_selector     : ProjectSelector,
+    remote_calc          : RemoteCalc,
     shortcuts            : Shortcuts,
     tooltips             : Tooltips,
     ui_messages          : UiMessages,
@@ -41,6 +44,64 @@ object I18nData_UI:
     case class Badges(
         auto_mode  : String,
         manual_mode: String
+    )
+
+    final case class ConstraintVerdicts(
+        labels      : ConstraintVerdicts.Labels,
+        notEvaluated: ConstraintVerdicts.NotEvaluated,
+        pending     : String
+    )
+
+    object ConstraintVerdicts:
+        final case class Labels(
+            m_B                  : String,
+            m_B_min              : String,
+            glassArea            : String,
+            fireboxBase          : String,
+            H_BR                 : String,
+            lambda               : String,
+            heightOfLowestOpening: String,
+            glassSurfaceRatio    : String,
+            airIntakePipeShape   : String,
+            nominalLoadInRange   : String,
+            custom               : String
+        )
+        final case class NotEvaluated(
+            missingMB           : String,
+            missingFlowRate     : String,
+            missingTopologyShape: String
+        )
+
+    /**
+     * Messages for the remote firebox-calculation path (Q10-d / Q11).
+     *
+     * Kept beside `constraintVerdicts` because both describe results that were
+     * computed elsewhere: this one labels *when* results came from and *which
+     * kinds* are missing.
+     *
+     * Every message that names a firebox kind takes it as `{0}` so the text can
+     * be specific about the affected kind — a generic "calculation failed" is
+     * exactly what Q11 replaces.
+     */
+    final case class RemoteCalc(
+        /** Banner heading shown while results are replayed from the cache. */
+        cached_banner_title     : String,
+        /** Banner detail: `{0}` is the localized save timestamp. */
+        cached_banner_detail    : StringFormat1,
+        /** Badge text marking an individual cached value. */
+        cached_badge            : String,
+        /** `{0}` = firebox kind: the browser is offline and nothing is cached. */
+        offline_unavailable     : StringFormat1,
+        /** `{0}` = firebox kind: the service is unreachable and nothing is cached. */
+        kind_unavailable        : StringFormat1,
+        /**
+         * `{0}` = firebox kind, `{1}` = the failed pre-check items (comma-joined).
+         * A 422 geometry pre-check rejection names each failed check instead of
+         * the generic unreachable banner.
+         */
+        precheck_failed         : StringFormat2,
+        /** `{0}` = comma-separated kind names currently unavailable. */
+        kinds_unavailable_banner: StringFormat1
     )
 
     case class Buttons(

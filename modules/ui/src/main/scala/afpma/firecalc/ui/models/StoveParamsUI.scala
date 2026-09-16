@@ -24,6 +24,8 @@ import afpma.laminar.form.derivation.FormDerivation
 import afpma.laminar.form.i18n.FormI18nExtensions.autoOverwriteFieldNames
 import io.taig.babel.Locale
 
+import scala.util.Try
+
 object StoveParamsUI:
 
     // val mB_instances = QtyD_Instances[Kilogram]()(using sunit_Kilogram)
@@ -77,10 +79,16 @@ case class StoveParamsUI()(using Locale, DisplayUnits):
     // We use the raw debounced signal (no staleness check) so that the previous
     // computation's derived values carry over seamlessly when switching sizing methods
     // within the same project. The staleness-checked signal is used for error display.
+    // The engine's `m_B`/`P_n` are throwing defs: a MaxLoad project without
+    // `maximum_load` raises an IllegalStateException when they are forced. Read
+    // them through a local `Try` — no engine Option surface. The signal is
+    // `None` whenever there is no usable computed application — uncomputed,
+    // pending, or a throwing `m_B`/`P_n` read — and the binder falls back to
+    // `d.default` (10 kg / 6 kW).
     private val computedMbSignal: Signal[Option[QtyD[Kilogram]]]    =
-        results_en15544_strict_raw_sig.map(_.toOption.map(_.m_B))
+        results_en15544_strict_raw_sig.map(_.toOption.flatMap(a => Try(a.m_B).toOption))
     private val computedPnSignal: Signal[Option[QtyD[Kilo * Watt]]] =
-        results_en15544_strict_raw_sig.map(_.toOption.map(_.P_n))
+        results_en15544_strict_raw_sig.map(_.toOption.flatMap(a => Try(a.P_n).toOption))
 
     given form_option_mB: Form[Option[QtyD[Kilogram]]] =
         import vv.kilogram.valid_whenStrictlyPositive

@@ -14,9 +14,7 @@ import afpma.firecalc.engine.models.PipeType.given
 import afpma.firecalc.engine.models.PipesResult_15544
 import afpma.firecalc.engine.models.Preview
 import afpma.firecalc.engine.models.en15544.*
-import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.*
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Traditional.CustomForLab
 import afpma.firecalc.engine.models.en15544.std.Outputs.TechnicalSpecficiations
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top
@@ -40,23 +38,31 @@ import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
 class ShowAsTableInstances_15544(using Locale):
 
     given ShowAsTable[Firebox_15544] =
-        ShowAsTable.mkLightFor(I18N.headers.firebox_description):
-            case x: TraditionalFirebox     => x.showOnlyRows
-            case x: Ecolabeled             => x.showOnlyRows
-            case x: AFPMA_PRSE             => x.showOnlyRows
-            case x: CustomForLab           => x.showOnlyRows
-            case x: SingleTested           => x.showOnlyRows
-            case x: Traditional            => x.showOnlyRows
-            case x: CertifiedDesign        => x.showOnlyRows
-            case x: Door15aFirebox_Catalog => x.showOnlyRows
+        ShowAsTable.mkLightFor(I18N.headers.firebox_description)(_.showAsTableRows)
 
+    /**
+     * Cited-constraints table.
+     *
+     * When `perTermDetailAvailable` is `false` (a remotely computed firebox,
+     * whose per-term algebra never crossed the wire) every `CheckableConstraint`
+     * is empty. Emitting those empty rows would read as a passing check, so a
+     * single explanatory row is emitted instead: the authoritative verdicts for
+     * such a firebox are the engine's folded ones, reported elsewhere.
+     */
     given showAsTable_CitedConstraints: (scc: ShowAsTable[CheckableConstraint[?]]) => ShowAsTable[CitedConstraints] =
         ShowAsTable.mkLightFor    (
             header     = I18N.headers.constraints_validation,
             colHeaders = scc.colHeaders.get,
             ccs =>
-                val linesOfLines = ccs.asList.map(scc.rowsOfCells)
-                linesOfLines.flatten
+                if !ccs.perTermDetailAvailable then
+                    val ncols = scc.colHeaders.get.size
+                    Seq(
+                        I18N.en15544.constraints_detail_not_available_remotely ::
+                            List.fill(ncols - 1)("")
+                    )
+                else
+                    val linesOfLines = ccs.asList.map(scc.rowsOfCells)
+                    linesOfLines.flatten
         )
 
     given ShowAsTable[TechnicalSpecficiations] =

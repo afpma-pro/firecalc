@@ -135,7 +135,10 @@ object Frontend {
         writeUIStateSubscription,
         writeFireboxCacheSubscription,
         undoSnapshotSubscription,
-        undoRedoKeyboardSubscription
+        undoRedoKeyboardSubscription,
+        // T1.3 / escalation C1: the remote firebox pre-fetch's explicit start
+        // seam — mounting this binder is what wires the feature.
+        remote.RemoteFireboxPrefetch.prefetchRemoteDataBinder
         // results_en15544_outputs.map(err => ("OUTPUTS 15544", err))
         //     .tapEach(consoleLogVNelStringErrors) --> errorBusConsole
     )

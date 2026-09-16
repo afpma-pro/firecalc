@@ -1,0 +1,199 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+
+# =============================================================================
+# FireCalc — Docker Compose (Standalone Mode, with Calculation Server)
+# =============================================================================
+# Standalone deployment: inner nginx handles TLS termination + Let's Encrypt
+# certificate management. Full self-contained deployment with calc-server.
+#
+# To activate this mode, create a symlink:
+#   cd firecalc-docker && ln -s docker-compose.standalone.yml docker-compose.yml
+#
+# Usage:
+#   docker compose up -d              # Start all services in detached mode
+#   docker compose logs -f backend    # View backend logs
+#   docker compose down               # Stop and remove containers
+#
+# Build images (first time or after artifact update):
+#   docker compose build
+#
+# Environment Variables (via .env file):
+#   FIRECALC_ENV    - Environment name (staging, production, etc.)
+#   UI_DOMAIN       - UI domain name (e.g., firecalc.example.com)
+#   API_DOMAIN      - API domain name (e.g., api.example.com)
+#   LETSENCRYPT_EMAIL - Email for Let's Encrypt notifications
+#   LETSENCRYPT_STAGING - true for staging certs, false for production
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Backend Service — FireCalc Payments API
+  # ===========================================================================
+  backend:
+    image: firecalc-${FIRECALC_ENV}-backend:latest
+    container_name: firecalc-${FIRECALC_ENV}-backend
+    restart: unless-stopped
+
+    environment:
+      - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
+
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./databases:/app/databases:rw
+
+    networks:
+      - firecalc
+    expose:
+      - "8181"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # Calculation Server — Standalone Firebox Calculation API
+  # ===========================================================================
+  calc-server:
+    image: firecalc-${FIRECALC_ENV}-calc-server:latest
+    container_name: firecalc-${FIRECALC_ENV}-calc-server
+    restart: unless-stopped
+
+    environment:
+      - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
+
+    volumes:
+      - ./configs:/app/configs:ro
+
+    networks:
+      - firecalc
+    expose:
+      - "9000"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # UI Server — Static File Server (pre-built image)
+  # ===========================================================================
+  ui-server:
+    image: firecalc-${FIRECALC_ENV}-ui:latest
+    container_name: firecalc-${FIRECALC_ENV}-ui-server
+    restart: unless-stopped
+
+    networks:
+      - firecalc
+    expose:
+      - "80"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # Nginx Reverse Proxy — TLS Termination + Routing
+  # ===========================================================================
+  nginx:
+    image: firecalc-${FIRECALC_ENV}-nginx:latest
+    container_name: firecalc-${FIRECALC_ENV}-nginx
+    restart: unless-stopped
+
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+
+    volumes:
+      - ./nginx/templates/standalone.tpl:/etc/nginx/nginx.conf.tpl:ro
+      - ./nginx/shared:/etc/nginx/conf.d/shared:ro
+      - nginx-generated:/etc/nginx/generated
+      - ./.certs:/etc/letsencrypt:ro
+      - ./certbot-webroot:/var/www/certbot:ro
+
+    environment:
+      - FIRECALC_MODE=with-calc
+      - UI_DOMAIN=${UI_DOMAIN:?UI_DOMAIN must be set in .env file}
+      - API_DOMAIN=${API_DOMAIN:?API_DOMAIN must be set in .env file}
+    depends_on:
+      ui-server:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      calc-server:
+        condition: service_healthy
+
+    networks:
+      - firecalc
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/healthcheck && curl -f http://localhost/calc-healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+  # ===========================================================================
+  # Certbot — Automated Let's Encrypt Certificate Renewal
+  # ===========================================================================
+  certbot:
+    image: certbot/certbot:v2.11.0
+    container_name: firecalc-${FIRECALC_ENV}-certbot
+    restart: unless-stopped
+
+    volumes:
+      - ./.certs:/etc/letsencrypt
+      - ./certbot-webroot:/var/www/certbot
+
+    entrypoint: /bin/sh
+    command: -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "30"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  firecalc:
+    driver: bridge
+volumes:
+  nginx-generated:
+    driver: local

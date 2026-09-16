@@ -451,6 +451,19 @@ object typedefs:
         t_chimney_wall_top_out: ValidatedNel[MCalc_Error, TCelsius]
     )
 
+    /**
+     * The cited EN 15544 §4.3 constraints, each paired with the value checked.
+     *
+     * @param perTermDetailAvailable
+     *   `false` when the resolved firebox engine has no per-term constraint
+     *   algebra — a remotely computed firebox, whose algebra is not transmitted
+     *   over the wire. Every `CheckableConstraint` above is then empty because
+     *   nothing was evaluated *here*, NOT because the firebox has no
+     *   constraints. Renderers MUST surface that distinction; a bare empty
+     *   table reads as a clean bill of health, which would be a silent wrong
+     *   answer. The authoritative verdicts for such a firebox come from the
+     *   engine's folded `constraints` instead.
+     */
     case class CitedConstraints(
         t_n                        : CheckableConstraint[t_n],
         m_B                        : CheckableConstraint[m_B],
@@ -461,45 +474,52 @@ object typedefs:
         λ                          : CheckableConstraint[λ],
         η                          : CheckableConstraint[η],
         height_of_lowest_opening   : CheckableConstraint[height_of_lowest_opening],
-        firebox_glass_surface_ratio: CheckableConstraint[Unit]
+        firebox_glass_surface_ratio: CheckableConstraint[Unit],
+        perTermDetailAvailable     : Boolean
     )
 
     object CitedConstraints:
         extension (cc: CitedConstraints)
 
             def asList: List[CheckableConstraint[?]] =
-                Tuple.fromProductTyped(cc).toList
+                List(
+                    cc.t_n,
+                    cc.m_B,
+                    cc.m_B_min,
+                    cc.glass_area,
+                    cc.fireboxDimensions_Base,
+                    cc.h_br,
+                    cc.λ,
+                    cc.η,
+                    cc.height_of_lowest_opening,
+                    cc.firebox_glass_surface_ratio
+                )
 
+            /**
+             * Constraint violations among the locally evaluated terms.
+             *
+             * Returns `Valid` when [[CitedConstraints.perTermDetailAvailable]]
+             * is `false` — not because everything passed, but because nothing
+             * was evaluated here and reporting a violation would be invention.
+             * The caller (`validateCitedConstraints`) supplies the remote
+             * engine's folded verdicts on that path, so the check is never
+             * silently skipped.
+             */
             def checkFireboxConstraints: ValidatedNel[InvalidFireboxConstraint, Unit] =
                 import cats.implicits.catsSyntaxValidatedId
                 import afpma.firecalc.engine.models.TermConstraint.ValidatedResult.foldToErrDeep
                 import afpma.firecalc.engine.standard.InvalidFireboxConstraint
-                val outputs = List(
+                if !cc.perTermDetailAvailable then ().validNel
+                else
+                    val outputs = cc.asList.flatMap(
+                        _.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse(Nil)
+                    )
                     // TODO: t_n (night temperature / stove storage period) is a StoveConstraint, not a
                     // FireboxConstraint. It should be reported in the StoveParamsUI panel with the same
                     // error reporting mechanism (circle-x marker + tooltip) that other panels use. For
                     // now it is grouped under checkFireboxConstraints and wraps as
                     // InvalidFireboxConstraint so it appears in the Firebox panel status header. Move to
                     // StoveParamsUI when that panel gets error reporting.
-                    cc.t_n.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse       (Nil),
-                    cc.m_B.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse       (Nil),
-                    cc.m_B_min.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse   (Nil),
-                    cc.glass_area.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse(Nil),
-                    cc.fireboxDimensions_Base.vresultOption
-                        .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
-                        .getOrElse                                                                            (Nil),
-                    cc.h_br.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse      (Nil),
-                    cc.λ.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse         (Nil),
-                    cc.η.vresultOption.map(_.foldToErrDeep(InvalidFireboxConstraint.apply)).getOrElse         (Nil),
-                    cc.height_of_lowest_opening.vresultOption
-                        .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
-                        .getOrElse                                                                            (Nil),
-                    cc.firebox_glass_surface_ratio.vresultOption
-                        .map(_.foldToErrDeep(InvalidFireboxConstraint.apply))
-                        .getOrElse                                                                            (Nil)
-                ).flatten
-                if (outputs.size > 0)
-                    NonEmptyList.fromListUnsafe(outputs).invalid
-                else ().validNel
+                    NonEmptyList.fromList(outputs).fold(().validNel)(_.invalid)
 
 end typedefs

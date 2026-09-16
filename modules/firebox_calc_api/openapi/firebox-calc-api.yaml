@@ -1,0 +1,1752 @@
+openapi: 3.1.0
+info:
+  title: Firebox Calculation API
+  version: 1.0.0
+  description: |
+    The Austrian firebox calculation API. See `.omp/firebox-calc-api-spec-final.md` §1.4 (B.8-C):
+    this document is the normative contract. The Scala artifact `firebox_calc_api` is an
+    optional convenience; an entity MAY implement a conformant server or client without linking
+    any AGPL-licensed artifact.
+  license:
+    name: AGPL-3.0-or-later
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+servers:
+  - url: /v1
+paths:
+  /kinds:
+    get:
+      summary: Discover served firebox kinds
+      operationId: getKinds
+      responses:
+        '200':
+          description: The kinds this server serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryResponse'
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: >-
+                `public, max-age=3600`. The kind list changes on deploy, not on
+                user action, so it is cacheable for one hour (spec §8.2).
+                Emitted on this 200 response only.
+            X-RateLimit-Limit:
+              schema: { type: integer }
+              description: >-
+                Maximum requests per window. Per-endpoint limit: 10 requests /
+                minute / key, burst 5 (spec §8.2).
+            X-RateLimit-Remaining:
+              schema: { type: integer }
+              description: Remaining requests in current window
+            X-RateLimit-Reset:
+              schema: { type: integer }
+              description: Unix timestamp when the window resets
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /calculate:
+    post:
+      summary: Calculate firebox contributions, constraints, and report data
+      operationId: calculate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FireboxCalcRequest'
+      responses:
+        '200':
+          description: Calculation succeeded (including when constraints are violated — see §7.2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FireboxCalcResponse'
+          headers:
+            X-RateLimit-Limit:
+              schema: { type: integer }
+              description: >-
+                Maximum requests per window. Per-endpoint limit: 60 requests /
+                minute / key, burst 10 (spec §8.2). No `Cache-Control` on this
+                response.
+            X-RateLimit-Remaining:
+              schema: { type: integer }
+              description: Remaining requests in current window
+            X-RateLimit-Reset:
+              schema: { type: integer }
+              description: Unix timestamp when the window resets
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: '#/components/responses/CalculationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  responses:
+    BadRequest:
+      description: >-
+        Client error. The `error` field is one of:
+        `unknown_kind` — `kind` is not a member of `WireFireboxKind`;
+        `malformed_request` — JSON invalid, required field missing,
+        `WireQty.unit` not the expected `showUnitFull`, `firebox` not decodable as `Firebox_V4`;
+        `unsupported_locale` — `locale` is not a `BackendCompatibleLanguage.code`;
+        `unsupported_api_version` — request `apiVersion` unknown to this server.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorResponseEnvelope'
+              - $ref: '#/components/schemas/FireboxCalcError'
+          examples:
+            unknown_kind:
+              value:
+                error: unknown_kind
+                message: "Unknown firebox kind: xyz"
+            malformed_request:
+              value:
+                error: malformed_request
+                message: "Request body could not be decoded"
+                details:
+                  - code: /kind
+                    message: "Unknown WireFireboxKind: xyz"
+            unsupported_locale:
+              value:
+                error: unsupported_locale
+                message: "Unsupported locale: xx. Supported: en, fr, de, ..."
+            unsupported_api_version:
+              value:
+                error: unsupported_api_version
+                message: "Unsupported API version: v2. Supported: v1"
+
+    NotFound:
+      description: >-
+        Kind not served. The `error` field is `kind_not_served`:
+        a valid `WireFireboxKind` value that this deployment does not implement.
+        The client should have consulted `GET /kinds` first.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseEnvelope'
+          example:
+            error: kind_not_served
+            message: "Firebox kind 'ecolabeled' is not served by this deployment"
+
+    PayloadTooLarge:
+      description: >-
+        Request body exceeds the server's size limit.
+        The `error` field is `payload_too_large`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseEnvelope'
+          example:
+            error: payload_too_large
+            message: "Request entity too large"
+
+    CalculationFailed:
+      description: >-
+        The server could parse the request but the engine computation failed.
+        The `error` field is `calculation_failed`.
+        The `details` array carries per-item error information from the engine.
+        A pre-solve geometry pre-check rejects non-positive pipe cross-section
+        dimensions or element lengths with this 422 before the flow solve runs,
+        and blocking constraint violations are additionally appended to
+        `details` as `GeometryViolation:*` items (spec §7.1).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/FireboxCalcError'
+          example:
+            error: calculation_failed
+            message: "Engine computation failed"
+            details:
+              - code: NonPositivePipeGeometry
+                message: "'Air columns cross section width' must be strictly positive (value = 0.000 m)"
+              - code: NonPositivePipeGeometry
+                message: "'Air columns rise length (W/2 + floor + 2Y)' must be strictly positive (value = 0.000 m)"
+              - code: GeometryViolation:TermValueShouldBeGreaterOrEqThan
+                message: "'Air manifold height (W)' should be ≥ 5.0 cm (value = 0.0 cm)"
+
+    RateLimited:
+      description: >-
+        Rate limit exceeded. The `error` field is `rate_limited`.
+        Includes `Retry-After` header in seconds. Limits are per endpoint and
+        per composite key (client IP prefix + optional `X-Firecalc-App-Key`):
+        `POST /v1/calculate` = 60 requests/minute/key (burst 10),
+        `GET /v1/kinds` = 10 requests/minute/key (burst 5) — spec §8.2.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+          description: Seconds to wait before retrying
+        X-RateLimit-Limit:
+          schema: { type: integer }
+          description: Maximum requests per window
+        X-RateLimit-Remaining:
+          schema: { type: integer }
+          description: Remaining requests in current window (0 when rate limited)
+        X-RateLimit-Reset:
+          schema: { type: integer }
+          description: Unix timestamp when the window resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseEnvelope'
+          example:
+            error: rate_limited
+            message: "Rate limit exceeded. Try again later."
+
+    InternalError:
+      description: >-
+        Unexpected server error. The `error` field is `internal_error`.
+        No stack traces or internal details are leaked.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseEnvelope'
+          example:
+            error: internal_error
+            message: "An internal error occurred"
+
+  schemas:
+    # -------------------------------------------------------------------------
+    # Scalars
+    # -------------------------------------------------------------------------
+
+    WireQty:
+      type: object
+      required: [value, unit]
+      properties:
+        value:
+          type: string
+          description: Decimal string representation of the quantity value
+        unit:
+          type: string
+          description: Full unit string as produced by `SUnit[U].showUnitFull`
+
+    WireLocale:
+      type: string
+      description: BackendCompatibleLanguage code (e.g. "en", "fr", "de")
+
+    ApiVersion:
+      type: string
+      enum: [v1]
+      description: API version string
+
+    WireFireboxKind:
+      type: string
+      enum:
+        - traditional
+        - ecolabeled
+        - afpmaPrse
+        - singleTested
+        - door15aCatalog
+        - customForLab
+      description: Firebox kind identifier
+
+    WireStandardVariant:
+      type: string
+      enum: [strict, mce]
+      description: Calculation standard variant
+
+    WirePipeType:
+      type: string
+      enum:
+        - airIntake
+        - combustionAir
+        - firebox
+        - flue
+        - connector
+        - chimney
+        - noFlue
+      description: Pipe type classification
+
+    # -------------------------------------------------------------------------
+    # WirePipeShape — discriminated union on "kind"
+    # -------------------------------------------------------------------------
+
+    WirePipeShape:
+      oneOf:
+        - type: object
+          required: [kind, diameter]
+          properties:
+            kind:
+              type: string
+              enum: [circle]
+            diameter:
+              $ref: '#/components/schemas/WireQty'
+        - type: object
+          required: [kind, side]
+          properties:
+            kind:
+              type: string
+              enum: [square]
+            side:
+              $ref: '#/components/schemas/WireQty'
+        - type: object
+          required: [kind, a, b]
+          properties:
+            kind:
+              type: string
+              enum: [rectangle]
+            a:
+              $ref: '#/components/schemas/WireQty'
+            b:
+              $ref: '#/components/schemas/WireQty'
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: '#/components/schemas/WirePipeShape/oneOf/0'
+          square: '#/components/schemas/WirePipeShape/oneOf/1'
+          rectangle: '#/components/schemas/WirePipeShape/oneOf/2'
+
+    # -------------------------------------------------------------------------
+    # WirePipeElDescr — discriminated union on "kind", 7 cases
+    # -------------------------------------------------------------------------
+
+    WirePipeElDescr:
+      oneOf:
+        - type: object
+          required: [kind, length, geometry, roughness, elevationGain]
+          properties:
+            kind:
+              type: string
+              enum: [straightSection]
+            length:
+              $ref: '#/components/schemas/WireQty'
+            geometry:
+              $ref: '#/components/schemas/WirePipeShape'
+            roughness:
+              $ref: '#/components/schemas/WireQty'
+            elevationGain:
+              $ref: '#/components/schemas/WireQty'
+        - type: object
+          required: [kind, alpha, effectiveShape]
+          properties:
+            kind:
+              type: string
+              enum: [angleVifDe0A180]
+            alpha:
+              $ref: '#/components/schemas/WireQty'
+            angleN2:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: 'null'
+            effectiveShape:
+              $ref: '#/components/schemas/WirePipeShape'
+        - type: object
+          required: [kind, effectiveShape]
+          properties:
+            kind:
+              type: string
+              enum: [circularArc60]
+            effectiveShape:
+              $ref: '#/components/schemas/WirePipeShape'
+        - type: object
+          required: [kind, nFlows, effectiveShape]
+          properties:
+            kind:
+              type: string
+              enum: [splitMerge90]
+            nFlows:
+              type: integer
+            angleN2:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: 'null'
+            effectiveShape:
+              $ref: '#/components/schemas/WirePipeShape'
+        - type: object
+          required: [kind, from, to]
+          properties:
+            kind:
+              type: string
+              enum: [sectionGeometryChange]
+            from:
+              $ref: '#/components/schemas/WirePipeShape'
+            to:
+              $ref: '#/components/schemas/WirePipeShape'
+        - type: object
+          required: [kind, zeta]
+          properties:
+            kind:
+              type: string
+              enum: [singularFlowResistance]
+            zeta:
+              type: number
+            crossSection:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: 'null'
+        - type: object
+          required: [kind, pa]
+          properties:
+            kind:
+              type: string
+              enum: [pressureDiff]
+            pa:
+              $ref: '#/components/schemas/WireQty'
+            crossSection:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: 'null'
+      discriminator:
+        propertyName: kind
+        mapping:
+          straightSection: '#/components/schemas/WirePipeElDescr/oneOf/0'
+          angleVifDe0A180: '#/components/schemas/WirePipeElDescr/oneOf/1'
+          circularArc60: '#/components/schemas/WirePipeElDescr/oneOf/2'
+          splitMerge90: '#/components/schemas/WirePipeElDescr/oneOf/3'
+          sectionGeometryChange: '#/components/schemas/WirePipeElDescr/oneOf/4'
+          singularFlowResistance: '#/components/schemas/WirePipeElDescr/oneOf/5'
+          pressureDiff: '#/components/schemas/WirePipeElDescr/oneOf/6'
+
+    # -------------------------------------------------------------------------
+    # Named pipe element and full pipe descriptor
+    # -------------------------------------------------------------------------
+
+    WireNamedPipeEl:
+      type: object
+      required: [name, el]
+      properties:
+        name:
+          type: string
+          description: Human-readable name for this pipe element
+        el:
+          $ref: '#/components/schemas/WirePipeElDescr'
+
+    WirePipeFullDescr:
+      type: object
+      required: [pipeType, elements]
+      properties:
+        pipeType:
+          $ref: '#/components/schemas/WirePipeType'
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/WireNamedPipeEl'
+
+    # -------------------------------------------------------------------------
+    # WirePipeResult — 20 fields
+    # -------------------------------------------------------------------------
+
+    WirePipeResult:
+      type: object
+      required:
+        - typ
+        - lengthSum
+        - heightSum
+        - zeta
+        - pu
+        - pd
+        - pRs
+        - pRg
+        - ph
+        - gasTempStart
+        - gasTempMiddle
+        - gasTempEnd
+        - densityMiddle
+        - densityMean
+        - vStart
+        - vEnd
+        - lastDensityMean
+        - lastDensityMiddle
+        - lastVelocityMean
+        - lastVelocityMiddle
+      properties:
+        typ:
+          $ref: '#/components/schemas/WirePipeType'
+        lengthSum:
+          $ref: '#/components/schemas/WireQty'
+        heightSum:
+          $ref: '#/components/schemas/WireQty'
+        zeta:
+          oneOf:
+            - type: number
+            - type: 'null'
+          description: Coefficient of flow resistance (dimensionless)
+        pu:
+          $ref: '#/components/schemas/WireValidated_WireQty'
+          description: Validated pressure — see WireValidated for the valid/invalid arms
+        pd:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        pRs:
+          $ref: '#/components/schemas/WireQty'
+        pRg:
+          $ref: '#/components/schemas/WireQty'
+        ph:
+          $ref: '#/components/schemas/WireQty'
+        gasTempStart:
+          $ref: '#/components/schemas/WireQty'
+        gasTempMiddle:
+          $ref: '#/components/schemas/WireQty'
+        gasTempEnd:
+          $ref: '#/components/schemas/WireQty'
+        densityMiddle:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        densityMean:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        vStart:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        vEnd:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        lastDensityMean:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        lastDensityMiddle:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        lastVelocityMean:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        lastVelocityMiddle:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+
+    # -------------------------------------------------------------------------
+    # Error item
+    # -------------------------------------------------------------------------
+
+    WireErrorItem:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Stable machine identifier for the error
+        message:
+          type: string
+          description: Localised human-readable error message
+
+    # -------------------------------------------------------------------------
+    # WireValidated[A] — discriminated union on "status"
+    # Concrete instance: WireValidated[WireQty] for WirePipeResult.pu
+    # -------------------------------------------------------------------------
+
+    WireValidated_WireQty:
+      oneOf:
+        - type: object
+          required: [status, value]
+          properties:
+            status:
+              type: string
+              enum: [valid]
+            value:
+              $ref: '#/components/schemas/WireQty'
+        - type: object
+          required: [status, errors]
+          properties:
+            status:
+              type: string
+              enum: [invalid]
+            errors:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/WireErrorItem'
+      discriminator:
+        propertyName: status
+        mapping:
+          valid: '#/components/schemas/WireValidated_WireQty/oneOf/0'
+          invalid: '#/components/schemas/WireValidated_WireQty/oneOf/1'
+
+    # -------------------------------------------------------------------------
+    # WireDraftCondition / WireLoadQty — operating-point keys (round-3 D3)
+    # Plain string enums mirroring the engine vocabulary exactly.
+    # -------------------------------------------------------------------------
+
+    WireDraftCondition:
+      type: string
+      enum:
+        - draftMinOrPositivePressureMax
+        - draftMaxOrPositivePressureMin
+      description: >-
+        Draft condition under which an operating-point-keyed asResult entry is
+        valid. Mirrors the engine's DraftCondition vocabulary exactly.
+
+    WireLoadQty:
+      type: string
+      enum:
+        - nominal
+        - reduced
+      description: >-
+        Load quantity under which an operating-point-keyed asResult entry is
+        valid. Mirrors the engine's LoadQty vocabulary exactly.
+
+    WireOpPointResult:
+      type: object
+      required: [draftCondition, loadQty, result]
+      properties:
+        draftCondition:
+          $ref: '#/components/schemas/WireDraftCondition'
+        loadQty:
+          $ref: '#/components/schemas/WireLoadQty'
+        result:
+          $ref: '#/components/schemas/WirePipeResult'
+      description: >-
+        One entry of the operating-point-keyed asResult grid: a solved
+        WirePipeResult valid at EXACTLY the (draftCondition, loadQty) operating
+        point it is keyed by.
+
+    WireValidated_WireFireboxContribution:
+      oneOf:
+        - type: object
+          required: [status, value]
+          properties:
+            status:
+              type: string
+              enum: [valid]
+            value:
+              $ref: '#/components/schemas/WireFireboxContribution'
+        - type: object
+          required: [status, errors]
+          properties:
+            status:
+              type: string
+              enum: [invalid]
+            errors:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/WireErrorItem'
+      discriminator:
+        propertyName: status
+        mapping:
+          valid: '#/components/schemas/WireValidated_WireFireboxContribution/oneOf/0'
+          invalid: '#/components/schemas/WireValidated_WireFireboxContribution/oneOf/1'
+      description: >-
+        A contribution wrapped in the validated vocabulary (round-3 D5). The
+        valid arm carries the contribution; the invalid arm reports a pending
+        contribution with a stable machine code (MissingMB or
+        MissingOperatingEnvelope) and a pre-localised message — the request
+        stays valid and the constraints still flow.
+
+    WireTemperatureOverrides:
+      type: object
+      required: []
+      properties:
+        draftMinOrPositivePressureMax:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+          description: >-
+            Outside-air temperature override (Celsius) for the draft-min
+            condition. Absent (null) leaves the standard default in place.
+        draftMaxOrPositivePressureMin:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+          description: >-
+            Outside-air temperature override (Celsius) for the draft-max
+            condition. Absent (null) leaves the standard default in place.
+      description: >-
+        Per-draft-condition outside-air temperature overrides, mirroring the
+        engine's T_L_override vocabulary. Each field is independently optional.
+
+    WireOperatingEnvelope:
+      type: object
+      required: [altitude]
+      properties:
+        altitude:
+          $ref: '#/components/schemas/WireQty'
+        temperatureOverrides:
+          oneOf:
+            - $ref: '#/components/schemas/WireTemperatureOverrides'
+            - type: 'null'
+      description: >-
+        Site conditions the firebox solve needs beyond the firebox and m_B
+        (round-3 D4). altitude is a WireQty in metres; the optional
+        temperature overrides mirror the engine's T_L_override vocabulary.
+        The client sends raw standard inputs only — the server derives
+        everything else through the standard's own formula chain.
+
+    # -------------------------------------------------------------------------
+    # WireFireboxContribution — discriminated union on "kind"
+    # -------------------------------------------------------------------------
+
+    WireFireboxContribution:
+      oneOf:
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+              enum: [without]
+          description: No contribution from the firebox
+        - type: object
+          required: [kind, descr]
+          properties:
+            kind:
+              type: string
+              enum: [asDescr]
+            descr:
+              $ref: '#/components/schemas/WirePipeFullDescr'
+          description: >-
+            Contribution as a pipe descriptor: the engine's full,
+            operating-point-independent description — never filtered, never
+            lossy (round-3 D1). IP protection is expressed by choosing the
+            asResult arm, not by reducing descriptions.
+        - type: object
+          required: [kind, results]
+          properties:
+            kind:
+              type: string
+              enum: [asResult]
+            results:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/WireOpPointResult'
+          description: >-
+            Contribution as operating-point-keyed pre-computed pipe results
+            (round-3 D3). Each entry is valid exactly at its operating point;
+            the list covers every point the standard evaluates for the
+            requested firebox. The (draftCondition, loadQty) pairs are unique
+            within the list — uniqueness is a documented semantic constraint
+            enforced by the decoder (a duplicate key is a decoding failure).
+      discriminator:
+        propertyName: kind
+        mapping:
+          without: '#/components/schemas/WireFireboxContribution/oneOf/0'
+          asDescr: '#/components/schemas/WireFireboxContribution/oneOf/1'
+          asResult: '#/components/schemas/WireFireboxContribution/oneOf/2'
+
+    # -------------------------------------------------------------------------
+    # ConstraintDescriptor — discriminated union on "kind"
+    # -------------------------------------------------------------------------
+
+    ConstraintDescriptor:
+      oneOf:
+        - type: object
+          required: [kind, min]
+          properties:
+            kind:
+              type: string
+              enum: [min]
+            min:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: number
+              description: Lower bound — either dimensioned (WireQty) or dimensionless (number)
+        - type: object
+          required: [kind, max]
+          properties:
+            kind:
+              type: string
+              enum: [max]
+            max:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: number
+              description: Upper bound — either dimensioned (WireQty) or dimensionless (number)
+        - type: object
+          required: [kind, min, max]
+          properties:
+            kind:
+              type: string
+              enum: [range]
+            min:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: number
+                - type: 'null'
+              description: Optional lower bound — null means absent
+            max:
+              oneOf:
+                - $ref: '#/components/schemas/WireQty'
+                - type: number
+                - type: 'null'
+              description: Optional upper bound — null means absent
+        - type: object
+          required: [kind, expected]
+          properties:
+            kind:
+              type: string
+              enum: [shapeOneOf]
+            expected:
+              type: array
+              items:
+                $ref: '#/components/schemas/WirePipeShape'
+          description: Constraint that the pipe shape must match one of the expected shapes
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+              enum: [opaque]
+          description: >-
+            Opaque constraint — the server evaluates it but does not expose
+            the evaluation logic to the client. The client can only observe
+            the outcome in ConstraintVerdict.outcome.
+      discriminator:
+        propertyName: kind
+        mapping:
+          min: '#/components/schemas/ConstraintDescriptor/oneOf/0'
+          max: '#/components/schemas/ConstraintDescriptor/oneOf/1'
+          range: '#/components/schemas/ConstraintDescriptor/oneOf/2'
+          shapeOneOf: '#/components/schemas/ConstraintDescriptor/oneOf/3'
+          opaque: '#/components/schemas/ConstraintDescriptor/oneOf/4'
+
+    # -------------------------------------------------------------------------
+    # ConstraintTerm — string enum
+    # -------------------------------------------------------------------------
+
+    ConstraintTerm:
+      type: string
+      enum:
+        - m_B
+        - m_B_min
+        - glassArea
+        - fireboxBase
+        - H_BR
+        - lambda
+        - heightOfLowestOpening
+        - glassSurfaceRatio
+        - airIntakePipeShape
+        - nominalLoadInRange
+        - custom
+      description: Identifier for a specific constraint term
+
+    # -------------------------------------------------------------------------
+    # NotEvaluatedReason — string enum
+    # -------------------------------------------------------------------------
+
+    NotEvaluatedReason:
+      type: string
+      enum:
+        - missingMB
+        - missingFlowRate
+        - missingTopologyShape
+      description: Reason why a constraint could not be evaluated
+
+    # -------------------------------------------------------------------------
+    # ConstraintOutcome — discriminated union on "status"
+    # -------------------------------------------------------------------------
+
+    ConstraintOutcome:
+      oneOf:
+        - type: object
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [satisfied]
+          description: The constraint is satisfied
+        - type: object
+          required: [status, message, blocking]
+          properties:
+            status:
+              type: string
+              enum: [violated]
+            message:
+              type: string
+              description: Human-readable violation message
+            blocking:
+              type: boolean
+              description: >-
+                Whether this violation blocks submission.
+                Per §7.2, blocking violations are still returned as 200
+                with the full response body — HTTP status does not encode
+                constraint satisfaction.
+        - type: object
+          required: [status, reason]
+          properties:
+            status:
+              type: string
+              enum: [notEvaluated]
+            reason:
+              $ref: '#/components/schemas/NotEvaluatedReason'
+          description: Constraint could not be evaluated due to missing input
+        - type: object
+          required: [status]
+          properties:
+            status:
+              type: string
+              enum: [notApplicable]
+          description: Constraint does not apply to this firebox kind or configuration
+      discriminator:
+        propertyName: status
+        mapping:
+          satisfied: '#/components/schemas/ConstraintOutcome/oneOf/0'
+          violated: '#/components/schemas/ConstraintOutcome/oneOf/1'
+          notEvaluated: '#/components/schemas/ConstraintOutcome/oneOf/2'
+          notApplicable: '#/components/schemas/ConstraintOutcome/oneOf/3'
+
+    # -------------------------------------------------------------------------
+    # ConstraintVerdict
+    # -------------------------------------------------------------------------
+
+    ConstraintVerdict:
+      type: object
+      required: [term, label, descriptor, outcome]
+      properties:
+        term:
+          $ref: '#/components/schemas/ConstraintTerm'
+        label:
+          type: string
+          description: Human-readable label for this constraint
+        descriptor:
+          $ref: '#/components/schemas/ConstraintDescriptor'
+        outcome:
+          $ref: '#/components/schemas/ConstraintOutcome'
+
+    # -------------------------------------------------------------------------
+    # WireTable — pre-evaluated report table
+    # -------------------------------------------------------------------------
+
+    WireTable:
+      type: object
+      required: [rows]
+      properties:
+        header:
+          oneOf:
+            - type: string
+            - type: 'null'
+          description: Optional table header text
+        colHeaders:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: 'null'
+          description: Optional column header labels
+        rows:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+          description: Table rows as arrays of cell strings
+
+    # -------------------------------------------------------------------------
+    # WireEcolabeledOutputs
+    # -------------------------------------------------------------------------
+
+    WireEcolabeledOutputs:
+      type: object
+      required:
+        - distanceBetweenAirInjectorsY
+        - injectorWidthRearWallLr
+        - injectorWidthSideWallLs
+        - injectorWidthDoorWallLt
+        - injectorHeightDoorWallZt
+        - airColumnThicknessDoorWallSt
+      properties:
+        distanceBetweenAirInjectorsY:
+          type: string
+        injectorWidthRearWallLr:
+          type: string
+        injectorWidthSideWallLs:
+          type: string
+        injectorWidthDoorWallLt:
+          type: string
+        injectorHeightDoorWallZt:
+          type: string
+        airColumnThicknessDoorWallSt:
+          type: string
+
+    # -------------------------------------------------------------------------
+    # FireboxReportData
+    # -------------------------------------------------------------------------
+
+    FireboxReportData:
+      type: object
+      required:
+        - fireboxDescription
+        - emissionsAndEfficiency
+        - combustionAirPipeRows
+        - fireboxPipeRows
+      properties:
+        fireboxDescription:
+          $ref: '#/components/schemas/WireTable'
+        emissionsAndEfficiency:
+          $ref: '#/components/schemas/WireTable'
+        combustionAirPipeRows:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+          description: >-
+            Descriptive columns for combustion air pipe table rows.
+            The server leaves this empty for every kind (§6.5); for an
+            asResult-backed pipe the client renders exactly one aggregate
+            row per pipe from the grid's PipeResult members.
+        fireboxPipeRows:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+          description: >-
+            Descriptive columns for firebox pipe table rows.
+            The server leaves this empty for every kind (§6.5); for an
+            asResult-backed pipe the client renders exactly one aggregate
+            row per pipe from the grid's PipeResult members.
+        ecolabeledOutputs:
+          oneOf:
+            - $ref: '#/components/schemas/WireEcolabeledOutputs'
+            - type: 'null'
+          description: >-
+            Present only for ecolabeled fireboxes; null for other kinds.
+
+
+    # -------------------------------------------------------------------------
+    # Firebox nested types (flat wire encoding for Firebox_V4 subtypes)
+    # -------------------------------------------------------------------------
+
+    WireTestReport:
+      type: object
+      required: [name, date]
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+      description: Test report reference with name and date strings
+
+    WirePolluantName:
+      type: string
+      enum: [CO, Dust, OGC, NOx, Dust+OGC]
+      description: Pollutant name enum (CO, Dust, OGC, NOx, Dust+OGC)
+
+    WireEmissionValue:
+      oneOf:
+        - type: number
+        - type: 'null'
+      description: Emission value as a plain number (mg/Nm³) or null
+
+    TestEmissionValue_DTO:
+      type: object
+      required: [polluant_name, test_method, o2ref]
+      properties:
+        polluant_name:
+          $ref: '#/components/schemas/WirePolluantName'
+        valueO:
+          $ref: '#/components/schemas/WireEmissionValue'
+        test_method:
+          type: string
+        o2ref:
+          $ref: '#/components/schemas/WireQty'
+          description: O2 reference percentage encoded as WireQty
+      description: >-
+        A single test emission value for one pollutant, including the
+        measured value, test method, and O2 reference concentration.
+
+    EmissionValues_DTO:
+      type: object
+      required: [co, dust, ogc, nox]
+      properties:
+        co:
+          $ref: '#/components/schemas/TestEmissionValue_DTO'
+        dust:
+          $ref: '#/components/schemas/TestEmissionValue_DTO'
+        ogc:
+          $ref: '#/components/schemas/TestEmissionValue_DTO'
+        nox:
+          $ref: '#/components/schemas/TestEmissionValue_DTO'
+      description: >-
+        Per-pollutant emission test values. Dust+OGC is a derived value
+        computed at runtime by the engine and has no field here.
+
+    EmissionsAndEfficiencyValues_DTO:
+      type: object
+      required: [firebox_name, accredited_or_notified_body, test_reports, emissions_values]
+      properties:
+        firebox_name:
+          type: string
+        accredited_or_notified_body:
+          type: string
+        test_reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/WireTestReport'
+          description: >-
+            Required in the schema (matching the encoder). The decoder tolerates
+            absence (defaults to empty list) per CommonInstances.
+        emissions_values:
+          $ref: '#/components/schemas/EmissionValues_DTO'
+      description: >-
+        Emissions and efficiency test data: firebox name, accredited body,
+        test reports, and per-pollutant emission values. Efficiency fields
+        are computed by the engine at runtime and are not stored here.
+
+    WireHeatOutputReducedNotDefinedOrTested:
+      oneOf:
+        - type: string
+          enum: [NotDefined]
+          description: Heat output not reduced (nominal load only)
+        - type: object
+          required: [pn_reduced]
+          properties:
+            pn_reduced:
+              $ref: '#/components/schemas/WireQty'
+          description: >-
+            FromTypeTest — reduced heat output from a type test,
+            encoded as a WireQty object {value, unit}
+      description: >-
+        Union of NotDefined (string) and FromTypeTest (object with pn_reduced)
+
+    WireHeatOutputReducedHalfOfNominal:
+      oneOf:
+        - type: string
+          enum: [NotDefined]
+          description: Heat output not reduced (nominal load only)
+        - type: 'null'
+          description: Half of nominal heat output (no explicit value)
+        - $ref: '#/components/schemas/WireQty'
+          description: Explicit reduced heat output value
+      description: >-
+        NotDefined (string) or HalfOfNominal (null for half-of-nominal, or explicit WireQty value)
+
+    WireHeatOutputReduced:
+      oneOf:
+        - type: string
+          enum: [NotDefined]
+          description: Heat output not reduced (nominal load only)
+        - type: 'null'
+          description: Half of nominal heat output
+        - $ref: '#/components/schemas/WireQty'
+          description: Explicit reduced heat output (HalfOfNominal with value)
+        - type: object
+          required: [pn_reduced]
+          properties:
+            pn_reduced:
+              $ref: '#/components/schemas/WireQty'
+          description: >-
+            FromTypeTest — reduced heat output from a type test
+      description: >-
+        Full HeatOutputReduced union: NotDefined (string), HalfOfNominal
+        (null or WireQty), or FromTypeTest (object with pn_reduced)
+
+    WireDoorOpening:
+      type: object
+      required: [height, width]
+      properties:
+        height:
+          $ref: '#/components/schemas/WireQty'
+        width:
+          $ref: '#/components/schemas/WireQty'
+      description: Door opening dimensions (height and width as WireQty)
+
+    WireDoor15aCatalogEntry:
+      type: object
+      required: [declaredShape, doorOpenings, heatOutputReduced]
+      properties:
+        declaredShape:
+          $ref: '#/components/schemas/WirePipeShape'
+        doorOpenings:
+          type: array
+          items:
+            $ref: '#/components/schemas/WireDoorOpening'
+        heatOutputReduced:
+          $ref: '#/components/schemas/WireHeatOutputReducedNotDefinedOrTested'
+      description: >-
+        A single Door 15a catalog entry with declared pipe shape,
+        door openings, and heat output reduction info
+
+    WireDoor15aCatalog:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/WireDoor15aCatalogEntry'
+      description: >-
+        Door 15a catalog with a list of catalog entries.
+        The decoder finds the entry matching the request's airIntakePipeShape.
+
+    # -------------------------------------------------------------------------
+    # Firebox_V4 subtype schemas (flat encoding, no wrapper key)
+    # -------------------------------------------------------------------------
+
+    WireFireboxTraditional:
+      type: object
+      required:
+        - heat_output_reduced
+        - firebox_depth
+        - firebox_width
+        - firebox_height
+        - height_of_lowest_opening
+        - pressure_loss_coefficient_from_door
+        - total_air_intake_surface_area_on_door
+        - glass_width
+        - glass_height
+      properties:
+        heat_output_reduced:
+          $ref: '#/components/schemas/WireHeatOutputReducedHalfOfNominal'
+        firebox_depth:
+          $ref: '#/components/schemas/WireQty'
+        firebox_width:
+          $ref: '#/components/schemas/WireQty'
+        firebox_height:
+          $ref: '#/components/schemas/WireQty'
+        height_of_lowest_opening:
+          $ref: '#/components/schemas/WireQty'
+        pressure_loss_coefficient_from_door:
+          $ref: '#/components/schemas/WireQty'
+        total_air_intake_surface_area_on_door:
+          $ref: '#/components/schemas/WireQty'
+        glass_width:
+          $ref: '#/components/schemas/WireQty'
+        glass_height:
+          $ref: '#/components/schemas/WireQty'
+      description: >-
+        Traditional firebox subtype — flat encoding (no wrapper key).
+        Fields match Firebox_V4.Traditional constructor parameters.
+
+    WireFireboxEcolabeled:
+      type: object
+      required:
+        - heat_output_reduced
+        - version
+        - firebox_depth
+        - firebox_width
+        - firebox_height
+        - height_of_first_row_of_air_injectors
+        - door_opening_width
+        - glass_width
+        - glass_height
+        - ash_pit_height
+        - air_manifold_height
+        - firebox_floor_thickness
+        - firebox_inner_wall_thickness
+        - firebox_outer_wall_thickness
+        - air_column_thickness
+        - width_between_two_air_columns_sides
+        - width_between_two_air_columns_rear
+        - reinforcement_bars_offset_in_corners_R1
+        - reinforcement_bars_offset_in_corners_R2
+        - reinforcement_bars_offset_in_corners_R3
+        - injector_height
+      properties:
+        heat_output_reduced:
+          $ref: '#/components/schemas/WireHeatOutputReducedHalfOfNominal'
+        version:
+          description: "Ecolabeled version. Circe Either encoding with type discriminator."
+          oneOf:
+            - type: object
+              properties:
+                type: { type: string, enum: ["either"] }
+                left_or_right: { type: string, enum: ["left"] }
+                value: { type: string, enum: ["Version 1"] }
+              required: [type, left_or_right, value]
+            - type: object
+              properties:
+                type: { type: string, enum: ["either"] }
+                left_or_right: { type: string, enum: ["right"] }
+                value: { type: string, enum: ["Version 2"] }
+              required: [type, left_or_right, value]
+        air_intake_shape:
+          oneOf:
+            - $ref: '#/components/schemas/WirePipeShape'
+            - type: 'null'
+          description: >-
+            Air intake pipe shape, defined only for Version 2.
+            Encoded by the existing WirePipeShape codec.
+        firebox_depth:
+          $ref: '#/components/schemas/WireQty'
+        firebox_width:
+          $ref: '#/components/schemas/WireQty'
+        firebox_height:
+          $ref: '#/components/schemas/WireQty'
+        height_of_first_row_of_air_injectors:
+          $ref: '#/components/schemas/WireQty'
+        door_opening_width:
+          $ref: '#/components/schemas/WireQty'
+        glass_width:
+          $ref: '#/components/schemas/WireQty'
+        glass_height:
+          $ref: '#/components/schemas/WireQty'
+        ash_pit_height:
+          $ref: '#/components/schemas/WireQty'
+        air_manifold_height:
+          $ref: '#/components/schemas/WireQty'
+        firebox_floor_thickness:
+          $ref: '#/components/schemas/WireQty'
+        firebox_inner_wall_thickness:
+          $ref: '#/components/schemas/WireQty'
+        firebox_outer_wall_thickness:
+          $ref: '#/components/schemas/WireQty'
+        air_column_thickness:
+          $ref: '#/components/schemas/WireQty'
+        width_between_two_air_columns_sides:
+          $ref: '#/components/schemas/WireQty'
+        width_between_two_air_columns_rear:
+          $ref: '#/components/schemas/WireQty'
+        reinforcement_bars_offset_in_corners_R1:
+          $ref: '#/components/schemas/WireQty'
+        reinforcement_bars_offset_in_corners_R2:
+          $ref: '#/components/schemas/WireQty'
+        reinforcement_bars_offset_in_corners_R3:
+          $ref: '#/components/schemas/WireQty'
+        injector_height:
+          $ref: '#/components/schemas/WireQty'
+      description: >-
+        Ecolabeled firebox subtype — flat encoding with air injector
+        geometry fields and optional air intake shape (Version 2 only).
+
+    WireFireboxAfpmaPrse:
+      type: object
+      required:
+        - heat_output_reduced
+        - outside_air_location_in_heater
+        - outside_air_conduit_shape
+        - firebox_depth
+        - firebox_width
+        - firebox_height
+        - height_of_first_row_of_air_injectors
+        - glass_width
+        - glass_height
+        - ash_pit_height
+        - floor_thickness
+        - combustion_air_manifold_height
+        - outside_air_inlet_lip
+        - height_of_air_feed_to_columns
+        - number_of_air_columns_feeding_firebox
+        - number_of_air_columns_feeding_door
+      properties:
+        heat_output_reduced:
+          $ref: '#/components/schemas/WireHeatOutputReducedHalfOfNominal'
+        outside_air_location_in_heater:
+          type: string
+          enum: [FromBottom]
+          description: Outside air location in heater enum
+        outside_air_conduit_shape:
+          $ref: '#/components/schemas/WirePipeShape'
+          description: Actual air intake pipe shape
+        firebox_depth:
+          $ref: '#/components/schemas/WireQty'
+        firebox_width:
+          $ref: '#/components/schemas/WireQty'
+        firebox_height:
+          $ref: '#/components/schemas/WireQty'
+        height_of_first_row_of_air_injectors:
+          $ref: '#/components/schemas/WireQty'
+        glass_width:
+          $ref: '#/components/schemas/WireQty'
+        glass_height:
+          $ref: '#/components/schemas/WireQty'
+        ash_pit_height:
+          $ref: '#/components/schemas/WireQty'
+        floor_thickness:
+          $ref: '#/components/schemas/WireQty'
+        combustion_air_manifold_height:
+          $ref: '#/components/schemas/WireQty'
+        outside_air_inlet_lip:
+          $ref: '#/components/schemas/WireQty'
+        height_of_air_feed_to_columns:
+          $ref: '#/components/schemas/WireQty'
+        number_of_air_columns_feeding_firebox:
+          type: integer
+        number_of_air_columns_feeding_door:
+          type: integer
+      description: >-
+        AFPMA PRSE firebox subtype — flat encoding with outside air
+        location, conduit shape, and air column configuration.
+
+    WireFireboxSingleTested:
+      type: object
+      required:
+        - reference
+        - type_of_appliance
+        - test_standard
+        - firebox_depth
+        - firebox_width
+        - firebox_height
+        - ash_pit_height
+        - is_glass_surface_ratio_below_one_fifth
+        - glass_area
+        - efficiency_nominal
+        - heat_output_reduced
+        - maximum_fuel_mass
+        - air_fuel_ratio_nominal
+        - co2_dry_nominal
+        - emissions_values
+      properties:
+        reference:
+          type: string
+          description: Firebox reference identifier
+        type_of_appliance:
+          type: string
+          enum: [Pellets, WoodLogs]
+          description: Type of appliance enum
+        test_standard:
+          oneOf:
+            - type: string
+              enum: [EN_15250, EN_13229]
+            - type: object
+              required: [National]
+              properties:
+                National:
+                  type: string
+              description: National standard with custom name
+          description: Test standard enum
+        firebox_depth:
+          $ref: '#/components/schemas/WireQty'
+        firebox_width:
+          $ref: '#/components/schemas/WireQty'
+        firebox_height:
+          $ref: '#/components/schemas/WireQty'
+        ash_pit_height:
+          $ref: '#/components/schemas/WireQty'
+        is_glass_surface_ratio_below_one_fifth:
+          type: boolean
+        glass_area:
+          $ref: '#/components/schemas/WireQty'
+        mean_firebox_temperature:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        t_burnout:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        efficiency_nominal:
+          $ref: '#/components/schemas/WireQty'
+        efficiency_reduced:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        heat_output_reduced:
+          $ref: '#/components/schemas/WireHeatOutputReducedNotDefinedOrTested'
+        minimum_fuel_mass:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        maximum_fuel_mass:
+          $ref: '#/components/schemas/WireQty'
+        air_fuel_ratio_nominal:
+          $ref: '#/components/schemas/WireQty'
+        air_fuel_ratio_lowest:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        co2_dry_nominal:
+          $ref: '#/components/schemas/WireQty'
+        co2_dry_lowest:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        pellets_load_burn_duration:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        emissions_values:
+          $ref: '#/components/schemas/EmissionsAndEfficiencyValues_DTO'
+        image:
+          oneOf:
+            - type: string
+            - type: 'null'
+
+    WireFireboxDoor15aCatalog:
+      type: object
+      required:
+        - reference
+        - firebox_depth
+        - firebox_width
+        - firebox_height
+        - sb
+        - expectedAirIntakePipeShapes
+        - actualAirIntakePipeShape
+        - co2_dry_nominal
+        - emissions_values
+        - glass_area
+        - height_of_lowest_opening
+      properties:
+        reference:
+          type: string
+          description: Firebox reference identifier
+        firebox_depth:
+          $ref: '#/components/schemas/WireQty'
+        firebox_width:
+          $ref: '#/components/schemas/WireQty'
+        firebox_height:
+          $ref: '#/components/schemas/WireQty'
+        load_size_nominal:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        sb:
+          $ref: '#/components/schemas/WireQty'
+          description: Door opening height (cm)
+        sb_min:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        sb_max:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        mb_min:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        mb_max:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        pressure_loss_table_raw:
+          type: string
+          description: Raw pressure loss table data
+        expectedAirIntakePipeShapes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WirePipeShape'
+          description: Expected air intake pipe shapes for this firebox
+        actualAirIntakePipeShape:
+          $ref: '#/components/schemas/WirePipeShape'
+          description: Actual air intake pipe shape
+        co2_dry_nominal:
+          $ref: '#/components/schemas/WireQty'
+        co2_dry_lowest:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+        emissions_values:
+          $ref: '#/components/schemas/EmissionsAndEfficiencyValues_DTO'
+        glass_area:
+          $ref: '#/components/schemas/WireQty'
+          description: Glass area (m²)
+        height_of_lowest_opening:
+          $ref: '#/components/schemas/WireQty'
+          description: Height of lowest opening (cm)
+        heat_output_reduced:
+          $ref: '#/components/schemas/WireHeatOutputReduced'
+          description: >-
+            Heat output reduction. OPTIONAL — defaults to NotDefined
+            in the decoder (CommonInstances).
+        image:
+          oneOf:
+            - type: string
+            - type: 'null'
+      description: >-
+        Door 15a catalog firebox subtype — flat encoding with catalog
+        reference, pipe shapes, glass area, and emission values.
+    # -------------------------------------------------------------------------
+    # FireboxCalcRequest
+    # -------------------------------------------------------------------------
+
+    FireboxCalcRequest:
+      type: object
+      required: [apiVersion, kind, firebox, params, locale, standard]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        kind:
+          $ref: '#/components/schemas/WireFireboxKind'
+        firebox:
+          description: >-
+            Firebox_V4 DTO subtype in flat wire encoding — the wrapper key
+            (e.g. "Traditional") is stripped; only the subtype properties
+            appear as direct fields of the firebox object. The kind field
+            on the request determines which subtype schema applies.
+          oneOf:
+            - $ref: '#/components/schemas/WireFireboxTraditional'
+            - $ref: '#/components/schemas/WireFireboxEcolabeled'
+            - $ref: '#/components/schemas/WireFireboxAfpmaPrse'
+            - $ref: '#/components/schemas/WireFireboxSingleTested'
+            - $ref: '#/components/schemas/WireFireboxDoor15aCatalog'
+        params:
+          $ref: '#/components/schemas/Standard15544Params'
+        airIntakePipeShape:
+          oneOf:
+            - $ref: '#/components/schemas/WirePipeShape'
+            - type: 'null'
+          description: >-
+            Air intake pipe shape. OPTIONAL — absent (null) is a valid partial
+            request per B.5-A. When absent, affected constraints return
+            ConstraintOutcome.NotEvaluated with reason "missingAirIntakePipeShape".
+        locale:
+          $ref: '#/components/schemas/WireLocale'
+        standard:
+          $ref: '#/components/schemas/WireStandardVariant'
+        operatingEnvelope:
+          oneOf:
+            - $ref: '#/components/schemas/WireOperatingEnvelope'
+            - type: 'null'
+          description: >-
+            Site conditions for the firebox solve (round-3 D4): altitude in
+            metres plus optional per-draft-condition outside-air temperature
+            overrides. OPTIONAL — absent (null) is a valid partial request per
+            B.5-A. For an asResult kind, an absent envelope yields the
+            contribution's invalid arm (MissingOperatingEnvelope) rather than
+            failing the request. A PRESENT envelope with a malformed quantity
+            (wrong unit, unparseable value) is a 400 malformed_request naming
+            the field.
+      allOf:
+        - if:
+            properties:
+              kind:
+                const: traditional
+            required: [kind]
+          then:
+            properties:
+              firebox:
+                $ref: '#/components/schemas/WireFireboxTraditional'
+        - if:
+            properties:
+              kind:
+                const: ecolabeled
+            required: [kind]
+          then:
+            properties:
+              firebox:
+                $ref: '#/components/schemas/WireFireboxEcolabeled'
+        - if:
+            properties:
+              kind:
+                const: afpmaPrse
+            required: [kind]
+          then:
+            properties:
+              firebox:
+                $ref: '#/components/schemas/WireFireboxAfpmaPrse'
+        - if:
+            properties:
+              kind:
+                const: singleTested
+            required: [kind]
+          then:
+            properties:
+              firebox:
+                $ref: '#/components/schemas/WireFireboxSingleTested'
+        - if:
+            properties:
+              kind:
+                const: door15aCatalog
+            required: [kind]
+          then:
+            properties:
+              firebox:
+                $ref: '#/components/schemas/WireFireboxDoor15aCatalog'
+
+    # -------------------------------------------------------------------------
+    # Standard15544Params
+    # -------------------------------------------------------------------------
+
+    Standard15544Params:
+      type: object
+      required: []
+      properties:
+        m_B:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+          description: >-
+            Maximum load mass in kilograms. OPTIONAL — absent (null) is a
+            valid partial request per B.5-A. When absent, affected constraints
+            return ConstraintOutcome.NotEvaluated with reason "missingMB".
+        n_min:
+          oneOf:
+            - $ref: '#/components/schemas/WireQty'
+            - type: 'null'
+          description: >-
+            EN 15544 required minimum efficiency, unit percent. OPTIONAL —
+            absent (null) is a valid partial request per B.5-A. A
+            ConstraintContext can be built only when BOTH m_B and n_min are
+            present; when n_min is absent no ConstraintContext is built and the
+            m_B-dependent constraints return ConstraintOutcome.NotEvaluated
+            with reason "missingMB".
+
+    # -------------------------------------------------------------------------
+    # FireboxCalcResponse
+    # -------------------------------------------------------------------------
+
+    FireboxCalcResponse:
+      type: object
+      required:
+        - apiVersion
+        - kind
+        - locale
+        - fireboxContribution
+        - combustionAirContribution
+        - constraints
+        - reportData
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        kind:
+          $ref: '#/components/schemas/WireFireboxKind'
+        locale:
+          $ref: '#/components/schemas/WireLocale'
+        fireboxContribution:
+          $ref: '#/components/schemas/WireValidated_WireFireboxContribution'
+        combustionAirContribution:
+          $ref: '#/components/schemas/WireValidated_WireFireboxContribution'
+        constraints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConstraintVerdict'
+        reportData:
+          $ref: '#/components/schemas/FireboxReportData'
+
+    # -------------------------------------------------------------------------
+    # DiscoveryResponse
+    # -------------------------------------------------------------------------
+
+    DiscoveryResponse:
+      type: object
+      required: [apiVersion, kinds]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/WireFireboxKind'
+
+    # -------------------------------------------------------------------------
+    # Error types
+    # -------------------------------------------------------------------------
+
+    FireboxCalcError:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Stable machine error code
+        message:
+          type: string
+          description: Localised human-readable error message
+        details:
+          oneOf:
+            - type: array
+              items:
+                $ref: '#/components/schemas/WireErrorItem'
+            - type: 'null'
+          description: >-
+            Optional array of per-item error details.
+            Present for `malformed_request` (one item per decoding failure)
+            and `calculation_failed` (engine error items).
+
+    ErrorResponseEnvelope:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Stable machine error code
+        message:
+          type: string
+          description: Localised human-readable error message

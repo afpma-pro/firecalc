@@ -31,6 +31,8 @@ web/landing/out/
 
 # Company-specific deployment configs (sensitive information)
 deployment/
+# Public deployment documentation is tracked (ticket 21)
+!docs/deployment/
 modules/*/configs/*.yaml
 modules/*/samples/*.pdf
 
@@ -87,3 +89,11 @@ astformatter
 **/graph-viz.js
 
 .worktrees/
+
+
+# Private, access-restricted repository (ticket 14, IP isolation Phase 3).
+# The proprietary Austrian engine and its private build live here as a SEPARATE
+# Git repository. The public repository must NEVER track proprietary source
+# (SPEC_00 decision 14: "Do not put proprietary source back into a public
+# repository"). This entry keeps `firecalc-firebox-austrian-api/` out of the public working tree.
+firecalc-firebox-austrian-api/

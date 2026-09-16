@@ -17,6 +17,7 @@ import afpma.firecalc.engine.utils.InterpolationError
 import afpma.firecalc.engine.validation.ForbiddenElementInContext
 
 import cats.Show
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 
 import io.taig.babel.Locale
@@ -40,6 +41,7 @@ given ShowUsingLocale[IncrementalValidation_Error] = showUsingLocale:
     case e: ConflictDetected          => Show[ConflictDetected].show(e)
     case e: ForbiddenElementPosition  => Show[ForbiddenElementPosition].show(e)
     case e: ForbiddenElementInContext => Show[ForbiddenElementInContext].show(e)
+    case e: NonPositivePipeGeometry   => Show[NonPositivePipeGeometry].show(e)
 
 // Pipe undefined
 sealed trait NotDefinedYet extends IncrementalValidation_Error
@@ -142,6 +144,19 @@ case class NextSectionLengthMustBeDefined(sectionTyp: PipeType)(using sc: SlotCo
 case class PressureLossMustBeDefined(sectionTyp: PipeType)                       extends PropertyMustBeDefined
 case class PressureLossTableError(err: InterpolationError, sectionTyp: PipeType) extends PropertyMustBeDefined
 
+/**
+ * A remote calculation service reported a contribution it could not produce
+ * (round-3 decision D5: missing `m_B` or missing operating envelope yields a
+ * pending/invalid contribution, NOT a failed request). Carries the service's
+ * stable machine code (`MissingMB`, `MissingOperatingEnvelope`) and its
+ * pre-localised message verbatim — the message is localised server-side in the
+ * request's locale, so the client renders it as-is. Targets the firebox pipe
+ * section: both firebox and combustion-air contributions are firebox-scope
+ * results.
+ */
+case class RemoteContributionInvalid(code: String, message: String) extends PropertyMustBeDefined:
+    override final def sectionTyp: PipeType = FireboxPipeT
+
 object PropertyMustBeDefined:
     given ShowUsingLocale[PropertyMustBeDefined] = showUsingLocale:
         case _: SectionGeometryMustBeDefined   =>
@@ -152,6 +167,8 @@ object PropertyMustBeDefined:
             I18N.incremental_validation.property_must_be_defined.pressure_loss
         case e: PressureLossTableError         =>
             I18N.incremental_validation.property_must_be_defined.pressure_loss_table_error(e.err.show)
+        case e: RemoteContributionInvalid      =>
+            e.message
 
 // Prerequisite errors
 sealed trait PrerequisiteNotMet extends IncrementalValidation_Error
@@ -398,3 +415,70 @@ object ForbiddenElementPosition:
             I18N.incremental_validation.forbidden_element_position.forbidden_at_start(name)
         case ForbiddenAddElementAtEnd(_, name)   =>
             I18N.incremental_validation.forbidden_element_position.forbidden_at_end(name)
+
+// Non-positive pipe geometry errors
+
+/**
+ * A pipe geometry quantity (firebox dimension or Ecolabeled combustion-air
+ * pipe quantity) is not strictly positive: the geometry is invalid before
+ * the solver runs (pre-solve fail-fast).
+ */
+case class NonPositivePipeGeometry(quantity: NonPositivePipeGeometry.Quantity, value: Length, sectionTyp: PipeType)
+    extends IncrementalValidation_Error
+
+object NonPositivePipeGeometry:
+
+    /**
+     * Geometry quantity subject to the strict-positivity pre-check.
+     *  Note: case order is not the 422 wire order — details are emitted in pre-check list order.
+     */
+    enum Quantity:
+        case FireboxWidthA
+        case FireboxDepthB
+        case FireboxHeightH
+        case EcolabeledManifoldInnerWidth
+        case EcolabeledManifoldInnerDepth
+        case EcolabeledColumnsCrossSection
+        case EcolabeledInjectorsCrossSection
+        case EcolabeledColumnsRise
+        case EcolabeledAirIntakeEquivalent
+        case EcolabeledAirManifoldHeight
+        case EcolabeledAirColumnThickness
+        case EcolabeledInjectorHeight
+
+        /** Localized quantity name, resolved at render time under the current locale. */
+        def name(using Locale): String = this match
+            case FireboxWidthA                   => I18N.firebox.firebox_width_A
+            case FireboxDepthB                   => I18N.firebox.firebox_depth_B
+            case FireboxHeightH                  => I18N.firebox.firebox_height_H
+            case EcolabeledManifoldInnerWidth    => I18N.firebox.ecolabeled.air_manifold_inner_width
+            case EcolabeledManifoldInnerDepth    => I18N.firebox.ecolabeled.air_manifold_inner_depth
+            case EcolabeledColumnsCrossSection   => I18N.firebox.ecolabeled.air_columns_cross_section_width
+            case EcolabeledInjectorsCrossSection => I18N.firebox.ecolabeled.air_injectors_cross_section_width
+            case EcolabeledColumnsRise           => I18N.firebox.ecolabeled.air_columns_rise_length
+            case EcolabeledAirIntakeEquivalent   => I18N.firebox.ecolabeled.air_intake_equivalent_shape
+            case EcolabeledAirManifoldHeight     => I18N.firebox.ecolabeled.air_manifold_height_W
+            case EcolabeledAirColumnThickness    => I18N.firebox.ecolabeled.air_column_thickness_S
+            case EcolabeledInjectorHeight        => I18N.firebox.ecolabeled.injector_height_Z
+
+    /**
+     * Collects every item whose value is not strictly positive, preserving the caller's list
+     * order. `.omp/firebox-calc-api-spec-final.md` §7.1 pins the cross-group 422 `details`
+     * order: pre-check and contribution items come before the `GeometryViolation:` items.
+     * The within-group order simply mirrors the caller's list — for the firebox pre-check
+     * site that is width (A), depth (B), height (H), the order §7.1 enumerates its checks
+     * in; that pin lives in `FireboxContributionZeroGeometryPreCheckSuite` ("collect every
+     * offending dimension in A, B, H order").
+     * Returns `None` when every value is strictly positive.
+     */
+    def checkAll(items: List[(Quantity, Length)], sectionTyp: PipeType): Option[NonEmptyList[NonPositivePipeGeometry]] =
+        NonEmptyList.fromList(items.flatMap { (quantity, value) =>
+            Option.when(value.value <= 0.0)(NonPositivePipeGeometry(quantity, value, sectionTyp))
+        })
+
+    given ShowUsingLocale[NonPositivePipeGeometry] = showUsingLocale: e =>
+        given Show[Length] = shows.defaults.show_Meters
+        I18N.incremental_validation.non_positive_pipe_geometry.message(
+            e.quantity.name,
+            e.value.show
+        )

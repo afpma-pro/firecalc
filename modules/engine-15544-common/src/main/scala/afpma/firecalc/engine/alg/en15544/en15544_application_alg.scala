@@ -324,7 +324,10 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def airIntake_PipeResult: WithParams_13384[VNelMcalcErr[PipeResult]]
 
     // outputs
-    val techSpecs: TechnicalSpecficiations
+    // Lazy: `techSpecs` embeds `P_n`/`m_B`, which are undefined for a MaxLoad
+    // project without `maximum_load`; construction must not force them (US18
+    // remote degradation builds the app and sends a `m_B`-absent request).
+    lazy val techSpecs: TechnicalSpecficiations
     def reference_temperatures: ReferenceTemperatures
 
     def validateFluePipeShape               (                    ): VNel[Unit]

@@ -10,6 +10,8 @@ import cats.syntax.all.*
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en15544.EN15544_V_2023_Formulas_Alg
+import afpma.firecalc.engine.alg.en15544.FireboxEngineRegistry
+import afpma.firecalc.engine.alg.en15544.RemoteFireboxData
 import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
@@ -21,8 +23,11 @@ import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.MassFlows
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance.Temperatures
+import afpma.firecalc.engine.models.en13384.typedefs.{DraftCondition, T_L_override}
 import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake_PreFireboxOnly
+import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544
 import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_Strict
+import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.models.gtypedefs.*
 import afpma.firecalc.engine.ops.PipeWithGasFlowOps
@@ -58,11 +63,141 @@ object EN15544_Strict_Application:
         override lazy val incrInputs: IncrementalPipeInputs_15544_Strict = _incrInputs
     }
 
+    /**
+     * Factory for the standalone [[FireboxCalculation]] path: like [[make]]
+     * but with the envelope's `T_L_override` MERGED OVER this application's
+     * own default (`en13384_T_L_override_default`), per draft condition.
+     *
+     * Absent overrides reproduce the full strict application member-for-member
+     * (the standalone is layered out of it); a per-condition override wins for
+     * its condition while the other condition keeps the strict default — never
+     * the EN 13384 standard default.
+     */
+    private[strict] def makeWithEnvelope(
+        f: EN15544_V_2023_Formulas_Alg
+    )(
+        i          : Inputs_15544_Strict,
+        _incrInputs: IncrementalPipeInputs_15544_Strict,
+        tLOverride : afpma.firecalc.engine.models.en13384.typedefs.T_L_override
+    ): EN15544_Strict_Application = new EN15544_Strict_Application(f) {
+        override lazy val inputs    : Inputs_15544_Strict                = i
+        override lazy val incrInputs: IncrementalPipeInputs_15544_Strict = _incrInputs
+        override lazy val en13384_T_L_override =
+            tLOverride.mergeOver(en13384_T_L_override_default)
+    }
+
+    /**
+     * Wrap an existing application so that its lazy `fc` (firebox engine)
+     * resolves from a remote-backed registry instead of the default local one.
+     *
+     * The wrapper delegates all behaviour to `delegate` except for
+     * `fireboxEngineRegistry`, which returns a six-entry registry (one per
+     * closed kind, in `FireboxEngineRegistry_Strict` order) where the actual
+     * kind is served by a `RemoteBackedFireboxEngine` and the rest keep their
+     * local engines; `checkTotality()` is run on construction. Because `fc` is
+     * `lazy`, it has not yet been evaluated when this wrapper is created — the
+     * algebra chain only calls `make`, and `fc` is accessed later by panels.
+     *
+     * Per spec §5.4, this is the single code path for the remote engine:
+     * `fireboxEngineSource match { case Local => localRegistry;
+     * case Remote(_) => remoteRegistryWithData }`.
+     */
+    private[engine] def withRemoteData(
+        delegate  : EN15544_Strict_Application,
+        remoteData: RemoteFireboxData[
+            FireboxPipe_Module_15544.FullDescr,
+            CombustionAirPipe_Module_15544.FullDescr
+        ]
+    ): EN15544_Strict_Application =
+        new RemoteBackedWrapper(delegate, remoteData)
+
+    /**
+     * Wrapper that overrides `fireboxEngineRegistry` to return a remote-backed
+     * registry. All other members delegate to the original application.
+     *
+     * Defined inside the companion object so it can extend the sealed class.
+     */
+    private final class RemoteBackedWrapper(
+        delegate  : EN15544_Strict_Application,
+        remoteData: RemoteFireboxData[
+            FireboxPipe_Module_15544.FullDescr,
+            CombustionAirPipe_Module_15544.FullDescr
+        ]
+    ) extends EN15544_Strict_Application(delegate.formulas):
+
+        override lazy val inputs    : Inputs_15544_Strict         = delegate.inputs
+        override lazy val incrInputs: IncrementalPipeInputs_15544 =
+            delegate.incrInputs
+
+        // Capture the firebox reference for narrowing (TypeTest supplied per entry).
+        private val designFirebox: afpma.firecalc.engine.models.en15544.std.Firebox_15544 =
+            delegate.inputs.design.firebox
+
+        // ── Remote-backed registry (ticket 11: generic over the base registry) ──
+        // Built by mapping the base `FireboxEngineRegistry_Strict` entry list:
+        // the entry whose `narrow` accepts this project's firebox — the kind
+        // `remoteData` was prefetched for — is swapped for a remote-backed
+        // engine (`toRemoteBacked`); every other entry keeps its local engine.
+        // Order and kind coverage are inherited from the base registry
+        // (invariant 7), so `checkTotality()` holds by construction.
+        //
+        // This is generic in the model type: it uses each entry's own
+        // `TypeTest`-backed `narrow` to identify the served kind, so the wrapper
+        // never names a concrete firebox model. The base registry carries
+        // generic remote-only carriers for the proprietary kinds (ticket 16:
+        // shared, Austrian-free), and this mapping swaps the served entry for
+        // the remote-backed engine.
+        override protected lazy val fireboxEngineRegistry: FireboxEngineRegistry[
+            FireboxPipe_Module_15544.FullDescr,
+            CombustionAirPipe_Module_15544.FullDescr
+        ] =
+            new FireboxEngineRegistry[
+                FireboxPipe_Module_15544.FullDescr,
+                CombustionAirPipe_Module_15544.FullDescr
+            ]:
+                val name = "RemoteBackedFireboxEngineRegistry"
+                val all  = FireboxEngineRegistry_Strict.all.map: entry =>
+                    if entry.narrow(designFirebox).isDefined then entry.toRemoteBacked(remoteData)
+                    else entry
+                locally { checkTotality() }
+
+        // AtParams (atDraftMin/Max_LoadNominal/LoadMin) are NOT delegated
+        // across instances: they are inherited from the abstract class and
+        // recomputed against THIS wrapper's `fc` (the remote-backed registry
+        // above). Delegating the delegate's AtParams would need a runtime cast
+        // to bridge the path-dependent inner-trait types `delegate.AtParams`
+        // -> `this.AtParams` (invariant 9), and would compute the outputs
+        // with the LOCAL engine despite the remote registry. Inheriting is
+        // cast-free and uses the remote engine. (fix-plan Phase 3, dev. 4.)
+
 sealed abstract class EN15544_Strict_Application(
     override val formulas: EN15544_V_2023_Formulas_Alg
 ) extends impl.en15544.common.EN15544_V_2023_Common_Application
-    with HasTypeMembers_15544_Strict {
+    with HasTypeMembers_15544_Strict
+    with FireboxScopeCore_Strict {
     en15544 =>
+
+    override protected def fireboxEngineRegistry: FireboxEngineRegistry[?, ?] =
+        FireboxEngineRegistry_Strict
+
+    /** Test-only accessor for the active registry (fix-plan Phase 1 acceptance). */
+    private[strict] def activeRegistry: FireboxEngineRegistry[?, ?] =
+        fireboxEngineRegistry
+
+    /**
+     * Package-private forwarders for the protected per-params contributed-
+     * result lookups, so [[FireboxScopeCore_Strict]] (a mixin trait that
+     * cannot access protected members of the common application base) can
+     * reach them. Each indexes the engine's contributed grid by the requested
+     * operating point.
+     */
+    private[strict] def fireboxContributedResultOpt(dc: DraftCondition, lq: LoadQty): VNelMcalcErr[Option[PipeResult]] =
+        fireboxContributedResultAt(dc, lq)
+    private[strict] def combustionAirContributedResultOpt(
+        dc: DraftCondition,
+        lq: LoadQty
+    )                                                                               : VNelMcalcErr[Option[PipeResult]] =
+        combustionAirContributedResultAt(dc, lq)
 
     // ─── EN13384ForApp: concrete type provided by strict ─────────────────
     override type EN13384ForApp = EN13384_1_A1_2019_Common_Application
@@ -134,7 +269,7 @@ sealed abstract class EN15544_Strict_Application(
                 flue_gas_temp_reduced = None
             )
 
-    override final lazy val en13384_T_L_override = en13384_T_L_override_default
+    override lazy val en13384_T_L_override = en13384_T_L_override_default
 
     val fluegas_σ_CO2_dry_nominal: σ_CO2 =
         inputs.design.firebox.co2_dry_nominal
@@ -241,41 +376,38 @@ sealed abstract class EN15544_Strict_Application(
     override def combustionAir_PipeResult_whenExists(
         fd: CombustionAirPipe_Module_15544.FullDescr
     ) =
-        ops_en15544.FlowOnlyMecaFlu_15544
-            .makePipeResult                 (
-                fd                  = CombustionAirPipe_Module_15544.unwrap(fd),
-                gas                 = CombustionAir,
-                loadQty             = LoadQty.summon,
-                z_geodetical_height = z_geodetical_height,
-                params              = pressReq_from_Params_15544,
-                tempStartOverride   = None,
-                sc                  = SlotContext.unslotted
-            )(using en15544, en15544.ssalg(SlotContext.unslotted))
-            .toValidatedNel
+        val p = summon[Params_15544]
+        solveCombustionAirDescriptor(fd, p._1, p._2)
 
     // ─── StrictAtParams: concrete inner class for strict application ─────
 
     class StrictAtParams(p: Params_15544) extends CommonAtParams(p):
 
+        /**
+         * The combustion-air gas-path result.
+         *
+         * An engine that returned `FireboxContribution.AsResult` has dictated
+         * the result outright (it owes the full continuation state); the solver
+         * is then not invoked. Every engine registered today returns `AsDescr`,
+         * so the fallback below is the normal path.
+         */
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult] =
-            given Params_15544 = p
-            CombustionAirPipe_Module_15544.foldPipeCanBe(inputs.pipes.combustionAir)  (
-                onWithout   = combustionAir_PipeResult_whenEmpty,
-                onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)
-            )
+            solveCombustionAirPipeAt(p._1, p._2).andThen:
+                case Some(pr) => pr.validNel
+                case None     =>
+                    given Params_15544 = p
+                    combustionAir_PipeResult_whenEmpty
 
+        /**
+         * The firebox gas-path result.
+         *
+         * An engine that returned `FireboxContribution.AsResult` has dictated
+         * the result outright (it owes the full continuation state); the solver
+         * is then not invoked. Every engine registered today returns `AsDescr`,
+         * so the fallback below is the normal path.
+         */
         lazy val firebox_PipeResult: VNelMcalcErr[PipeResult] =
-            ops_en15544.FlowOnlyMecaFlu_15544
-                .makePipeResult                 (
-                    fd                  = FireboxPipe_Module_15544.unwrap(inputs.pipes.firebox),
-                    gas                 = FlueGas,
-                    loadQty             = p._2,
-                    z_geodetical_height = z_geodetical_height,
-                    params              = p._1,
-                    tempStartOverride   = None,
-                    sc                  = SlotContext.unslotted
-                )(using en15544, en15544.ssalg(SlotContext.unslotted))
-                .toValidatedNel
+            solveFireboxPipeAt(p._1, p._2)
 
         /**
          * Stage 1 — flue region pipe results (HA-power-free).

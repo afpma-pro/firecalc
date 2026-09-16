@@ -34,11 +34,12 @@ object ConfigPathResolver {
      *
      * @param module The module name (e.g., "payments", "reports", "invoices")
      * @param filename The configuration filename
-     * @return Path relative to project root: configs/{env}/{module}/{filename}
+     * @param basePath Root directory for resolving the config path (default: current working directory)
+     * @return Path: basePath/configs/{env}/{module}/{filename}
      */
-    def resolveConfigPath(module: String, filename: String): Path = {
+    def resolveConfigPath(module: String, filename: String, basePath: Path = Paths.get("")): Path = {
         val env = resolveEnvironment()
-        Paths.get("configs", env, module, filename)
+        List("configs", env, module, filename).foldLeft(basePath)((p, name) => p.resolve(name))
     }
 
     /**
@@ -48,16 +49,14 @@ object ConfigPathResolver {
      * module's configuration directory.
      *
      * @param module The module name (e.g., "reports", "invoices")
+     * @param basePath Root directory for resolving the config path (default: current working directory)
      * @return Some(Path) if a logo file exists, None otherwise
      */
-    def resolveLogoPath(module: String): Option[Path] = {
-        val env        = resolveEnvironment()
+    def resolveLogoPath(module: String, basePath: Path = Paths.get("")): Option[Path] = {
         val extensions = List("png", "jpg", "jpeg")
 
         extensions
-            .map { ext =>
-                Paths.get("configs", env, module, s"logo.$ext")
-            }
+            .map(ext => resolveConfigPath(module, s"logo.$ext", basePath))
             .find(Files.exists(_))
     }
 
@@ -66,10 +65,11 @@ object ConfigPathResolver {
      *
      * @param module The module name
      * @param filename The configuration filename
+     * @param basePath Root directory for resolving the config path (default: current working directory)
      * @return true if the file exists
      */
-    def configExists(module: String, filename: String): Boolean = {
-        val path = resolveConfigPath(module, filename)
+    def configExists(module: String, filename: String, basePath: Path = Paths.get("")): Boolean = {
+        val path = resolveConfigPath(module, filename, basePath)
         Files.exists(path)
     }
 

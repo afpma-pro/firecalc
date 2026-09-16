@@ -322,13 +322,6 @@ object v1:
         given Encoder[VerifyAndProcessResponse] = deriveEncoder
         given Decoder[VerifyAndProcessResponse] = deriveDecoder
 
-    /** Error response envelope matching backend error format from PurchaseServiceError */
-    case class ErrorResponseEnvelope(error: String, message: String)
-
-    object ErrorResponseEnvelope:
-        given Encoder[ErrorResponseEnvelope] = deriveEncoder
-        given Decoder[ErrorResponseEnvelope] = deriveDecoder
-
     /** Production product catalog - use in production environment */
     object ProductionProductCatalog:
         val PDF_REPORT_EN_15544_2023 = ProductInfo(

@@ -52,6 +52,16 @@ extension [A](signal: Signal[A])
     ): Signal[(A, B, C, D, E, F)] =
         signal.combineWith(s1, s2, s3, s4, s5).distinct
 
+    def combineWithDistinct[B, C, D, E, F, G](
+        s1: Signal[B],
+        s2: Signal[C],
+        s3: Signal[D],
+        s4: Signal[E],
+        s5: Signal[F],
+        s6: Signal[G]
+    ): Signal[(A, B, C, D, E, F, G)] =
+        signal.combineWith(s1, s2, s3, s4, s5, s6).distinct
+
 extension [A](svnel: Signal[VNelString[A]])
 
     def mapVNelString[B](f: A => B): Signal[VNelString[B]] =

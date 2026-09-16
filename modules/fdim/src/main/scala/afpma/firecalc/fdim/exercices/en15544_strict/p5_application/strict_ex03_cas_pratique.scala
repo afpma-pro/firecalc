@@ -15,8 +15,7 @@ import afpma.firecalc.domain.InclinationDirection
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
-import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled
-import afpma.firecalc.engine.models.en15544.firebox.Ecolabeled_V1
+import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
 import cats.syntax.all.*
 
@@ -29,9 +28,8 @@ object strict_ex03_cas_pratique
     import afpma.firecalc.engine.impl.en15544.strict.given
     import gtypedefs.ζ
 
-    type FB = Ecolabeled
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    type FB = TraditionalFirebox
+    protected val fireboxEngine = summon
 
     val exercice_name = "exercices // p5_application // mce_ex03_cas_pratique"
 
@@ -50,27 +48,15 @@ object strict_ex03_cas_pratique
 
     val airIntakePipe = AirIntakePipe_Module.noVentilationOpenings.validNel
 
-    val firebox: Ecolabeled = Ecolabeled_V1(
-        pn_reduced                              = HeatOutputReduced.HalfOfNominal.makeWithoutValue,
-        firebox_depth_B                         = 54.cm,
-        firebox_width_A                         = 54.cm,
-        firebox_height_H                        = 80.cm,
-        door_opening_width                      = 54.cm,
-        glass_width                             = 50.cm,
-        glass_height                            = 40.cm,
-        ash_pit_height_AF                       = 8.cm,
-        air_manifold_height_W                   = 11.cm,
-        firebox_floor_thickness                 = 10.cm,
-        inner_wall_thickness_D1                 = 6.cm,
-        outer_wall_thickness_D2                 = 6.cm,
-        air_column_thickness_S                  = 3.5.cm,
-        width_between_two_air_columns_sides_E   = 3.cm,
-        width_between_two_air_columns_rear_E    = 3.cm,
-        reinforcement_bars_offset_in_corners_R1 = 3.cm,
-        reinforcement_bars_offset_in_corners_R2 = 3.cm,
-        reinforcement_bars_offset_in_corners_R3 = 3.cm,
-        injector_height_Z                       = 0.8.cm,
-        height_of_first_row_of_air_injectors_X  = 10.cm
+    val firebox = TraditionalFirebox(
+        firebox_depth_B                       = 54.cm,
+        firebox_width_A                       = 54.cm,
+        firebox_height_H                      = 80.cm,
+        pressure_loss_coefficient_from_door   = 0.3.unitless,
+        total_air_intake_surface_area_on_door = 170.cm2,
+        glass_width                           = 50.cm,
+        glass_height                          = 40.cm,
+        ash_pit_height_AF                     = 8.cm
     )
 
     override def postFireboxInitialDirection = Some(

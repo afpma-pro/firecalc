@@ -12,6 +12,7 @@ import afpma.firecalc.dto.v4.TypeOfAppliance
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
+import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.engine.alg.en15544.RemovedFireboxSizingConstraints
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.*
@@ -29,6 +30,8 @@ import afpma.firecalc.engine.standard.*
  */
 given singleTestedConstraints: (FireboxConstraints[SingleTested] & RemovedFireboxSizingConstraints[SingleTested]) =
     new FireboxConstraints_Strict[SingleTested] with RemovedFireboxSizingConstraints[SingleTested]:
+
+        override def kind: FireboxKind = FireboxKind.SingleTested
 
         // ── 4.2.1 – m_B: from type-test data ─────────────────────────────────
         override def m_B_constraints(

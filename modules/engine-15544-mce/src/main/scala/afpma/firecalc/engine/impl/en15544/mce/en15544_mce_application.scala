@@ -16,6 +16,7 @@ import coulomb.policy.standard.given
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en13384.*
+import afpma.firecalc.engine.alg.en15544.FireboxEngineRegistry
 import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.models // scalafix:ok
@@ -61,6 +62,9 @@ abstract class EN15544_MCE_Application(
 ) extends impl.en15544.common.EN15544_V_2023_Common_Application
     with HasTypeMembers_15544_MCE {
     en15544_mce =>
+
+    override protected def fireboxEngineRegistry: FireboxEngineRegistry[?, ?] =
+        FireboxEngineRegistry_MCE
 
     // ─── EN13384ForApp: concrete type provided by MCE ────────────────────
     override type EN13384ForApp = EN13384_1_A1_2019_Common_Application
@@ -319,38 +323,63 @@ abstract class EN15544_MCE_Application(
 
     class MCEAtParams(p: Params_15544) extends CommonAtParams(p):
 
+        /**
+         * The combustion-air gas-path result.
+         *
+         * An engine that returned `FireboxContribution.AsResult` for the
+         * combustion-air path dictates the result outright — at THIS operating
+         * point, indexed from the contributed grid — and the thermal solver is
+         * not invoked.
+         */
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult] =
-            CombustionAirPipe_Module_13384.foldPipeCanBe(inputs.pipes.combustionAir)  (
-                onWithout   = combustionAir_PipeResult_whenEmpty(using p),
-                onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)(using p)
-            )
+            combustionAirContributedResultAt(p._1, p._2).andThen:
+                case Some(r) => r.validNel
+                case None    =>
+                    CombustionAirPipe_Module_13384.foldPipeCanBe(inputs.pipes.combustionAir)  (
+                        onWithout   = combustionAir_PipeResult_whenEmpty(using p),
+                        onFullDescr = fd => combustionAir_PipeResult_whenExists(fd)(using p)
+                    )
 
+        /**
+         * The firebox gas-path result.
+         *
+         * An engine that returned `FireboxContribution.AsResult` dictated the
+         * result outright — at THIS operating point, indexed from the contributed
+         * grid — and the thermal solver is not invoked. Note this path
+         * normally SEEDS from the combustion-air result's continuation state
+         * (`last_density_*` / `last_velocity_*` below) — an `AsResult`
+         * combustion-air contribution that left those `None` would starve it,
+         * which is why `AsResult` obliges the full continuation state.
+         */
         lazy val firebox_PipeResult: VNelMcalcErr[PipeResult] =
-            combustionAir_PipeResult.andThen: cci =>
-                (
-                    en13384_heatingAppliance_powers,
-                    en13384_heatingAppliance_efficiency
-                )
-                    .mapN_andThen: (ha_pow, ha_eff) =>
-                        given Params_13384 = p: Params_13384
-                        ops_en13384.ThermalMecaFlu_13384
-                            .makePipeResult                (
-                                fd                 = FireboxPipe_Module_13384.unwrap(inputs.pipes.firebox),
-                                hafg               = en13384_heatingAppliance_fluegas,
-                                hamf               = en13384_heatingAppliance_massFlows,
-                                temp_start         = t_BR,
-                                last_pipe_density  = en13384_application.computeAt match
-                                    case ComputeAt.Mean   => cci.last_density_mean
-                                    case ComputeAt.Middle => cci.last_density_middle
-                                ,
-                                last_pipe_velocity = en13384_application.computeAt match
-                                    case ComputeAt.Mean   => cci.last_velocity_mean
-                                    case ComputeAt.Middle => cci.last_velocity_middle
-                                ,
-                                gas                = FlueGas,
-                                sc                 = SlotContext.unslotted
-                            )
-                            .toValidatedNel
+            fireboxContributedResultAt(p._1, p._2).andThen:
+                case Some(r) => r.validNel
+                case None    =>
+                    combustionAir_PipeResult.andThen: cci =>
+                        (
+                            en13384_heatingAppliance_powers,
+                            en13384_heatingAppliance_efficiency
+                        )
+                            .mapN_andThen: (ha_pow, ha_eff) =>
+                                given Params_13384 = p: Params_13384
+                                ops_en13384.ThermalMecaFlu_13384
+                                    .makePipeResult                (
+                                        fd                 = FireboxPipe_Module_13384.unwrap(inputs.pipes.firebox),
+                                        hafg               = en13384_heatingAppliance_fluegas,
+                                        hamf               = en13384_heatingAppliance_massFlows,
+                                        temp_start         = t_BR,
+                                        last_pipe_density  = en13384_application.computeAt match
+                                            case ComputeAt.Mean   => cci.last_density_mean
+                                            case ComputeAt.Middle => cci.last_density_middle
+                                        ,
+                                        last_pipe_velocity = en13384_application.computeAt match
+                                            case ComputeAt.Mean   => cci.last_velocity_mean
+                                            case ComputeAt.Middle => cci.last_velocity_middle
+                                        ,
+                                        gas                = FlueGas,
+                                        sc                 = SlotContext.unslotted
+                                    )
+                                    .toValidatedNel
 
         /**
          * Stage 1 — flue region pipe results (HA-temperature-free).

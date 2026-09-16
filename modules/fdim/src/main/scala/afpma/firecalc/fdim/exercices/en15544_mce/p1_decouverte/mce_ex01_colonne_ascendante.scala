@@ -36,8 +36,7 @@ object mce_ex01_colonne_ascendante
     import gtypedefs.ζ
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val exercice_name = "exercices // p1_decouverte // mce_ex01_colonne_ascendante"
 

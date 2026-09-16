@@ -10,7 +10,6 @@ import afpma.firecalc.engine.cas_types.CasTypesRunner_15544_Strict
 import afpma.firecalc.engine.cas_types.v2024_10_Alg
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C1
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C2
-import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C3
 
 import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 import cats.syntax.all.*
@@ -48,14 +47,5 @@ class EN15544_GoldenValidation_Suite extends CasTypesRunner_15544_Strict with Go
             "cas_types_15544/current/02 - Kachelofen.afpma.txt",
             "/validation/cas_types_15544/02 - Kachelofen.afpma.txt",
             "EN15544 C2"
-        )
-    }
-
-    "C3 - Cas pratique golden-file validation" in {
-        validateCasType(
-            CasType_15544_C3,
-            "cas_types_15544/current/03 - Cas pratique.afpma.txt",
-            "/validation/cas_types_15544/03 - Cas pratique.afpma.txt",
-            "EN15544 C3"
         )
     }

@@ -9,9 +9,9 @@ import afpma.firecalc.dto.all.FlowOnlyPipeDescr_15544
 import afpma.firecalc.dto.all.ThermalPipeDescr_13384
 
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
+import afpma.firecalc.engine.alg.en15544.FireboxContribution
+import afpma.firecalc.engine.alg.en15544.FireboxEngine
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Formulas
-import afpma.firecalc.engine.impl.en15544.strict.FireboxToCombustionAirPipe_15544_Strict
-import afpma.firecalc.engine.impl.en15544.strict.FireboxToFireboxPipe_15544_Strict
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
@@ -21,6 +21,7 @@ import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_Strict
 import afpma.firecalc.engine.models.en15544.Inputs_15544_Strict
 import afpma.firecalc.engine.standard.IncrementalValidation_Error
 import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.engine.standard.UnexpectedDevError
 import afpma.firecalc.engine.standard.VNelMcalcErr
 
 import cats.data.ValidatedNel
@@ -30,16 +31,59 @@ import cats.syntax.all.*
 trait v0_2024_10_strict_members extends v0_2024_10_core:
 
     trait Firebox_15544_Strict_Alg extends HasFirebox_15544_Alg with HasFireboxInternalPipes_15544_Strict_Alg:
-        protected val toCombustionAirPipeTC: FireboxToCombustionAirPipe_15544_Strict[FB]
-        protected val toFireboxPipeTC      : FireboxToFireboxPipe_15544_Strict[FB]
 
-        override def combustionAirPipe = {
-            given FireboxToCombustionAirPipe_15544_Strict[FB] = toCombustionAirPipeTC;
-            firebox.toCombustionAirPipe_FullDescr
+        /**
+         * The bundled firebox engine for this project's firebox type.
+         *
+         * Replaces the former pair of injected pipe typeclasses
+         * (`toCombustionAirPipeTC` / `toFireboxPipeTC`): one summon instead of two,
+         * and the same instance now also carries constraints and formulas.
+         *
+         * Typed as the descriptor-refined [[FireboxEngine]] rather than
+         * [[FireboxEngine_15544_Strict]] so the loader can supply the engine
+         * resolved by the registry (`withEngine`) — which pairs a
+         * `FireboxEngine[FB]` with its refined descriptor members — without
+         * naming the concrete model type. `FireboxEngine_15544_Strict[FB]`
+         * conforms to this refinement, so every per-kind engine still fits.
+         */
+        protected val fireboxEngine: FireboxEngine[FB] {
+            type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
+            type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
         }
-        override def fireboxPipe       = {
-            given FireboxToFireboxPipe_15544_Strict[FB] = toFireboxPipeTC; firebox.toFireboxPipe_FullDescr
-        }
+
+        override def combustionAirPipe =
+            fireboxEngine
+                .combustionAirContribution(firebox)
+                .andThen:
+                    case FireboxContribution.Without        => CombustionAirPipe_Module_15544.without.validNel
+                    case FireboxContribution.AsDescr(descr) => descr.validNel
+                    case FireboxContribution.AsResult(_)    =>
+                        UnexpectedDevError(
+                            "firebox engine returned AsResult for the combustion-air path; " +
+                                "that contribution is consumed in combustionAir_PipeResult and must not reach the descriptor seam"
+                        ).invalidNel
+
+        override def fireboxPipe =
+            fireboxEngine
+                .fireboxContribution(firebox)
+                .andThen:
+                    // `FireboxPipe_Module_15544.PipeCanBe = FullDescr` — unlike the
+                    // combustion-air module there is no `Without` member, because a
+                    // stove always has a firebox gas path. `fireboxContribution`
+                    // returns `FireboxContribution.AsDescr` for every registered
+                    // engine; the match is exhaustive over what can actually occur.
+                    // `AsResult` is intercepted in firebox_PipeResult and never reaches here.
+                    case FireboxContribution.AsDescr(descr) => descr.validNel
+                    case FireboxContribution.Without        =>
+                        UnexpectedDevError(
+                            "firebox engine returned Without for the firebox gas path; " +
+                                "a stove always has a firebox gas path so this is an internal invariant violation"
+                        ).invalidNel
+                    case FireboxContribution.AsResult(_)    =>
+                        UnexpectedDevError(
+                            "firebox engine returned AsResult for the firebox gas path; " +
+                                "that contribution is consumed in firebox_PipeResult and must not reach the descriptor seam"
+                        ).invalidNel
 
     trait StoveProjectDescr_15544_Strict_Alg
         extends StoveProjectDescr_15544_Alg
@@ -101,7 +145,11 @@ trait v0_2024_10_strict_members extends v0_2024_10_core:
             )
 
         override lazy val en15544_Alg: ValidatedNel[MCalc_Error, EN15544_Strict_Application] = en15544_inputsVNel.map:
-            i => EN15544_Strict_Application.make(EN15544_Strict_Formulas.make)(i, en15544_incrInputs)
+            i =>
+                EN15544_Strict_Application.make(EN15544_Strict_Formulas.make)(
+                    i,
+                    en15544_incrInputs
+                )
 
     trait SimpleStoveProjectDescrFr_15544_Strict_Alg
         extends SimpleStoveProjectDescrFr_15544_Alg

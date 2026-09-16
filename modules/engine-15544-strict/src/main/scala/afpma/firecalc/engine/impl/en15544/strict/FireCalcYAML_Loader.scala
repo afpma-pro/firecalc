@@ -5,19 +5,19 @@
 
 package afpma.firecalc.engine.api
 
+import afpma.firecalc.units.coulombutils.*
+
 import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.engine.alg.en15544.RemoteFireboxData
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
-import afpma.firecalc.engine.impl.en15544.strict.{*, given}
+import afpma.firecalc.engine.impl.en15544.strict.*
 import afpma.firecalc.engine.models
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.FlowOnlyAirIntakePipe_Module_13384.toFullDescr
-import afpma.firecalc.engine.models.en15544.firebox.*
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Door15aFirebox_Catalog
-import afpma.firecalc.engine.models.en15544.std.Firebox_15544.SingleTested
 import afpma.firecalc.engine.models.geometry.AirIntakePositionMode
 import afpma.firecalc.engine.models.geometry.AirIntakeReplay
 import afpma.firecalc.engine.models.geometry.PipeFrame
@@ -31,7 +31,6 @@ import cats.data.NonEmptyList
 import cats.data.Validated
 import cats.data.ValidatedNel
 import cats.syntax.all.*
-import afpma.firecalc.units.coulombutils.*
 
 import coulomb.*
 
@@ -40,7 +39,9 @@ import scala.util.*
 import afpma.firecalc.domain.AirDistributionBox
 import afpma.firecalc.domain.FireboxCoordinateSystem
 
-case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
+case class FireCalcYAML_Loader(
+    fcProj: FireCalcYAML
+):
     self =>
 
     // DO BETTER
@@ -88,8 +89,7 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
         )
 
     private val fb: Firebox_15544 =
-        import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
-        summon[io.scalaland.chimney.Transformer[Firebox, Firebox_15544]].transform(fcProj.firebox)
+        FireboxModelConversion_Strict.toEngineModel(fcProj.firebox)
 
     val engineSlots = PostFireboxPipeSlot.fromDto(cleanFramedPostFireboxPipes.slots)
     val dims        = fb.dimensions.base match
@@ -232,42 +232,67 @@ case class FireCalcYAML_Loader(fcProj: FireCalcYAML):
                                 )
                             )
 
-    private def mkStrictAlg[F <: Firebox_15544](
-        fb: F
-    )(using
-        cap: FireboxToCombustionAirPipe_15544_Strict[F],
-        fbp: FireboxToFireboxPipe_15544_Strict[F]
-    ): StoveProjectDescr_15544_Strict_Alg =
-        new v0_2024_10_strict.Firebox_15544_Strict_Alg with v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg:
-            type FB = F
-            val firebox                              = fb
-            protected val toCombustionAirPipeTC      = cap
-            protected val toFireboxPipeTC            = fbp
-            val language                             = fcProj.locale.language
-            override val project                     = fcProj.project_description
-            val localConditions                      = fcProj.local_conditions
-            val stoveParams                          = fcProj.stove_params
-            val airIntakePipe                        = self.airIntakePipe
-            override def postFireboxPipeSlots        = PostFireboxPipeSlot.fromDto(normalizedPostFireboxSlots)
-            override def postFireboxInitialDirection = Some(cleanFramedPostFireboxPipes.initialDirection)
-            override def postFireboxPositionMode     =
-                PostFireboxStartPositionMode.fromDto(cleanFramedPostFireboxPipes.initialPosition)
-            override def postFireboxInitialPosition  = resolvePostFireboxPosition
-            override def airIntakePositionMode       = AirIntakePositionMode.fromDto(fcProj.air_intake_pipes.position)
-            override def airIntakeInitialPosition    = resolveAirIntakePosition
-            override def airIntakeDescriptors        = fcProj.air_intake_pipes.descr
-
+    /**
+     * Build the strict project description algebra for this project's firebox,
+     * resolving the firebox engine through the registry (ticket 11: generic
+     * dispatch).
+     *
+     * `FireboxEngineRegistry_Strict.engineFor` narrows the erased firebox with
+     * each entry's `TypeTest` and hands back a `FireboxEngineFor` pairing the
+     * engine with the firebox it was resolved for — no concrete model type is
+     * named here (ticket 16: the public module is platform-uniform, with the
+     * generic remote-only carriers shared by the JVM and the browser). An
+     * unregistered firebox is a typed failure, not a catch-all (invariant 9).
+     */
     val stoveProjectDescr_EN15544_Strict: StoveProjectDescr_15544_Strict_Alg =
-        fb match
-            case f: TraditionalFirebox     => mkStrictAlg(f)
-            case f: AFPMA_PRSE             => mkStrictAlg(f)
-            case f: Ecolabeled             => mkStrictAlg(f)
-            case f: SingleTested           => mkStrictAlg(f)
-            case f: Door15aFirebox_Catalog => mkStrictAlg(f)
-            case f =>
-                throw new IllegalStateException("Unknow firebox type")
+        FireboxEngineRegistry_Strict.engineFor(fb) match
+            case Left(msg) => throw new IllegalStateException(msg)
+            case Right(fc) =>
+                new v0_2024_10_strict.Firebox_15544_Strict_Alg
+                    with v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg:
+                    type FB = fc.FB
+                    val firebox                              = fc.firebox
+                    protected val fireboxEngine              = fc.engine
+                    val language                             = fcProj.locale.language
+                    override val project                     = fcProj.project_description
+                    val localConditions                      = fcProj.local_conditions
+                    val stoveParams                          = fcProj.stove_params
+                    val airIntakePipe                        = self.airIntakePipe
+                    override def postFireboxPipeSlots        = PostFireboxPipeSlot.fromDto(normalizedPostFireboxSlots)
+                    override def postFireboxInitialDirection = Some(cleanFramedPostFireboxPipes.initialDirection)
+                    override def postFireboxPositionMode     =
+                        PostFireboxStartPositionMode.fromDto(cleanFramedPostFireboxPipes.initialPosition)
+                    override def postFireboxInitialPosition  = resolvePostFireboxPosition
+                    override def airIntakePositionMode       =
+                        AirIntakePositionMode.fromDto(fcProj.air_intake_pipes.position)
+                    override def airIntakeInitialPosition    = resolveAirIntakePosition
+                    override def airIntakeDescriptors        = fcProj.air_intake_pipes.descr
 
     def make_en15544_Strict_Application: ValidatedNel[MCalc_Error, EN15544_Strict_Application] =
         stoveProjectDescr_EN15544_Strict.en15544_Alg
+
+    /**
+     * Build the EN15544 strict application, optionally wrapping it with
+     * remote-backed firebox engine data.
+     *
+     * When `remoteData` is `Some`, the returned application delegates all
+     * behaviour to the locally-built application except for `fc` (firebox
+     * engine), which resolves from a remote-backed registry.
+     *
+     * Per spec §5.4 single code path:
+     * `fireboxEngineSource match { case Local => local; case Remote(_) => remote }`.
+     */
+    def make_en15544_Strict_Application(
+        remoteData: Option[RemoteFireboxData[
+            FireboxPipe_Module_15544.FullDescr,
+            CombustionAirPipe_Module_15544.FullDescr
+        ]] = None
+    ): ValidatedNel[MCalc_Error, EN15544_Strict_Application] =
+        val base = stoveProjectDescr_EN15544_Strict.en15544_Alg
+        remoteData match
+            case Some(data) =>
+                base.map(app => EN15544_Strict_Application.withRemoteData(app, data))
+            case None       =>
+                base
 
 end FireCalcYAML_Loader

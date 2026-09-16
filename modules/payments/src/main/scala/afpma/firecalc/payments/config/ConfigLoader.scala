@@ -8,7 +8,6 @@ package afpma.firecalc.payments.config
 import java.nio.file.Files
 import java.time.ZoneId
 
-import afpma.firecalc.domain.FireboxAvailability
 import afpma.firecalc.payments.email.EmailAddress
 import afpma.firecalc.payments.email.EmailConfig
 import afpma.firecalc.payments.exceptions.*
@@ -21,6 +20,7 @@ import cats.syntax.all.*
 import scala.util.Try
 
 import afpma.firecalc.config.ConfigPathResolver
+import afpma.firecalc.domain.FireboxAvailability
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -193,6 +193,7 @@ object ConfigLoader:
                     }
                     .getOrElse(LoggingConfig()),
                 fireboxAvailability          = loadFireboxAvailability(envConfig),
+                calculationClientConfig      = loadCalculationClientConfig(envConfig),
                 corsAllowedOrigins           = Try {
                     import scala.jdk.CollectionConverters.*
                     envConfig.getStringList("cors-allowed-origins").asScala.toList
@@ -223,6 +224,15 @@ object ConfigLoader:
                 door15aCatalog = tryBool("door15a-catalog")
             )
         else FireboxAvailability.AllEnabled
+
+    private[config] def loadCalculationClientConfig(envConfig: Config): CalculationClientConfig =
+        if envConfig.hasPath        ("calculation-client") then
+            val section = envConfig.getConfig("calculation-client")
+            CalculationClientConfig(
+                baseUri = Try(section.getString("base-uri")).getOrElse(CalculationClientConfig().baseUri),
+                enabled = Try(section.getBoolean("enabled")).getOrElse(true)
+            )
+        else CalculationClientConfig(                    )
 
     private[config] def validatePaymentsConfig[F[_]: Async](config: PaymentsConfig): F[PaymentsConfig] =
         InvoiceNumberValidator.validatePrefix(config.invoiceNumberPrefix) match {

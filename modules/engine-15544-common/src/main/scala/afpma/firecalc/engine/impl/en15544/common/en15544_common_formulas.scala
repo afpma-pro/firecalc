@@ -301,7 +301,7 @@ trait EN15544_V_2023_Common_Formulas extends EN15544_V_2023_Formulas_Alg:
     // TODO: Lors du calcul du rendement de la combustion, les hypothèses suivantes sont retenues : XXX
 
     /** concentration de dioxyde carbone (% en volume) : humide ou sec ??? */
-    override final val fluegas_σ_CO2_calc: σ_CO2 = 7.05.percent
+    override final val fluegas_σ_CO2_calc: σ_CO2 = Firebox_15544.co2_dry_nominal_default
 
     /** teneur en eau du bois (% en masse) */
     override final val wood_σ_H2O_calc: σ_H2O = 17.0.percent

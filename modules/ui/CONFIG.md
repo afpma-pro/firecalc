@@ -90,13 +90,20 @@ The template file is at `configs/templates/ui/.env.staging.template`.
 
 ### Configuration Variables
 
-All variables must be prefixed with `VITE_` to be accessible in the client:
+All variables must be prefixed with `VITE_` to be accessible in the client.
 
-- **VITE_BACKEND_PROTOCOL**: `http` or `https`
-- **VITE_BACKEND_HOST**: Domain or IP address (e.g., `localhost`, `api.example.com`)
-- **VITE_BACKEND_PORT**: Port number (e.g., `8181`, `443`)
-- **VITE_BACKEND_BASE_PATH**: API base path (e.g., `/v1`)
-- **VITE_CGUV_URL**: URL for the terms and conditions page
+All `VITE_` variables (except `MODE`) are optional: a missing or empty var
+resolves to a documented default instead of crashing startup. Backend URL
+parts and `VITE_CGUV_URL` log a console warning naming the var when a
+fallback is used; absent availability switches silently stay enabled, and an
+absent remote-calc var degrades to all-local engine sources (visible in the
+startup log).
+
+- **VITE_BACKEND_PROTOCOL**: `http` or `https` (default `http`)
+- **VITE_BACKEND_HOST**: Domain or IP address (e.g., `localhost`, `api.example.com`) (default `localhost`)
+- **VITE_BACKEND_PORT**: Port number (e.g., `8181`, `443`) (default `8181`)
+- **VITE_BACKEND_BASE_PATH**: API base path (e.g., `/v1`) (default empty)
+- **VITE_CGUV_URL**: URL for the terms and conditions page (default empty)
 
 ## Usage in Code
 
@@ -121,14 +128,14 @@ println(UIConfig.debugInfo())
 ```scala
 import afpma.firecalc.ui.config.ViteEnv
 
-// Direct access to environment variables
-val protocol = ViteEnv.backendProtocol
-val host = ViteEnv.backendHost
-val port = ViteEnv.backendPort
+// Direct access to environment variables (Option: None if the var is unset)
+val protocol = ViteEnv.backendProtocol  // Option[String]
+val host = ViteEnv.backendHost          // Option[String]
+val port = ViteEnv.backendPort          // Option[String]
 
 // Environment information
-val isDev = ViteEnv.isDev
-val isProd = ViteEnv.isProd
+val isDev = ViteEnv.isDevelopment
+val isProd = ViteEnv.isProduction
 ```
 
 ## How It Works

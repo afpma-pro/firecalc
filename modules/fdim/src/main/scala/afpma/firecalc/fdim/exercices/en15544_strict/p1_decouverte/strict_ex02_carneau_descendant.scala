@@ -27,8 +27,7 @@ object strict_ex02_carneau_descendant
     import afpma.firecalc.engine.impl.en15544.strict.given
 
     type FB = TraditionalFirebox
-    protected val toCombustionAirPipeTC = summon
-    protected val toFireboxPipeTC       = summon
+    protected val fireboxEngine = summon
 
     val exercice_name: String = "exercices // p1_decouverte // ex02_carneau_descendant"
 

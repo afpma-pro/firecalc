@@ -49,29 +49,20 @@ case class ConstraintContext(
  * Each method returns a `Seq[Option[TermConstraint[T]]]` that is evaluated
  * and dispatched by the application layer.
  *
- * TODO(registry) — per-module firebox dispatch:
+ * This is the **constraint mixin** consumed by [[FireboxEngine]]. It
+ * deliberately does NOT extend `FireboxEngine`: its instances live in
+ * `engine-15544-common`, which cannot know whether it serves the strict or the
+ * MCE variant, and so cannot bind `FireboxEngine`'s descriptor type members. The
+ * per-standard engine givens mix this trait in and add the pipe surface — see
+ * `FireboxEngine_15544_Strict` / `_MCE`.
  *
- * Today `FireboxConstraintsResolver.resolve` (in impl.en15544.common) hard-codes
- * a match over every subtype and summons each given individually. That couples
- * `common` to all concrete fireboxes — the opposite of this typeclass's intent
- * (`common` should know only the typeclass, never summon instances one by one).
- *
- * Target design:
- *   - Each firebox lives in its own module and contributes its
- *     `given FireboxConstraints[T]` plus a runtime type-test (e.g. a small
- *     `FireboxConstraintsEntry` pairing a `ClassTag[T]`/`isInstanceOf` guard
- *     with the instance).
- *   - A registry (`List[FireboxConstraintsEntry]` / typemap) is assembled at the
- *     composition root from the per-module contributions.
- *   - `common` resolves `fc` by querying the registry by runtime type; it never
- *     names a concrete subtype. Adding a firebox = registering an entry in its
- *     own module, with zero edits to `common`.
- *   - Trade-off: lose the sealed-match exhaustiveness check; mitigate with a
- *     "no entry for firebox X" runtime error and a registry-completeness test.
- *   - On completion, delete `FireboxConstraintsResolver` and drop the
- *     `instances`→subtype coupling entirely.
+ * The eleven method signatures match [[FireboxEngine]]'s exactly, so mixing this
+ * in satisfies that part of the engine contract with no adapter.
  */
 trait FireboxConstraints[-F <: Firebox_15544]:
+
+    /** The [[FireboxKind]] these constraints belong to; forwarded by the engine. */
+    def kind: FireboxKind
 
     /** Checks consistency of internal load values in this specific firebox */
     private def internal_constraint_firebox_nominal_load_in_range(
