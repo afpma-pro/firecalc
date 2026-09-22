@@ -258,11 +258,18 @@ sealed abstract class EN15544_Strict_Application(
         // Conservative choice: use min-draft temperature (lower temp → less buoyancy).
         //
         // When the flue region contains only EN 15544 flow-only pipes, t_fluepipe_end
-        // is identical at min and max draft (temperature is draft-independent).
-        // However, interleaved ConnectorSlots in the flue region are computed using
-        // Thermal 13384 (heat-transfer formulas where temperature loss depends on gas
-        // velocity, which varies with draft). This makes t_fluepipe_end legitimately
-        // draft-dependent for topologies like [Flue, Connector, Flue, Connector, Chimney].
+        // is identical at min and max draft for a given load pass (temperature is
+        // draft-independent). However, interleaved ConnectorSlots in the flue region
+        // are computed using Thermal 13384 (heat-transfer formulas where temperature
+        // loss depends on gas velocity, which varies with draft). This makes
+        // t_fluepipe_end legitimately draft-dependent for topologies like
+        // [Flue, Connector, Flue, Connector, Chimney].
+        //
+        // It is NOT load-independent: the reduced pass decays with a pass-selected
+        // L_N (see `OpPointLoads.effective_load_mass`, PRD D2), so its flue-gas
+        // temperatures (and ηWmin) differ from the nominal ones on reduced-capable
+        // appliances.
+        // This value stays the nominal-pass temperature by design.
         atDraftMin_LoadNominal.t_fluepipe_end.map: fg_temp_nominal =>
             HeatingAppliance.Temperatures(
                 flue_gas_temp_nominal = fg_temp_nominal,

@@ -107,6 +107,13 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def m_B    : m_B
     def m_B_min: Option[m_B_min]
 
+    /**
+     * The operating-point load policy (ADR-0008): the declared load masses
+     * (`m_B` / `m_B_min`) and the section-wise effective load mass derived
+     * from them. See `OpPointLoads` for the fallback semantics.
+     */
+    def opPointLoads: OpPointLoads
+
     // type K_V <: Dimensionless
     // def K_V_calc: (c_P, PipeSection, Temperature, Temperature, m_G, σ_CO2) => K_V
 
@@ -131,6 +138,9 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     // Section "4.3.2", "Calculated flue pipe length"
     def L_Z_calculated: L_N
+
+    /** Contributed calculated flue pipe length for an effective load mass (ADR-0008). */
+    def L_Z_calculated(mass: Mass): L_N
 
     // Section "4.3.3", "Minimum flue pipe length"
     def table_1_Factor_a_or_b: Option[Table_1_Factor_a_or_b]
@@ -196,8 +206,14 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     def t_burnout: VNel[t_burnout]
 
     // Section "4.8.3", "Flue gas temperature in the flue pipe"
-    def t_fluepipe     (L_Z: QtyD[Meter]                  ): VNel[t_fluepipe]
-    def t_fluepipe_mean(lz1: QtyD[Meter], lz2: QtyD[Meter]): VNel[t_fluepipe]
+    def t_fluepipe(L_Z: QtyD[Meter]): VNel[t_fluepipe]
+
+    /**
+     * §4.8.3 closed form evaluated against a given calculated flue-pipe length
+     * (ADR-0008). The 1-arg sibling supplies `L_Z_calculated` as the denominator.
+     */
+    def t_fluepipe     (L_Z: QtyD[Meter], lzCalculated: L_N        ): VNel[t_fluepipe]
+    def t_fluepipe_mean(lz1: QtyD[Meter], lz2         : QtyD[Meter]): VNel[t_fluepipe]
 
     // EN13384 variables
 

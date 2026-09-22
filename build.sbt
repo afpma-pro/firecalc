@@ -44,7 +44,7 @@ ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 //                          JVM that loads build.sbt (a warm sbt --client server keeps the
 //                          value it loaded with). See docs/dev/README.md,
 //                          "Publishing the engine artifacts".
-val engine_version_default = "0.3.0-b25-SNAPSHOT"
+val engine_version_default = "0.3.1-b25-SNAPSHOT"
 lazy val engine_version    =
     sys.env
         .get("FIRECALC_PUBLISH_VERSION")

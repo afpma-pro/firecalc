@@ -11,6 +11,7 @@ import cats.syntax.all.toShow
 import cats.syntax.all.catsSyntaxValidatedId
 
 import afpma.firecalc.engine.*
+import afpma.firecalc.engine.alg.en15544.OpPointLoads
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.LoadQty.withLoad
 import afpma.firecalc.engine.models.en15544.typedefs as en15544_typedefs // scalafix:ok
@@ -59,11 +60,6 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
             case Left(mb) => mb
             case Right(_) => formulas.m_B_calc(P_n, t_n, n_min)
 
-    given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) =>
-        lq match
-            case _ @LoadQty.Nominal => m_B.some
-            case _ @LoadQty.Reduced => m_B_min
-
     // Section "4.2.2", "Minimum Load"
 
     // The definition and calculation of the minimum load is only necessary if a reduced heat output is declared
@@ -85,6 +81,16 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
                         (min: m_B_min).some
             case HeatOutputReduced.NotDefined => None
 
+    // ADR-0008 — operating-point load policy (single source of truth)
+    //
+    // The declared load mass per load axis (`m_B` nominal, `m_B_min` reduced)
+    // and the effective load mass for a section carrying `nf` flows. The §4
+    // formulas below summon the `given` below, which delegates to
+    // `opPointLoads.load_mass`.
+    lazy val opPointLoads: OpPointLoads = OpPointLoads(m_B, m_B_min)
+
+    given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) => opPointLoads.load_mass(lq)
+
     // Section "4.3", "Design of the essential dimensions"
 
     // Section "4.3.1", "Firebox dimensions"
@@ -103,7 +109,11 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
     // Section "4.3.2", "Calculated flue pipe length"
 
     def L_Z_calculated: L_N =
-        formulas.L_Z_calculated_calc(inputs.stoveParams.facing_type, m_B)
+        L_Z_calculated(m_B)
+
+    /** Contributed calculated flue pipe length for an effective load mass (ADR-0008). */
+    def L_Z_calculated(mass: Mass): L_N =
+        formulas.L_Z_calculated_calc(inputs.stoveParams.facing_type, mass)
 
     // Section "4.3.3", "Minimum flue pipe length"
 
@@ -212,7 +222,16 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
         formulas.t_burnout_calc(inputs.design.firebox)
 
     def t_fluepipe(L_Z: QtyD[Meter]): VNel[t_fluepipe] =
-        t_burnout.map(tb => formulas.t_fluepipe_calc(tb, L_Z, L_Z_calculated))
+        t_fluepipe(L_Z, L_Z_calculated)
+
+    /**
+     * §4.8.3 closed form evaluated against a given calculated flue-pipe length
+     * `lzCalculated` (ADR-0008: the load-aware decay feeds the pass-selected
+     * `L_Z_calculated`; the one-arg form above keeps the design-time
+     * nominal-`m_B` value).
+     */
+    def t_fluepipe(L_Z: QtyD[Meter], lzCalculated: L_N): VNel[t_fluepipe] =
+        t_burnout.map(tb => formulas.t_fluepipe_calc(tb, L_Z, lzCalculated))
 
     /**
      * Compute mean temperature of the gas in the fluepipe, between two points given their distances from the firebox outlet
@@ -225,6 +244,12 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
      *     -
      *     math.exp(0.83 * lz2 / formulas.L_Z_calculated)
      *   )
+     *
+     * NOTE (ADR-0008): closed form valid only for unsplit, constant-load spans —
+     * it evaluates the decay against the nominal single-flow `L_Z_calculated`
+     * (design-time value). Split chains decay section-wise with contributed
+     * `L_Z_calculated(opPointLoads.effective_load_mass(op, nf))` (see `FlowOnlyMecaFlu_15544`);
+     * do not use this for per-section split-chain temperatures.
      *
      * @param lz1 distance from firebox to point 1
      * @param lz2 distance from firebox to point 2
