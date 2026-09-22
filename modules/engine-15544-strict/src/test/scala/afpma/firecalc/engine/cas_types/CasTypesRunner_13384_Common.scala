@@ -9,7 +9,7 @@ import algebra.instances.all.given
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Common_Application
 import afpma.firecalc.engine.models.*
@@ -185,21 +185,21 @@ trait CasTypesRunner_13384_Common extends AnyFreeSpec with Matchers:
                 seperate_tables
 
                 val _ =
-                    import Params_13384.givens.DraftMin_LoadNominal
-                    emit(Params_13384.show)
+                    import OpPoint.givens.DraftMin_LoadNominal
+                    emit(OpPoint.show)
                     val pr = en13384_appl.pipesResult_13384
                     emit(
-                        pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
+                        pr.mapShow(s"TABLEAU ${OpPoint.show}")(_.showAsCliTable)
                     )
 
                 seperate_tables
 
                 val _ =
-                    import Params_13384.givens.DraftMax_LoadNominal
-                    emit(Params_13384.show)
+                    import OpPoint.givens.DraftMax_LoadNominal
+                    emit(OpPoint.show)
                     val pr = en13384_appl.pipesResult_13384
                     emit(
-                        pr.mapShow(s"TABLEAU ${Params_13384.show}")(_.showAsCliTable)
+                        pr.mapShow(s"TABLEAU ${OpPoint.show}")(_.showAsCliTable)
                     )
 
                 seperate_tables

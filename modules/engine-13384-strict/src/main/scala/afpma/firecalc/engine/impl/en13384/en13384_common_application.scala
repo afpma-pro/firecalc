@@ -41,7 +41,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
 ) extends EN13384_1_A1_2019_Application_Alg:
     en13384 =>
 
-    import Params_13384.given
+    import OpPoint.given
 
     given given_en13384: EN13384_1_A1_2019_Application_Alg = en13384
 
@@ -101,8 +101,8 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // - EN13384_WithThermalAirIntake_Application
     // - EN13384_For_15544_Application
 
-    lazy val last_known_density_before_connector_pipe : WithParams_13384[Option[Density]]      = None
-    lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] = None
+    lazy val last_known_density_before_connector_pipe : WithOpPoint[Option[Density]]      = None
+    lazy val last_known_velocity_before_connector_pipe: WithOpPoint[Option[FlowVelocity]] = None
 
     /**
      * Compute all post-firebox pipe results via the generic chain.
@@ -112,7 +112,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
      * This replaces the manual density/velocity threading that was previously
      * done between `connector_PipeResult` and `chimney_PipeResult`.
      */
-    private def postFireboxChainResults: PipeResultOp[WithParams_13384[Either[MecaFlu_Error, Vector[PipeResult]]]] =
+    private def postFireboxChainResults: PipeResultOp[WithOpPoint[Either[MecaFlu_Error, Vector[PipeResult]]]] =
         val tc = CanComputePipeResult.forThermal13384(
             en13384,
             HeatingAppliance.FlueGas.summon,
@@ -153,7 +153,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
                 last_pipe_density  = last_known_density_before_connector_pipe,
                 last_pipe_velocity = last_known_velocity_before_connector_pipe
             )
-            chain.computeAll(Params_13384.summon, initialUpstream, computeAt)
+            chain.computeAll(OpPoint.summon, initialUpstream, computeAt)
 
         inputs.pipes match
             case p: Pipes_13384_WithFlowOnlyAirIntake => buildChain(p.connector, p.chimney)
@@ -389,7 +389,7 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // Temperature Requirement
 
     /** temperature limit */
-    override def T_ig(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin] =
+    override def T_ig(using HeatingAppliance.FlueGas): WithOpPoint[TKelvin] =
         formulas.T_ig_calc(inputs.flueGasCondition, T_sp)
 
     override def temperatureRequirements =
@@ -669,11 +669,11 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // Section 5.7.6
 
     /** point de rosée de l'eau T_p des fumées */
-    override def T_p(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin] =
+    override def T_p(using HeatingAppliance.FlueGas): WithOpPoint[TKelvin] =
         val p_D = formulas.p_D_from_σ_H2O_calc(σ_H2O, ext_air_press)
         formulas.t_p_calc(p_D).toUnit[Kelvin]
 
-    override def T_sp(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin] =
+    override def T_sp(using HeatingAppliance.FlueGas): WithOpPoint[TKelvin] =
         val ΔTsp = inputs.fuelType match
             case FuelType.WoodLog30pHumidity | FuelType.Pellets => 0.degreesKelvin
         (T_p.toUnit[Kelvin].value + ΔTsp.toUnit[Kelvin].value).degreesKelvin
@@ -685,13 +685,13 @@ abstract class EN13384_1_A1_2019_Common_Application(
     // Section "5.9.1", "Masse volumique des fumées (ρ_m)"
 
     /** masse volumique moyenne des fumées */
-    override def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas): WithParams_13384[Density] =
+    override def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas): WithOpPoint[Density] =
         formulas.ρ_m_calc(p_L, R, T_m)
 
     // Section "5.10.2"
 
     /** tirage théorique disponible dû à l'effet de cheminée */
-    override def P_H(h: Length, t: TKelvin)(using HeatingAppliance.FlueGas): WithParams_13384[Pressure] =
+    override def P_H(h: Length, t: TKelvin)(using HeatingAppliance.FlueGas): WithOpPoint[Pressure] =
         P_H_calc(h, ρ_L, ρ_m(t))
 
     // Section "5.10.3"

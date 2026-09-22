@@ -278,7 +278,7 @@ class CalculationReportServiceImpl(
                 ):
                     override val en15544_app: EN15544_Strict_Application = remoteApp
                     override val stove_proj_15544_strict = loader.stoveProjectDescr_EN15544_Strict
-                    override val atParams                = remoteApp.primary.asInstanceOf[en15544_app.AtParams]
+                    override val atOperatingPoint        = remoteApp.primary.asInstanceOf[en15544_app.AtOperatingPoint]
 
             val typstContent = typstFactory.build()
             val pdfBytes     = JavaTypst.render(typstContent)

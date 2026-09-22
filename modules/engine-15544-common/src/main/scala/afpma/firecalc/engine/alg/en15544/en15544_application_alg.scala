@@ -15,7 +15,6 @@ import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
-import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FlueGasCondition
 import afpma.firecalc.engine.models.en13384.typedefs.FuelType
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
@@ -139,8 +138,8 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
     // Section "4.3.2", "Calculated flue pipe length"
     def L_Z_calculated: L_N
 
-    /** Contributed calculated flue pipe length for an effective load mass (ADR-0008). */
-    def L_Z_calculated(mass: Mass): L_N
+    /** Load-aware §4.3.2 length: the formula evaluated for an effective load mass (ADR-0008). */
+    def L_Z_calculated_for(mass: Mass): L_N
 
     // Section "4.3.3", "Minimum flue pipe length"
     def table_1_Factor_a_or_b: Option[Table_1_Factor_a_or_b]
@@ -210,47 +209,29 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
 
     /**
      * §4.8.3 closed form evaluated against a given calculated flue-pipe length
-     * (ADR-0008). The 1-arg sibling supplies `L_Z_calculated` as the denominator.
+     * `lzCalculated` (ADR-0008). The 1-arg `t_fluepipe` supplies the design-time
+     * `L_Z_calculated` as the denominator.
      */
-    def t_fluepipe     (L_Z: QtyD[Meter], lzCalculated: L_N        ): VNel[t_fluepipe]
+    def t_fluepipe_at  (L_Z: QtyD[Meter], lzCalculated: L_N        ): VNel[t_fluepipe]
     def t_fluepipe_mean(lz1: QtyD[Meter], lz2         : QtyD[Meter]): VNel[t_fluepipe]
 
     // EN13384 variables
 
     // TODO: P_Z, P_Zmax, P_Ze, P_Zemax, P_W, P_W_max, P_B
-    def pressureRequirements_EN13384   : WithParams_13384[VNelMcalcErr[PressureRequirements_13384]]
-    def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_13384]]
+    def pressureRequirements_EN13384   : WithOpPoint[VNelMcalcErr[PressureRequirements_13384]]
+    def temperatureRequirements_EN13384: WithOpPoint[VNelMcalcErr[TemperatureRequirements_13384]]
 
     // VALIDATIONS
     def citedConstraints: CitedConstraints
 
-    // RESULTS
-    final type Params_15544 = Params_13384
-    val Params_15544 = Params_13384
-    type WithParams_15544[X] = Params_15544 ?=> X
-
-    type Params_15544_Minus_Params_13384 = EmptyTuple
-
-    // given mk_params_15544_from_args(using
-    //     pReq: PressureRequirements, lq: LoadQty
-    // ): Params_15544 = (ep, lq)
-
-    given params_13384_to_15544: (p13384: Params_13384, diff: Params_15544_Minus_Params_13384) => Params_15544                    = p13384
-    given params_15544_to_13384: (p     : Params_15544                                       ) => Params_13384                    = p
-    given params_15544_to_diff : (p     : Params_15544                                       ) => Params_15544_Minus_Params_13384 = EmptyTuple
-
-    given loadQty_from_Params_15544 : (p: Params_15544) => LoadQty        = p._2
-    given pressReq_from_Params_15544: (p: Params_15544) => DraftCondition = p._1
-    // export Params_13384.pressReq_from_Params_13384
-
-    // ─── AtParams: params-dependent layer ───────────────────────────────
+    // ─── AtOperatingPoint: operating-point-dependent layer ─────────────────────
 
     /**
-     * Inner trait grouping all declarations that depend on a fixed `Params_15544`.
-     * Implementations provide lazy vals so that results are computed once per params combo.
+     * Inner trait grouping all declarations that depend on a fixed `OpPoint`.
+     * Implementations provide lazy vals so that results are computed once per operating point.
      */
-    trait AtParams:
-        val params: Params_15544
+    trait AtOperatingPoint:
+        val opPoint: OpPoint
 
         // Pipe results
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult]
@@ -316,28 +297,28 @@ trait EN15544_V_2023_Application_Alg extends Standard with HasTypeMembers_15544_
         lazy val validateCitedConstraints          : VNelMcalcErr[Unit]
         lazy val validateFireboxSpecificConstraints: ValidatedNel[FireboxError, Unit]
         lazy val fluePipeLengthBelowMinimumWarning : Option[FluePipeLengthBelowMinimum]
-    end AtParams
+    end AtOperatingPoint
 
-    // ─── Pre-built AtParams instances ───────────────────────────────────
+    // ─── Pre-built AtOperatingPoint instances ───────────────────────────────────
 
     /** Draft-min / nominal load — the primary computation used by the UI */
-    lazy val atDraftMin_LoadNominal: AtParams
+    lazy val atDraftMin_LoadNominal: AtOperatingPoint
 
     /** Draft-min / reduced load — None when there is no m_B_min */
-    lazy val atDraftMin_LoadMin: Option[AtParams]
+    lazy val atDraftMin_LoadReduced: Option[AtOperatingPoint]
 
     /** Draft-max / nominal load */
-    lazy val atDraftMax_LoadNominal: AtParams
+    lazy val atDraftMax_LoadNominal: AtOperatingPoint
 
     /** Draft-max / reduced load — None when there is no m_B_min */
-    lazy val atDraftMax_LoadMin: Option[AtParams]
+    lazy val atDraftMax_LoadReduced: Option[AtOperatingPoint]
 
-    /** Alias to the most commonly used combo (draft-min, nominal load) */
-    lazy val primary: AtParams = atDraftMin_LoadNominal
+    /** Alias to the most commonly used operating point (draft-min, nominal load) */
+    lazy val primary: AtOperatingPoint = atDraftMin_LoadNominal
 
-    // ─── Params-independent members kept on outer trait ──────────────────
+    // ─── Members kept on the outer trait, outside AtOperatingPoint ─────
 
-    def airIntake_PipeResult: WithParams_13384[VNelMcalcErr[PipeResult]]
+    def airIntake_PipeResult: WithOpPoint[VNelMcalcErr[PipeResult]]
 
     // outputs
     // Lazy: `techSpecs` embeds `P_n`/`m_B`, which are undefined for a MaxLoad

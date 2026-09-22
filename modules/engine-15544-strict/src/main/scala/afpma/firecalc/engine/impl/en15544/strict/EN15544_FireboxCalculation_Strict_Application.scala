@@ -12,7 +12,7 @@ import afpma.firecalc.dto.all.*
 import afpma.firecalc.engine.alg.en15544.FireboxCalculation
 import afpma.firecalc.engine.alg.en15544.FireboxContribution
 import afpma.firecalc.engine.alg.en15544.FireboxOperatingEnvelope
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.std.NationalAcceptedData
 import afpma.firecalc.engine.models.en15544.FramedIncrAirIntakePipe_FlowOnly

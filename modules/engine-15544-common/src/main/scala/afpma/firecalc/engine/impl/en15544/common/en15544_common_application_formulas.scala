@@ -89,6 +89,7 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
     // `opPointLoads.load_mass`.
     lazy val opPointLoads: OpPointLoads = OpPointLoads(m_B, m_B_min)
 
+    // Delegates to `OpPointLoads.load_mass` — the only place the per-axis load policy may change.
     given Conversion[LoadQty, Option[Mass]] = (lq: LoadQty) => opPointLoads.load_mass(lq)
 
     // Section "4.3", "Design of the essential dimensions"
@@ -109,10 +110,10 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
     // Section "4.3.2", "Calculated flue pipe length"
 
     def L_Z_calculated: L_N =
-        L_Z_calculated(m_B)
+        L_Z_calculated_for(m_B)
 
-    /** Contributed calculated flue pipe length for an effective load mass (ADR-0008). */
-    def L_Z_calculated(mass: Mass): L_N =
+    /** Load-aware §4.3.2 length: the formula evaluated for an effective load mass (ADR-0008). */
+    def L_Z_calculated_for(mass: Mass): L_N =
         formulas.L_Z_calculated_calc(inputs.stoveParams.facing_type, mass)
 
     // Section "4.3.3", "Minimum flue pipe length"
@@ -222,15 +223,15 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
         formulas.t_burnout_calc(inputs.design.firebox)
 
     def t_fluepipe(L_Z: QtyD[Meter]): VNel[t_fluepipe] =
-        t_fluepipe(L_Z, L_Z_calculated)
+        t_fluepipe_at(L_Z, L_Z_calculated)
 
     /**
      * §4.8.3 closed form evaluated against a given calculated flue-pipe length
-     * `lzCalculated` (ADR-0008: the load-aware decay feeds the pass-selected
+     * `lzCalculated` (ADR-0008: the load-aware decay feeds the operating-point
      * `L_Z_calculated`; the one-arg form above keeps the design-time
      * nominal-`m_B` value).
      */
-    def t_fluepipe(L_Z: QtyD[Meter], lzCalculated: L_N): VNel[t_fluepipe] =
+    def t_fluepipe_at(L_Z: QtyD[Meter], lzCalculated: L_N): VNel[t_fluepipe] =
         t_burnout.map(tb => formulas.t_fluepipe_calc(tb, L_Z, lzCalculated))
 
     /**
@@ -248,7 +249,7 @@ trait EN15544_Common_Application_Formulas { en15544: EN15544_V_2023_Common_Appli
      * NOTE (ADR-0008): closed form valid only for unsplit, constant-load spans —
      * it evaluates the decay against the nominal single-flow `L_Z_calculated`
      * (design-time value). Split chains decay section-wise with contributed
-     * `L_Z_calculated(opPointLoads.effective_load_mass(op, nf))` (see `FlowOnlyMecaFlu_15544`);
+     * `L_Z_calculated_for(opPointLoads.effective_load_mass(op, nf))` (see `FlowOnlyMecaFlu_15544`);
      * do not use this for per-section split-chain temperatures.
      *
      * @param lz1 distance from firebox to point 1

@@ -29,11 +29,11 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     private def showDebug_impl(
         cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap      : _en15544.AtParams
+        ap      : _en15544.AtOperatingPoint
     )(emit: String => Unit) =
 
         import cas_type.given_Locale
-        given _en15544.Params_15544 = ap.params
+        given OpPoint = ap.opPoint
 
         given LocalRegulations            = cas_type.localRegulations
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
@@ -86,7 +86,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
 
         seperate_tables
 
-        emit(s""" Calcul avec Params = ${ap.params}""")
+        emit(s""" Calcul avec Params = (${ap.opPoint.draftCondition},${ap.opPoint.loadQty})""")
 
         _en15544.airIntake_PipeResult.toValidatedNel.getOrThrow
         ap.combustionAir_PipeResult.getOrThrow
@@ -150,7 +150,7 @@ trait CasTypesRunner_15544_Strict extends AnyFreeSpec with Matchers:
     private def showDebug(
         cas_type: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap      : _en15544.AtParams
+        ap      : _en15544.AtOperatingPoint
     ) =
         showDebug_impl(cas_type, _en15544, ap)(println)
 

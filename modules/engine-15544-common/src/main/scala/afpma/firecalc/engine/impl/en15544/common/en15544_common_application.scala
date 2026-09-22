@@ -26,7 +26,7 @@ import afpma.firecalc.engine.alg.en15544.FireboxEngineFor
 import afpma.firecalc.engine.alg.en15544.FoldedVerdicts
 import afpma.firecalc.engine.alg.en15544.FireboxEngineRegistry
 import afpma.firecalc.engine.alg.en15544.NoFireboxEngineRegistered
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.alg.en15544.StoveConstraintContext
 import afpma.firecalc.engine.impl.en16510.EN16510_1_2022_Formulas
 import afpma.firecalc.engine.models.*
@@ -99,14 +99,14 @@ abstract class EN15544_V_2023_Common_Application
 
         override lazy val inputs = en13384_inputs
 
-        override lazy val last_known_density_before_connector_pipe: WithParams_13384[Option[Density]] =
-            val pr = atParamsFor(summon[Params_13384]).conceptualFluePipeResult.toOption
+        override lazy val last_known_density_before_connector_pipe: WithOpPoint[Option[Density]] =
+            val pr = atOperatingPointFor(summon[OpPoint]).conceptualFluePipeResult.toOption
             computeAt match
                 case ComputeAt.Mean   => pr.flatMap(_.last_density_mean).orElse(pr.flatMap(_.last_density_middle))
                 case ComputeAt.Middle => pr.flatMap(_.last_density_middle)
 
-        override lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]] =
-            val pr = atParamsFor(summon[Params_13384]).conceptualFluePipeResult.toOption
+        override lazy val last_known_velocity_before_connector_pipe: WithOpPoint[Option[FlowVelocity]] =
+            val pr = atOperatingPointFor(summon[OpPoint]).conceptualFluePipeResult.toOption
             computeAt match
                 case ComputeAt.Mean   => pr.flatMap(_.last_velocity_mean).orElse(pr.flatMap(_.last_velocity_middle))
                 case ComputeAt.Middle => pr.flatMap(_.last_velocity_middle)
@@ -116,7 +116,7 @@ abstract class EN15544_V_2023_Common_Application
          *
          * The base class reads legacy `inputs.pipes.connector` / `.chimney` via a hardcoded
          * 2-slot `postFireboxChainResults`, which is blind to extra flue slots and seeds the
-         * chain incorrectly. The 15544 `AtParams.connector_PipeResult` /
+         * chain incorrectly. The 15544 `AtOperatingPoint.connector_PipeResult` /
          * `chimney_PipeResult` already read the tagged N-pipe `postFireboxPipeResults`
          * with proper upstream-state threading from Stage 1.
          *
@@ -128,16 +128,16 @@ abstract class EN15544_V_2023_Common_Application
          * `.toValidatedNel.andThen(...)` in `en13384_common_application.scala` handles
          * the resulting `Either` structurally.
          */
-        override def connector_PipeResult: PipeResultOp[WithParams_13384[PipeResultE]] =
-            atParamsFor(summon[Params_13384]).connector_PipeResult.toEither.left.map { nel =>
+        override def connector_PipeResult: PipeResultOp[WithOpPoint[PipeResultE]] =
+            atOperatingPointFor(summon[OpPoint]).connector_PipeResult.toEither.left.map { nel =>
                 MecaFlu_Error.UnexpectedThrowable(
                     new RuntimeException(nel.head.toString),
                     sectionTyp = ConnectorPipeT
                 )
             }
 
-        override def chimney_PipeResult: PipeResultOp[WithParams_13384[PipeResultE]] =
-            atParamsFor(summon[Params_13384]).chimney_PipeResult.toEither.left.map { nel =>
+        override def chimney_PipeResult: PipeResultOp[WithOpPoint[PipeResultE]] =
+            atOperatingPointFor(summon[OpPoint]).chimney_PipeResult.toEither.left.map { nel =>
                 MecaFlu_Error.UnexpectedThrowable(
                     new RuntimeException(nel.head.toString),
                     sectionTyp = ChimneyPipeT
@@ -156,8 +156,8 @@ abstract class EN15544_V_2023_Common_Application
             val tl: afpma.firecalc.engine.models.en13384.typedefs.T_L = T_L
             self.formulas.T_mB_calc(dt, tl).withSectionTyp(AirIntakePipeT)
 
-        /** Lookup the pre-built AtParams instance matching the given EN13384 params */
-        def atParamsFor(p: Params_13384): AtParams
+        /** Lookup the pre-built AtOperatingPoint instance matching the given operating point */
+        def atOperatingPointFor(p: OpPoint): AtOperatingPoint
 
     val formulas: EN15544_V_2023_Formulas_Alg
 
@@ -230,7 +230,7 @@ abstract class EN15544_V_2023_Common_Application
      * A covered-point miss (the engine contributed a grid that does not cover
      * the operating point being solved) raises `UnexpectedDevError` naming the
      * point. That state is unreachable when the producer built the grid over
-     * `OpPoint.axesFor(firebox)` — the error exists to make producer bugs
+     * `OpPoint15544.axesFor(firebox)` — the error exists to make producer bugs
      * loud, not as a control path.
      */
     protected def fireboxContributedResultAt(dc: DraftCondition, lq: LoadQty): VNelMcalcErr[Option[PipeResult]] =
@@ -257,7 +257,7 @@ abstract class EN15544_V_2023_Common_Application
                         UnexpectedDevError(
                             s"firebox engine contributed an AsResult grid for the $pathName that does not " +
                                 s"cover operating point $op; the grid MUST cover every operating point the " +
-                                s"standard evaluates for this firebox (build it over OpPoint.axesFor)"
+                                s"standard evaluates for this firebox (build it over OpPoint15544.axesFor)"
                         ).invalidNel
 
     /** Build the stove-level constraint context. */
@@ -284,7 +284,7 @@ abstract class EN15544_V_2023_Common_Application
      * air-intake pipe), or `None` when there is no ventilation opening.
      *
      * This is the single source of truth shared by the local constraint path
-     * (`CommonAtParams` builds its `FireboxConstraintContext` from it) and by
+     * (`CommonOperatingPoint` builds its `FireboxConstraintContext` from it) and by
      * remote clients: the UI reads it off the built application to populate
      * `FireboxCalcRequest.airIntakePipeShape`, so local and remote agree.
      */
@@ -440,17 +440,17 @@ abstract class EN15544_V_2023_Common_Application
     def ssalg(sc: SlotContext): afpma.firecalc.engine.models.en15544.shortsection.ShortSectionAlg =
         afpma.firecalc.engine.ops.en15544.ShortSectionAlgFactory.make(sc)(using formulas, dynFrict13384Factory)
 
-    // ─── CommonAtParams: params-dependent layer implementation ────────────
+    // ─── CommonOperatingPoint: operating-point-dependent layer implementation ──
 
     /**
-     * Abstract inner class implementing `AtParams` for the common application.
+     * Abstract inner class implementing `AtOperatingPoint` for the common application.
      * Subclasses (strict/MCE) must extend this to provide pipe result implementations.
      */
-    abstract class CommonAtParams(override val params: Params_15544) extends AtParams:
+    abstract class CommonOperatingPoint(override val opPoint: OpPoint) extends AtOperatingPoint:
         // Extract DraftCondition and LoadQty from params via intermediate vals
-        // to avoid diverging implicit search through params_15544_to_13384 / params_13384_to_15544
-        private val _dc: DraftCondition = params._1
-        private val _lq: LoadQty        = params._2
+        // to avoid diverging implicit search through the OpPoint projection givens
+        private val _dc: DraftCondition = opPoint.draftCondition
+        private val _lq: LoadQty        = opPoint.loadQty
         private given DraftCondition  = _dc
         @scala.annotation.nowarn("msg=unused private member")
         private given LoadQty         = _lq
@@ -605,7 +605,7 @@ abstract class EN15544_V_2023_Common_Application
                                     ]](Right((stage2InitialUpstream, Vector.empty))) { case (acc, (slot, localIdx)) =>
                                         acc.flatMap { case (upstream, results) =>
                                             val slotIdx = provider(localIdx)
-                                            slot.compute(upstream, params, slotIdx).map { pr =>
+                                            slot.compute(upstream, opPoint, slotIdx).map { pr =>
                                                 val nextUpstream =
                                                     UpstreamState.fromPipeResult(pr, computeAt)
                                                 (nextUpstream, results :+ pr)
@@ -799,7 +799,7 @@ abstract class EN15544_V_2023_Common_Application
         // Aggregated pipe results — concrete, uses the tagged postFirebox vector
         lazy val pipesResult_15544_VNelS: PipesResult_15544_VNelMcalcErr =
             PipesResult_15544_VNelMcalcErr(
-                airIntake_PipeResult(using params),
+                airIntake_PipeResult(using opPoint),
                 combustionAir_PipeResult,
                 firebox_PipeResult,
                 postFireboxPipeResults
@@ -934,30 +934,30 @@ abstract class EN15544_V_2023_Common_Application
                 case None      =>
                     FoldedVerdicts.fireboxSpecificErrors(foldedConstraintVerdicts)
             NonEmptyList.fromList(errors).fold(().validNel[FireboxError])(_.invalid)
-    end CommonAtParams
+    end CommonOperatingPoint
 
-    // ─── Pre-built AtParams instances ───────────────────────────────────
+    // ─── Pre-built AtOperatingPoint instances ───────────────────────────────────
     // Abstract — subclasses (strict/MCE) must instantiate with their own
-    // CommonAtParams subclass that provides pipe result implementations.
+    // CommonOperatingPoint subclass that provides pipe result implementations.
 
-    lazy val atDraftMin_LoadNominal: AtParams
-    lazy val atDraftMin_LoadMin    : Option[AtParams]
-    lazy val atDraftMax_LoadNominal: AtParams
-    lazy val atDraftMax_LoadMin    : Option[AtParams]
+    lazy val atDraftMin_LoadNominal: AtOperatingPoint
+    lazy val atDraftMin_LoadReduced: Option[AtOperatingPoint]
+    lazy val atDraftMax_LoadNominal: AtOperatingPoint
+    lazy val atDraftMax_LoadReduced: Option[AtOperatingPoint]
 
-    def atParamsFor(p: Params_13384): AtParams = p match
-        case Params_13384.DraftMin_LoadNominal => atDraftMin_LoadNominal
-        case Params_13384.DraftMin_LoadMin     =>
-            atDraftMin_LoadMin.getOrElse(
-                throw IllegalStateException("No AtParams for DraftMin_LoadMin: m_B_min is not defined")
+    def atOperatingPointFor(p: OpPoint): AtOperatingPoint = p match
+        case OpPoint.DraftMin_LoadNominal => atDraftMin_LoadNominal
+        case OpPoint.DraftMin_LoadReduced =>
+            atDraftMin_LoadReduced.getOrElse(
+                throw IllegalStateException("No AtOperatingPoint for DraftMin_LoadReduced: m_B_min is not defined")
             )
-        case Params_13384.DraftMax_LoadNominal => atDraftMax_LoadNominal
-        case Params_13384.DraftMax_LoadMin     =>
-            atDraftMax_LoadMin.getOrElse(
-                throw IllegalStateException("No AtParams for DraftMax_LoadMin: m_B_min is not defined")
+        case OpPoint.DraftMax_LoadNominal => atDraftMax_LoadNominal
+        case OpPoint.DraftMax_LoadReduced =>
+            atDraftMax_LoadReduced.getOrElse(
+                throw IllegalStateException("No AtOperatingPoint for DraftMax_LoadReduced: m_B_min is not defined")
             )
-        case other                             =>
-            throw IllegalStateException(s"Unexpected Params_13384 value: $other")
+        case other                        =>
+            throw IllegalStateException(s"Unexpected OpPoint value: $other")
 
     // Section "3.3"
     // TODO : add constraint on air gap (yes / no) depending on distance between inner & outer shell + more than 50% of surface built this way

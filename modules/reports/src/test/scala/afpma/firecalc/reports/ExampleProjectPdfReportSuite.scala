@@ -103,7 +103,7 @@ class ExampleProjectPdfReportSuite extends AnyFreeSpec with Matchers:
                 override val en15544_app            : EN15544_Strict_Application         = app
                 override val stove_proj_15544_strict: StoveProjectDescr_15544_Strict_Alg =
                     loader.stoveProjectDescr_EN15544_Strict
-                override val atParams                  = app.primary.asInstanceOf[en15544_app.AtParams]
+                override val atOperatingPoint          = app.primary.asInstanceOf[en15544_app.AtOperatingPoint]
                 override protected def currentDateTime = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
 
         val typstString = typstFactory.build()

@@ -160,8 +160,6 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
             ap.validatePressureRequirements_EN15544,
             ap.validateChimneyWallTempIsAboveCondensationTemp,
 
-            // validateEfficiencyIsAboveMinEfficiency()(using runValidationAtParams),
-
             // According to french officials, Ecodesign is not applicable to one-off stoves
             // So this EN 16510 constraint does not need to pass. Even if it does in practice.
             // ap.validateSeasonalEfficiency(countryCode),
@@ -181,7 +179,7 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
     // answers with `NotEvaluated(MissingMB)` verdicts. Forcing the snapshot
     // at construction time would make the app object unbuildable and the
     // request never leave the wire. The snapshot's only materializer is
-    // `CommonAtParams.outputs` (the sole `techSpecs` reference outside this
+    // `CommonOperatingPoint.outputs` (the sole `techSpecs` reference outside this
     // declaration), so forcing it can throw exactly where `m_B`/`P_n` can:
     // for an application without a sizing input — a state the UI form seed
     // forbids at steady state and the payments guard names early.
@@ -201,7 +199,7 @@ trait EN15544_Common_Constraints { en15544: EN15544_V_2023_Common_Application =>
     override final def efficiencies_values =
         EfficienciesValues(
             n_nominal = atDraftMin_LoadNominal.η,
-            n_lowest  = atDraftMin_LoadMin.traverse(_.η),
+            n_lowest  = atDraftMin_LoadReduced.traverse(_.η),
             ns        = atDraftMin_LoadNominal.η_s
         )
 

@@ -59,25 +59,25 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_133
     /** exterior air model */
     def exteriorAirModel: EpOp[ExteriorAir]
 
-    def airIntake_PipeResult_withoutVentilationOpenings: HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]]
+    def airIntake_PipeResult_withoutVentilationOpenings: HeatingAppliance.CtxOp4_EFPoM[WithOpPoint[PipeResultE]]
     def airIntake_PipeResult_withVentilationOpenings(
         fd: AirIntakePipe_Module.FullDescr
-    ): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]]
-    def airIntake_PipeResult: HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]]
+    ): HeatingAppliance.CtxOp4_EFPoM[WithOpPoint[PipeResultE]]
+    def airIntake_PipeResult: HeatingAppliance.CtxOp4_EFPoM[WithOpPoint[PipeResultE]]
 
     type PipeResultOp[X] = HeatingAppliance.CtxOp5_EFPoTM[X]
 
-    lazy val last_known_density_before_connector_pipe : WithParams_13384[Option[Density]]
-    lazy val last_known_velocity_before_connector_pipe: WithParams_13384[Option[FlowVelocity]]
+    lazy val last_known_density_before_connector_pipe : WithOpPoint[Option[Density]]
+    lazy val last_known_velocity_before_connector_pipe: WithOpPoint[Option[FlowVelocity]]
 
-    def connector_PipeResult   : PipeResultOp[WithParams_13384[PipeResultE]]
-    def chimney_PipeResult     : PipeResultOp[WithParams_13384[PipeResultE]]
-    def pipesResult_13384_VNelS: PipeResultOp[WithParams_13384[PipesResult_13384_VNelString]]
-    def pipesResult_13384      : PipeResultOp[WithParams_13384[VNelString[PipesResult_13384]]]
+    def connector_PipeResult   : PipeResultOp[WithOpPoint[PipeResultE]]
+    def chimney_PipeResult     : PipeResultOp[WithOpPoint[PipeResultE]]
+    def pipesResult_13384_VNelS: PipeResultOp[WithOpPoint[PipesResult_13384_VNelString]]
+    def pipesResult_13384      : PipeResultOp[WithOpPoint[VNelString[PipesResult_13384]]]
 
     // chimney temperatures
-    def t_chimney_out     : PipeResultOp[WithParams_13384[t_chimney_out]]
-    def t_chimney_wall_top: PipeResultOp[WithParams_13384[t_chimney_wall_top]]
+    def t_chimney_out     : PipeResultOp[WithOpPoint[t_chimney_out]]
+    def t_chimney_wall_top: PipeResultOp[WithOpPoint[t_chimney_wall_top]]
 
     // 3.1
 
@@ -131,7 +131,7 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_133
     // Temperature Requirements
 
     /** temperature limit */
-    def T_ig(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin]
+    def T_ig(using HeatingAppliance.FlueGas): WithOpPoint[TKelvin]
     def temperatureRequirements: PipeResultOp[WithLoadQty[TemperatureRequirements_13384]]
 
     // Section "5.5.2"
@@ -263,10 +263,10 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_133
     // Section 5.7.6
 
     /** point de rosée de l'eau T_p des fumées */
-    def T_p(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin]
+    def T_p(using HeatingAppliance.FlueGas): WithOpPoint[TKelvin]
 
     /** Température de condensation T_sp des fumées */
-    def T_sp(using HeatingAppliance.FlueGas): WithParams_13384[TKelvin]
+    def T_sp(using HeatingAppliance.FlueGas): WithOpPoint[TKelvin]
 
     /** coefficient de correction de l'instabilité de température */
     def S_H: EpOp[Dimensionless]
@@ -274,12 +274,12 @@ trait EN13384_1_A1_2019_Application_Alg extends Standard with HasTypeMembers_133
     // Section "5.9.1", "Masse volumique des fumées (ρ_m)"
 
     /** masse volumique moyenne des fumées */
-    def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas): WithParams_13384[Density]
+    def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas): WithOpPoint[Density]
 
     // Section "5.10.2"
 
     /** tirage théorique disponible dû à l'effet de cheminée */
-    def P_H(h: Length, t: TKelvin)(using HeatingAppliance.FlueGas): WithParams_13384[Pressure]
+    def P_H(h: Length, t: TKelvin)(using HeatingAppliance.FlueGas): WithOpPoint[Pressure]
 
     // Section "5.10.3"
 

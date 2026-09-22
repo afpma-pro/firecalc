@@ -433,7 +433,7 @@ class BlackBoxAsResultSuite extends AnyFreeSpec with Matchers:
             // standard evaluates all four points (both draft conditions × both
             // loads). The discriminating property: each point gets its OWN
             // entry, not a stale reuse of one result.
-            val evaluated = OpPoint.axesFor(app.firebox)
+            val evaluated = OpPoint15544.axesFor(app.firebox)
             evaluated.map(_.draftCondition).toSet shouldBe Set(
                 DraftCondition.DraftMinOrPositivePressureMax,
                 DraftCondition.DraftMaxOrPositivePressureMin
@@ -443,7 +443,7 @@ class BlackBoxAsResultSuite extends AnyFreeSpec with Matchers:
             val perturbedByPoint = perturbed.toList.toMap
 
             val observed = evaluated.map: op =>
-                val pipeResult = app.atParamsFor(op.toParams).firebox_PipeResult
+                val pipeResult = app.atOperatingPointFor(op).firebox_PipeResult
                 pipeResult.isValid shouldBe true
                 pipeResult.toOption.get.gas_temp_end shouldBe perturbedByPoint(op).gas_temp_end
                 pipeResult.toOption.get.gas_temp_end
@@ -458,7 +458,7 @@ class BlackBoxAsResultSuite extends AnyFreeSpec with Matchers:
 
         "a grid missing a covered operating point fails loudly with the point named" in {
             // Deliberately incomplete: only draft-min/nominal is present —
-            // built WITHOUT the sanctioned `OpPoint.axesFor` derivation. The
+            // built WITHOUT the sanctioned `OpPoint15544.axesFor` derivation. The
             // solve at draft-max/nominal must fail with an UnexpectedDevError
             // NAMING the operating point; it must never fall back to the
             // solver or to another point's entry.

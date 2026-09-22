@@ -6,9 +6,8 @@
 package afpma.firecalc.engine.impl.en13384
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
-import afpma.firecalc.engine.alg.en13384.WithParams_13384
+import afpma.firecalc.engine.models.WithOpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.SlotContext
 import afpma.firecalc.engine.models.en13384.Inputs_13384_WithFlowOnlyAirIntake
@@ -22,11 +21,11 @@ abstract class EN13384_WithFlowOnlyAirIntake_Application(
     override val formulas: EN13384_1_A1_2019_Formulas_Alg
 ) extends EN13384_1_A1_2019_Common_Application(formulas)
     with HasTypeMembers_13384_WithFlowOnlyAirIntake {
-    import Params_13384.given
+    import OpPoint.given
 
     override def airIntake_PipeResult_withVentilationOpenings(
         fd                : AirIntakePipe_Module.FullDescr
-    ): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] =
+    ): HeatingAppliance.CtxOp4_EFPoM[WithOpPoint[PipeResultE]] =
         ops_en13384.FlowOnlyMecaFlu_13384.makePipeResult(
             fd                 = FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
             hafg               = HeatingAppliance.FlueGas.summon,

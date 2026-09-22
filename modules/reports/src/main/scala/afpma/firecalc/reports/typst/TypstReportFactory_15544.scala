@@ -18,6 +18,7 @@ import afpma.firecalc.engine.alg.en15544.HasTypeMembers_15544_Alg
 import afpma.firecalc.engine.api.v0_2024_10_strict
 import afpma.firecalc.engine.models.EmissionsAndEfficiencyValues
 import afpma.firecalc.engine.models.LocalRegulations
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.en13384.std.ReferenceTemperatures
 import afpma.firecalc.engine.models.en13384.typedefs.PressureRequirements_13384
 import afpma.firecalc.engine.models.en13384.typedefs.TemperatureRequirements_13384
@@ -49,11 +50,11 @@ abstract class TypstReportFactory_15544(
 
     val en15544_app: EN15544_Application
 
-    val showAsTable_15544_instances =
+    val showAsTable_15544_instances: afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544 =
         new afpma.firecalc.engine.ops.en15544.ShowAsTableInstances_15544()
-    val showAsTable_13384_instances =
+    val showAsTable_13384_instances: afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384 =
         new afpma.firecalc.engine.ops.en13384.ShowAsTableInstances_13384()
-    val showAsTable_instances       =
+    val showAsTable_instances      : afpma.firecalc.engine.ops.ShowAsTableInstances               =
         new afpma.firecalc.engine.ops.ShowAsTableInstances()
 
     import showAsTable_15544_instances.given
@@ -62,9 +63,9 @@ abstract class TypstReportFactory_15544(
 
     val stove_proj_15544_strict: v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
 
-    val atParams: en15544_app.AtParams
-    // Derive given for WithParams_13384 methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)
-    given en15544_app.Params_15544 = atParams.params
+    val atOperatingPoint: en15544_app.AtOperatingPoint
+    // Derive given for WithOpPoint methods (pressureRequirements_EN13384, temperatureRequirements_EN13384)
+    given opPoint: OpPoint = atOperatingPoint.opPoint: OpPoint
 
     protected def currentDateTime: LocalDateTime = LocalDateTime.now(ZoneId.of("Europe/Paris"))
 
@@ -253,7 +254,7 @@ abstract class TypstReportFactory_15544(
             .mkFromShowAsTable[TechnicalSpecficiations](
                 maxWidthForFirstColumn = false
             )
-            .showAsTyp(atParams.outputs.technicalSpecs)
+            .showAsTyp(atOperatingPoint.outputs.technicalSpecs)
 
     def firebox_descr: String =
         en15544_app.inputs.design.firebox.typ
@@ -265,11 +266,11 @@ abstract class TypstReportFactory_15544(
         en15544_app.citedConstraints.typ
 
     def en15544_pressureRequirement: String =
-        atParams.pressureRequirement_EN15544.getOrThrow.typ
+        atOperatingPoint.pressureRequirement_EN15544.getOrThrow.typ
 
     def en15544_t_chimney_wall_top: String =
         given EN15544_V_2023_Formulas_Alg = en15544_app.formulas
-        atParams.t_chimney_wall_top.getOrThrow.typ
+        atOperatingPoint.t_chimney_wall_top.getOrThrow.typ
 
     def en15544_emissions_and_efficiency_values: String =
         given LocalRegulations = stove_proj_15544_strict.localRegulations
@@ -280,16 +281,16 @@ abstract class TypstReportFactory_15544(
             .showAsTyp(en15544_app.emissions_and_efficiency_values)
 
     def en15544_flue_gas_triple_of_variates: String =
-        atParams.flue_gas_triple_of_variates.getOrThrow.typ
+        atOperatingPoint.flue_gas_triple_of_variates.getOrThrow.typ
 
     def en15544_estimated_output_temperatures: String =
-        atParams.estimated_output_temperatures.typ
+        atOperatingPoint.estimated_output_temperatures.typ
 
     def en15544_pipesResult: String =
         s"""|#[
             |  #set page(flipped: true)
             |  #set text(size: 6pt)
-            |  ${atParams.outputs.pipesResult_15544.accumulateErrors.getOrThrow.typ}
+            |  ${atOperatingPoint.outputs.pipesResult_15544.accumulateErrors.getOrThrow.typ}
             |]
             |""".stripMargin
 
@@ -320,7 +321,7 @@ abstract class TypstReportFactory_15544(
             .mkFromShowAsTable[ReferenceTemperatures](
                 maxWidthForFirstColumn = false
             )
-            .showAsTyp(atParams.outputs.reference_temperatures)
+            .showAsTyp(atOperatingPoint.outputs.reference_temperatures)
 
     /* Build typst document (string representation) */
     final def build(): String =

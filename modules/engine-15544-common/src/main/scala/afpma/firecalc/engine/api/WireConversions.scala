@@ -31,7 +31,7 @@ import afpma.firecalc.domain.NbOfFlows
 import afpma.firecalc.engine.alg.en15544.FireboxContribution
 import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.engine.alg.en15544.FireboxOperatingEnvelope
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.en13384.typedefs.{DraftCondition, T_L_override}
 import afpma.firecalc.engine.standard.PressureLossMustBeDefined
 import afpma.firecalc.firebox_calc_api.*

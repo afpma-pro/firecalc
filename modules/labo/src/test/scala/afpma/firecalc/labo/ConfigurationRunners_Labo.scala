@@ -212,12 +212,12 @@ trait ConfigurationRunners_Labo extends AnyFreeSpec with Matchers {
     private def buildCSVForMCEComparisonWithLabData(
         ex      : StoveProjectDescr_15544_Labo_Alg,
         _en15544: EN15544_V_2023_Common_Application,
-        ap      : _en15544.AtParams
+        ap      : _en15544.AtOperatingPoint
     ): String =
 
         import ex.given_Locale
-        given _en15544.Params_15544 = ap.params
-        given Option[LoadQty]       = Some(ap.params._2)
+        given OpPoint         = ap.opPoint
+        given Option[LoadQty] = Some(ap.opPoint.loadQty)
 
         // given LocalRegulations = ex.localRegulations
 

@@ -7,7 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.units.coulombutils.*
 
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.cas_types.en13384.v20241001.CasType_13384_C16
 import afpma.firecalc.engine.cas_types.en15544.v20241001.CasType_15544_C2
 import afpma.firecalc.engine.impl.en13384.EN13384_1_A1_2019_Formulas
@@ -87,7 +87,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers with UnslottedFixtur
 
     // TODO: copy paste to handle (done from 15544 Suite)
 
-    // val ep = en15544.pressReq_from_Params_15544(using p)
+    // val ep = en15544.pressReq_from_OpPoint(using p)
 
     "on ChimneyPipe (using EN15544 strict)" - {
 
@@ -110,7 +110,7 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers with UnslottedFixtur
                     )
                     chain.chimneyPipe.toOption.get
                 }
-                val p             = Params_13384.DraftMin_LoadNominal
+                val p             = OpPoint.DraftMin_LoadNominal
                 val r             =
                     ThermalMecaFlu_13384
                         .makePipeResult(
@@ -136,8 +136,8 @@ class MecaFlu_13384_Suite extends AnyFreeSpec with Matchers with UnslottedFixtur
                 val en13384                                                                             = EN13384_WithThermalAirIntake_Application.make(f, inputs)
                 val chimney_elems                                                                       = CasType_13384_C16.chimneyPipe.toOption.get
                 val first                                                                               = chimney_elems.elems.head
-                val p                                                                                   = Params_13384.DraftMin_LoadNominal
-                val gip                                                                                 = GasInPipeEl[NamedPipeElDescrG[ChimneyPipe_Module.El], Gas, Params_13384](FlueGas, first, p)
+                val p                                                                                   = OpPoint.DraftMin_LoadNominal
+                val gip                                                                                 = GasInPipeEl[NamedPipeElDescrG[ChimneyPipe_Module.El], Gas, OpPoint](FlueGas, first, p)
                 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
                 import afpma.firecalc.engine.models.ChimneyPipeT
                 given DynamicFrictionCoeffOp[NamedPipeElDescrG[ThermalPipeDescr_13384.DirectionChange]] =

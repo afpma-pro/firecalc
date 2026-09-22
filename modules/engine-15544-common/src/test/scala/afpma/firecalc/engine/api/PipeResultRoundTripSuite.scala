@@ -11,7 +11,7 @@ import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.CoefficientOfFlowResistance
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.alg.en15544.FireboxContribution
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.firebox_calc_api.*
 import afpma.firecalc.firebox_calc_api.Codecs.given

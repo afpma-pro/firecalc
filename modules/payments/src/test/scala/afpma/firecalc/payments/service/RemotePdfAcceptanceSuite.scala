@@ -10,7 +10,7 @@ import afpma.firecalc.units.others.sunits.SUnits.given
 
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.api.WireConversions
 import afpma.firecalc.engine.models.FireboxPipeT
 import afpma.firecalc.engine.models.PipeResult

@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.ops.en15544
 
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en15544.FlowOnlyPipeDescr_15544
@@ -36,7 +36,7 @@ extension (obj: CanComputePipeResult.type)
                 fd       : PipeFullDescrG[descrAlg.PipeElDescr],
                 gas      : Gas,
                 upstream : UpstreamState,
-                params   : Params_13384,
+                opPoint  : OpPoint,
                 slotIndex: SlotIndex
             ): Either[MecaFlu_Error, PipeResult] =
                 // Only override the temperature start when t_burnout is valid
@@ -55,9 +55,9 @@ extension (obj: CanComputePipeResult.type)
                 FlowOnlyMecaFlu_15544.makePipeResult(
                     fd,
                     gas,
-                    params._2,
+                    opPoint.loadQty,
                     z_geo,
-                    params._1,
+                    opPoint.draftCondition,
                     tempOverride,
                     SlotContext.forSlot(slotIndex)
                 )(using

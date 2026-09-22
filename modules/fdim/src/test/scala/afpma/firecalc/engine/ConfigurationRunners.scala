@@ -32,11 +32,11 @@ trait ConfigurationRunners extends AnyFreeSpec with Matchers {
         givenLocale     : Locale,
         localRegs       : LocalRegulations,
         _en15544        : EN15544_V_2023_Common_Application,
-        ap              : _en15544.AtParams
+        ap              : _en15544.AtOperatingPoint
     ) =
 
         given Locale                      = givenLocale
-        given _en15544.Params_15544       = ap.params
+        given OpPoint                     = ap.opPoint
         given LocalRegulations            = localRegs
         given EN15544_V_2023_Formulas_Alg = _en15544.formulas
 

@@ -10,8 +10,8 @@ import algebra.instances.all.given
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.engine.*
-import afpma.firecalc.engine.alg.en13384.*
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.OpPoint.{loadQty_from_OpPoint, pressReq_from_OpPoint}
 import afpma.firecalc.engine.models.en13384.std.HeatingAppliance
 import afpma.firecalc.engine.models.en13384.typedefs.*
 import afpma.firecalc.engine.ops.en13384.Pressures_13384.given
@@ -43,14 +43,14 @@ trait EN15544_Common_HeatingAppliance { en15544: EN15544_V_2023_Common_Applicati
     // Section "4.10.2", "Dew point condition"
 
     // Section "4.10.3 – 4.10.4", "Efficiency and flue gas triple of variates"
-    // Moved to CommonAtParams
+    // Moved to CommonOperatingPoint
 
     private def heatingAppliance_draft_min: VNelMcalcErr[Pressure] =
         atDraftMin_LoadNominal.required_delivery_pressure
 
     private def heatingAppliance_draft_max: VNelMcalcErr[Pressure] =
-        given Params_13384 = Params_13384.DraftMin_LoadNominal
-        val ap             = atDraftMin_LoadNominal
+        given OpPoint = OpPoint.DraftMin_LoadNominal
+        val ap        = atDraftMin_LoadNominal
         (
             ap.Σ_p_R_and_Σ_p_u,
             ap.outputs.pipesResult_15544.accumulateErrors.map(_.Σ_ph_until_fluepipe_end: Pressure),
@@ -130,7 +130,7 @@ trait EN15544_Common_HeatingAppliance { en15544: EN15544_V_2023_Common_Applicati
     // val m_B_min_test: F[m_B_min] = pure(5.kilograms)
     // setConstraintFromQtyF[Mass, m_B](m_B_min_test, Min(_))
 
-    def airIntake_PipeResult: WithParams_13384[VNelMcalcErr[PipeResult]] =
+    def airIntake_PipeResult: WithOpPoint[VNelMcalcErr[PipeResult]] =
         (
             en13384_heatingAppliance_powers,
             en13384_heatingAppliance_efficiency
@@ -142,7 +142,7 @@ trait EN15544_Common_HeatingAppliance { en15544: EN15544_V_2023_Common_Applicati
                 given HeatingAppliance.Efficiency = ha_eff
                 en13384_application.airIntake_PipeResult.toValidatedNel
 
-    final def combustionAir_PipeResult_whenEmpty: WithParams_15544[VNelMcalcErr[PipeResult]] =
+    final def combustionAir_PipeResult_whenEmpty: WithOpPoint[VNelMcalcErr[PipeResult]] =
         PipeResult
             .useless      (
                 pt       = CombustionAirPipeT,
@@ -153,9 +153,9 @@ trait EN15544_Common_HeatingAppliance { en15544: EN15544_V_2023_Common_Applicati
 
     def combustionAir_PipeResult_whenExists(
         fd: CombustionAirPipe_Module.FullDescr
-    ): WithParams_15544[VNelMcalcErr[PipeResult]]
+    ): WithOpPoint[VNelMcalcErr[PipeResult]]
 
-    def pressureRequirements_EN13384: WithParams_13384[VNelMcalcErr[PressureRequirements_13384]] =
+    def pressureRequirements_EN13384: WithOpPoint[VNelMcalcErr[PressureRequirements_13384]] =
         (
             en13384_heatingAppliance_powers,
             en13384_heatingAppliance_efficiency,
@@ -164,7 +164,7 @@ trait EN15544_Common_HeatingAppliance { en15544: EN15544_V_2023_Common_Applicati
         ).mapN_andThen_impl:
             en13384_application.pressureRequirements
 
-    override def temperatureRequirements_EN13384: WithParams_13384[VNelMcalcErr[TemperatureRequirements_13384]] =
+    override def temperatureRequirements_EN13384: WithOpPoint[VNelMcalcErr[TemperatureRequirements_13384]] =
         (
             en13384_heatingAppliance_powers,
             en13384_heatingAppliance_temperatures,

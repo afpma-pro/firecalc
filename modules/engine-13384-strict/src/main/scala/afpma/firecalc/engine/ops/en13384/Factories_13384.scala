@@ -7,7 +7,7 @@ package afpma.firecalc.engine.ops.en13384
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Formulas_Alg
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.FlowOnlyPipeDescr_13384
 import afpma.firecalc.engine.models.en13384.ThermalPipeDescr_13384
@@ -67,7 +67,7 @@ extension (obj: CanComputePipeResult.type)
                 fd       : PipeFullDescrG[descrAlg.PipeElDescr],
                 gas      : Gas,
                 upstream : UpstreamState,
-                params   : Params_13384,
+                opPoint  : OpPoint,
                 slotIndex: SlotIndex
             ): Either[MecaFlu_Error, PipeResult] =
                 ThermalMecaFlu_13384.makePipeResult(
@@ -79,7 +79,7 @@ extension (obj: CanComputePipeResult.type)
                     upstream.last_pipe_velocity,
                     gas,
                     SlotContext.forSlot(slotIndex)
-                )(using params, en13384App)
+                )(using opPoint, en13384App)
 
     /** EN 13384 flow-only (simplified air-intake) pipe result. */
     def forFlowOnly13384(
@@ -94,7 +94,7 @@ extension (obj: CanComputePipeResult.type)
                 fd       : PipeFullDescrG[descrAlg.PipeElDescr],
                 gas      : Gas,
                 upstream : UpstreamState,
-                params   : Params_13384,
+                opPoint  : OpPoint,
                 slotIndex: SlotIndex
             ): Either[MecaFlu_Error, PipeResult] =
                 FlowOnlyMecaFlu_13384.makePipeResult(
@@ -105,4 +105,4 @@ extension (obj: CanComputePipeResult.type)
                     upstream.last_pipe_velocity,
                     gas,
                     SlotContext.forSlot(slotIndex)
-                )(using params, en13384App)
+                )(using opPoint, en13384App)

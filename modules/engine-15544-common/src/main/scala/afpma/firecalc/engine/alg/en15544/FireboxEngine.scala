@@ -7,6 +7,7 @@ package afpma.firecalc.engine.alg.en15544
 
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.TermConstraint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions
 import afpma.firecalc.engine.models.en15544.typedefs.*
@@ -100,9 +101,9 @@ enum FireboxContribution[+D]:
      * determinable minimum load. A bare, unkeyed result is unrepresentable:
      * the grid is non-empty and every entry names the point it is valid at.
      *
-     * The grid-completeness obligation sits with the PRODUCER. `OpPoint.axesFor`
+     * The grid-completeness obligation sits with the PRODUCER. `OpPoint15544.axesFor`
      * (`alg/en15544/FireboxCalculation.scala`) is the sanctioned axis
-     * derivation: a grid built over `OpPoint.axesFor(firebox)` covers exactly
+     * derivation: a grid built over `OpPoint15544.axesFor(firebox)` covers exactly
      * the points the standard will consume. A covered-point miss at consumption
      * time is a producer bug and fails loudly with the operating point named —
      * it is never a fallback.

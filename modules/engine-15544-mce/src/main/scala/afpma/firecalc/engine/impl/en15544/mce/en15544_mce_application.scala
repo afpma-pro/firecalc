@@ -21,6 +21,7 @@ import afpma.firecalc.engine.impl.en13384.*
 import afpma.firecalc.engine.alg.en13384.ComputeAt
 import afpma.firecalc.engine.models // scalafix:ok
 import afpma.firecalc.engine.models.*
+import afpma.firecalc.engine.models.OpPoint.pressReq_from_OpPoint
 import afpma.firecalc.engine.models.geometry.PostFireboxPipeSlot
 import afpma.firecalc.engine.models.en15544.IncrementalPipeInputs_15544_MCE
 import afpma.firecalc.engine.models.en15544.std.*
@@ -217,7 +218,7 @@ abstract class EN15544_MCE_Application(
 
         override def airIntake_PipeResult_withVentilationOpenings(
             fd                : en15544_mce.AirIntakePipe_Module.FullDescr
-        ): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] =
+        ): HeatingAppliance.CtxOp4_EFPoM[WithOpPoint[PipeResultE]] =
             ops_en13384.ThermalMecaFlu_13384.makePipeResult(
                 fd                 = ThermalAirIntakePipe_Module_13384.unwrap(fd),
                 // fd.unwrap,
@@ -247,7 +248,7 @@ abstract class EN15544_MCE_Application(
                     import ThermalAirIntakePipe_Module_13384.*
                     self.formulas.T_mB_calc(p.ductType, T_L).withSectionTyp(AirIntakePipeT)
 
-        override def atParamsFor(p: Params_13384): AtParams = en15544_mce.atParamsFor(p)
+        override def atOperatingPointFor(p: OpPoint): AtOperatingPoint = en15544_mce.atOperatingPointFor(p)
     }
 
     given EN13384_1_A1_2019_Application_Alg = en13384_application
@@ -319,9 +320,9 @@ abstract class EN15544_MCE_Application(
                         )
                         .toValidatedNel
 
-    // ─── MCEAtParams: concrete inner class for MCE application ──────────
+    // ─── MCEOperatingPoint: concrete inner class for MCE application ──────────
 
-    class MCEAtParams(p: Params_15544) extends CommonAtParams(p):
+    class MCEOperatingPoint(p: OpPoint) extends CommonOperatingPoint(p):
 
         /**
          * The combustion-air gas-path result.
@@ -332,7 +333,7 @@ abstract class EN15544_MCE_Application(
          * not invoked.
          */
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult] =
-            combustionAirContributedResultAt(p._1, p._2).andThen:
+            combustionAirContributedResultAt(p.draftCondition, p.loadQty).andThen:
                 case Some(r) => r.validNel
                 case None    =>
                     CombustionAirPipe_Module_13384.foldPipeCanBe(inputs.pipes.combustionAir)  (
@@ -352,7 +353,7 @@ abstract class EN15544_MCE_Application(
          * which is why `AsResult` obliges the full continuation state.
          */
         lazy val firebox_PipeResult: VNelMcalcErr[PipeResult] =
-            fireboxContributedResultAt(p._1, p._2).andThen:
+            fireboxContributedResultAt(p.draftCondition, p.loadQty).andThen:
                 case Some(r) => r.validNel
                 case None    =>
                     combustionAir_PipeResult.andThen: cci =>
@@ -361,7 +362,7 @@ abstract class EN15544_MCE_Application(
                             en13384_heatingAppliance_efficiency
                         )
                             .mapN_andThen: (ha_pow, ha_eff) =>
-                                given Params_13384 = p: Params_13384
+                                given OpPoint = p: OpPoint
                                 ops_en13384.ThermalMecaFlu_13384
                                     .makePipeResult                (
                                         fd                 = FireboxPipe_Module_13384.unwrap(inputs.pipes.firebox),
@@ -412,7 +413,7 @@ abstract class EN15544_MCE_Application(
                 )
             else
                 val flueRegionSlots = pfbSlots.take(lastFluePipeSlotIdx + 1)
-                given Params_13384  = p
+                given OpPoint       = p
 
                 // In MCE the Powers/Efficiency/FlueGas/MassFlows givens are safe to summon at
                 // chain-seed time — η_WN derives from `t_burnout` via BS845, not from
@@ -679,12 +680,14 @@ abstract class EN15544_MCE_Application(
                                     case Left(err)           => Validated.invalidNel(err)
                         }
 
-    end MCEAtParams
+    end MCEOperatingPoint
 
-    // ─── Pre-built AtParams instances ───────────────────────────────────
+    // ─── Pre-built AtOperatingPoint instances ───────────────────────────────────
 
-    lazy val atDraftMin_LoadNominal: AtParams         = new MCEAtParams(Params_15544.DraftMin_LoadNominal)
-    lazy val atDraftMin_LoadMin    : Option[AtParams] = m_B_min.map(_ => new MCEAtParams(Params_15544.DraftMin_LoadMin))
-    lazy val atDraftMax_LoadNominal: AtParams         = new MCEAtParams(Params_15544.DraftMax_LoadNominal)
-    lazy val atDraftMax_LoadMin    : Option[AtParams] = m_B_min.map(_ => new MCEAtParams(Params_15544.DraftMax_LoadMin))
+    lazy val atDraftMin_LoadNominal: AtOperatingPoint         = new MCEOperatingPoint(OpPoint.DraftMin_LoadNominal)
+    lazy val atDraftMin_LoadReduced: Option[AtOperatingPoint] =
+        m_B_min.map(_ => new MCEOperatingPoint(OpPoint.DraftMin_LoadReduced))
+    lazy val atDraftMax_LoadNominal: AtOperatingPoint         = new MCEOperatingPoint(OpPoint.DraftMax_LoadNominal)
+    lazy val atDraftMax_LoadReduced: Option[AtOperatingPoint] =
+        m_B_min.map(_ => new MCEOperatingPoint(OpPoint.DraftMax_LoadReduced))
 }

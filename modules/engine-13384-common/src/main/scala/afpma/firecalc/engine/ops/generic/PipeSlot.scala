@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.ops.generic
 
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.SlotIndex
@@ -24,8 +24,8 @@ trait PipeSlot:
     val label   : String
     val gas     : Gas
 
-    /** Compute this pipe's result given upstream state and EN 13384 params. */
-    def compute(upstream: UpstreamState, params: Params_13384, slotIndex: SlotIndex): Either[MecaFlu_Error, PipeResult]
+    /** Compute this pipe's result given upstream state and the operating point. */
+    def compute(upstream: UpstreamState, opPoint: OpPoint, slotIndex: SlotIndex): Either[MecaFlu_Error, PipeResult]
 
     /** The pipe's element descriptors (type-erased). Used for validation access (e.g. inner shapes). */
     def elements: Vector[NamedPipeElDescrG[?]]
@@ -38,11 +38,11 @@ object PipeSlot:
      * so the next slot in the chain receives valid propagation values.
      */
     def noop(_pipeType: PipeType, _label: String): PipeSlot = new PipeSlot:
-        val pipeType                                                                       = _pipeType
-        val label                                                                          = _label
-        val gas                                                                            = FlueGas
-        def elements                                                                       = Vector.empty
-        def compute(upstream: UpstreamState, _params: Params_13384, _slotIndex: SlotIndex) =
+        val pipeType                                                                   = _pipeType
+        val label                                                                      = _label
+        val gas                                                                        = FlueGas
+        def elements                                                                   = Vector.empty
+        def compute(upstream: UpstreamState, _opPoint: OpPoint, _slotIndex: SlotIndex) =
             Right(
                 PipeResult.useless (
                     pipeType,

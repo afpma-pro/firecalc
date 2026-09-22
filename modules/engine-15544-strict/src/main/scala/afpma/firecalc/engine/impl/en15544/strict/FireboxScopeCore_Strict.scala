@@ -5,7 +5,8 @@
 
 package afpma.firecalc.engine.impl.en15544.strict
 
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.alg.en15544.OpPoint15544
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.ops.en15544 as ops_en15544
@@ -32,7 +33,7 @@ import cats.syntax.all.*
  *   - [[fireboxScopeGrid]]: the total grid over all operating points implied
  *     by the firebox
  *
- * The full application's `StrictAtParams` delegates its `firebox_PipeResult`
+ * The full application's `StrictOperatingPoint` delegates its `firebox_PipeResult`
  * and `combustionAir_PipeResult` to [[fireboxScopeSolveAt]], so no derivation
  * body is duplicated.
  */
@@ -49,7 +50,8 @@ trait FireboxScopeCore_Strict:
     def fireboxScopeSolveAt(
         op: OpPoint
     ): VNelMcalcErr[(PipeResult, Option[PipeResult])] =
-        val (dc, lq) = op.toParams
+        val dc = op.draftCondition
+        val lq = op.loadQty
         (
             solveFireboxPipeAt      (dc, lq),
             solveCombustionAirPipeAt(dc, lq)
@@ -57,13 +59,13 @@ trait FireboxScopeCore_Strict:
 
     /**
      * The total firebox-scope grid: every [[OpPoint]] implied by the firebox
-     * (see [[OpPoint.axesFor]]) mapped to its solved pipe results.
+     * (see [[OpPoint15544.axesFor]]) mapped to its solved pipe results.
      *
      * Totality contract: covers exactly the operating points the firebox
      * declares; a consumer indexing a covered point never misses.
      */
     lazy val fireboxScopeGrid: VNelMcalcErr[Map[OpPoint, (PipeResult, Option[PipeResult])]] =
-        OpPoint
+        OpPoint15544
             .axesFor(firebox)
             .traverse(op => fireboxScopeSolveAt(op).map(r => op -> r))
             .map(_.toMap)
@@ -111,7 +113,7 @@ trait FireboxScopeCore_Strict:
         combustionAirContributedResultOpt(dc, lq).andThen:
             case Some(r) => Validated.validNel(Some(r))
             case None    =>
-                given Params_15544 = (dc, lq)
+                given OpPoint = OpPoint(dc, lq)
                 CombustionAirPipe_Module_15544.foldPipeCanBe(inputs.pipes.combustionAir)  (
                     onWithout   = combustionAir_PipeResult_whenEmpty.map(Some(_)),
                     onFullDescr = fd => solveCombustionAirDescriptor(fd, dc, lq).map(Some(_))

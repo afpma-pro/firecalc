@@ -30,8 +30,8 @@ import afpma.firecalc.units.Vec3
  * This helper is used by all pipe chain builders that thread `PipeBuildSeed`
  * through post-firebox slots:
  *   - `PipeChainGeneric.build` (Strict UI-facing)
- *   - `StrictAtParams.flueRegionPipeResults` (Strict computation)
- *   - `MCEAtParams.flueRegionPipeResults` (MCE computation)
+ *   - `StrictOperatingPoint.flueRegionPipeResults` (Strict computation)
+ *   - `MCEOperatingPoint.flueRegionPipeResults` (MCE computation)
  */
 object FireboxSplitFrame:
 

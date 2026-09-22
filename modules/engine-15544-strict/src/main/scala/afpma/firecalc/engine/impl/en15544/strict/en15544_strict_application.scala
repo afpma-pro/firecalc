@@ -45,9 +45,10 @@ import afpma.firecalc.engine.standard.NotYetSupportedInFlueRegion
 import afpma.firecalc.engine.ops.en13384 as ops_en13384
 import afpma.firecalc.engine.ops.en13384.forThermal13384
 import afpma.firecalc.engine.ops.en15544.forFlowOnly15544
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
+import afpma.firecalc.engine.models.OpPoint.pressReq_from_OpPoint
 import afpma.firecalc.engine.ops.generic.{CanComputePipeResult, PipeSlot, UpstreamState}
-import afpma.firecalc.engine.alg.en13384.WithParams_13384
+import afpma.firecalc.engine.models.WithOpPoint
 import afpma.firecalc.engine.impl.en15544.common.PostFireboxFrameHelpers.toPipeFrame
 import afpma.firecalc.engine.ops.generic.SlotIndexProvider
 import afpma.firecalc.domain.FireboxCoordinateSystem
@@ -161,12 +162,12 @@ object EN15544_Strict_Application:
                     else entry
                 locally { checkTotality() }
 
-        // AtParams (atDraftMin/Max_LoadNominal/LoadMin) are NOT delegated
+        // AtOperatingPoint (atDraftMin/Max_LoadNominal/LoadReduced) are NOT delegated
         // across instances: they are inherited from the abstract class and
         // recomputed against THIS wrapper's `fc` (the remote-backed registry
-        // above). Delegating the delegate's AtParams would need a runtime cast
-        // to bridge the path-dependent inner-trait types `delegate.AtParams`
-        // -> `this.AtParams` (invariant 9), and would compute the outputs
+        // above). Delegating the delegate's AtOperatingPoint would need a runtime cast
+        // to bridge the path-dependent inner-trait types `delegate.AtOperatingPoint`
+        // -> `this.AtOperatingPoint` (invariant 9), and would compute the outputs
         // with the LOCAL engine despite the remote registry. Inheriting is
         // cast-free and uses the remote engine. (fix-plan Phase 3, dev. 4.)
 
@@ -241,7 +242,7 @@ sealed abstract class EN15544_Strict_Application(
             .map(t_fp_end => formulas.η_calc(t_fp_end))
 
     lazy val en13384_η_Wmin: Option[VNelMcalcErr[Percentage]] =
-        atDraftMin_LoadMin.map:
+        atDraftMin_LoadReduced.map:
             _.t_fluepipe_end
                 .map(t_fp_end => formulas.η_calc(t_fp_end))
 
@@ -258,18 +259,18 @@ sealed abstract class EN15544_Strict_Application(
         // Conservative choice: use min-draft temperature (lower temp → less buoyancy).
         //
         // When the flue region contains only EN 15544 flow-only pipes, t_fluepipe_end
-        // is identical at min and max draft for a given load pass (temperature is
+        // is identical at min and max draft for a given operating point (temperature is
         // draft-independent). However, interleaved ConnectorSlots in the flue region
         // are computed using Thermal 13384 (heat-transfer formulas where temperature
         // loss depends on gas velocity, which varies with draft). This makes
         // t_fluepipe_end legitimately draft-dependent for topologies like
         // [Flue, Connector, Flue, Connector, Chimney].
         //
-        // It is NOT load-independent: the reduced pass decays with a pass-selected
+        // It is NOT load-independent: the reduced operating point decays with an operating-point
         // L_N (see `OpPointLoads.effective_load_mass`, PRD D2), so its flue-gas
         // temperatures (and ηWmin) differ from the nominal ones on reduced-capable
         // appliances.
-        // This value stays the nominal-pass temperature by design.
+        // This value stays the nominal operating-point temperature by design.
         atDraftMin_LoadNominal.t_fluepipe_end.map: fg_temp_nominal =>
             HeatingAppliance.Temperatures(
                 flue_gas_temp_nominal = fg_temp_nominal,
@@ -294,7 +295,7 @@ sealed abstract class EN15544_Strict_Application(
 
         override def airIntake_PipeResult_withVentilationOpenings(
             fd                : AirIntakePipe_Module.FullDescr
-        ): HeatingAppliance.CtxOp4_EFPoM[WithParams_13384[PipeResultE]] =
+        ): HeatingAppliance.CtxOp4_EFPoM[WithOpPoint[PipeResultE]] =
             ops_en13384.FlowOnlyMecaFlu_13384.makePipeResult(
                 fd                 = FlowOnlyAirIntakePipe_Module_13384.unwrap(fd),
                 // self.inputs.pipes.AirIntakePipe_Module.unwrap(fd),
@@ -315,7 +316,7 @@ sealed abstract class EN15544_Strict_Application(
 
         override final lazy val computeAt    = ComputeAt.Middle
         override final lazy val p_L_override = en13384_p_L_override
-        override def atParamsFor(p: Params_13384): AtParams = en15544.atParamsFor(p)
+        override def atOperatingPointFor(p: OpPoint): AtOperatingPoint = en15544.atOperatingPointFor(p)
         // overrides
         override def ρ_m(T_m: TKelvin)(using HeatingAppliance.FlueGas) =
             en15544.ρ_G(T_m.toUnit[Celsius])
@@ -383,12 +384,12 @@ sealed abstract class EN15544_Strict_Application(
     override def combustionAir_PipeResult_whenExists(
         fd: CombustionAirPipe_Module_15544.FullDescr
     ) =
-        val p = summon[Params_15544]
-        solveCombustionAirDescriptor(fd, p._1, p._2)
+        val p = summon[OpPoint]
+        solveCombustionAirDescriptor(fd, p.draftCondition, p.loadQty)
 
-    // ─── StrictAtParams: concrete inner class for strict application ─────
+    // ─── StrictOperatingPoint: concrete inner class for strict application ─────
 
-    class StrictAtParams(p: Params_15544) extends CommonAtParams(p):
+    class StrictOperatingPoint(p: OpPoint) extends CommonOperatingPoint(p):
 
         /**
          * The combustion-air gas-path result.
@@ -399,10 +400,10 @@ sealed abstract class EN15544_Strict_Application(
          * so the fallback below is the normal path.
          */
         lazy val combustionAir_PipeResult: VNelMcalcErr[PipeResult] =
-            solveCombustionAirPipeAt(p._1, p._2).andThen:
+            solveCombustionAirPipeAt(p.draftCondition, p.loadQty).andThen:
                 case Some(pr) => pr.validNel
                 case None     =>
-                    given Params_15544 = p
+                    given OpPoint = p
                     combustionAir_PipeResult_whenEmpty
 
         /**
@@ -414,7 +415,7 @@ sealed abstract class EN15544_Strict_Application(
          * so the fallback below is the normal path.
          */
         lazy val firebox_PipeResult: VNelMcalcErr[PipeResult] =
-            solveFireboxPipeAt(p._1, p._2)
+            solveFireboxPipeAt(p.draftCondition, p.loadQty)
 
         /**
          * Stage 1 — flue region pipe results (HA-power-free).
@@ -637,9 +638,9 @@ sealed abstract class EN15544_Strict_Application(
                                                 .makePipeResult                 (
                                                     fd                  = FluePipe_Module_15544.unwrap(pipe),
                                                     gas                 = FlueGas,
-                                                    loadQty             = p._2,
+                                                    loadQty             = p.loadQty,
                                                     z_geodetical_height = z_geodetical_height,
-                                                    params              = p._1,
+                                                    params              = p.draftCondition,
                                                     tempStartOverride   = None,
                                                     sc                  = SlotContext.forSlotUnsafe(0)
                                                 )(using
@@ -681,14 +682,16 @@ sealed abstract class EN15544_Strict_Application(
                             case Left(err)           => Validated.invalidNel(err)
                 }
 
-    end StrictAtParams
+    end StrictOperatingPoint
 
-    // ─── Pre-built AtParams instances ───────────────────────────────────
+    // ─── Pre-built AtOperatingPoint instances ───────────────────────────────────
 
-    lazy val atDraftMin_LoadNominal: AtParams         = new StrictAtParams(Params_15544.DraftMin_LoadNominal)
-    lazy val atDraftMin_LoadMin    : Option[AtParams] = m_B_min.map(_ => new StrictAtParams(Params_15544.DraftMin_LoadMin))
-    lazy val atDraftMax_LoadNominal: AtParams         = new StrictAtParams(Params_15544.DraftMax_LoadNominal)
-    lazy val atDraftMax_LoadMin    : Option[AtParams] = m_B_min.map(_ => new StrictAtParams(Params_15544.DraftMax_LoadMin))
+    lazy val atDraftMin_LoadNominal: AtOperatingPoint         = new StrictOperatingPoint(OpPoint.DraftMin_LoadNominal)
+    lazy val atDraftMin_LoadReduced: Option[AtOperatingPoint] =
+        m_B_min.map(_ => new StrictOperatingPoint(OpPoint.DraftMin_LoadReduced))
+    lazy val atDraftMax_LoadNominal: AtOperatingPoint         = new StrictOperatingPoint(OpPoint.DraftMax_LoadNominal)
+    lazy val atDraftMax_LoadReduced: Option[AtOperatingPoint] =
+        m_B_min.map(_ => new StrictOperatingPoint(OpPoint.DraftMax_LoadReduced))
 
     def net_calorific_value_of_wet_wood(
         @nowarn("msg=unused") ncv_dry: HeatCapacity,

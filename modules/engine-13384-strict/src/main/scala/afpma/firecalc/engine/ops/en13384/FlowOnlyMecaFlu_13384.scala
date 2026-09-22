@@ -44,12 +44,12 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
 
     override type PipeDescr = FlowOnlyPipeDescr_13384.type
     override val pipeDescr: PipeDescr = FlowOnlyPipeDescr_13384
-    override type Params        = Params_13384
+    override type Params        = OpPoint
     override type SectionResult = PipeSectionResult[PipeElDescr]
     override type FullResult    = PipeResult
 
     def makePipeSectionResult(
-        gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
+        gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, OpPoint],
         hafg              : HeatingAppliance.FlueGas,
         hamf              : HeatingAppliance.MassFlows,
         temp_start        : TCelsius,
@@ -83,7 +83,7 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
         last_pipe_velocity: Option[FlowVelocity],
         gas               : Gas,
         sc                : SlotContext
-    )(using params: Params_13384, alg: EN13384_1_A1_2019_Application_Alg): Either[MecaFlu_Error, PipeResult] =
+    )(using opPoint: OpPoint, alg: EN13384_1_A1_2019_Application_Alg): Either[MecaFlu_Error, PipeResult] =
         MecaFluOps.catchMecaFluErrors(fd.pipeType):
             new FlowOnlyMecaFlu_13384_PipeResult_Impl(
                 fd,
@@ -92,14 +92,14 @@ object FlowOnlyMecaFlu_13384 extends MecaFlu_13384_Alg with HasTypeMembers_13384
                 temp_start,
                 last_pipe_velocity,
                 gas,
-                params,
+                opPoint,
                 sc
             ) {
                 override given en13384: EN13384_1_A1_2019_Application_Alg = alg
             }
 
 private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
-    gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, Params_13384],
+    gp                : GasInPipeEl[NamedPipeElDescrG[PipeElDescr], Gas, OpPoint],
     hafg              : HeatingAppliance.FlueGas,
     hamf              : HeatingAppliance.MassFlows,
     temp_start        : TCelsius,
@@ -120,9 +120,9 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeSectionResult_Impl(
 
     // import pgfOps.gasOps.*
 
-    given params : Params_13384   = gp.params
-    given pReq   : DraftCondition = Params_13384.pressReq_from_Params_13384
-    given loadQty: LoadQty        = Params_13384.loadQty_from_Params_13384
+    given opPoint: OpPoint        = gp.params
+    given pReq   : DraftCondition = OpPoint.pressReq_from_OpPoint
+    given loadQty: LoadQty        = OpPoint.loadQty_from_OpPoint
 
     given HeatingAppliance.FlueGas   = hafg
     given HeatingAppliance.MassFlows = hamf
@@ -350,7 +350,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
     temp_start        : TCelsius,
     last_pipe_velocity: Option[FlowVelocity],
     gas               : Gas,
-    params            : Params_13384,
+    opPoint           : OpPoint,
     sc                : SlotContext
 ) extends PipeResult.WithSections:
     import FlowOnlyMecaFlu_13384_PipeResult_Impl.MapState
@@ -371,7 +371,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
 
         val (_, results) = fd.elements.mapAccumulate(initS) { (st, elem) =>
             import st.*
-            val gp  = GasInPipeEl(gas, elem, params)
+            val gp  = GasInPipeEl(gas, elem, opPoint)
             val psr = FlowOnlyMecaFlu_13384.makePipeSectionResult(
                 gp,
                 hafg,
@@ -390,7 +390,7 @@ private abstract trait FlowOnlyMecaFlu_13384_PipeResult_Impl(
             (nextS, psr)
         }
         new PipeResult.PipeResultFromSections(results) { self =>
-            final val density_mean = en13384.ρ_m(gas_temp_mean)(using hafg)(using params).some
+            final val density_mean = en13384.ρ_m(gas_temp_mean)(using hafg)(using opPoint).some
 
             final val gas_temp_mean =
                 val tms = self.elements.map: e =>

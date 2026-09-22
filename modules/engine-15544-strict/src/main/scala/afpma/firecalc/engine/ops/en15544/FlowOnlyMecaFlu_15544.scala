@@ -13,7 +13,7 @@ import afpma.firecalc.dto.all.*
 
 import afpma.firecalc.domain.IsZeroLengthPipeElement
 
-import afpma.firecalc.engine.alg.en15544.OpPoint
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.impl.en15544.strict.HasTypeMembers_15544_Strict
 import afpma.firecalc.engine.models.*
@@ -384,138 +384,10 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
     given dfc: DynamicFrictionCoeffOp[NamedPipeElDescrG[DirectionChange]] =
         flowOnlyDynamicFrictionCoeff_15544.mkInstanceForNamedPipesConcat(fd.elements)
 
-    private def totalLengthUntil(elem: NamedPipeElDescrG[PipeElDescr]): PositionOp[Length] =
-        QtyDAtPosition
-            .from (
-                start  = fd.totalLengthUntilStartOf(elem),
-                middle = fd.totalLengthUntilMiddleOf(elem),
-                end    = fd.totalLengthUntilEndOf(elem)
-            )
-            .atPos
-
-    /**
-     * Unwrap a validated flue-chain quantity, mapping a `MCalc_Error` failure to
-     * a `MecaFlu_Error.ComputationError` on the flue pipe and throwing.
-     */
-    private def fluePipeOrThrow[A](vnel: VNelMcalcErr[A]): A =
-        vnel.toEither
-            .leftMap(e => MecaFlu_Error.ComputationError(e.head, FluePipeT))
-            .fold(err => MecaFluOps.throwMecaFluError(err), identity)
+    private lazy val temps =
+        new FlueTemperatureModel(en15544, fd, params, loadQty, tempStartOverride, gas)
 
     private val opPoint: OpPoint = OpPoint(params, loadQty)
-
-    /**
-     * Contributed calculated flue-pipe length `L_N` of a section: `L_Z_calculated`
-     * of the section's effective load mass (pass load / section nf; see
-     * `OpPointLoads.effective_load_mass`) — ADR-0008.
-     */
-    private def contributedL_N(el: NamedPipeElDescrG[PipeElDescr]): L_N =
-        en15544.L_Z_calculated(en15544.opPointLoads.effective_load_mass(opPoint, el.nf))
-
-    /**
-     * Pass-selected `L_N` for the single-flow-chain closed form: `L_Z_calculated`
-     * of the pass load mass at one flow (pass selection: `OpPointLoads.effective_load_mass`).
-     * Bit-for-bit the design-time `L_Z_calculated` on the nominal pass
-     * (`m_B / 1.0 == m_B`), so nominal reference outputs are unchanged by
-     * construction.
-     */
-    private def passL_N: L_N =
-        en15544.L_Z_calculated(en15544.opPointLoads.effective_load_mass(opPoint, NbOfFlows(1)))
-
-    /**
-     * Whether every section of this chain carries a single flow.
-     *
-     * Single-flow chains keep the closed-form decay `t(L) = t_ref · exp(−0.83·L/L_N)`
-     * evaluated once against the total path length: a product of per-section
-     * exponentials is only mathematically, not floating-point, identical to the
-     * single exponential, and the closed form is what the reference outputs pin.
-     */
-    private val singleFlowChain: Boolean =
-        fd.elements.forall(_.nf.unwrap == 1)
-
-    /**
-     * Prefix fold of the flue-gas section start temperatures for split chains
-     * (ADR-0008): each section k decays the upstream temperature by
-     * `exp(−0.83 · ΔL_k / L_N_k)` where `L_N_k` is the contributed calculated
-     * length of the section's effective load mass (pass load / section nf).
-     *
-     * Zero-length sections (Split/Merge, ΔL = 0) contribute `exp(0) = 1` — no
-     * special case. `sectionStartTemps(k)` is the gas temperature at the start
-     * of `fd.elements(k)`; `sectionStartTemps(k + 1)` at its end.
-     */
-    private lazy val sectionStartTemps: Vector[TCelsius] =
-        val tRef = tempStartOverride.getOrElse(fluePipeOrThrow(en15544.t_burnout))
-        fd.elements.scanLeft(tRef) { (tPrev, el) =>
-            val lN = contributedL_N(el)
-            en15544.formulas.t_fluepipe_calc(tPrev, el.el.length, lN)
-        }
-
-    /**
-     * Gas temperature of `elem`, the `k`-th section of `fd.elements`. Chain
-     * membership is by construction: callers iterate the chain positionally.
-     */
-    private def gasTemperature(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius] =
-        elem.typ match
-            case CombustionAirPipeT =>
-                QtyDAtPosition.constant(en15544.t_combustion_air(using params)).atPos
-            case FireboxPipeT       =>
-                QtyDAtPosition.constant(en15544.t_BR).atPos
-            case FluePipeT          =>
-                if singleFlowChain then closedFormFlueTemperature(elem   )
-                else splitChainFlueTemperature                   (elem, k)
-            case NoFluePipeT        =>
-                QtyDAtPosition.constant(tempStartOverride.getOrElse(en15544.t_BR)).atPos
-            case _                  =>
-                throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")
-
-    /**
-     * Single-flow chain closed-form flue temperature: the exponential decay
-     * evaluated once against the total path length (see `singleFlowChain`), with
-     * the pass-selected length `passL_N`.
-     */
-    private def closedFormFlueTemperature(elem: NamedPipeElDescrG[PipeElDescr]): PositionOp[TCelsius] =
-        tempStartOverride match
-            case Some(tStart) =>
-                // Non-first flue pipe (or first flue whose upstream was updated
-                // by a preceding head connector): use upstream temperature as
-                // reference for exponential decay
-                // t(L) = tStart * exp(-0.83 * L / passL_N)
-                val lzCalc = passL_N
-                QtyDAtPosition
-                    .from (
-                        start  = en15544.formulas.t_fluepipe_calc(tStart, fd.totalLengthUntilStartOf(elem), lzCalc),
-                        middle = en15544.formulas.t_fluepipe_calc(tStart, fd.totalLengthUntilMiddleOf(elem), lzCalc),
-                        end    = en15544.formulas.t_fluepipe_calc(tStart, fd.totalLengthUntilEndOf(elem), lzCalc)
-                    )
-                    .atPos
-            case None         =>
-                // First flue pipe of the chain (no upstream override): use the
-                // closed-form decay `t_fluepipe(L, passL_N)`, which decays
-                // against the pass-selected length `passL_N`. If the chain has NO
-                // flue pipes at all (head starts with Connector and never
-                // alternates back — invalid under current 15544 grammar, but
-                // guarded against future relaxations), this branch is unreachable
-                // because `gasTemperature` is only invoked with `elem.typ ==
-                // FluePipeT` for flue pipe elements. Nothing to return as
-                // "identity" in that case — plan issue E2.
-                QtyDAtPosition
-                    .constant(fluePipeOrThrow(en15544.t_fluepipe(totalLengthUntil(elem), passL_N)))
-                    .atPos
-
-    /**
-     * Split chain (ADR-0008): per-section contributed decay —
-     * each section decays with its own L_N from the effective load mass.
-     */
-    private def splitChainFlueTemperature(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius] =
-        val tStartK = sectionStartTemps(k)
-        val lN      = contributedL_N(elem)
-        QtyDAtPosition
-            .from (
-                start  = tStartK,
-                middle = en15544.formulas.t_fluepipe_calc(tStartK, elem.el.length / 2.0, lN),
-                end    = sectionStartTemps(k + 1)
-            )
-            .atPos
 
     private val _out =
 
@@ -533,7 +405,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
                         .computeDensityAndVelocityAtMiddleOnly_ForStraightSection(
                             gip,
                             loadQty,
-                            gasTemperature(elem, k),
+                            temps.gasTemperature(elem, k),
                             z_geodetical_height
                         )
                         .some
@@ -551,12 +423,12 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
             case (st, (curr, icurr, next_dv_opt)) =>
                 val psr   =
                     FlowOnlyMecaFlu_15544.makePipeSectionResult(
-                        GasInPipeEl    (gas, curr, params),
+                        GasInPipeEl         (gas, curr, params),
                         loadQty,
                         st.last_InnerGeom,
-                        next_dv_opt.map(_._2             ),
-                        next_dv_opt.map(_._1             ),
-                        gasTemperature (curr, icurr      ),
+                        next_dv_opt.map     (_._2             ),
+                        next_dv_opt.map     (_._1             ),
+                        temps.gasTemperature(curr, icurr      ),
                         sc
                     )
                 val nextS = st
@@ -567,7 +439,7 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
         new PipeResult.PipeResultFromSections(results) { self =>
             final val density_mean =
                 val hafg = en15544.en13384_heatingAppliance_fluegas
-                en15544.en13384_application.ρ_m(gas_temp_mean)(using hafg)(using (params, loadQty)).some
+                en15544.en13384_application.ρ_m(gas_temp_mean)(using hafg)(using opPoint).some
 
             final val gas_temp_mean =
                 val tms = self.elements.map: e =>
@@ -600,6 +472,168 @@ private abstract trait FlowOnlyMecaFlu_15544_PipeResult_Impl(
 
     final def temperature_iob(_1_Λ_o: SquareMeterKelvinPerWatt) =
         _out.temperature_iob(_1_Λ_o)
+
+private final class FlueTemperatureModel(
+    en15544          : FlowOnlyMecaFlu_15544.ApplicationAlg,
+    fd               : PipeFullDescrG[PipeElDescr],
+    params           : DraftCondition,
+    loadQty          : LoadQty,
+    tempStartOverride: Option[TCelsius],
+    gas              : Gas
+):
+
+    private val opPoint: OpPoint = OpPoint(params, loadQty)
+
+    private def totalLengthUntil(elem: NamedPipeElDescrG[PipeElDescr]): PositionOp[Length] =
+        QtyDAtPosition
+            .from (
+                start  = fd.totalLengthUntilStartOf(elem),
+                middle = fd.totalLengthUntilMiddleOf(elem),
+                end    = fd.totalLengthUntilEndOf(elem)
+            )
+            .atPos
+
+    /**
+     * Unwrap a validated flue-chain quantity, mapping a `MCalc_Error` failure to
+     * a `MecaFlu_Error.ComputationError` on the flue pipe and throwing.
+     */
+    private def fluePipeOrThrow[A](vnel: VNelMcalcErr[A]): A =
+        vnel.toEither
+            .leftMap(e => MecaFlu_Error.ComputationError(e.head, FluePipeT))
+            .fold(err => MecaFluOps.throwMecaFluError(err), identity)
+
+    /**
+     * Contributed calculated flue-pipe length `L_N` of a section: `L_Z_calculated_for`
+     * of the section's effective load mass (operating-point load / section nf; see
+     * `OpPointLoads.effective_load_mass`) — ADR-0008.
+     */
+    private def contributedL_N(el: NamedPipeElDescrG[PipeElDescr]): L_N =
+        en15544.L_Z_calculated_for(en15544.opPointLoads.effective_load_mass(opPoint, el.nf))
+
+    /**
+     * Operating-point `L_N`: `L_Z_calculated_for` of the point's own load mass
+     * (no flow division). Bit-for-bit the design-time `L_Z_calculated` on the
+     * nominal point, so nominal reference outputs are unchanged.
+     */
+    private def operatingPointL_N: L_N =
+        en15544.L_Z_calculated_for(en15544.opPointLoads.load_mass_or_nominal(opPoint))
+
+    /**
+     * Whether every section of this chain carries a single flow.
+     *
+     * Single-flow chains select `ClosedFormFluePipeStrategy` (the `fluePipeStrategy`
+     * seam), keeping the closed-form decay `t(L) = t_ref · exp(−0.83·L/L_N)`
+     * evaluated once against the total path length: a product of per-section
+     * exponentials is only mathematically, not floating-point, identical to the
+     * single exponential, and the closed form is what the reference outputs pin.
+     */
+    private val singleFlowChain: Boolean =
+        fd.elements.forall(_.nf.unwrap == 1)
+
+    /**
+     * Prefix fold of the flue-gas section start temperatures for split chains
+     * (ADR-0008): each section k decays the upstream temperature by
+     * `exp(−0.83 · ΔL_k / L_N_k)` where `L_N_k` is the contributed calculated
+     * length of the section's effective load mass (operating-point load / section nf).
+     *
+     * Zero-length sections (Split/Merge, ΔL = 0) contribute `exp(0) = 1` — no
+     * special case. Length is `fd.elements.length + 1` (inclusive prefix fold):
+     * `sectionStartTemps(k)` is the gas temperature at the start of
+     * `fd.elements(k)`; `sectionStartTemps(k + 1)` at its end.
+     */
+    private lazy val sectionStartTemps: Vector[TCelsius] =
+        val tRef = tempStartOverride.getOrElse(fluePipeOrThrow(en15544.t_burnout))
+        fd.elements.scanLeft(tRef) { (tPrev, el) =>
+            val lN = contributedL_N(el)
+            en15544.formulas.t_fluepipe_calc(tPrev, el.el.length, lN)
+        }
+
+    /**
+     * Gas temperature of `elem`, the `k`-th section of `fd.elements`. Chain
+     * membership is by construction: callers iterate the chain positionally; flue-pipe
+     * decay is dispatched through `fluePipeStrategy`.
+     */
+    def gasTemperature(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius] =
+        elem.typ match
+            case CombustionAirPipeT =>
+                QtyDAtPosition.constant(en15544.t_combustion_air(using params)).atPos
+            case FireboxPipeT       =>
+                QtyDAtPosition.constant(en15544.t_BR).atPos
+            case FluePipeT          =>
+                fluePipeStrategy.temperatureAt(elem, k)
+            case NoFluePipeT        =>
+                QtyDAtPosition.constant(tempStartOverride.getOrElse(en15544.t_BR)).atPos
+            case _                  =>
+                throw new Exception(s"${elem.fullRef}: could not determine 'temperature' for gas '$gas'")
+
+    /**
+     * Single-flow chain closed-form flue temperature: the exponential decay
+     * evaluated once against the total path length (see `singleFlowChain`), with
+     * the operating-point length `operatingPointL_N`.
+     */
+    private def closedFormFlueTemperature(elem: NamedPipeElDescrG[PipeElDescr]): PositionOp[TCelsius] =
+        tempStartOverride match
+            case Some(tStart) =>
+                // Non-first flue pipe (or first flue whose upstream was updated
+                // by a preceding head connector): use upstream temperature as
+                // reference for exponential decay
+                // t(L) = tStart * exp(-0.83 * L / operatingPointL_N)
+                val lzCalc = operatingPointL_N
+                QtyDAtPosition
+                    .from (
+                        start  = en15544.formulas.t_fluepipe_calc(tStart, fd.totalLengthUntilStartOf(elem), lzCalc),
+                        middle = en15544.formulas.t_fluepipe_calc(tStart, fd.totalLengthUntilMiddleOf(elem), lzCalc),
+                        end    = en15544.formulas.t_fluepipe_calc(tStart, fd.totalLengthUntilEndOf(elem), lzCalc)
+                    )
+                    .atPos
+            case None         =>
+                // First flue pipe of the chain (no upstream override): use the
+                // closed-form decay `t_fluepipe_at(L, operatingPointL_N)`, which decays
+                // against the operating-point length `operatingPointL_N`. If the chain has NO
+                // flue pipes at all (head starts with Connector and never
+                // alternates back — invalid under current 15544 grammar, but
+                // guarded against future relaxations), this branch is unreachable
+                // because `gasTemperature` is only invoked with `elem.typ ==
+                // FluePipeT` for flue pipe elements. Nothing to return as
+                // "identity" in that case — plan issue E2.
+                QtyDAtPosition
+                    .constant(fluePipeOrThrow(en15544.t_fluepipe_at(totalLengthUntil(elem), operatingPointL_N)))
+                    .atPos
+
+    /**
+     * Split chain (ADR-0008): per-section contributed decay —
+     * each section decays with its own L_N from the effective load mass.
+     */
+    private def splitChainFlueTemperature(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius] =
+        val tStartK = sectionStartTemps(k)
+        val lN      = contributedL_N(elem)
+        QtyDAtPosition
+            .from (
+                start  = tStartK,
+                middle = en15544.formulas.t_fluepipe_calc(tStartK, elem.el.length / 2.0, lN),
+                end    = sectionStartTemps(k + 1)
+            )
+            .atPos
+
+    /** Flue-pipe decay strategy over the whole chain (ADR-0008 seam). */
+    private sealed trait FluePipeTemperatureStrategy:
+        def temperatureAt(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius]
+
+    /** Single exponential decay against the total path length — reference-pinned form. */
+    private object ClosedFormFluePipeStrategy extends FluePipeTemperatureStrategy:
+        def temperatureAt(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius] =
+            closedFormFlueTemperature(elem)
+
+    /** Per-section contributed decay — each section cools with its own L_N. */
+    private object SplitChainFluePipeStrategy extends FluePipeTemperatureStrategy:
+        def temperatureAt(elem: NamedPipeElDescrG[PipeElDescr], k: Int): PositionOp[TCelsius] =
+            splitChainFlueTemperature(elem, k)
+
+    /** Chain-kind decision point: the ONLY place topologies are selected. */
+    private val fluePipeStrategy: FluePipeTemperatureStrategy =
+        if singleFlowChain then ClosedFormFluePipeStrategy else SplitChainFluePipeStrategy
+
+end FlueTemperatureModel
 
 object FlowOnlyMecaFlu_15544_PipeResult_Impl:
     private case class MapState(

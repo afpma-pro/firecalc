@@ -7,7 +7,7 @@ package afpma.firecalc.engine.ops
 
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.alg.en13384.HasTypeMembers_13384_Alg
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
@@ -49,7 +49,7 @@ trait MecaFlu_13384_Alg extends MecaFluAlg with HasTypeMembers_13384_Alg:
         type Inputs_13384           = self.Inputs_13384
     }
 
-    override type Params = Params_13384
+    override type Params = OpPoint
 
 /**
  * Shared helper operations for MecaFlu calculations.

@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.ops.generic
 
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 import afpma.firecalc.engine.standard.SlotIndex
@@ -25,7 +25,7 @@ trait CanComputePipeResult[D <: PipeDescrAlg]:
         fd       : PipeFullDescrG[descrAlg.PipeElDescr],
         gas      : Gas,
         upstream : UpstreamState,
-        params   : Params_13384,
+        opPoint  : OpPoint,
         slotIndex: SlotIndex
     ): Either[MecaFlu_Error, PipeResult]
 
@@ -44,14 +44,14 @@ trait CanComputePipeResult[D <: PipeDescrAlg]:
         // Capture the computation as a closure *before* entering the anonymous class.
         // This avoids path-dependent type mismatch between `this.descrAlg` and `self.descrAlg`.
         val capturedElements = fd.elements.map(e => e: NamedPipeElDescrG[?])
-        val capturedCompute  = (upstream: UpstreamState, params: Params_13384, slotIndex: SlotIndex) =>
-            this.computePipeResult(fd, _gas, upstream, params, slotIndex)
+        val capturedCompute  = (upstream: UpstreamState, opPoint: OpPoint, slotIndex: SlotIndex) =>
+            this.computePipeResult(fd, _gas, upstream, opPoint, slotIndex)
         new PipeSlot:
-            val pipeType                                                                     = _pipeType
-            val label                                                                        = _label
-            val gas                                                                          = _gas
-            def elements                                                                     = capturedElements
-            def compute(upstream: UpstreamState, params: Params_13384, slotIndex: SlotIndex) =
-                capturedCompute(upstream, params, slotIndex)
+            val pipeType                                                                 = _pipeType
+            val label                                                                    = _label
+            val gas                                                                      = _gas
+            def elements                                                                 = capturedElements
+            def compute(upstream: UpstreamState, opPoint: OpPoint, slotIndex: SlotIndex) =
+                capturedCompute(upstream, opPoint, slotIndex)
 
 object CanComputePipeResult

@@ -19,7 +19,7 @@ import afpma.firecalc.dto.v7.FireCalcYAML_V7
 import afpma.firecalc.dto.v7.FramedPostFireboxPipes
 import afpma.firecalc.dto.v7.PostFireboxPipeDescrSlot_V7 as PostFireboxPipeDescrSlot
 
-import afpma.firecalc.engine.alg.en15544.{FireboxContribution, OpPoint, RemoteFireboxData}
+import afpma.firecalc.engine.alg.en15544.{FireboxContribution, RemoteFireboxData}
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.api.WireConversions.{fromWireResult, toWireResult}
 import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
@@ -28,6 +28,7 @@ import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 import afpma.firecalc.engine.models.CombustionAirPipe_Module_15544
 import afpma.firecalc.engine.models.FireboxPipe_Module_15544
 import afpma.firecalc.engine.models.FireboxPipeT
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.en15544.firebox.FireboxTransformers.given
 
@@ -190,7 +191,7 @@ class RemoteAsResultReportSuite extends AnyFreeSpec with Matchers:
                 override val en15544_app            : EN15544_Strict_Application         = remoteApp
                 override val stove_proj_15544_strict: StoveProjectDescr_15544_Strict_Alg =
                     loader.stoveProjectDescr_EN15544_Strict
-                override val atParams                  = remoteApp.primary.asInstanceOf[en15544_app.AtParams]
+                override val atOperatingPoint          = remoteApp.primary.asInstanceOf[en15544_app.AtOperatingPoint]
                 override protected def currentDateTime = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
 
         val typstString = typstFactory.build()

@@ -156,7 +156,7 @@ object FireCalcReportFactory_15544_Strict:
                         new TypstReportFactory_15544_Strict(isDraft, checkPressureReq13384, checkTemperatureReq13384) {
                             override val en15544_app: EN15544_Application = strict_appl
                             override val stove_proj_15544_strict = fcProj
-                            override val atParams                = en15544_app.primary
+                            override val atOperatingPoint        = en15544_app.primary
                         }
                     // update local state
                     typString = Some(typstReportFactory.build())

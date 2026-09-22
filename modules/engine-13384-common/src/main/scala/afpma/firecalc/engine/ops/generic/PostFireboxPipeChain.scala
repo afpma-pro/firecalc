@@ -6,7 +6,7 @@
 package afpma.firecalc.engine.ops.generic
 
 import afpma.firecalc.engine.alg.en13384.ComputeAt
-import afpma.firecalc.engine.alg.en13384.Params_13384
+import afpma.firecalc.engine.models.OpPoint
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.standard.MecaFlu_Error
 
@@ -82,7 +82,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
 
     /** Left-fold over all slots, threading `UpstreamState` from one to the next. */
     def computeAll(
-        params         : Params_13384,
+        opPoint        : OpPoint,
         initialUpstream: UpstreamState,
         computeAt      : ComputeAt
     ): Either[MecaFlu_Error, Vector[PipeResult]] =
@@ -91,7 +91,7 @@ case class PostFireboxPipeChain private (slots: Vector[PipeSlot]):
                 Right((initialUpstream, Vector.empty))
             ) { case (acc, (slot, idx)) =>
                 acc.flatMap { case (upstream, results) =>
-                    slot.compute(upstream, params, SlotIndexProvider.prefix(idx)).map { pr =>
+                    slot.compute(upstream, opPoint, SlotIndexProvider.prefix(idx)).map { pr =>
                         val nextUpstream = UpstreamState.fromPipeResult(pr, computeAt)
                         (nextUpstream, results :+ pr)
                     }

@@ -20,12 +20,11 @@ import afpma.firecalc.engine.alg.en15544.{
     FireboxContribution,
     FireboxConstraintContext,
     FireboxKind,
-    OpPoint,
     RemoteBackedFireboxEngine,
     RemoteFireboxData
 }
 import afpma.firecalc.engine.api.WireConversions
-import afpma.firecalc.engine.models.{CombustionAirPipe_Module_15544, FireboxPipe_Module_15544, LoadQty}
+import afpma.firecalc.engine.models.{CombustionAirPipe_Module_15544, FireboxPipe_Module_15544, LoadQty, OpPoint}
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 
