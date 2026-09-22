@@ -13,10 +13,9 @@ production availability or behavioral regression after cutover.
 client compatibility. **Never** restore proprietary source or artifacts to
 the public repository, link public and private builds, or bypass HTTP.
 
-This is distinct from the Phase 1/2 private-branch rollback
-(`.scratch/round-5-ip-isolation/docs/rollback-procedure-phase1.md` /
-`rollback-procedure-phase2.md`), which resets the private development branch
-to the pre-extraction checkpoint. That procedure is not available after
+This is distinct from the Phase 1/2 private-branch rollback procedure
+(recorded in the private repository), which resets the private development
+branch to the pre-extraction checkpoint. That procedure is not available after
 release and is not what this runbook does.
 
 ---

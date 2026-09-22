@@ -3,8 +3,8 @@ info:
   title: Firebox Calculation API
   version: 1.0.0
   description: |
-    The Austrian firebox calculation API. See `.omp/firebox-calc-api-spec-final.md` §1.4 (B.8-C):
-    this document is the normative contract. The Scala artifact `firebox_calc_api` is an
+    The Austrian firebox calculation API. This document is the normative contract.
+    The Scala artifact `firebox_calc_api` is an
     optional convenience; an entity MAY implement a conformant server or client without linking
     any AGPL-licensed artifact.
   license:

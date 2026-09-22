@@ -476,11 +476,11 @@ object NonPositivePipeGeometry:
 
     /**
      * Collects every item whose value is not strictly positive, preserving the caller's list
-     * order. `.omp/firebox-calc-api-spec-final.md` §7.1 pins the cross-group 422 `details`
-     * order: pre-check and contribution items come before the `GeometryViolation:` items.
+     * order. The cross-group 422 `details` order is pinned: pre-check and
+     * contribution items come before the `GeometryViolation:` items.
      * The within-group order simply mirrors the caller's list — for the firebox pre-check
-     * site that is width (A), depth (B), height (H), the order §7.1 enumerates its checks
-     * in; that pin lives in `FireboxContributionZeroGeometryPreCheckSuite` ("collect every
+     * site that is width (A), depth (B), height (H), the order in which the pre-check
+     * enumerates its checks; that pin lives in `FireboxContributionZeroGeometryPreCheckSuite` ("collect every
      * offending dimension in A, B, H order").
      * Returns `None` when every value is strictly positive.
      */

@@ -24,9 +24,9 @@ package object daisyui
  * Text typed or pasted into a single-line field, with control characters dropped.
  *
  * A pasted spreadsheet cell carries a TAB and a browser `<input>` keeps it (LF/CR it folds
- * to a space). A stored string containing a control character is re-escaped by the YAML codec
- * pair on every save/open cycle and grows without bound — see
- * `.scratch/yaml-escape-defect/issues/01`. Control characters carry no meaning in these
- * fields, so they are dropped at the edge rather than persisted.
+ * A stored string containing a control character is re-escaped by the YAML codec
+ * pair on every save/open cycle and grows without bound. Control characters
+ * carry no meaning in these fields, so they are dropped at the edge rather
+ * than persisted.
  */
 def withoutControlChars(text: String): String = text.filter(_ >= ' ')

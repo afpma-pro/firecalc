@@ -66,8 +66,8 @@ lazy val ui_version       = s"${ui_base_version}+engine-${engine_version}"
 // ============================================================================
 // Engine artifact publishing (ADR-0007: public engine as a pinned dependency)
 // ============================================================================
-// The 14 modules granted to the private repository as binary artifacts
-// (docs/licensing/afpma-dual-license-grant.md §1), listed by JVM sbt project id.
+// The 14 modules granted to the private repository as binary artifacts,
+// listed by JVM sbt project id.
 // This Seq is the single allowlist source; its consumers are listed at the
 // `grantedEngineJvm` definition below.
 //

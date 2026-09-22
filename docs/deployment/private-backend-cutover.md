@@ -6,7 +6,7 @@ Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
 # Private Calculation Backend — Deployment Cutover
 
 Status: cutover complete on branch `firebox-api` (ticket 21, Phase 3 of the
-IP-isolation program — `firebox-api-reviews/round-5/SPEC_00-ip-isolation-program.md`).
+IP-isolation program, recorded in the private repository).
 
 This document records the deployed state, routing, versioning, health-check
 and rate-limit setup, failure behavior, and rollback procedure for running
@@ -34,8 +34,8 @@ the standalone private backend:
 
 The only calculation seam between the two repositories is the normative HTTP
 interface. No public artifact links private code; the private server links no
-AGPL artifact (14c dependency-closure audit,
-`.scratch/round-5-ip-isolation/issues/14c-dependency-closure-audit.report.md`).
+AGPL artifact (14c dependency-closure audit, recorded in the private
+repository).
 
 ## 2. Routing configuration
 
@@ -250,8 +250,8 @@ unchanged from the pre-extraction behavior (SPEC_00 user story 12).
   never a silent local approximation. If a genuinely matching cached remote
   response exists under the established key/fingerprint rules, the UI may serve
   it as `Cached`; the cache stores remote response data only and can never
-  invoke Austrian calculation (tickets 09–12 evidence,
-  `.scratch/round-5-ip-isolation/docs/phase2-gate-evidence.md` §2–3).
+  invoke Austrian calculation (tickets 09–12 evidence, phase-2 gate evidence
+  §2–3, private repository).
 - **PDF, backend unavailable**: payments retries within the configured
   timeout/retry policy, then fails explicitly with a typed
   `CalculationReportError` → `ReportFileAccessException`. No local fallback,
@@ -272,11 +272,11 @@ without linking public and private builds, and without bypassing HTTP.
 
 | Checklist item (ticket 21) | Evidence |
 |---|---|
-| Routing through exactly the two normative operations, health gating, payments routing preserved | §2 above; ticket 05 implementation notes (`.scratch/round-5-ip-isolation/issues/05-deploy-and-route-the-standalone-calculation-backend.md`); `docker/smoke-test-deploy.sh` |
+| Routing through exactly the two normative operations, health gating, payments routing preserved | §2 above; ticket 05 implementation notes (private repository); `docker/smoke-test-deploy.sh` |
 | Independent versioning + demonstrated contract compatibility | §3; `BlackBoxHttpContractSuite` (ticket 15 evidence §7); `CrossRepositoryAcceptanceSuite` (ticket 17) |
-| Ecolabeled/Door15aCatalog end-to-end workflows with complete outputs and `AsResult` | Ticket 12 Phase 2 gate: `RemotePrefetchEndToEndSpec` (ui, 8 tests) + `CrossRepositoryAcceptanceSuite` AsResult fold; `phase2-gate-evidence.md` §1 |
+| Ecolabeled/Door15aCatalog end-to-end workflows with complete outputs and `AsResult` | Ticket 12 Phase 2 gate: `RemotePrefetchEndToEndSpec` (ui, 8 tests) + `CrossRepositoryAcceptanceSuite` AsResult fold; phase-2 gate evidence (private repository) §1 |
 | PDF only from a fresh backend response; no fallback/cache | Ticket 18: `RemotePdfAcceptanceSuite` (payments, 11 tests); ticket 06 implementation notes |
-| Explicit outage behavior (UI + PDF) | `RemotePrefetchFailureSpec` (ui, 10 tests), `FetchCalcClientSuite`, `Http4sCalcClientSuite`; `RemotePdfAcceptanceSuite` exhaustion tests; `phase2-gate-evidence.md` §2, §4 |
+| Explicit outage behavior (UI + PDF) | `RemotePrefetchFailureSpec` (ui, 10 tests), `FetchCalcClientSuite`, `Http4sCalcClientSuite`; `RemotePdfAcceptanceSuite` exhaustion tests; phase-2 gate evidence (private repository) §2, §4 |
 | Strict-backed calculation unchanged, every served kind advertised, no MCE HTTP path, non-Austrian behavior retained | Ticket 15 evidence §2 (Strict registry, 6 served kinds, zero MCE refs); ticket 12 evidence §6; `Phase2InvariantAcceptanceSuite` (nine invariants, JVM + JS) |
 | Rollback deploys prior backend behind unchanged routes | `private-backend-rollback.md` |
 | No rollback restores proprietary source/artifacts, links builds, or bypasses HTTP | `private-backend-rollback.md` §4; SPEC_00 decision 14 |

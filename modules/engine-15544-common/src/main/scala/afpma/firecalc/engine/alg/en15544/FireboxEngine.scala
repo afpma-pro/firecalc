@@ -133,7 +133,7 @@ end FireboxContribution
  * Replaces the separately-summoned per-concern typeclasses. At this migration
  * step it carries the constraint surface previously provided by
  * `FireboxConstraints[-F]`; the pipe contributions, formulas and thermal
- * outputs join it in step 2 (see `.omp/firebox-implementation-plan.md`, DEC-1).
+ * outputs join it in step 2 (DEC-1).
  *
  * `F` is contravariant: a `FireboxEngine[Firebox_15544]` satisfies
  * `FireboxEngine[Ecolabeled]`, which lets one general instance cover subtypes

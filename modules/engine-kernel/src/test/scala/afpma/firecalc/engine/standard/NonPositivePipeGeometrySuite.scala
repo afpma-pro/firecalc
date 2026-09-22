@@ -22,8 +22,7 @@ import org.scalatest.matchers.should.Matchers
  * strictly-positive boundary), and the localized rendering of
  * [[NonPositivePipeGeometry]] with its dispatch through the generic
  * `ShowUsingLocale[IncrementalValidation_Error]` given (the wire `code` is
- * the class name, the `message` the i18n template — see
- * `.omp/firebox-calc-api-spec-final.md` §7.1).
+ * the class name, the `message` the i18n template).
  */
 class NonPositivePipeGeometrySuite extends AnyFlatSpec with Matchers:
 

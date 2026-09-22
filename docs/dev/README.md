@@ -129,7 +129,7 @@ See [`scripts/git-hooks/README.md`](../../scripts/git-hooks/README.md) for detai
 ### Publishing the engine artifacts (local repository only)
 
 The 14 engine-line modules granted to `firecalc-firebox-austrian-api` as binary
-artifacts (ADR-0007, `docs/licensing/afpma-dual-license-grant.md` §1) are the only
+artifacts (ADR-0007) are the only
 publishable projects in this repository — everything else (ui, payments, reports,
 laminar_*, ...) is `publish / skip := true`. One command publishes the full granted
 closure (JVM artifacts only; the Scala.js sides stay skipped):
