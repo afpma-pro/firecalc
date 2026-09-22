@@ -19,6 +19,9 @@ EXCLUDE_PATHS=(
     "**/databases/**"
     "**/public/assets/**"
     "web/electron-app/resources/fontconfig/**"
+    # Test snapshot fixtures: byte-exact expected output compared line-for-line
+    # by SnapshotAssert — a license header would break the compare
+    "**/src/test/resources/snapshots/**"
 )
 
 # File patterns to exclude

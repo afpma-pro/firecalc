@@ -51,6 +51,8 @@ should_exclude() {
     # Exclude generated report files
     [[ "$file" == modules/reports/report-*.typ ]] && return 0
     [[ "$file" == modules/reports/report-*.pdf ]] && return 0
+    # Exclude test snapshot fixtures (byte-exact expected output; a header would break the compare)
+    [[ "$file" == */src/test/resources/snapshots/* ]] && return 0
     
     return 1
 }

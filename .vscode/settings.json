@@ -71,6 +71,7 @@
             "**/.*/**/*.json",
             "**/.vscode/settings.json",
             "**/web/electron-app/resources/fontconfig/**",
+            "**/src/test/resources/snapshots/**",
             "**/.gitignore",
             "**/.jvmopts.ci",
             "**/Dockerfile",
