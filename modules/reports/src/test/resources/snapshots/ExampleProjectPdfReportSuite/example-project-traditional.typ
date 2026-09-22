@@ -44,7 +44,7 @@
 
       align(top + left)[
         *Software : FireCalc AFPMA* \
-        Versions : reports 0.9.0-b25-SNAPSHOT engine 0.3.0-b25-SNAPSHOT \
+        Versions : reports 0.9.0-b25-SNAPSHOT engine 0.3.1-b25-SNAPSHOT \
         DOCUMENT NOT FINALIZED : NOT CERTIFICATION \
         \
       ],
@@ -216,7 +216,7 @@
   [**], [**], [*regulation*], [*?*],
   [désignation du foyer], [standing standard burning chamber], [], [],
   [Efficiency], [>= 82.1 %], [], [],
-  [rendement minimum à puissance réduite (foyer couplé avec accumulateur)], [>= 82.1 %], [], [],
+  [rendement minimum à puissance réduite (foyer couplé avec accumulateur)], [>= 88.7 %], [], [],
   [rendement saisonnier], [72.1 %], [≥ 65.0 %], [OK],
   [Carbon monoxide (CO) à 13 % O2], [1137 mg\/Nm³], [≤ 1500 mg\/Nm³], [OK],
   [Dust à 13 % O2], [26 mg\/Nm³], [≤ 40 mg\/Nm³], [OK],
@@ -342,7 +342,7 @@
   [Name], [], [Traditional + EN 15544],
   [Type of appliance], [], [Wood-burning heating appliance],
   [rendement de l'appareil (à puissance utile nominale)], [ηWN], [82.1 %],
-  [rendement de l'appareil (à puissance utile réduite)], [ηWmin], [82.1 %],
+  [rendement de l'appareil (à puissance utile réduite)], [ηWmin], [88.7 %],
   [concentration de CO2 à puissance nominale (% en volume sur fumées sèches)], [σ_CO2], [7.1 %],
   [concentration de CO2 à puissance réduite (% en volume sur fumées sèches)], [σ_CO2], [7.1 %],
   [teneur en vapeur d'eau des fumées à puissance nominale (% en volume)], [σ_H2O], [8.4 %],
