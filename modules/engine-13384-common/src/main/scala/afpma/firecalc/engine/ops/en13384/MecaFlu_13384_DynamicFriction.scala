@@ -14,7 +14,7 @@ import afpma.firecalc.units.coulombutils.*
 import afpma.firecalc.engine.models.*
 import afpma.firecalc.engine.models.gtypedefs.ζ
 import afpma.firecalc.engine.ops.*
-import afpma.firecalc.engine.standard.MecaFlu_Error
+import afpma.firecalc.engine.standard.{MecaFlu_Error, SingularFlowResistanceCoeffError}
 import afpma.firecalc.engine.alg.en13384.EN13384_1_A1_2019_Application_Alg
 import afpma.firecalc.engine.models.en13384.typedefs.DraftCondition
 
@@ -71,7 +71,9 @@ trait MecaFlu_13384_DynamicFriction[PipeElDescr <: Matchable]:
      * Handle a Validated result from dynamic friction coefficient computation.
      * On Valid, returns (Some(zeta), pressure).validNel.
      * On Invalid with UnexpectedRatio_Ld_Dh, returns a UseUnsafeToSkipRatioValidationError.
-     * On other Invalid, returns the original Invalid.
+     * On other Invalid, returns the original Invalid; out-of-bound errors gain the
+     * reference of the element being computed here, the convergence point where the
+     * element's identity is known.
      */
     protected def handleDynamicFrictionResult(
         zetaResult: DynamicFrictionCoeffOp.Result,
@@ -79,23 +81,35 @@ trait MecaFlu_13384_DynamicFriction[PipeElDescr <: Matchable]:
     ): ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] =
         import afpma.firecalc.engine.standard.SingularFlowResistanceCoeffError.*
 
-        zetaResult match
-            case Valid(zeta)         =>
-                val pu = dynamicFrictionPressure(zeta, pipeType)
-                (Some(zeta), pu).validNel
-            case inel @ Invalid(nel) =>
-                val urOpt = nel.toList
-                    .filter:
-                        case _: UnexpectedRatio_Ld_Dh[?] => true
-                        case _ => false
-                    .headOption
-                urOpt match
-                    case Some(u @ UnexpectedRatio_Ld_Dh(_, _, _)) =>
-                        MecaFlu_Error
-                            .UseUnsafeToSkipRatioValidationError(
-                                s"${curr.fullRef}:\n\t ${u.msg}\n\t => try to use '_unsafe' suffix: it should skip ratio validation",
-                                curr.typ
-                            )
-                            .invalidNel
-                    case None | Some(_)                           =>
-                        inel
+        val handled: ValidatedNel[MecaFlu_Error, (Option[ζ], Pressure)] =
+            zetaResult match
+                case Valid(zeta)         =>
+                    val pu = dynamicFrictionPressure(zeta, pipeType)
+                    (Some(zeta), pu).validNel
+                case inel @ Invalid(nel) =>
+                    val urOpt = nel.toList
+                        .filter:
+                            case _: UnexpectedRatio_Ld_Dh[?] => true
+                            case _ => false
+                        .headOption
+                    urOpt match
+                        case Some(u @ UnexpectedRatio_Ld_Dh(_, _, _)) =>
+                            MecaFlu_Error
+                                .UseUnsafeToSkipRatioValidationError(
+                                    s"${curr.fullRef}:\n\t ${u.msg}\n\t => try to use '_unsafe' suffix: it should skip ratio validation",
+                                    curr.typ
+                                )
+                                .invalidNel
+                        case None | Some(_)                           => inel
+        handled.leftMap(_.map(stampElementRef))
+
+    /**
+     * Stamp the current element's identity onto out-of-bound errors that do not
+     * carry a reference yet: the kernel's interpolation site is element-agnostic,
+     * this handler is the canonical stamping site. Errors that already carry a
+     * reference, and errors that cannot carry one, pass through unchanged.
+     */
+    private def stampElementRef(err: MecaFlu_Error): MecaFlu_Error = err match
+        case e: SingularFlowResistanceCoeffError.HasElementRef if e.elRef.isEmpty =>
+            e.withElementRef(ElementRef(curr.idx, curr.name))
+        case other => other

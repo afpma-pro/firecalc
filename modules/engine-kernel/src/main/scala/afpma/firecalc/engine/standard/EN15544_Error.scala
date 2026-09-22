@@ -463,21 +463,32 @@ object FluePipeShapeSequenceError:
 case class MissingAlpha3AngleForShortFluePipeSection(override val msg: String)(using sc: SlotContext)
     extends SingularFlowResistanceCoeffError(msg, sectionTyp = FluePipeT)(using sc.slotIndex)
 
+private def valueOutOfBoundLine(vTermName: String, v: Double, vMin: Double, vMax: Double)(using loc: Locale): String =
+    I18N.errors.value_out_of_bound(
+        vTermName,
+        "%.1f".format(v),
+        vMin.toString,
+        vTermName,
+        vMax.toString
+    )
+
+/** The element-reference suffix appended to the first rendered line, when present. */
+private def elementRefSuffix(elRef: Option[ElementRef])(using loc: Locale): String =
+    elRef.fold("")(r => I18N.incremental_validation.conflicts.element_ref(r.idx.show, r.name.show))
+
 given show_SingularFlowResistanceCoeffError: ShowUsingLocale[SingularFlowResistanceCoeffError] = showUsingLocale:
-    case x: MissingAlpha3AngleForShortFluePipeSection                 =>
+    case x: MissingAlpha3AngleForShortFluePipeSection                         =>
         I18N.en15544_errors.missing_alpha3_angle_for_short_flue_pipe_section(x.msg)
-    case x: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?] =>
+    case x: SingularFlowResistanceCoeffError.UnexpectedRatio_Ld_Dh[?]         =>
         I18N.en15544_errors.unexpected_ratio_ld_dh("%.1f".format(x.ratio))
-    case x: SingularFlowResistanceCoeffError.NoGivenRatio_Ld_Dh[?]    =>
+    case x: SingularFlowResistanceCoeffError.NoGivenRatio_Ld_Dh[?]            =>
         I18N.en15544_errors.no_given_ratio_ld_dh
-    case x: SingularFlowResistanceCoeffError.ValueOutOfBound[?]       =>
-        I18N.errors.value_out_of_bound(
-            x.vTermName,
-            "%.1f".format(x.v),
-            x.vMin.toString,
-            x.vTermName,
-            x.vMax.toString
-        )
+    case x: SingularFlowResistanceCoeffError.RadiusDiameterRatioOutOfBound[?] =>
+        val simple = if x.tooSmall then I18N.errors.curvature_radius_too_small_for_diameter
+        else I18N.errors.diameter_too_small_for_curvature_radius
+        s"$simple${elementRefSuffix(x.elRef)}\n${valueOutOfBoundLine(x.vTermName, x.v, x.vMin, x.vMax)}"
+    case x: SingularFlowResistanceCoeffError.ValueOutOfBound[?]               =>
+        valueOutOfBoundLine(x.vTermName, x.v, x.vMin, x.vMax) + elementRefSuffix(x.elRef)
     case x =>
         I18N.en15544_errors.singular_flow_resistance_coeff_error(x.msg)
 
@@ -542,19 +553,70 @@ object SingularFlowResistanceCoeffError {
     ) =
         new SingularFlowResistanceCoeffError(s"shape ${shape.show} > $m", sectionTyp)(using sc.slotIndex)
 
+    /**
+     * Carried by the out-of-bound errors whose element only becomes known at the
+     * section handler's convergence point (the kernel's interpolation site is
+     * element-agnostic). Unreferenced, the error renders identically to a plain
+     * out-of-bound error (identity when absent); [[withElementRef]] overwrites,
+     * the convergence point being the single canonical stamp site.
+     */
+    trait HasElementRef:
+        def elRef: Option[ElementRef]
+
+        /** A copy carrying `ref` as the element reference, overwriting any previous one. */
+        def withElementRef(ref: ElementRef): SingularFlowResistanceCoeffError
+
+        /** A copy rewriting only the element-reference index to `newId`; identity when unreferenced. */
+        def withElementIndex(newId: PipeIdx): SingularFlowResistanceCoeffError
+
     case class ValueOutOfBound[S](
         shape                  : S,
         override val sectionTyp: PipeType,
         vTermName              : String,
         v                      : Double,
         vMin                   : Double,
-        vMax                   : Double
+        vMax                   : Double,
+        elRef                  : Option[ElementRef] = None
     )                            (using showS: Show[S], slotIndex: Option[SlotIndex])
         extends SingularFlowResistanceCoeffError(
             s"shape ${shape.show} > value out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
             sectionTyp: PipeType
-        )(using slotIndex) {
+        )                                       (using slotIndex)
+        with HasElementRef {
         def prettyShape: String = shape.show
+
+        /** Copy carrying `ref` as the element reference, overwriting any previous one. */
+        override def withElementRef(ref: ElementRef): ValueOutOfBound[S] =
+            copy(elRef = Some(ref))
+
+        /** Copy rewriting ONLY the element-reference index to `newId` (name untouched); identity when unreferenced. */
+        override def withElementIndex(newId: PipeIdx): ValueOutOfBound[S] =
+            copy(elRef = elRef.map(_.copy(idx = newId)))
+    }
+
+    case class RadiusDiameterRatioOutOfBound[S](
+        shape                  : S,
+        override val sectionTyp: PipeType,
+        vTermName              : String,
+        v                      : Double,
+        vMin                   : Double,
+        vMax                   : Double,
+        elRef                  : Option[ElementRef] = None
+    )                                          (using showS: Show[S], slotIndex: Option[SlotIndex])
+        extends SingularFlowResistanceCoeffError(
+            s"shape ${shape.show} > radius/diameter ratio out of bound > could not interpolate on '$vTermName' = $v (expected $vMin <= $vTermName <= $vMax)",
+            sectionTyp: PipeType
+        )                                       (using slotIndex)
+        with HasElementRef {
+        def tooSmall: Boolean = v < vMin
+
+        /** Copy carrying `ref` as the element reference, overwriting any previous one. */
+        override def withElementRef(ref: ElementRef): RadiusDiameterRatioOutOfBound[S] =
+            copy(elRef = Some(ref))
+
+        /** Copy rewriting ONLY the element-reference index to `newId` (name untouched); identity when unreferenced. */
+        override def withElementIndex(newId: PipeIdx): RadiusDiameterRatioOutOfBound[S] =
+            copy(elRef = elRef.map(_.copy(idx = newId)))
     }
 
     def CouldNotComputeIndividualCoefficientForShape[S: Show](

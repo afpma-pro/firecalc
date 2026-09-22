@@ -137,6 +137,8 @@ object I18nData_DirectionsAddElement:
         air_intake_pipe_shape_mismatch         : StringFormat2,
         air_intake_pipe_shape_topology_mismatch: StringFormat2,
         value_out_of_bound                     : StringFormat5,
+        curvature_radius_too_small_for_diameter: String,
+        diameter_too_small_for_curvature_radius: String,
         could_not_interpolate                  : StringFormat7,
         empty_data_set                         : String,
         parse_error                            : StringFormat1,

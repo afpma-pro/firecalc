@@ -21,3 +21,6 @@ object PipeName:
     extension (p: PipeName)
         def appendString  (s : String  ): PipeName = p + s
         def appendPipeName(p2: PipeName): PipeName = p + p2
+
+/** A pipe element's identity: its index in the post-firebox chain plus its display name. */
+final case class ElementRef(idx: PipeIdx, name: PipeName)

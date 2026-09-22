@@ -163,7 +163,7 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType, sc: SlotContext):
 
     given flowOnlyCoudeASegment90: DynamicFrictionCoeffOp[FlowOnly.CoudeASegment90] =
         DynamicFrictionCoeffOp.fromFunction { shape =>
-            interpolateCoudeASegment90(shape, shape.R, shape.Dh)
+            interpolateCoudeASegment90(shape, shape.nSeg, shape.R, shape.Dh)
         }
 
     given flowOnlySplitMerge90: DynamicFrictionCoeffOp[FlowOnly.SplitMerge90] =
@@ -226,7 +226,7 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType, sc: SlotContext):
 
     given thermalCoudeASegment90: DynamicFrictionCoeffOp[Thermal.CoudeASegment90] =
         DynamicFrictionCoeffOp.fromFunction { shape =>
-            interpolateCoudeASegment90(shape, shape.R, shape.Dh)
+            interpolateCoudeASegment90(shape, shape.nSeg, shape.R, shape.Dh)
         }
 
     given thermalSplitMerge90: DynamicFrictionCoeffOp[Thermal.SplitMerge90] =
@@ -306,59 +306,65 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType, sc: SlotContext):
         )
 
     private def interpolateCoudeCourbe90[S: Show](
-        shape                : S,
-        rDhRatio             : Double,
-        ldDhRatio            : Double
+        shape    : S,
+        rDhRatio : Double,
+        ldDhRatio: Double
     ): DynamicFrictionCoeffOp.Result =
-        _interpolateHelper(
-            shape             = shape,
-            resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape2_updated.csv",
-            tsvTableRawString = EN13384_1_2015_A1_2019_table_B8_shape2_updated,
-            xHeader           = "R/Dh",
-            xi                = rDhRatio,
-            xMinMax           = (0.0, 2.0),
-            yCriteria         = Some(ldDhRatio),
-            yHeaderSelectFunc = yHeaderForShape123(shape)
+        _refineRadiusDiameterRatio(shape)(
+            _interpolateHelper            (
+                shape             = shape,
+                resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape2_updated.csv",
+                tsvTableRawString = EN13384_1_2015_A1_2019_table_B8_shape2_updated,
+                xHeader           = "R/Dh",
+                xi                = rDhRatio,
+                xMinMax           = (0.0, 2.0),
+                yCriteria         = Some(ldDhRatio),
+                yHeaderSelectFunc = yHeaderForShape123(shape)
+            )
         )
 
     private def interpolateCoudeCourbe60[S: Show](
-        shape                : S,
-        rDhRatio             : Double,
-        ldDhRatio            : Double
+        shape    : S,
+        rDhRatio : Double,
+        ldDhRatio: Double
     ): DynamicFrictionCoeffOp.Result =
-        _interpolateHelper(
-            shape             = shape,
-            resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape3_updated.csv",
-            tsvTableRawString = EN13384_1_2015_A1_2019_table_B8_shape3_updated,
-            xHeader           = "R/Dh",
-            xi                = rDhRatio,
-            xMinMax           = (0.0, 2.0),
-            yCriteria         = Some(ldDhRatio),
-            yHeaderSelectFunc = yHeaderForShape123(shape)
+        _refineRadiusDiameterRatio(shape)(
+            _interpolateHelper            (
+                shape             = shape,
+                resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape3_updated.csv",
+                tsvTableRawString = EN13384_1_2015_A1_2019_table_B8_shape3_updated,
+                xHeader           = "R/Dh",
+                xi                = rDhRatio,
+                xMinMax           = (0.0, 2.0),
+                yCriteria         = Some(ldDhRatio),
+                yHeaderSelectFunc = yHeaderForShape123(shape)
+            )
         )
 
     private def interpolateCoudeASegment90[S: Show](
         shape: S,
+        nSeg : 2 | 3 | 4,
         R    : Length,
         Dh   : Length
     ): DynamicFrictionCoeffOp.Result =
-        // Determine angle and header based on shape type name
-        val (alpha, yHeader) = shape.show match
-            case s if s.contains("2A45")   => (45.degrees, "Coude 2 x 45 deg"    )
-            case s if s.contains("3A30")   => (30.degrees, "Coude 3 x 30 deg"    )
-            case s if s.contains("4A22p5") => (22.5.degrees, "Coude 4 x 22.5 deg")
-            case _                         => (45.degrees, "Coude 2 x 45 deg"    ) // fallback
+        // Per-segment angle and Table B.8 column header, keyed by segment count
+        val (alpha, yHeader) = nSeg match
+            case 2 => (45.degrees, "Coude 2 x 45 deg"    )
+            case 3 => (30.degrees, "Coude 3 x 30 deg"    )
+            case 4 => (22.5.degrees, "Coude 4 x 22.5 deg")
 
         val a = R * 2 * math.tan(alpha.toUnit[Radian].value / 2)
-        _interpolateHelper            (
-            shape             = shape,
-            resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape4.csv",
-            tsvTableRawString = EN13384_1_2015_A1_2019_table_B8_shape4,
-            xHeader           = "a/Dh",
-            xi                = (a / Dh).value,
-            xMinMax           = (1.0, 5.0),
-            yCriteria         = None,
-            yHeaderSelectFunc = _ => Right(yHeader)
+        _refineRadiusDiameterRatio(shape)(
+            _interpolateHelper            (
+                shape             = shape,
+                resName           = "EN 13384-1:2015+A1:2019 // table-B8_shape4.csv",
+                tsvTableRawString = EN13384_1_2015_A1_2019_table_B8_shape4,
+                xHeader           = "a/Dh",
+                xi                = (a / Dh).value,
+                xMinMax           = (1.0, 5.0),
+                yCriteria         = None,
+                yHeaderSelectFunc = _ => Right(yHeader)
+            )
         )
 
     private def interpolateDecrease[S: Show](
@@ -440,6 +446,25 @@ class DynamicFrictionCoeff_13384()(using sectionTyp: PipeType, sc: SlotContext):
             yHeaderSelectFunc,
             yCriteria
         )
+
+    // Refines only ValueOutOfBound into the plain-language
+    // RadiusDiameterRatioOutOfBound; every other kernel error passes through
+    // as-is. If the kernel gains a new out-of-bound variant, refine it here
+    // explicitly - the pass-through is not a catch-all for future variants.
+    private def _refineRadiusDiameterRatio[S: Show](
+        shape: S
+    )(res: DynamicFrictionCoeffOp.Result): DynamicFrictionCoeffOp.Result =
+        res.leftMap(_.map:
+            case e: SingularFlowResistanceCoeffError.ValueOutOfBound[?] =>
+                SingularFlowResistanceCoeffError.RadiusDiameterRatioOutOfBound[S](
+                    shape,
+                    e.sectionTyp,
+                    e.vTermName,
+                    e.v,
+                    e.vMin,
+                    e.vMax
+                )(using summon[Show[S]], sc.slotIndex)
+            case other => other)
 
     private def yHeaderForShape123[S](shape: S)(using
         show_shape: Show[S]

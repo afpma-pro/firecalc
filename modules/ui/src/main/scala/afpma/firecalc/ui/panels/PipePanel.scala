@@ -15,6 +15,7 @@ import afpma.firecalc.dto.all.AbsoluteDirection
 
 import afpma.firecalc.i18n.implicits.I18N
 
+import afpma.firecalc.engine.models.PipeIdx
 import afpma.firecalc.engine.models.PipeResult
 import afpma.firecalc.engine.models.PipeSectionResult
 import afpma.firecalc.engine.models.PipeType
@@ -656,14 +657,21 @@ trait PipePanel(using loc: Locale, du: DisplayUnits) extends DaisyUIDynamicList:
         reverseMap: Map[Int, Int]
     ): MCalc_Error =
         err match
-            case e: FlueGasVelocityError         =>
+            case e: FlueGasVelocityError                           =>
                 reverseMap
                     .get(e.sectionId)
                     .fold(err)(idIncr => e.copy(sectionId = idIncr)(using SlotContext.fromOption(e.slotIndex)))
-            case e: FluePipeInvalidGeometryRatio =>
+            case e: FluePipeInvalidGeometryRatio                   =>
                 reverseMap
                     .get(e.sectionId)
                     .fold(err)(idIncr => e.copy(sectionId = idIncr)(using SlotContext.fromOption(e.slotIndex)))
+            case e: SingularFlowResistanceCoeffError.HasElementRef =>
+                e.elRef
+                    .fold(err)(ref =>
+                        reverseMap
+                            .get(ref.idx.unwrap)
+                            .fold(err)(idIncr => e.withElementIndex(PipeIdx(idIncr)))
+                    )
             case other => other
 
     def statusIcon =
