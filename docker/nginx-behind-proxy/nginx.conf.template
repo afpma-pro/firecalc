@@ -7,7 +7,10 @@
 # FireCalc Global Nginx Configuration (Behind-Proxy Mode)
 # =============================================================================
 # HTTP-only global config. No SSL defaults — outer proxy (e.g., nginx-proxy-manager)
-# handles TLS termination. Mounted directly to /etc/nginx/nginx.conf:ro.
+# handles TLS termination. Mounted at /etc/nginx/nginx.conf.template and
+# rendered by the image's docker-entrypoint envsubst
+# (NGINX_ENVSUBST_TEMPLATE_DIR/OUTPUT_DIR = /etc/nginx) into
+# /etc/nginx/nginx.conf.
 # Server blocks in conf.d/ handle UI and API routing separately.
 # =============================================================================
 
@@ -35,6 +38,21 @@ http {
     tcp_nopush on;
     keepalive_timeout 65;
     gzip on;
+
+    # =========================================================================
+    # Real client IP (behind-proxy mode)
+    # =========================================================================
+    # The outer proxy (e.g., nginx-proxy-manager) is the only TCP peer this
+    # container sees. Restoring the client address from its X-Forwarded-For
+    # makes the $binary_remote_addr rate-limit zones below per-client again,
+    # sanitizes X-Forwarded-For before it reaches the app (the calc backend
+    # keys its own token bucket on the first XFF entry), and fixes $remote_addr
+    # in access logs and in the X-Real-IP proxy header.
+    # TRUSTED_PROXY_CIDR must cover only the outer proxy's address(es) on the
+    # shared `proxy` network (docker-compose default pools fall in 172.16.0.0/12).
+    set_real_ip_from ${TRUSTED_PROXY_CIDR};
+    real_ip_header   X-Forwarded-For;
+    real_ip_recursive on;
 
     # Rate Limiting Zones
     limit_req_zone $binary_remote_addr zone=api_auth:10m rate=10r/s;

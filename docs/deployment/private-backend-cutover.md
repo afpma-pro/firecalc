@@ -204,6 +204,9 @@ calculation contract (SPEC_00 §Further Notes).
 
 Two layers, defense in depth. Nginx is the stricter first line; the
 application token bucket is authoritative for the contract headers.
+`set_real_ip_from` + `real_ip_recursive` restore the client address on the
+inner nginx so its `$binary_remote_addr` zones are per-client; the restored
+XFF (first entry = true client) is what the application bucket keys on.
 
 | Endpoint | Nginx (`firebox_calc` zone) | Application token bucket |
 |---|---|---|

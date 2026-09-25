@@ -69,12 +69,19 @@ fi
 export CATCH_ALL_ACTION
 export CATCH_ALL_PROXY
 
+# Real client IP behind an outer proxy: trusted proxy CIDR for nginx
+# set_real_ip_from (see shared/common.conf). Single default covers all four
+# templates incl. standalone — an unset var would substitute empty and make
+# `set_real_ip_from ;` fail nginx -t. Operators override via compose/.env.
+TRUSTED_PROXY_CIDR="${TRUSTED_PROXY_CIDR:-172.16.0.0/12}"
+export TRUSTED_PROXY_CIDR
+
 # Run envsubst on the generated config and shared files
-# Substitutes ${UI_DOMAIN}, ${API_DOMAIN}, ${CORS_REGEX_FALLBACK}, ${CATCH_ALL_ACTION}, ${CATCH_ALL_PROXY}
-envsubst '${UI_DOMAIN} ${API_DOMAIN} ${CORS_REGEX_FALLBACK} ${CATCH_ALL_ACTION} ${CATCH_ALL_PROXY}' < "${GENERATED_CONF}" > "${GENERATED_CONF}.tmp" && mv "${GENERATED_CONF}.tmp" "${GENERATED_CONF}"
+# Substitutes ${UI_DOMAIN}, ${API_DOMAIN}, ${CORS_REGEX_FALLBACK}, ${CATCH_ALL_ACTION}, ${CATCH_ALL_PROXY}, ${TRUSTED_PROXY_CIDR}
+envsubst '${UI_DOMAIN} ${API_DOMAIN} ${CORS_REGEX_FALLBACK} ${CATCH_ALL_ACTION} ${CATCH_ALL_PROXY} ${TRUSTED_PROXY_CIDR}' < "${GENERATED_CONF}" > "${GENERATED_CONF}.tmp" && mv "${GENERATED_CONF}.tmp" "${GENERATED_CONF}"
 for f in "${GENERATED_SHARED}"/*.conf; do
     if [ -f "$f" ]; then
-        envsubst '${UI_DOMAIN} ${API_DOMAIN} ${CORS_REGEX_FALLBACK} ${CATCH_ALL_ACTION} ${CATCH_ALL_PROXY}' < "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+        envsubst '${UI_DOMAIN} ${API_DOMAIN} ${CORS_REGEX_FALLBACK} ${CATCH_ALL_ACTION} ${CATCH_ALL_PROXY} ${TRUSTED_PROXY_CIDR}' < "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
     fi
 done
 

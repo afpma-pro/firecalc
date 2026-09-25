@@ -138,6 +138,8 @@ services:
       - nginx-generated:/etc/nginx/generated
     environment:
       - FIRECALC_MODE=with-calc
+      # Trusted outer-proxy CIDR for per-client rate limiting / XFF sanitization
+      - TRUSTED_PROXY_CIDR=${TRUSTED_PROXY_CIDR:-172.16.0.0/12}
     depends_on:
       ui-server:
         condition: service_healthy

@@ -175,6 +175,7 @@ Before deploying:
 **Behind-proxy mode only:**
 - [ ] Outer proxy (e.g., NPM) configured with proxy hosts pointing to inner nginx
 - [ ] Outer proxy handles TLS termination
+- [ ] TRUSTED_PROXY_CIDR set to the outer proxy's network (default 172.16.0.0/12) so client real IP is restored for rate limiting
 
 ## Deployment Environments
 

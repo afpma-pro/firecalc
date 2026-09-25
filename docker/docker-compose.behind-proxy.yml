@@ -204,9 +204,20 @@ services:
     expose:
       - "80"
 
+    # The official nginx image's docker-entrypoint runs envsubst over the
+    # templates in NGINX_ENVSUBST_TEMPLATE_DIR (pointed at /etc/nginx) and
+    # writes the result to NGINX_ENVSUBST_OUTPUT_DIR (/etc/nginx), rendering
+    # nginx.conf.template into nginx.conf; the filter substitutes only
+    # ${TRUSTED_PROXY_CIDR} (compose-escaped $$ keeps it literal here).
+    environment:
+      - TRUSTED_PROXY_CIDR=${TRUSTED_PROXY_CIDR:-172.16.0.0/12}
+      - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+      - NGINX_ENVSUBST_FILTER=^TRUSTED_PROXY_CIDR$$
+
     volumes:
-      # Global nginx config (HTTP-only, no SSL)
-      - ./nginx-behind-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Global nginx config template (HTTP-only, no SSL) → envsubst to nginx.conf
+      - ./nginx-behind-proxy/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
       # Unified server block (UI + API routing via location matching)
       - ./nginx-behind-proxy/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro
       # Override nginx image default.conf (empty — our proxy.conf handles routing)

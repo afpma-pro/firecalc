@@ -18,7 +18,7 @@ The developer chooses a mode by creating a symlink. No build-time flags, no cond
 | 1 | Who manages certs in behind-proxy mode? | External proxy (NPM) | Inner nginx can't terminate TLS when NPM owns port 443 for domain routing |
 | 2 | How is mode selected? | Two separate compose files | Explicit naming forces developer awareness |
 | 3 | Nginx config organization? | Separate directories per mode | Zero overlap, each mode self-contained |
-| 4 | Inner nginx role in behind-proxy? | Kept as internal gateway | Preserves rate limiting, security headers, routing logic |
+| 4 | Inner nginx role in behind-proxy? | Kept as internal gateway | Preserves rate limiting, security headers, routing logic; per-client rate limiting works only because `set_real_ip_from` restores the client address from the trusted proxy's X-Forwarded-For |
 | 5 | Developer picks compose file how? | Symlink `docker-compose.yml` → chosen file | One-time setup, all commands work after |
 | 6 | Domain awareness in behind-proxy? | Two NPM proxy hosts, inner nginx uses `$http_host` | Preserves server-block separation from standalone |
 | 7 | `.env` strategy? | Single `.env`, standalone vars optional | `UI_DOMAIN`/`API_DOMAIN` only needed for standalone |
@@ -51,7 +51,7 @@ docker/
     proxy.conf.template              # (from current docker/nginx-proxy-custom.conf.template)
     default.conf                     # NEW — empty, neutralizes nginx image default server block
   nginx-behind-proxy/                # NEW — HTTP-only configs
-    nginx.conf                       # HTTP-only global config
+    nginx.conf.template              # HTTP-only global config; envsubst → /etc/nginx/nginx.conf
     proxy.conf                       # Unified server block (UI + API via location matching)
     default.conf                     # NEW — empty, neutralizes nginx image default server block
   configs/                           # UNCHANGED
@@ -104,7 +104,7 @@ Same services except `certbot` is removed. Nginx has no host ports.
 | `backend` | `firecalc-${FIRECALC_ENV}-payments:latest` (built from Dockerfile) | `8181` (expose, internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` |
 | `calc-backend` | `firecalc-${FIRECALC_ENV}-calc-server:latest` (built from `Dockerfile.calc-server`, private checkout context) | `9000` (expose, internal) | `./configs:/app/configs:ro` only — no database mounts |
 | `ui-server` | `nginx:alpine` | none (internal) | `../web/dist-app:/usr/share/nginx/html:ro`, `./nginx-ui-server.conf:/etc/nginx/conf.d/default.conf:ro` |
-| `nginx` | built from `Dockerfile.nginx` | none (Docker network only, exposes 80 internally) | `./nginx-behind-proxy/nginx.conf:/etc/nginx/nginx.conf:ro`, `./nginx-behind-proxy/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro`, `./nginx-behind-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro` |
+| `nginx` | built from `Dockerfile.nginx` | none (Docker network only, exposes 80 internally) | `./nginx-behind-proxy/nginx.conf.template:/etc/nginx/nginx.conf.template:ro`, `./nginx-behind-proxy/proxy.conf:/etc/nginx/conf.d/proxy.conf:ro`, `./nginx-behind-proxy/default.conf:/etc/nginx/conf.d/default.conf:ro` |
 
 **Container names:** `firecalc-${FIRECALC_ENV}-{service}` (e.g. `firecalc-staging-nginx`)
 
@@ -112,7 +112,7 @@ Same services except `certbot` is removed. Nginx has no host ports.
 
 **Volumes:** none (no letsencrypt volumes)
 
-**Environment (nginx):** none (no envsubst, no domain variables)
+**Environment (nginx):** `TRUSTED_PROXY_CIDR` (default 172.16.0.0/12), `NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx`, `NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx`, `NGINX_ENVSUBST_FILTER=^TRUSTED_PROXY_CIDR$$` (renders the template into `/etc/nginx/nginx.conf`)
 
 **Healthcheck (nginx):** `curl -f http://localhost/healthcheck && curl -f http://localhost/calc-healthcheck` (proxied to backend `/v1/healthcheck` and calc-backend `/health` independently)
 
@@ -142,7 +142,7 @@ Migrated from current `docker/nginx-proxy-custom.conf.template` with no changes.
 - API server block: HTTPS on 443, SSL certs, HSTS, ACME challenge, rate-limited auth endpoints, CSP, `client_max_body_size 50m`, proxy to `api_upstream`
 - HTTP→HTTPS redirect server block on port 80 with `/healthcheck` location proxying to `api_upstream_http` (bypasses redirect for Docker healthcheck)
 
-### `nginx-behind-proxy/nginx.conf`
+### `nginx-behind-proxy/nginx.conf.template`
 
 HTTP-only global config. **No SSL defaults.**
 
@@ -171,6 +171,21 @@ http {
     tcp_nopush on;
     keepalive_timeout 65;
     gzip on;
+
+    # =========================================================================
+    # Real client IP (behind-proxy mode)
+    # =========================================================================
+    # The outer proxy (e.g., nginx-proxy-manager) is the only TCP peer this
+    # container sees. Restoring the client address from its X-Forwarded-For
+    # makes the $binary_remote_addr rate-limit zones below per-client again,
+    # sanitizes X-Forwarded-For before it reaches the app (the calc backend
+    # keys its own token bucket on the first XFF entry), and fixes $remote_addr
+    # in access logs and in the X-Real-IP proxy header.
+    # TRUSTED_PROXY_CIDR must cover only the outer proxy's address(es) on the
+    # shared `proxy` network (docker-compose default pools fall in 172.16.0.0/12).
+    set_real_ip_from ${TRUSTED_PROXY_CIDR};
+    real_ip_header   X-Forwarded-For;
+    real_ip_recursive on;
 
     # Rate Limiting Zones
     limit_req_zone $binary_remote_addr zone=api_auth:10m rate=10r/s;
