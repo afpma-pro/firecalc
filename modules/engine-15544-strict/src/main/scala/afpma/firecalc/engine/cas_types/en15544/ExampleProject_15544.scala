@@ -91,7 +91,7 @@ object ExampleProject_15544
                 AbsoluteDirection(None, InclinationDirection.Down)
             ), // Down
             innerShape(rectangle(251.mm, 220.mm)),
-            addSectionVertical  ("descente", -815.mm    ),
+            addSectionVertical  ("descente", (-815).mm  ),
             addSharpAngle_90deg (
                 "virage avant banc avant",
                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)

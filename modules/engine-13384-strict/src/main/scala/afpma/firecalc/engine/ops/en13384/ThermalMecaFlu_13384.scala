@@ -352,7 +352,7 @@ private abstract trait MecaFlu_EN13384_PipeSectionResult_Impl(
     // if tu (ambiant) == te (entry)
     // then return directly
     // otherwise compute tmiddle, to, etc..
-    val (tmiddle, to, temp_mean): (TCelsius, TCelsius, TCelsius) =
+    val (tmiddle, to, temp_mean) =
         if (curr.typ == AirIntakePipeT || curr.typ == CombustionAirPipeT)
             en13384.T_mB match
                 case Valid(tk)  =>

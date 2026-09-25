@@ -531,11 +531,11 @@ open class `EN13384_1_A1_2019_Formulas` extends EN13384_1_A1_2019_Formulas_Alg:
 
     override final val T_uo_default = T_uo_temperature.from(
         AmbiantAirTemperatureSet         ( // T_uo
-            withoutairspace_wetcond          = Right(-15.degreesCelsius),
+            withoutairspace_wetcond          = Right((-15).degreesCelsius),
             withoutairspace_drycond          = Right(0.degreesCelsius),
             withairspace_wetcond_hextBelow5m = Right(0.degreesCelsius),
             withairspace_drycond_hextBelow5m = Right(0.degreesCelsius),
-            withairspace_wetcond_hextAbove5m = Right(-15.degreesCelsius),
+            withairspace_wetcond_hextAbove5m = Right((-15).degreesCelsius),
             withairspace_drycond_hextAbove5m = Right(0.degreesCelsius)
         )
     )

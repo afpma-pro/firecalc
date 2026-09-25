@@ -30,8 +30,23 @@ object I18nBuild {
      */
     def moduleSettings(moduleName: String, packagePath: Seq[String]): Seq[Setting[_]] = Seq(
         Compile / watchSources ++= I18nGenerator.SUPPORTED_LANGUAGES_IDS.map { lang =>
-            file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
+            // sbt 2: watchSources is TaskKey[Seq[sbt.internal.io.Source]]
+            sbt.internal.io.Source(file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf"))
         },
         Compile / sourceGenerators += I18nGenerator.i18nSourceGenerator(moduleName, packagePath)
     )
+}
+
+// sbt 2 caches every task by default; `watchSources ++= ...` therefore needs a
+// sjsonnew.JsonFormat for sbt.internal.io.Source, which sbt 2.0.9 does not provide.
+// Watch sources are pure path declarations, so serializing the base file is sufficient.
+given sbtSourceJsonFormat: sjsonnew.JsonFormat[sbt.internal.io.Source] with {
+    def write[J](obj: sbt.internal.io.Source, builder: sjsonnew.Builder[J]): Unit =
+        builder.writeString(obj.base.getAbsolutePath)
+
+    def read[J](jsOpt: Option[J], unbuilder: sjsonnew.Unbuilder[J]): sbt.internal.io.Source =
+        jsOpt match {
+            case Some(js) => sbt.internal.io.Source(new java.io.File(unbuilder.readString(js)))
+            case None     => throw new RuntimeException("Expected a JSON string for sbt.internal.io.Source")
+        }
 }

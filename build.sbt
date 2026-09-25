@@ -25,7 +25,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / excludeLintKeys ++= Set(mainClass)
 // Global / watchForceTriggerOnAnyChange := true
 
-val scala_version = "3.8.4"
+val scala_version = "3.9.0"
 
 ThisBuild / scalaVersion     := scala_version
 ThisBuild / organization     := "pro.afpma"
@@ -270,12 +270,12 @@ lazy val i18n_utils = crossProject(JVMPlatform, JSPlatform)
         ),
         libraryDependencies ++= Seq        (
             // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
-            "pro.afpma"     %%% "magnolia"     % "1.3.16",
-            "org.typelevel" %%% "cats-core"    % "2.13.0",
-            "io.taig"       %%% "babel-loader" % "0.6.0"
+            "pro.afpma"     %% "magnolia"     % "1.3.16",
+            "org.typelevel" %% "cats-core"    % "2.13.0",
+            "io.taig"       %% "babel-loader" % "0.6.0"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
 
 // =========
 // utils
@@ -292,12 +292,12 @@ lazy val utils = crossProject(JVMPlatform, JSPlatform)
             // encoding / decoding
 
             // generic JSON
-            "io.circe" %%% "circe-core"    % "0.14.13",
-            "io.circe" %%% "circe-generic" % "0.14.13",
-            "io.circe" %%% "circe-parser"  % "0.14.13",
+            "io.circe" %% "circe-core"    % "0.14.13",
+            "io.circe" %% "circe-generic" % "0.14.13",
+            "io.circe" %% "circe-parser"  % "0.14.13",
 
             // JSON <-> YAML
-            "io.circe" %%% "circe-yaml-scalayaml" % "0.16.0",
+            "io.circe" %% "circe-yaml-scalayaml" % "0.16.0",
 
             // Testing
             "org.scalameta" %% "munit" % "1.0.0" % "test"
@@ -342,7 +342,7 @@ lazy val utils = crossProject(JVMPlatform, JSPlatform)
             Seq(buildInfoFile)
         }.taskValue
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
 
 // =========
 // units
@@ -359,11 +359,11 @@ lazy val units = crossProject(JVMPlatform, JSPlatform)
             // "-Xmax-inlines:48",
         ),
         libraryDependencies ++= Seq (
-            "com.manyangled" %%% "coulomb-core"  % "0.8.0",
-            "com.manyangled" %%% "coulomb-units" % "0.8.0"
+            "com.manyangled" %% "coulomb-core"  % "0.8.0",
+            "com.manyangled" %% "coulomb-units" % "0.8.0"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(i18n)
 
@@ -380,11 +380,11 @@ lazy val domain = crossProject(JVMPlatform, JSPlatform)
         version := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:48"),
         libraryDependencies ++= Seq  (
-            "org.typelevel" %%% "kittens"   % "3.5.0",
-            "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+            "org.typelevel" %% "kittens"   % "3.5.0",
+            "org.scalatest" %% "scalatest" % "3.2.19" % "test"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(units, i18n)
 
@@ -404,11 +404,11 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
             // "-explain-cyclic",
         ),
         libraryDependencies ++= Seq       (
-            "io.scalaland"  %%% "chimney"       % "1.8.2",
-            "io.taig"       %%% "babel-generic" % "0.6.0",
-            "org.typelevel" %%% "kittens"       % "3.5.0",
+            "io.scalaland"  %% "chimney"       % "1.8.2",
+            "io.taig"       %% "babel-generic" % "0.6.0",
+            "org.typelevel" %% "kittens"       % "3.5.0",
             // Test
-            "org.scalatest" %%% "scalatest"     % "3.2.19" % "test"
+            "org.scalatest" %% "scalatest"     % "3.2.19" % "test"
         )
     )
     .jvmConfigure(
@@ -418,11 +418,11 @@ lazy val dto = crossProject(JVMPlatform, JSPlatform)
             libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .jsSettings(
         // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
         // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
-        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
+        libraryDependencies += "io.github.cquiroz" %% "scala-java-time" % "2.7.0"
     )
     .settings(watchI18nSources("i18n"))
     .dependsOn(utils, i18n, units, domain)
@@ -439,12 +439,12 @@ lazy val firebox_calc_api = crossProject(JVMPlatform, JSPlatform)
         name    := "firecalc-firebox_calc_api",
         version := engine_version,
         libraryDependencies ++= Seq        (
-            "io.circe"      %%% "circe-core"    % "0.14.13",
-            "io.circe"      %%% "circe-generic" % "0.14.13",
-            "org.scalatest" %%% "scalatest"     % "3.2.19" % "test"
+            "io.circe"      %% "circe-core"    % "0.14.13",
+            "io.circe"      %% "circe-generic" % "0.14.13",
+            "org.scalatest" %% "scalatest"     % "3.2.19" % "test"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .dependsOn(utils, units, domain, dto)
 
 // =========
@@ -508,10 +508,10 @@ lazy val firebox_calc_client_js = (project in file("modules/firebox_calc_client_
         name                            := "firecalc-firebox_calc_client_js",
         version                         := engine_version,
         libraryDependencies ++= Seq  (
-            "org.scala-js"  %%% "scalajs-dom"  % "2.8.1",
-            "io.circe"      %%% "circe-core"   % "0.14.13",
-            "io.circe"      %%% "circe-parser" % "0.14.13",
-            "org.scalatest" %%% "scalatest"    % "3.2.19" % "test"
+            "org.scala-js"  %% "scalajs-dom"  % "2.8.1",
+            "io.circe"      %% "circe-core"   % "0.14.13",
+            "io.circe"      %% "circe-parser" % "0.14.13",
+            "org.scalatest" %% "scalatest"    % "3.2.19" % "test"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
@@ -535,7 +535,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
         version := engine_version,
         libraryDependencies ++= Seq(
             // Testing
-            "org.scalameta" %%% "munit" % "1.0.0" % "test"
+            "org.scalameta" %% "munit" % "1.0.0" % "test"
         )
     )
     .jvmConfigure(
@@ -543,7 +543,7 @@ lazy val catalog = crossProject(JVMPlatform, JSPlatform)
             Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .dependsOn(dto)
 
 // =========
@@ -553,24 +553,24 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine-kernel"))
-    .settings                                                 (
+    .settings                                                (
         commonSettings,
-        name                                                 := "firecalc-engine-kernel",
-        version                                              := engine_version,
+        name                                                := "firecalc-engine-kernel",
+        version                                             := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "com.manyangled"             %%% "coulomb-core"  % "0.8.0",
-        libraryDependencies += "com.manyangled"             %%% "coulomb-units" % "0.8.0",
-        libraryDependencies += "org.typelevel"              %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "org.typelevel"              %%% "kittens"       % "3.5.0",
-        libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"     % "1.9.12",
+        libraryDependencies += "com.manyangled"             %% "coulomb-core"  % "0.8.0",
+        libraryDependencies += "com.manyangled"             %% "coulomb-units" % "0.8.0",
+        libraryDependencies += "org.typelevel"              %% "cats-core"     % "2.13.0",
+        libraryDependencies += "org.typelevel"              %% "kittens"       % "3.5.0",
+        libraryDependencies += "com.softwaremill.quicklens" %% "quicklens"     % "1.9.12",
 
         // Test
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
 
         // i18n
-        libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0"
+        libraryDependencies += "io.taig" %% "babel-circe"   % "0.6.0",
+        libraryDependencies += "io.taig" %% "babel-generic" % "0.6.0",
+        libraryDependencies += "io.taig" %% "babel-loader"  % "0.6.0"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
@@ -578,9 +578,9 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     .jsSettings(
         // Provide java.time.Duration for Scala.js linker — sconfig (HOCON parser from babel-*)
         // references Duration via ConfigImpl.fromAnyRef, reachable through Formatter dispatch.
-        libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.7.0"
+        libraryDependencies += "io.github.cquiroz" %% "scala-java-time" % "2.7.0"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(i18n, units, dto, domain)
 
@@ -591,32 +591,32 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine"))
-    .settings                                                 (
+    .settings                                                (
         commonSettings,
-        name                                                 := "firecalc-engine",
-        version                                              := engine_version,
-        mainClass                                            := Some("afpma.firecalc.engine.MCalc"),
+        name                                                := "firecalc-engine",
+        version                                             := engine_version,
+        mainClass                                           := Some("afpma.firecalc.engine.MCalc"),
         scalacOptions ++= Seq(
             "-Xmax-inlines:32"
             // "-Yprofile-enabled",
             // "-Yprofile-trace:compiler.trace"
         ),
-        libraryDependencies += "com.manyangled"             %%% "coulomb-core"  % "0.8.0",
-        libraryDependencies += "com.manyangled"             %%% "coulomb-units" % "0.8.0",
-        libraryDependencies += "org.typelevel"              %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "org.typelevel"              %%% "cats-effect"   % "3.6.1",
-        libraryDependencies += "org.typelevel"              %%% "kittens"       % "3.5.0",
-        libraryDependencies += "com.softwaremill.quicklens" %%% "quicklens"     % "1.9.12",
+        libraryDependencies += "com.manyangled"             %% "coulomb-core"  % "0.8.0",
+        libraryDependencies += "com.manyangled"             %% "coulomb-units" % "0.8.0",
+        libraryDependencies += "org.typelevel"              %% "cats-core"     % "2.13.0",
+        libraryDependencies += "org.typelevel"              %% "cats-effect"   % "3.6.1",
+        libraryDependencies += "org.typelevel"              %% "kittens"       % "3.5.0",
+        libraryDependencies += "com.softwaremill.quicklens" %% "quicklens"     % "1.9.12",
 
         // Test
 
         // scalatest
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
 
         // i18n
-        libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0"
+        libraryDependencies += "io.taig" %% "babel-circe"   % "0.6.0",
+        libraryDependencies += "io.taig" %% "babel-generic" % "0.6.0",
+        libraryDependencies += "io.taig" %% "babel-loader"  % "0.6.0"
     )
     .jvmConfigure(
         _.settings(
@@ -624,7 +624,7 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
             libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(engine_kernel, i18n, units, dto, engine_kernel % "test->test")
 
@@ -659,17 +659,17 @@ lazy val engine_13384_common = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine-13384-common"))
-    .settings                                   (
+    .settings                                  (
         commonSettings,
-        name                                    := "firecalc-engine-13384-common",
-        version                                 := engine_version,
+        name                                   := "firecalc-engine-13384-common",
+        version                                := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(engine, engine % "test->test")
 
@@ -689,12 +689,12 @@ lazy val engine_13384_strict = crossProject(JVMPlatform, JSPlatform)
         ),
 
         // Test
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(engine_13384_common, engine_13384_common % "test->test", engine_kernel % "test->test")
 
@@ -702,17 +702,17 @@ lazy val engine_15544_common = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine-15544-common"))
-    .settings                                   (
+    .settings                                  (
         commonSettings,
-        name                                    := "firecalc-engine-15544-common",
-        version                                 := engine_version,
+        name                                   := "firecalc-engine-15544-common",
+        version                                := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn             (
         engine,
@@ -729,14 +729,14 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine-15544-strict"))
-    .settings                                   (
+    .settings                                  (
         commonSettings,
-        name                                    := "firecalc-engine-15544-strict",
-        version                                 := engine_version,
+        name                                   := "firecalc-engine-15544-strict",
+        version                                := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     // Ticket 16: the Austrian engine instances, registry, calculation core,
     // conversion, C3 cas-types, and NPipe fixture moved to the private
@@ -755,17 +755,17 @@ lazy val engine_15544_mce = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine-15544-mce"))
-    .settings                                   (
+    .settings                                  (
         commonSettings,
-        name                                    := "firecalc-engine-15544-mce",
-        version                                 := engine_version,
+        name                                   := "firecalc-engine-15544-mce",
+        version                                := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(engine_15544_common, engine_13384_strict, engine_15544_common % "test->test")
 
@@ -773,17 +773,17 @@ lazy val engine_15544_labo = crossProject(JVMPlatform, JSPlatform)
     .withoutSuffixFor(JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/engine-15544-labo"))
-    .settings                                   (
+    .settings                                  (
         commonSettings,
-        name                                    := "firecalc-engine-15544-labo",
-        version                                 := engine_version,
+        name                                   := "firecalc-engine-15544-labo",
+        version                                := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
     )
     .jvmSettings(
         libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
     .dependsOn(engine_15544_mce, engine_15544_mce % "test->test")
 
@@ -797,7 +797,7 @@ lazy val viz = (project in file("modules/viz"))
         name                            := "firecalc-viz",
         version                         := ui_version,
         libraryDependencies ++= Seq(
-            "org.scala-js" %%% "scalajs-dom" % "2.8.1"
+            "org.scala-js" %% "scalajs-dom" % "2.8.1"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
@@ -816,7 +816,7 @@ lazy val graph = (project in file("modules/graph"))
         name                            := "firecalc-graph",
         version                         := ui_version,
         libraryDependencies ++= Seq(
-            "org.scala-js" %%% "scalajs-dom" % "2.8.1"
+            "org.scala-js" %% "scalajs-dom" % "2.8.1"
         ),
         scalaJSLinkerConfig ~= {
             _.withModuleKind(ModuleKind.ESModule)
@@ -829,12 +829,12 @@ lazy val graph = (project in file("modules/graph"))
 // fdim
 
 lazy val fdim = (project in file("modules/fdim"))
-    .settings                                   (
-        name                                    := "firecalc-fdim",
-        version                                 := engine_version,
+    .settings                                  (
+        name                                   := "firecalc-fdim",
+        version                                := engine_version,
         commonSettings,
         // scalatest
-        libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
         scalacOptions ++= Seq(
             "-Xmax-inlines:32"
         )
@@ -867,12 +867,12 @@ lazy val i18n = crossProject(JVMPlatform, JSPlatform)
         ),
 
         // i18n
-        libraryDependencies += "io.taig" %%% "babel-circe"   % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-generic" % "0.6.0",
-        libraryDependencies += "io.taig" %%% "babel-loader"  % "0.6.0"
+        libraryDependencies += "io.taig" %% "babel-circe"   % "0.6.0",
+        libraryDependencies += "io.taig" %% "babel-generic" % "0.6.0",
+        libraryDependencies += "io.taig" %% "babel-loader"  % "0.6.0"
     )
-    .settings(I18nBuild.moduleSettings("i18n", Seq("afpma", "firecalc", "i18n")): _*)
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .settings(I18nBuild.moduleSettings("i18n", Seq("afpma", "firecalc", "i18n")) *)
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .dependsOn(i18n_utils)
 
 lazy val i18nJVM = i18n.jvm
@@ -900,78 +900,6 @@ lazy val labo = (project in file("modules/labo"))
         engine.jvm            % "test->test",
         engine_15544_labo.jvm % "test->test"
     )
-
-// =========
-// ui
-
-//
-// Waiting for a better fix: https://github.com/ScalablyTyped/Converter/issues/706
-//
-
-val hackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] = {
-    import org.scalablytyped.converter.internal.scalajs.Versions
-    import org.scalablytyped.converter.internal.ZincCompiler
-
-    /* First, we need to override stConversionOptions.versions with a hacked
-     * subclass that gets rid of "-source:future".
-     */
-
-    // Yes, I'm extending a case class; I will burn in hell.
-    class HackedVersions(orig: Versions) extends Versions(orig.scala, orig.scalaJs) {
-        override val scalacOptions: List[String] =
-            orig.scalacOptions.filterNot(_ == "-source:future")
-
-        override def toString(): String =
-            s"${super.toString()} hacked with $scalacOptions"
-    }
-
-    val conversionSetting: Setting[_] = stConversionOptions := {
-        val prev = stConversionOptions.value
-        prev.copy(versions = new HackedVersions(prev.versions))
-    }
-
-    /* Unfortunately, the internal stInternalZincCompiler task recreates its
-     * own Versions object, so we will also have to patch that one.
-     * This is much trickier, because there is no real public access to that
-     * thing. We're on the JVM, though, so nothing is ever *really* private,
-     * if we try hard enough.
-     */
-
-    // Get access to the private `inputs` field of ZincCompiler:
-    // https://github.com/ScalablyTyped/Converter/blob/02257bf3588da08deec5a3b07f306fcc6236642d/sbt-converter/src/main/scala/org/scalablytyped/converter/internal/ZincCompiler.scala#L25
-    val inputsField = classOf[ZincCompiler].getDeclaredField("inputs")
-    inputsField.setAccessible(true)
-
-    // Access to a private setting
-    // https://github.com/ScalablyTyped/Converter/blob/02257bf3588da08deec5a3b07f306fcc6236642d/sbt-converter/src/main/scala/org/scalablytyped/converter/plugin/ScalablyTypedConverterExternalNpmPlugin.scala#L15C19-L15C97
-    val stInternalZincCompiler = taskKey[ZincCompiler]("Hijack compiler settings")
-
-    val zincCompilerSetting: Setting[_] = stInternalZincCompiler := {
-        val prev              = stInternalZincCompiler.value
-        val prevInputs        = inputsField.get(prev).asInstanceOf[xsbti.compile.Inputs]
-        val prevScalacOptions = prevInputs.options().scalacOptions()
-        val newScalacOptions  = prevScalacOptions.filterNot(_ == "-source:future")
-        val newOptions        = prevInputs.options().withScalacOptions(newScalacOptions)
-        val newInputs         = prevInputs.withOptions(newOptions)
-
-        // And brutally set the immutable field, because we can.
-        // (What do you mean, that's less bad than extending a case class?)
-        inputsField.set(prev, newInputs)
-
-        prev
-    }
-
-    Def.settings(
-        conversionSetting,
-        zincCompilerSetting
-    )
-}
-
-// In CI on Windows, disable the reflective hack that touches ScalablyTyped's internal Zinc compiler,
-// as it might contribute to timing/locking issues on some runners.
-val maybeHackScalablyTypedRemoveSourceFuture: Seq[Setting[_]] =
-    if (sys.env.get("FIRECALC_CI_NO_ST_HACK").nonEmpty) Def.settings()
-    else hackScalablyTypedRemoveSourceFuture
 
 // lazy val jsSourceMapSettings = Def.settings(
 //     scalacOptions += {
@@ -1005,13 +933,13 @@ lazy val laminar_form_core = (project in file("modules/laminar-form-core"))
         name                            := "laminar-form-core",
         version                         := ui_version,
         libraryDependencies ++= Seq      (
-            "com.raquo"     %%% "laminar"   % "17.2.1",
-            "com.raquo"     %%% "airstream" % "17.2.1",
-            "org.typelevel" %%% "cats-core" % "2.13.0",
+            "com.raquo"     %% "laminar"   % "17.2.1",
+            "com.raquo"     %% "airstream" % "17.2.1",
+            "org.typelevel" %% "cats-core" % "2.13.0",
             // magnolia for Defaultable + FormAnnotations derivation
-            "pro.afpma"     %%% "magnolia"  % "1.3.16",
+            "pro.afpma"     %% "magnolia"  % "1.3.16",
             // testing
-            "com.lihaoyi"   %%% "utest"     % "0.8.4" % Test
+            "com.lihaoyi"   %% "utest"     % "0.8.4" % Test
         ),
         testFrameworks += new TestFramework("utest.runner.Framework"),
         scalaJSLinkerConfig ~= {
@@ -1049,11 +977,11 @@ lazy val laminar_form_derivation = (project in file("modules/laminar-form-deriva
         version                         := ui_version,
         libraryDependencies ++= Seq               (
             // magnolia for AutoDerivation[Form]
-            "pro.afpma"         %%% "magnolia"        % "1.3.16",
+            "pro.afpma"         %% "magnolia"        % "1.3.16",
             // java.time for LocalDate
-            "io.github.cquiroz" %%% "scala-java-time" % "2.7.0",
+            "io.github.cquiroz" %% "scala-java-time" % "2.7.0",
             // testing
-            "com.lihaoyi"       %%% "utest"           % "0.8.4" % Test
+            "com.lihaoyi"       %% "utest"           % "0.8.4" % Test
         ),
         testFrameworks += new TestFramework("utest.runner.Framework"),
         scalaJSLinkerConfig ~= {
@@ -1074,10 +1002,10 @@ lazy val laminar_form_coulomb = (project in file("modules/laminar-form-coulomb")
         name                            := "laminar-form-coulomb",
         version                         := ui_version,
         libraryDependencies ++= Seq (
-            "com.manyangled" %%% "coulomb-core"  % "0.8.0",
-            "com.manyangled" %%% "coulomb-units" % "0.8.0",
+            "com.manyangled" %% "coulomb-core"  % "0.8.0",
+            "com.manyangled" %% "coulomb-units" % "0.8.0",
             // testing
-            "com.lihaoyi"    %%% "utest"         % "0.8.4" % Test
+            "com.lihaoyi"    %% "utest"         % "0.8.4" % Test
         ),
         testFrameworks += new TestFramework("utest.runner.Framework"),
         scalaJSLinkerConfig ~= {
@@ -1110,12 +1038,9 @@ lazy val laminar_form_daisyui = (project in file("modules/laminar-form-daisyui")
 
 lazy val ui = (project in file("modules/ui"))
     .enablePlugins(ScalaJSPlugin)
-    .enablePlugins(ScalablyTypedConverterExternalNpmPlugin)
-    .settings    (
-        name     := "firecalc-ui",
-        version  := ui_version,
-        stIgnore := List("@tailwindcss/vite", "three", "chart.js"),
-        maybeHackScalablyTypedRemoveSourceFuture,
+    .settings   (
+        name    := "firecalc-ui",
+        version := ui_version,
 
         // Generate .env.electron file with repository and version information
         TaskKey[Unit]("generateEnvVars") := {
@@ -1212,40 +1137,40 @@ lazy val ui = (project in file("modules/ui"))
             val generateJsTask  = (TaskKey[Unit]("generateJsConstants")).value
         },
         libraryDependencies ++= Seq    (
-            "com.raquo"   %%% "laminar"   % "17.2.1",
-            "com.raquo"   %%% "waypoint"  % "9.0.0",
-            "com.raquo"   %%% "airstream" % "17.2.1",
-            "com.lihaoyi" %%% "upickle"   % "4.1.0",
+            "com.raquo"   %% "laminar"   % "17.2.1",
+            "com.raquo"   %% "waypoint"  % "9.0.0",
+            "com.raquo"   %% "airstream" % "17.2.1",
+            "com.lihaoyi" %% "upickle"   % "4.1.0",
 
             // provides implementation of java.time for scala js
-            "io.github.cquiroz" %%% "scala-java-time"      % "2.7.0",
-            "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.7.0",
+            "io.github.cquiroz" %% "scala-java-time"      % "2.7.0",
+            "io.github.cquiroz" %% "scala-java-time-tzdb" % "2.7.0",
 
             // automatic data transformations (helps going from 'ui' models to 'engine' models)
-            "io.scalaland" %%% "chimney" % "1.8.2",
+            "io.scalaland" %% "chimney" % "1.8.2",
 
             // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
-            "pro.afpma" %%% "magnolia"      % "1.3.16",
-            "io.taig"   %%% "babel-circe"   % "0.6.0",
-            "io.taig"   %%% "babel-generic" % "0.6.0",
-            "io.taig"   %%% "babel-loader"  % "0.6.0",
+            "pro.afpma" %% "magnolia"      % "1.3.16",
+            "io.taig"   %% "babel-circe"   % "0.6.0",
+            "io.taig"   %% "babel-generic" % "0.6.0",
+            "io.taig"   %% "babel-loader"  % "0.6.0",
 
             // encoding / decoding
 
             // generic JSON
-            "io.circe" %%% "circe-core"    % "0.14.13",
-            "io.circe" %%% "circe-generic" % "0.14.13",
-            "io.circe" %%% "circe-parser"  % "0.14.13",
+            "io.circe" %% "circe-core"    % "0.14.13",
+            "io.circe" %% "circe-generic" % "0.14.13",
+            "io.circe" %% "circe-parser"  % "0.14.13",
 
             // JSON <-> YAML
-            "io.circe" %%% "circe-yaml-scalayaml" % "0.16.0",
+            "io.circe" %% "circe-yaml-scalayaml" % "0.16.0",
 
             // Runtime unit
-            "com.manyangled" %%% "coulomb-parser" % "0.8.0",
+            "com.manyangled" %% "coulomb-parser" % "0.8.0",
 
             // Testing
-            "org.scalatest" %%% "scalatest" % "3.2.19" % "test",
-            "com.lihaoyi"   %%% "utest"     % "0.8.4"  % Test
+            "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+            "com.lihaoyi"   %% "utest"     % "0.8.4"  % Test
         ),
         testFrameworks += new TestFramework("utest.runner.Framework"),
 
@@ -1283,13 +1208,10 @@ lazy val ui = (project in file("modules/ui"))
         },
         scalaJSUseMainModuleInitializer := true,
         Compile / sourceGenerators += Def.task {
-            List(
+            Seq(
                 (ui_i18n.js / Compile / sourceManaged).value / "afpma" / "firecalc" / "ui" / "i18n" / "files.scala"
             )
-        },
-
-        // Tell ScalablyTyped that we manage `npm install` ourselves
-        externalNpm := (baseDirectory).value
+        }
     )
     .settings(
         commonSettings,
@@ -1324,21 +1246,21 @@ lazy val ui = (project in file("modules/ui"))
 lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
     .crossType(CrossType.Pure)
     .in(file("modules/ui-i18n"))
-    .settings                                       (
+    .settings                                      (
         commonSettings,
-        name                                    := "firecalc-ui-i18n",
-        version                                 := ui_version,
-        libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0",
+        name                                   := "firecalc-ui-i18n",
+        version                                := ui_version,
+        libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
+        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0",
 
         // DirectionBadge has 30 fields — bump inline limit to prevent deriveDecoder overflow
         scalacOptions += "-Xmax-inlines:48"
     )
-    .settings(I18nBuild.moduleSettings("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n")): _*)
+    .settings(I18nBuild.moduleSettings("ui-i18n", Seq("afpma", "firecalc", "ui", "i18n")) *)
     .dependsOn(i18n_utils)
     .jsConfigure(
         _.enablePlugins(ScalaJSPlugin)
-            .settings(jsSourceMapSettings: _*)
+            .settings(jsSourceMapSettings *)
     )
 
 // =========
@@ -1347,20 +1269,20 @@ lazy val ui_i18n = crossProject(JSPlatform /*, JVMPlatform*/ )
 lazy val payments_shared_i18n = crossProject(JSPlatform, JVMPlatform)
     .crossType(CrossType.Pure)
     .in(file("modules/payments-shared-i18n"))
-    .settings                                       (
+    .settings                                      (
         commonSettings,
-        name                                    := "firecalc-payments-shared-i18n",
-        version                                 := payments_base_version,
-        libraryDependencies += "org.typelevel" %%% "cats-core"     % "2.13.0",
-        libraryDependencies += "io.taig"       %%% "babel-generic" % "0.6.0"
+        name                                   := "firecalc-payments-shared-i18n",
+        version                                := payments_base_version,
+        libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
+        libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0"
     )
     .settings(
-        I18nBuild.moduleSettings("payments-shared-i18n", Seq("afpma", "firecalc", "payments", "shared", "i18n")): _*
+        I18nBuild.moduleSettings("payments-shared-i18n", Seq("afpma", "firecalc", "payments", "shared", "i18n")) *
     )
     .dependsOn(i18n_utils)
     .jsConfigure(
         _.enablePlugins(ScalaJSPlugin)
-            .settings(jsSourceMapSettings: _*)
+            .settings(jsSourceMapSettings *)
     )
 
 // =========
@@ -1378,7 +1300,7 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
         ),
         libraryDependencies ++= Seq(
             // hackish fork of magnolia to prevent Transl to be listed in annotation (compiler bug because of macros colliding)
-            "pro.afpma" %%% "magnolia" % "1.3.16",
+            "pro.afpma" %% "magnolia" % "1.3.16",
 
             // transformers
             "io.scalaland" %% "chimney" % "1.8.2",
@@ -1397,7 +1319,7 @@ lazy val payments_shared = crossProject(JVMPlatform, JSPlatform)
             "org.scalatest" %% "scalatest" % "3.2.19" % "test"
         )
     )
-    .jsConfigure(_.settings(jsSourceMapSettings: _*))
+    .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("payments-shared-i18n"))
     .dependsOn(utils, dto, payments_shared_i18n, firebox_calc_api)
 
@@ -1412,7 +1334,7 @@ lazy val payments_i18n = (project in file("modules/payments-i18n"))
         libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
         libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0"
     )
-    .settings(I18nBuild.moduleSettings("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n")): _*)
+    .settings(I18nBuild.moduleSettings("payments-i18n", Seq("afpma", "firecalc", "payments", "i18n")) *)
     .dependsOn(i18n_utils.jvm)
 //   .jsConfigure(
 //     _.enablePlugins(ScalaJSPlugin)
@@ -1429,7 +1351,7 @@ lazy val invoices_i18n = (project in file("modules/invoices-i18n"))
         libraryDependencies += "org.typelevel" %% "cats-core"     % "2.13.0",
         libraryDependencies += "io.taig"       %% "babel-generic" % "0.6.0"
     )
-    .settings(I18nBuild.moduleSettings("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n")): _*)
+    .settings(I18nBuild.moduleSettings("invoices-i18n", Seq("afpma", "firecalc", "invoices", "i18n")) *)
     .dependsOn(i18n_utils.jvm)
 
 lazy val reports = (project in file("modules/reports"))
@@ -1459,7 +1381,7 @@ lazy val reports = (project in file("modules/reports"))
             "io.github.fatihcatalkaya" % "java-typst" % "1.4.0",
 
             // testing
-            "org.scalatest" %%% "scalatest" % "3.2.19" % "test"
+            "org.scalatest" %% "scalatest" % "3.2.19" % "test"
         )
     )
     .settings(watchI18nSources("i18n"))
@@ -1510,7 +1432,7 @@ lazy val payments = (project in file("modules/payments"))
                 if (targetClassesDir.exists()) {
                     IO.delete(targetClassesDir)
                 }
-                val mappings = (moleculeGenSourceDir ** "*.sql").get.map { file =>
+                val mappings = (moleculeGenSourceDir ** "*.sql").get().map { file =>
                     val relativePath = file.relativeTo(moleculeGenSourceDir).get
                     (file, targetClassesDir / relativePath.getPath)
                 }
@@ -1548,26 +1470,35 @@ lazy val payments = (project in file("modules/payments"))
                     }
             }
 
+            // Both branch bodies are wrapped in Def.uncached: they are side-effecting/
+            // filesystem-reading nodes (stamp IO, moleculeGen regeneration) whose sbt 2
+            // cache key cannot see those effects - a disk-cache hit would restore a stale
+            // Seq[File] without ever running moleculeGen ("underbaking" in the sbt 2
+            // migration guide).
             if (needsGen) {
                 Def.task {
-                    // Use toTask("") to properly invoke the input task with empty arguments.
-                    // moleculeGen := handleMoleculeGen(Compile).evaluated
-                    // requires parsed input; toTask("") provides empty input programmatically.
-                    val _ = (moleculeGen toTask "").value
-                    // Write stamp file for next-time staleness detection
-                    current.foreach { case (ver, hash) =>
-                        IO.write(stampFile, s"version=$ver\nhash=$hash\n")
+                    Def.uncached {
+                        // Use toTask("") to properly invoke the input task with empty arguments.
+                        // moleculeGen := handleMoleculeGen(Compile).evaluated
+                        // requires parsed input; toTask("") provides empty input programmatically.
+                        val _ = (moleculeGen toTask "").value
+                        // Write stamp file for next-time staleness detection
+                        current.foreach { case (ver, hash) =>
+                            IO.write(stampFile, s"version=$ver\nhash=$hash\n")
+                        }
+                        // Return generated .scala files so compiler picks them up
+                        (srcManagedDir ** "*.scala").get()
                     }
-                    // Return generated .scala files so compiler picks them up
-                    (srcManagedDir ** "*.scala").get
                 }
             } else {
                 Def.task {
-                    // Return existing generated files if present (incremental compile)
-                    if (srcManagedDir.exists())
-                        (srcManagedDir ** "*.scala").get
-                    else
-                        Seq.empty[File]
+                    Def.uncached {
+                        // Return existing generated files if present (incremental compile)
+                        if (srcManagedDir.exists())
+                            (srcManagedDir ** "*.scala").get()
+                        else
+                            Seq.empty[File]
+                    }
                 }
             }
         },

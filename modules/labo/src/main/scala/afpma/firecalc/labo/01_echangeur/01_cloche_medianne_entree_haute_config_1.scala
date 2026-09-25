@@ -113,28 +113,28 @@ object `01_cloche_medianne_entree_haute_config_1`
             pipeLocation           (Area.NonChauffee                                                   ),
             addSectionHorizontal   ("traversée mur", 62.8.cm                                           ), // non cohérent sur sketchup
 
-            addSectionHorizontal   ("horizontal en combles", 0.0.cm      ),
-            pipeLocation           (Area.DansLaPieceDuPoele              ),
+            addSectionHorizontal   ("horizontal en combles", 0.0.cm       ),
+            pipeLocation           (Area.DansLaPieceDuPoele               ),
             addCoudeCourbe90_unsafe(
                 "vertical en combles",
                 12.2.cm,
                 absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
             ), // Down (TOCHECK)
 
-            addSectionVertical     ("P01", -196.1.cm                     ),
-            addSectionVertical     ("anémomètre", -39.5.cm               ),
-            addSectionVertical     ("capteur humidité", -104.cm          ),
-            addSectionVertical     ("descente 4", -38.7.cm               ),
+            addSectionVertical     ("P01",        (-196.1).cm             ),
+            addSectionVertical     ("anémomètre", (-39.5 ).cm             ),
+            addSectionVertical     ("capteur humidité", (-104).cm),
+            addSectionVertical     ("descente 4", (-38.7 ).cm             ),
             addCoudeCourbe90_unsafe(
                 "coude courbe 90° (R=12.2cm)",
                 12.2.cm,
                 absDir = AbsoluteDirection(AzimuthDirection.Front, InclinationDirection.Horizontal)
             ), // Front (TOCHECK)
 
-            addSectionHorizontal   ("avt clapet", 23.7.cm                ),
+            addSectionHorizontal   ("avt clapet", 23.7.cm                 ),
             addFlowResistance      ("clapet zeta = 0.3!", 0.3.unitless: ζ),
-            addSectionHorizontal   ("P02!", 55.2.cm                      ),
-            addSectionHorizontal   ("final vers foyer", 63.8.cm          )
+            addSectionHorizontal   ("P02!", 55.2.cm                       ),
+            addSectionHorizontal   ("final vers foyer", 63.8.cm           )
         )
 
     val airIntakePipe =
@@ -245,7 +245,7 @@ object `01_cloche_medianne_entree_haute_config_1`
             ), // Down
 
             innerShape                  (rectangle(55.4.cm, 55.5.cm), preventAutoSectionGeometryChange = true                            ),
-            addSectionVertical          ("descente dans la cloche TC30", -11.cm                                                          ),
+            addSectionVertical          ("descente dans la cloche TC30", (-11).cm),
             addSectionVertical          ("descente dans la cloche", 77.cm                                                                ),
             addCoudeCourbe90_unsafe     (
                 "coude courbe 90°",

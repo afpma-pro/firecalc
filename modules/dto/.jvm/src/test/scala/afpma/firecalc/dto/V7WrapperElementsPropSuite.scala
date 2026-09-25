@@ -236,7 +236,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
             }
 
         "negative coordinates are valid" in {
-            val pos = Position3D(-10.cm, -20.cm, -30.cm)
+            val pos = Position3D((-10).cm, (-20).cm, (-30).cm)
             pos.x.value shouldBe -0.1
             pos.y.value shouldBe -0.2
             pos.z.value shouldBe -0.3
@@ -327,7 +327,7 @@ class V7WrapperElementsPropSuite extends AnyFreeSpec with Matchers with ScalaChe
 
         "azimuth at ±180° both map to valid degrees" in {
             val az1 = AzimuthDirection.Custom(180.0.degrees)
-            val az2 = AzimuthDirection.Custom(-180.0.degrees)
+            val az2 = AzimuthDirection.Custom((-180.0).degrees)
             AzimuthDirection.toDegrees(az1) shouldBe 180.0
             AzimuthDirection.toDegrees(az2) shouldBe -180.0
         }

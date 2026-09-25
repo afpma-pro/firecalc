@@ -75,7 +75,7 @@ object strict_ex00_kachelofen
             ), // Down
 
             innerShape(rectangle(25.1.cm, 22.cm)),
-            addSectionVertical  ("descente", -81.cm         ),
+            addSectionVertical  ("descente", (-81).cm       ),
             addSharpAngle_90deg (
                 "virage avant avant banc",
                 AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)

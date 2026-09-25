@@ -14,27 +14,30 @@ resolvers ++= Seq(
     Resolver.sonatypeCentralSnapshots
 )
 
-addSbtPlugin("io.spray"                    % "sbt-revolver"             % "0.10.0"      )
-addSbtPlugin("org.portable-scala"          % "sbt-scalajs-crossproject" % "1.3.2"       )
-addSbtPlugin("org.scala-js"                % "sbt-scalajs"              % "1.22.0"      )
-addSbtPlugin("ch.epfl.scala"               % "sbt-scalafix"             % "0.14.7"      )
-addSbtPlugin("org.scalablytyped.converter" % "sbt-converter"            % "1.0.0-beta44")
-addSbtPlugin("org.scalamolecule"           % "sbt-molecule"             % "1.25.0"      )
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.4.0" )
+addSbtPlugin("org.scala-js"       % "sbt-scalajs"              % "1.22.0")
+addSbtPlugin("ch.epfl.scala"      % "sbt-scalafix"             % "0.14.7")
+addSbtPlugin("org.scalamolecule"  % "sbt-molecule"             % "1.25.0")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.0")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop"    % "2.1.2")
 
 // addSbtPlugin("org.scalameta" % "sbt-metals" % "1.6.2")
 
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 
+// sbt 2 hard-errors on mixed cross-version suffixes in the meta-build classpath
+// (sbt 1 only warned). scala-debug-adapter_3:4.2.13 declares
+// org.scalameta:parsers_2.13 but never uses it (no class in the jar references
+// scalameta); sbt-molecule and scalafmt need the _3 scalameta line. Prune the
+// dead 2.13 subtree (parsers_2.13 -> trees_2.13 -> common_2.13 -> sourcecode_2.13).
+excludeDependencies += ExclusionRule(organization = "org.scalameta", name = "parsers_2.13")
+
 // addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "2.0.19")
 
-// Force scalameta 4.14.3 for sbt-molecule (needs newer scalameta to run on modern JVMs)
-dependencyOverrides ++= Seq(
-    "org.scalameta" % "scalameta_2.12" % "4.14.3",
-    "org.scalameta" % "common_2.12"    % "4.14.3",
-    "org.scalameta" % "trees_2.12"     % "4.14.3",
-    "org.scalameta" % "parsers_2.12"   % "4.14.3"
-)
+// sbt 2: custom tasks defined in this meta-build (i18n generators, watchSources appends)
+// are side-effecting and lack sjsonnew codecs (e.g. sbt.internal.io.Source) — opt them out
+// of the default task cache; sbt-provided tasks stay cached.
+Compile / scalacOptions += "-Xmacro-settings:sbt:no-default-task-cache"

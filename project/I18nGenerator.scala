@@ -20,10 +20,11 @@ object I18nGenerator {
      * @param i18nModules List of i18n module names (e.g., "i18n", "ui-i18n", "payments-i18n")
      * @return Seq of watch source settings
      */
-    def watchI18nSources(i18nModules: String*): Seq[Setting[_]] = Seq(
+    def watchI18nSources(i18nModules: String*): Seq[Setting[?]] = Seq(
         Compile / Keys.watchSources ++= i18nModules.flatMap { moduleName =>
             SUPPORTED_LANGUAGES_IDS.map { lang =>
-                file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
+                // sbt 2: watchSources is TaskKey[Seq[sbt.internal.io.Source]]
+                sbt.internal.io.Source(file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf"))
             }
         }
     )

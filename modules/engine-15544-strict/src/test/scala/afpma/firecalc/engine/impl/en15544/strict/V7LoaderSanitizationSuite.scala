@@ -282,7 +282,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
         }
 
         "airIntakeInitialPosition returns Manual position as-is" in {
-            val manualPos = Position3D(1.5.meters, -3.0.meters, -0.05.meters)
+            val manualPos = Position3D(1.5.meters, (-3.0).meters, (-0.05).meters)
             val yaml      = FireCalcYAML_V7(
                 locale                         = Locale(Languages.Fr, None),
                 display_units                  = DisplayUnits.SI,
@@ -309,7 +309,7 @@ class V7LoaderSanitizationSuite extends AnyFreeSpec with Matchers:
         }
 
         "airIntakeInitialPosition returns FinalManual position as-is" in {
-            val manualPos = Position3D(-0.5.meters, 1.0.meters, 0.1.meters)
+            val manualPos = Position3D((-0.5).meters, 1.0.meters, 0.1.meters)
             val yaml      = FireCalcYAML_V7(
                 locale                         = Locale(Languages.Fr, None),
                 display_units                  = DisplayUnits.SI,

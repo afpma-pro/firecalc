@@ -27,14 +27,14 @@ object CasTypes13384_ExpectedValues:
             ),
             lowest  = CasType13384_Result.Values(
                 pz        = 3.pascals.some,
-                pze       = -2.pascals.some,
+                pze       = (-2).pascals.some,
                 pb        = 0.7.pascals.some,
                 `pz-pze`  = 5.pascals.some,
                 `pz-pb`   = 2.3.pascals.some,
                 tg        = 0.degreesCelsius.some,
                 tob       = 14.8.degreesCelsius.some,
-                tiob      = -2.3.degreesCelsius.some,
-                `tiob-tg` = -2.3.degreesCelsius.some
+                tiob      = (-2.3).degreesCelsius.some,
+                `tiob-tg` = (-2.3).degreesCelsius.some
             )
         )
 
@@ -45,8 +45,8 @@ object CasTypes13384_ExpectedValues:
                 pz        = 5.3.pascals.some,
                 pze       = 24.6.pascals.some,
                 pb        = 30.7.pascals.some,
-                `pz-pze`  = -19.3.pascals.some,
-                `pz-pb`   = -25.3.pascals.some,
+                `pz-pze`  = (-19.3).pascals.some,
+                `pz-pb`   = (-25.3).pascals.some,
                 tg        = 0.degreesCelsius.some,
                 tob       = 104.7.degreesCelsius.some,
                 tiob      = 65.1.degreesCelsius.some,
@@ -54,7 +54,7 @@ object CasTypes13384_ExpectedValues:
             ),
             lowest  = CasType13384_Result.Values(
                 pz        = 2.8.pascals.some,
-                pze       = -0.4.pascals.some,
+                pze       = (-0.4).pascals.some,
                 pb        = 3.7.pascals.some,
                 `pz-pze`  = 3.2.pascals.some,
                 `pz-pb`   = 3.2.pascals.some,

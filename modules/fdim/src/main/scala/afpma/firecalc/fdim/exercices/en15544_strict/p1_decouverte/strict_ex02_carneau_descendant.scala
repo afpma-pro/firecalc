@@ -73,7 +73,7 @@ object strict_ex02_carneau_descendant
             ), // Down
 
             innerShape(rectangle(16.1.cm, 11.1.cm)),
-            addSectionVertical  ("descente", -36.7.cm                                                           ),
+            addSectionVertical  ("descente", (-36.7).cm                                                         ),
             addSharpAngle_90deg (
                 "virage 90° avant colonne",
                 AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Horizontal)

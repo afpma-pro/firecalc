@@ -25,9 +25,9 @@ WORKDIR /app
 # Copy the pre-built assembly JAR. Built in the private (non-AGPL) repository
 # (ticket 14): the public repository no longer contains the firebox_calc_server
 # module (ticket 20). The private build produces the same relative path
-# (modules/firebox_calc_server/target/scala-3.8.4/firecalc-calc-server-assembly.jar),
+# (modules/firebox_calc_server/target/scala-3.9.0/firecalc-calc-server-assembly.jar),
 # so the build context is the private checkout.
-COPY modules/firebox_calc_server/target/scala-3.8.4/firecalc-calc-server-assembly.jar /app/firecalc-calc-server-assembly.jar
+COPY modules/firebox_calc_server/target/scala-3.9.0/firecalc-calc-server-assembly.jar /app/firecalc-calc-server-assembly.jar
 
 # Create mount point for configuration (read-only)
 # Configuration file: firebox-calc-server.conf (HOCON, private repository)

@@ -100,7 +100,7 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             roughness              (Tube_PVC                                                             ), // Tube PVC
             innerShape(circle(11.9.cm)),
             layer                  (e                                            = 2.mm, λ = 1.3.W_per_mK),
-            addSectionVertical     ("entrée verticale", -120.5.cm                                        ),
+            addSectionVertical     ("entrée verticale", (-120.5).cm),
             addCoudeCourbe90_unsafe(
                 "H",
                 9.6.cm,
@@ -117,14 +117,14 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
                 absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
             ), // Down (TOCHECK)
 
-            addSectionVertical     ("P01", -196.1.cm                                                     ),
-            addSectionVertical     ("anémomètre", -39.5.cm                                               ),
-            addSectionVertical     ("capteur humidité", -104.cm                                          ),
+            addSectionVertical     ("P01", (-196.1).cm),
+            addSectionVertical     ("anémomètre", (-39.5).cm),
+            addSectionVertical     ("capteur humidité", (-104).cm),
 
             // DELETED (INCONSISTENT)
             // addCoudeCourbe90_unsafe("coude courbe 90 avt descente 4", 9.6.cm, roll = 180.degrees), // ERROR TOFIX
 
-            addSectionVertical     ("descente 4", -38.7.cm       ),
+            addSectionVertical     ("descente 4", (-38.7).cm     ),
             addCoudeCourbe90_unsafe(
                 "coude courbe 90 après descente 4",
                 9.6.cm,
@@ -240,8 +240,8 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             pipeLocation              (Area.Accumulateur                                                                               ),
             layer                     (e                                                             = 2.cm, λ   = 1.3.W_per_mK        ),
             innerShape                (rectangle(16.2.cm, 22.2.cm), preventAutoSectionGeometryChange = true                            ),
-            addSectionVertical        ("descente P06", -44.4.cm                                                                        ),
-            addSectionVertical        ("descente", -44.4.cm                                                                            ),
+            addSectionVertical        ("descente P06", (-44.4).cm),
+            addSectionVertical        ("descente", (-44.4).cm),
             addSharpAngle_90deg_unsafe(
                 "angle vif 90°",
                 absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)
@@ -272,8 +272,8 @@ object `07_cloche_intermediaire_entre_basse_avec_colonne_config_1`
             ), // Down
 
             innerShape                (rectangle(136.6.cm, 8.6.cm), preventAutoSectionGeometryChange = true                            ),
-            addSectionVertical        ("descente cloche", -88.8.cm                                                                     ),
-            addSectionVertical        ("descente cloche", -44.4.cm                                                                     ),
+            addSectionVertical        ("descente cloche", (-88.8).cm),
+            addSectionVertical        ("descente cloche", (-44.4).cm),
             addSharpAngle_90deg_unsafe(
                 "angle vif 90°",
                 absDir = AbsoluteDirection(AzimuthDirection.Left, InclinationDirection.Horizontal)

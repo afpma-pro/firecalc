@@ -52,7 +52,7 @@ each define the calculation backend as an independent service:
 `calc-backend` is built from `docker/Dockerfile.calc-server` (JRE-only base,
 `eclipse-temurin:21-jre-jammy`, non-root user). The `COPY` instruction expects
 the private assembly jar at
-`modules/firebox_calc_server/target/scala-3.8.4/firecalc-calc-server-assembly.jar`
+`modules/firebox_calc_server/target/scala-3.9.0/firecalc-calc-server-assembly.jar`
 **relative to the build context** — the build context must be the private
 checkout (see §6 deployment procedure). The container does not inherit
 payments database mounts, payments-only runtime dependencies, or any
@@ -220,7 +220,7 @@ unchanged from the pre-extraction behavior (SPEC_00 user story 12).
 
 1. **Build the private assembly** (private checkout, never the public repo):
    `sbt --batch firebox_calc_server/assembly` →
-   `modules/firebox_calc_server/target/scala-3.8.4/firecalc-calc-server-assembly.jar`.
+   `modules/firebox_calc_server/target/scala-3.9.0/firecalc-calc-server-assembly.jar`.
 2. **Build the calc image with the private checkout as build context** so the
    `COPY` path resolves, while the Dockerfile stays in the public repo:
    `docker build -f <public-checkout>/docker/Dockerfile.calc-server -t firecalc-${FIRECALC_ENV}-calc-server:latest <private-checkout>`

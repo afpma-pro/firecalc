@@ -135,8 +135,8 @@ class AbsoluteDirectionRoundTripSuite extends AnyFreeSpec with Matchers with Sca
                     0.5.withUnit[1],
                     absDir = Some(
                         AbsoluteDirection(
-                            AzimuthDirection.Custom    (123.0.degrees),
-                            InclinationDirection.Custom(-15.0.degrees)
+                            AzimuthDirection.Custom    (123.0.degrees  ),
+                            InclinationDirection.Custom((-15.0).degrees)
                         )
                     )
                 )

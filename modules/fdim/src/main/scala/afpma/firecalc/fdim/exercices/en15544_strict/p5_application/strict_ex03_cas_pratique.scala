@@ -74,8 +74,8 @@ object strict_ex03_cas_pratique
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Down)
             ), // Down
 
-            addSectionVertical  ("colonne étage", -1.09.m       ),
-            addSectionVertical  ("colonne rdc", -2.44.m         ),
+            addSectionVertical  ("colonne étage", (-1.09).m     ),
+            addSectionVertical  ("colonne rdc",   (-2.44).m     ),
             addSharpAngle_90deg (
                 "virage 90 deg (2)",
                 AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)

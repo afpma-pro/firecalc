@@ -169,7 +169,7 @@ Notes:
   Adding a module there is a licensing decision, not a build decision.
 
 Consumer side (private repo): declare `"pro.afpma" %% "firecalc-engine" % "<pin>"`
-(module names are `firecalc-*`; JVM-only, Scala 3.8.4) — no resolver entry is
+(module names are `firecalc-*`; JVM-only, Scala 3.9.0) — no resolver entry is
 needed for publishLocal artifacts.
 
 ### Working with Database

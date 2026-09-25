@@ -209,7 +209,7 @@ class PositionTrackerSuite extends AnyFlatSpec with Matchers:
         import afpma.firecalc.dto.v7.AddFlowOnlyPipeElement_15544_V4.*
         val initialDir = PipeInitialDirection(AzimuthDirection.Rear, InclinationDirection.Up)
         val elems      = Seq(
-            AddSectionVertical("down", -2.0.meters)
+            AddSectionVertical("down", (-2.0).meters)
         )
         val result     = PositionTracker.computeFlowOnly15544(
             elems,

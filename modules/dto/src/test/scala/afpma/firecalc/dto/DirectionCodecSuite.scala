@@ -111,8 +111,8 @@ class DirectionCodecSuite extends AnyFreeSpec with Matchers:
 
         "round-trips with custom directions" in {
             val fd = AbsoluteDirection(
-                AzimuthDirection.Custom    (123.0.degrees),
-                InclinationDirection.Custom(-15.0.degrees)
+                AzimuthDirection.Custom    (123.0.degrees  ),
+                InclinationDirection.Custom((-15.0).degrees)
             )
             roundTrip[AbsoluteDirection](fd).shouldBe(fd)
         }

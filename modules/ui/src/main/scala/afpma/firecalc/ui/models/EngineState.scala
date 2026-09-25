@@ -105,7 +105,7 @@ object EngineState:
                             "vers descente",
                             absDir = AbsoluteDirection(AzimuthDirection.Rear, InclinationDirection.Down)
                         ), // Down
-                        addSectionVertical  ("descente", -100.cm          ),
+                        addSectionVertical  ("descente", (-100).cm        ),
                         addSharpAngle_90deg (
                             "vers section horizontale",
                             absDir = AbsoluteDirection(AzimuthDirection.Right, InclinationDirection.Horizontal)

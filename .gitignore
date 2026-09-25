@@ -11,6 +11,8 @@ node_modules
 project/project
 project/target
 target
+# Scala 3 (sbt 2 meta-build) compiler emits semanticdb next to build definitions
+*.semanticdb
 metals.sbt
 modules/ui/firecalc-ui.js
 traces/
