@@ -28,7 +28,7 @@ object I18nBuild {
      * Settings for an i18n module definition (watch + generate).
      * Replaces the inline `watchSources ++= ...` and `sourceGenerators += ...` blocks.
      */
-    def moduleSettings(moduleName: String, packagePath: Seq[String]): Seq[Setting[_]] = Seq(
+    def moduleSettings(moduleName: String, packagePath: Seq[String]): Seq[Setting[?]] = Seq(
         Compile / watchSources ++= I18nGenerator.SUPPORTED_LANGUAGES_IDS.map { lang =>
             // sbt 2: watchSources is TaskKey[Seq[sbt.internal.io.Source]]
             sbt.internal.io.Source(file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf"))
