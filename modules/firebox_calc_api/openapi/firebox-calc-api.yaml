@@ -34,8 +34,8 @@ paths:
             X-RateLimit-Limit:
               schema: { type: integer }
               description: >-
-                Maximum requests per window. Per-endpoint limit: 10 requests /
-                minute / key, burst 5 (spec §8.2).
+                Maximum requests per window. Per-endpoint limit: 30 requests /
+                minute / key, burst 10 (spec §8.2).
             X-RateLimit-Remaining:
               schema: { type: integer }
               description: Remaining requests in current window
@@ -65,8 +65,8 @@ paths:
             X-RateLimit-Limit:
               schema: { type: integer }
               description: >-
-                Maximum requests per window. Per-endpoint limit: 60 requests /
-                minute / key, burst 10 (spec §8.2). No `Cache-Control` on this
+                Maximum requests per window. Per-endpoint limit: 120 requests /
+                minute / key, burst 20 (spec §8.2). No `Cache-Control` on this
                 response.
             X-RateLimit-Remaining:
               schema: { type: integer }
@@ -177,8 +177,8 @@ components:
         Rate limit exceeded. The `error` field is `rate_limited`.
         Includes `Retry-After` header in seconds. Limits are per endpoint and
         per composite key (client IP prefix + optional `X-Firecalc-App-Key`):
-        `POST /v1/calculate` = 60 requests/minute/key (burst 10),
-        `GET /v1/kinds` = 10 requests/minute/key (burst 5) — spec §8.2.
+        `POST /v1/calculate` = 120 requests/minute/key (burst 20),
+        `GET /v1/kinds` = 30 requests/minute/key (burst 10) — spec §8.2.
       headers:
         Retry-After:
           schema: { type: integer }

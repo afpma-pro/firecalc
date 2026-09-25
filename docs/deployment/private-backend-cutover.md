@@ -207,14 +207,16 @@ application token bucket is authoritative for the contract headers.
 
 | Endpoint | Nginx (`firebox_calc` zone) | Application token bucket |
 |---|---|---|
-| `POST /v1/calculate` | `rate=1r/s`, `burst=5 nodelay`, 429 on excess | capacity 10, refill 1/s |
-| `GET /v1/kinds` | `rate=1r/s`, `burst=10 nodelay`, 429 on excess | capacity 5, refill 10/min |
+| `POST /v1/calculate` | `rate=1r/s`, `burst=5 nodelay`, 429 on excess | capacity 20, refill 2/s |
+| `GET /v1/kinds` | `rate=1r/s`, `burst=10 nodelay`, 429 on excess | capacity 10, refill 0.5/s |
 
 Application keys are composite (client IP prefix — /24 IPv4, /64 IPv6, read
 from `X-Forwarded-For` behind the proxy — plus optional `X-Firecalc-App-Key`).
 Responses carry `X-RateLimit-Limit/Remaining/Reset` (reset is an absolute Unix
-epoch) and 429s carry `Retry-After`. The endpoint-specific policy is preserved
-unchanged from the pre-extraction behavior (SPEC_00 user story 12).
+epoch) and 429s carry `Retry-After`. Since the extraction the application
+defaults were doubled to 2x headroom for edit-driven recompute use (private
+repo commit `c033a02`: calculate 10→20 burst at 60→120/min, kinds 5→10 burst
+at 10→30/min); the nginx edge zones above remain the binding first line.
 
 ## 6. Deployment procedure
 
