@@ -29,6 +29,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import afpma.firecalc.ui.models.engineStateHelperVar
 import afpma.firecalc.ui.models.firebox_var
+import afpma.firecalc.ui.models.localeVar
 import afpma.firecalc.ui.models.project.ProjectId
 import afpma.firecalc.ui.models.project.ProjectManager.activeProjectIdVar
 import afpma.firecalc.firebox_calc_client_js.FetchCalcClient
@@ -546,6 +547,7 @@ object RemoteFireboxPrefetch:
         remoteDataStatesSig
             .combineWith(firebox_var.signal)
             .map: (states, currentFirebox) =>
+                given Locale = localeVar.now()
                 RemoteFireboxAvailability.computationFor(
                     fireboxKindOf(currentFirebox),
                     UIConfig.fireboxEngineSource,
@@ -587,7 +589,28 @@ object RemoteFireboxPrefetch:
      */
     lazy val unavailableFireboxKindsSig: Signal[Set[FireboxKind]] =
         remoteDataStatesSig.map: states =>
+            given Locale = localeVar.now()
             RemoteFireboxAvailability.unavailableKinds(UIConfig.fireboxEngineSource, states)
+
+    /**
+     * The refusal reason when availability resolution refused the ACTIVE
+     * firebox kind — `Some` only for an Austrian kind configured `Local`
+     * (ADR-0010).
+     *
+     * The fourth rendering decision of the exhaustive projection chain: the
+     * refusal banner notice. Kept strictly separate from the connecting and
+     * unavailable notices — a deploy condition never rides the network
+     * verdicts, and a network blip never surfaces as a missing calculator
+     * (story 8).
+     */
+    lazy val activeKindRefusalSig: Signal[Option[String]] =
+        activeKindComputationSig.map:
+            case KindComputation.Refused(_, reason) => Some(reason)
+            case KindComputation.Local              => None
+            case KindComputation.Remote(_, _)       => None
+            case KindComputation.Pending(_)         => None
+            case KindComputation.Unavailable(_, _)  => None
+            case KindComputation.Rejected(_, _)     => None
 
     /**
      * Whether a remote fetch for the ACTIVE firebox kind is still in flight.

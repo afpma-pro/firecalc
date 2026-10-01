@@ -206,6 +206,17 @@ class ErrorScopingIntegrationTest extends AnyFreeSpec with Matchers:
         shownErrors(verdict).toList.head shouldBe terminal
     }
 
+    "FireboxCalculatorRefused is NOT neutral — a missing calculator stays visible" in {
+        val scope   = PanelScope.SlotScope(FluePipeT, SlotIndex.unsafe(0))
+        val refusal = FireboxCalculatorRefused("No calculator is configured for 'Austrian Eco firebox'")
+        val verdict = PanelStatusHelper.verdict(scope, mkInvalid(refusal))
+
+        // The refusal is a deploy condition the operator must act on: it is a
+        // NoResultError but deliberately NOT a PendingStateError, so panels
+        // render it as a real error instead of reading it as "no data yet".
+        shownErrors(verdict).toList.head shouldBe refusal
+    }
+
     "A real error in another scope still wins over a pending marker" in {
         val scope   = PanelScope.SlotScope(FluePipeT, SlotIndex.unsafe(0))
         // Slot 2 targeted error (hidden here) + a pending marker (kept).

@@ -99,6 +99,7 @@ given ShowUsingLocale[MCalc_Error] = showUsingLocale:
     case e: RemoteFireboxUnavailable     => e.show // Uses ShowUsingLocale[RemoteFireboxUnavailable]
     case RemoteFireboxPending => I18N.builder_errors.remote_firebox_pending
     case ResultsNotComputed   => I18N.builder_errors.results_not_computed
+    case e: FireboxCalculatorRefused => e.show // Uses ShowUsingLocale[FireboxCalculatorRefused]
 
 // Unexpected Error
 case class UnexpectedDevError(msg: String) extends MCalc_Error
@@ -150,6 +151,26 @@ case class RemoteFireboxUnavailable(reason: String) extends NoResultError
 
 object RemoteFireboxUnavailable:
     given ShowUsingLocale[RemoteFireboxUnavailable] = showUsingLocale: e =>
+        e.reason
+
+/**
+ * The deployment has NO calculator for this firebox kind: an Austrian kind
+ * resolved to the in-process engine, which the public product does not carry
+ * (ADR-0010). Terminal, like [[RemoteFireboxUnavailable]] — but it is a
+ * deploy condition, not a service verdict: the browser refuses BEFORE any
+ * computation, and the reason is the remote-only carriers' own wording.
+ *
+ * Deliberately NOT a [[PendingStateError]]: a refusal must never read as the
+ * neutral "no data yet" state. It is also NOT a standards finding — nothing
+ * about the heater was checked or implicated.
+ *
+ * `reason` is already localized — built by `RemoteFireboxAvailability` with
+ * the project locale, naming the refused kind.
+ */
+case class FireboxCalculatorRefused(reason: String) extends NoResultError
+
+object FireboxCalculatorRefused:
+    given ShowUsingLocale[FireboxCalculatorRefused] = showUsingLocale: e =>
         e.reason
 
 /**

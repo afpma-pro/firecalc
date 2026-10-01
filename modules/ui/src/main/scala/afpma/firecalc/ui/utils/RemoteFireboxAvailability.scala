@@ -9,6 +9,10 @@ import afpma.firecalc.engine.alg.en15544.FireboxEngineSource
 import afpma.firecalc.engine.alg.en15544.FireboxEngineSourceConfig
 import afpma.firecalc.engine.alg.en15544.FireboxKind
 
+import afpma.firecalc.i18n.implicits.I18N
+
+import io.taig.babel.Locale
+
 /**
  * Provenance AND payload of the remote firebox data the UI currently holds for
  * one kind — per-kind, so one kind's remote failure cannot block another.
@@ -61,10 +65,11 @@ enum RemoteDataState[+D]:
 enum KindComputation[+D]:
 
     /**
-     * The kind is configured `Local` — compute in-process with whatever the
-     * public registry serves for it. For the Austrian kinds that is the
-     * constraint-free `foldedOnly` carrier (no Austrian engine since
-     * ticket 16), so `Local` must never be relied on for them.
+     * The kind is configured `Local` and the public registry serves a real
+     * in-process engine for it. The Austrian kinds never resolve here: they
+     * have no in-process engine since ticket 16, so resolution REFUSES them
+     * (see [[KindComputation.Refused]], ADR-0010) instead of handing out the
+     * constraint-free `foldedOnly` carrier.
      */
     case Local extends KindComputation[Nothing]
 
@@ -98,6 +103,19 @@ enum KindComputation[+D]:
     case Rejected(kind: FireboxKind, reason: String) extends KindComputation[Nothing]
 
     /**
+     * The kind is configured `Local` but the public product has no in-process
+     * engine for it — an Austrian kind in a calc-free misconfiguration
+     * (ADR-0010). The browser refuses BEFORE any computation: nothing is
+     * computed and no half-populated panel is served. `reason` is localized
+     * and names the kind, reusing the remote-only carriers' refusal wording
+     * so browser and report path refuse alike (story 10). It is a deploy
+     * condition, not a standards finding and not a network verdict: a
+     * `Remote`-configured kind never resolves here — its transient states
+     * stay `Pending` / `Unavailable` / `Rejected` (story 8).
+     */
+    case Refused(kind: FireboxKind, reason: String) extends KindComputation[Nothing]
+
+    /**
      * The single exhaustive dispatch over the verdict's shape.
      *
      * The UI's derived signals (prefetched data, cached-at, in-flight) are
@@ -115,6 +133,7 @@ enum KindComputation[+D]:
         case KindComputation.Pending(_)               => KindComputationProjection(None, None, true)
         case KindComputation.Unavailable(_, _)        => KindComputationProjection(None, None, false)
         case KindComputation.Rejected(_, _)           => KindComputationProjection(None, None, false)
+        case KindComputation.Refused(_, _)            => KindComputationProjection(None, None, false)
 
 /**
  * The three facts the UI derives from one active-kind verdict: the remote
@@ -159,17 +178,27 @@ object RemoteFireboxAvailability:
     /**
      * Resolve what may be computed for `kind`.
      *
-     * A `Local`-configured kind is `Local` whatever the remote state says: that
-     * is what makes the registry assemble *partially* instead of failing whole.
-     * A `Remote`-configured kind never resolves to `Local`.
+     * A `Local`-configured kind is `Local` whatever the remote state says —
+     * except an Austrian kind, which has no in-process engine and REFUSES
+     * (ADR-0010): the refusal is a fact of the configuration, so a stray
+     * recorded failure must not rewrite it into a network verdict. A
+     * `Remote`-configured kind never resolves to `Local`, and never to
+     * `Refused` either — its soft states stay `Pending` / remote /
+     * `Unavailable` / `Rejected`.
+     *
+     * The `Locale` localizes the refusal reason at its producer — the same
+     * `builder_errors.no_calculator_configured` copy the remote-only
+     * carriers fold into their blocking verdict.
      */
     def computationFor[D](
         kind        : FireboxKind,
         sourceConfig: FireboxEngineSourceConfig,
         state       : RemoteDataState[D]
-    ): KindComputation[D] =
+    )(using Locale): KindComputation[D] =
         sourceConfig.sourceFor(kind) match
-            case FireboxEngineSource.Local     => KindComputation.Local
+            case FireboxEngineSource.Local     =>
+                if noInProcessEngine.contains(kind) then KindComputation.Refused(kind, refusalReason(kind))
+                else KindComputation.Local
             case FireboxEngineSource.Remote(_) =>
                 state match
                     case RemoteDataState.Absent                  => KindComputation.Pending(kind)
@@ -183,8 +212,21 @@ object RemoteFireboxAvailability:
         kind        : FireboxKind,
         sourceConfig: FireboxEngineSourceConfig,
         states      : Map[FireboxKind, RemoteDataState[D]]
-    ): KindComputation[D] =
+    )(using Locale): KindComputation[D] =
         computationFor(kind, sourceConfig, stateOf(states, kind))
+
+    /**
+     * The kinds the public product carries WITHOUT an in-process engine: the
+     * two remote-only carriers of `RemoteOnlyFireboxes_Strict` (the Austrian
+     * engine sources were deleted in `f1fdfa03`, ADR-0010). Configured
+     * `Local`, they resolve [[KindComputation.Refused]] instead.
+     */
+    private val noInProcessEngine: Set[FireboxKind] =
+        Set(FireboxKind.Ecolabeled, FireboxKind.Door15aCatalog)
+
+    /** The refusal reason, shared verbatim with the carriers' blocking verdict. */
+    private def refusalReason(kind: FireboxKind)(using Locale): String =
+        I18N.builder_errors.no_calculator_configured(FireboxKindLabel(kind))
 
     /**
      * Whether `kind` can produce results right now (locally or remotely).
@@ -196,25 +238,27 @@ object RemoteFireboxAvailability:
         kind        : FireboxKind,
         sourceConfig: FireboxEngineSourceConfig,
         states      : Map[FireboxKind, RemoteDataState[D]]
-    ): Boolean =
+    )(using Locale): Boolean =
         computationFor(kind, sourceConfig, states) match
             case KindComputation.Local             => true
             case KindComputation.Remote(_, _)      => true
             case KindComputation.Pending(_)        => false
             case KindComputation.Unavailable(_, _) => false
             case KindComputation.Rejected(_, _)    => false
+            case KindComputation.Refused(_, _)     => false
 
     /**
      * The kinds the UI can serve — the "partially assembled registry" as a set.
      *
-     * Every `Local` kind is in it unconditionally; a `Remote` kind is in it only
-     * while its data is actually held.
+     * Every engine-backed `Local` kind is in it unconditionally; a `Remote`
+     * kind is in it only while its data is actually held. A refused kind is
+     * in it never: refusal is not a soft state.
      */
     def usableKinds[D](
         sourceConfig: FireboxEngineSourceConfig,
         states      : Map[FireboxKind, RemoteDataState[D]],
         kinds       : Set[FireboxKind] = FireboxKind.closed
-    ): Set[FireboxKind] =
+    )(using Locale): Set[FireboxKind] =
         kinds.filter(isUsable(_, sourceConfig, states))
 
     /**
@@ -223,13 +267,16 @@ object RemoteFireboxAvailability:
      * This is the complement that makes per-kind assembly observable: a failure
      * recorded for one kind must never grow this set beyond that kind. Geometry
      * rejections (`Rejected`) are deliberately excluded: the service is available,
-     * only the project's inputs are not.
+     * only the project's inputs are not. `Refused` is excluded for the opposite
+     * reason: it is a deploy condition, not missing remote data — it rides its
+     * own banner notice and must never let a misconfiguration masquerade as an
+     * outage (or a network blip, the other way around, as a missing calculator).
      */
     def unavailableKinds[D](
         sourceConfig: FireboxEngineSourceConfig,
         states      : Map[FireboxKind, RemoteDataState[D]],
         kinds       : Set[FireboxKind] = FireboxKind.closed
-    ): Set[FireboxKind] =
+    )(using Locale): Set[FireboxKind] =
         kinds.filter: kind =>
             computationFor(kind, sourceConfig, states) match
                 case KindComputation.Unavailable(_, _) => true
@@ -237,5 +284,6 @@ object RemoteFireboxAvailability:
                 case KindComputation.Remote(_, _)      => false
                 case KindComputation.Pending(_)        => false
                 case KindComputation.Rejected(_, _)    => false
+                case KindComputation.Refused(_, _)     => false
 
 end RemoteFireboxAvailability

@@ -632,6 +632,8 @@ private def dispatchResult(
             case scala.util.Success(r) => r
             case scala.util.Failure(e) => Validated.invalidNel(UnexpectedDevError(e.getMessage))
 
+    given Locale = localeVar.now()
+
     if !UIConfig.uiAvailability.allows(helper.fcProj.firebox) then
         Validated.invalidNel(FireboxTypeDisabledError(helper.fcProj.firebox.typeName))
     else
@@ -663,6 +665,14 @@ private def dispatchResult(
                 // application error, surfaced in the firebox constraints
                 // status only — not a development error.
                 Validated.invalidNel(FireboxGeometryRejectedError(reason))
+            case KindComputation.Refused(_, reason)     =>
+                // Configured `Local` with no in-process engine (ADR-0010):
+                // the browser refuses FIRST — no application is built, so no
+                // half-populated panel is possible. The reason carries the
+                // remote-only carriers' own localized wording; this is a
+                // deploy condition, NOT a standards finding, and it is NOT a
+                // `PendingStateError` — it must render as a real error.
+                Validated.invalidNel(FireboxCalculatorRefused(reason))
 
 /**
  * Debounced EN15544 strict computation with project-ID staleness detection.
@@ -687,13 +697,13 @@ private def dispatchResult(
  * Partial assembly: the remote verdict consulted here is the one recorded
  * for THIS project's firebox kind, never a global flag. A `Remote` kind whose
  * fetch failed yields an error for that kind alone; every other kind — in
- * particular every `Local` kind — keeps computing normally. `Local` covers
- * the two Austrian kinds only as a misconfiguration: they have no
- * in-process Austrian engine since ticket 16, so a locally-resolved
- * Austrian kind yields just the constraint-free `foldedOnly` carrier —
- * configure them `Remote` or disable them. No branch computes a
- * `Remote`-configured kind with the local engine: the Austrian kinds are
- * network-only, a silent local fallback would defeat IP protection; that
+ * particular every engine-backed `Local` kind — keeps computing normally. A
+ * locally resolved Austrian kind never arrives here as `Local` at all:
+ * availability resolution REFUSES it (`KindComputation.Refused`, ADR-0010)
+ * and this dispatch routes the refusal to the error channel — the browser
+ * refuses first, with the carriers' own wording, before any half-populated
+ * result exists. No branch computes a `Remote`-configured kind with the
+ * local engine: a silent local fallback would defeat IP protection; that
  * guarantee comes from [[KindComputation]] having no such case, not from a
  * convention here. The remote payload arrives THROUGH the dispatch seam
  * (`KindComputation.Remote(_, data)`), so serving one kind's data for another

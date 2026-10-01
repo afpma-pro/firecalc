@@ -15,6 +15,7 @@ import afpma.firecalc.ui.Component
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchInFlightSig
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchedRemoteCachedAtSig
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.unavailableFireboxKindsSig
+import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.activeKindRefusalSig
 import afpma.firecalc.ui.utils.FireboxKindLabel
 
 import cats.syntax.show.*
@@ -26,9 +27,9 @@ import io.taig.babel.Locale
 /**
  * Honest status of the remote firebox calculation.
  *
- * Three notices, all silent when no kind is configured `Remote` (that is
- * not a working Austrian configuration: no remote vars means no calc
- * backend is configured for the two kinds):
+ * Four notices. The first three are silent when no kind is configured
+ * `Remote` (that is not a working Austrian configuration: no remote vars
+ * means no calc backend is configured for the two kinds):
  *
  *  - '''Connecting''' — a remote fetch for the active kind is in flight and
  *    nothing matched in the cache; the sections show their carry-over or
@@ -42,6 +43,14 @@ import io.taig.babel.Locale
  *    missing, named individually, plus the explicit reassurance that every
  *    other kind still calculates. Deliberately not a blocking dialog:
  *    blocking is what the per-kind assembly replaces.
+ *  - '''Refused''' — the active kind is an Austrian kind the deployment
+ *    resolved to the in-process engine, which the public product does not
+ *    carry (ADR-0010): the banner names the kind and the missing calculator
+ *    with the very wording the remote-only carriers refuse with, so the
+ *    operator sees the deploy condition instead of a standards finding.
+ *    Strictly separate from the unavailable notice: a network blip is never
+ *    reported as a missing calculator, and a missing calculator is never
+ *    reported as an outage (story 8).
  */
 final case class RemoteCalcStatusBanner()(using Locale) extends Component:
 
@@ -82,12 +91,24 @@ final case class RemoteCalcStatusBanner()(using Locale) extends Component:
                     span(I18N_UI.remote_calc.kinds_unavailable_banner(names))
                 )
 
+    private lazy val refusedNotice: Signal[Option[HtmlElement]] =
+        activeKindRefusalSig.map:
+            _.map: reason =>
+                // The refusal reason is already localized and names the kind
+                // (resolution builds it from the shared carrier wording) —
+                // no separate UI copy, by story 10.
+                div(
+                    cls := "alert alert-error shadow-lg text-xs py-1 px-2",
+                    span(reason)
+                )
+
     lazy val node: HtmlElement =
         div(
             cls := "flex flex-col items-end gap-1",
             child.maybe <-- connectingNotice,
             child.maybe <-- cachedNotice,
-            child.maybe <-- unavailableNotice
+            child.maybe <-- unavailableNotice,
+            child.maybe <-- refusedNotice
         )
 
 end RemoteCalcStatusBanner
