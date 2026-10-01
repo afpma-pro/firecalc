@@ -152,8 +152,8 @@ class CarrierRefusalSuite extends AnyFreeSpec with Matchers:
     /** The refusal verdicts among `verdicts`; empty means the carrier did not refuse. */
     private def refusals(verdicts: List[ConstraintVerdict]): List[ConstraintVerdict] =
         verdicts.filter:
-            case ConstraintVerdict(_, "no_calculator_configured", _, _) => true
-            case _                                                      => false
+            case ConstraintVerdict(_, RemoteOnlyFireboxes_Strict.refusalCode, _, _) => true
+            case _                                                                  => false
 
     /**
      * The kind's registry entry folded verdicts — the same instance the

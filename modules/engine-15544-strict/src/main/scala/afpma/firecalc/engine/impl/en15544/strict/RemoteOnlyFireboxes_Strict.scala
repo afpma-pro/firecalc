@@ -187,6 +187,14 @@ object RemoteOnlyFireboxes_Strict:
         )
 
     /**
+     * The refusal verdict's wire code — carried as the `Custom` term's label
+     * AND as the `Violated` code (ADR-0010). One constant because consumers
+     * key on the exact value; the refusal suites keep the literal in their
+     * message pins, which pin the wire value itself.
+     */
+    final val refusalCode: String = "no_calculator_configured"
+
+    /**
      * The blocking refusal verdict a remote-only carrier reports when the kind is
      * resolved to the in-process engine (ADR-0010).
      *
@@ -202,13 +210,12 @@ object RemoteOnlyFireboxes_Strict:
      * a contribution-level refusal would silently kill every remote calculation.
      */
     private def refusalVerdict(kindName: String)(using Locale): ConstraintVerdict =
-        val code = "no_calculator_configured"
         ConstraintVerdict(
             ConstraintTerm.Custom,
-            code,
+            refusalCode,
             ConstraintDescriptor.Opaque,
             ConstraintOutcome.Violated(
-                code,
+                refusalCode,
                 I18N.builder_errors.no_calculator_configured(kindName),
                 blocking = true
             )
