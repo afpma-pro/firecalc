@@ -593,24 +593,22 @@ object RemoteFireboxPrefetch:
             RemoteFireboxAvailability.unavailableKinds(UIConfig.fireboxEngineSource, states)
 
     /**
-     * The refusal reason when availability resolution refused the ACTIVE
+     * The refused kind when availability resolution refused the ACTIVE
      * firebox kind — `Some` only for an Austrian kind configured `Local`
      * (ADR-0010).
      *
-     * The fourth rendering decision of the exhaustive projection chain: the
-     * refusal banner notice. Kept strictly separate from the connecting and
+     * The fourth rendering decision of the exhaustive projection: a trivial
+     * map over [[activeKindComputationSig]] like its siblings, so the module
+     * keeps its one-site promise for new [[KindComputation]] variants. It
+     * carries the KIND, not a baked string: the banner builds the displayed
+     * wording under its own `Locale` at render time, so an EN↔FR switch
+     * refreshes the notice. Kept strictly separate from the connecting and
      * unavailable notices — a deploy condition never rides the network
      * verdicts, and a network blip never surfaces as a missing calculator
      * (story 8).
      */
-    lazy val activeKindRefusalSig: Signal[Option[String]] =
-        activeKindComputationSig.map:
-            case KindComputation.Refused(_, reason) => Some(reason)
-            case KindComputation.Local              => None
-            case KindComputation.Remote(_, _)       => None
-            case KindComputation.Pending(_)         => None
-            case KindComputation.Unavailable(_, _)  => None
-            case KindComputation.Rejected(_, _)     => None
+    lazy val activeKindRefusalSig: Signal[Option[FireboxKind]] =
+        activeKindComputationSig.map(_.projection.refused)
 
     /**
      * Whether a remote fetch for the ACTIVE firebox kind is still in flight.

@@ -150,15 +150,17 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
             )
         }
 
-        test("Austrian refusal — a refused kind projects to no data, no timestamp, no in-flight") {
+        test("Austrian refusal — a refused kind projects no data, no timestamp, no in-flight, and its refused kind") {
             // The projection contract behind the banner and the prefetched-data
             // signals: a refused kind renders NOTHING usable — no half-
-            // populated panel, no connecting spinner.
+            // populated panel, no connecting spinner — and the refusal decision
+            // reaches the rendering site as the KIND, localized at render time
+            // under the component's own Locale.
             val cfg = FireboxEngineSourceConfig.AllLocal
             assert(
                 RemoteFireboxAvailability
                     .computationFor(FireboxKind.Ecolabeled, cfg, Map.empty)
-                    .projection == KindComputationProjection(None, None, false)
+                    .projection == KindComputationProjection(None, None, false, Some(FireboxKind.Ecolabeled))
             )
         }
 

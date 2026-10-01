@@ -9,9 +9,12 @@ import afpma.firecalc.engine.standard.MCalc_Error
 import afpma.firecalc.engine.standard.RemoteFireboxPending
 import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
 
+import afpma.firecalc.i18n.implicits.I18N
+
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.Component
+import afpma.firecalc.ui.models.localeVar
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchInFlightSig
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.prefetchedRemoteCachedAtSig
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch.unavailableFireboxKindsSig
@@ -92,15 +95,20 @@ final case class RemoteCalcStatusBanner()(using Locale) extends Component:
                 )
 
     private lazy val refusedNotice: Signal[Option[HtmlElement]] =
-        activeKindRefusalSig.map:
-            _.map: reason =>
-                // The refusal reason is already localized and names the kind
-                // (resolution builds it from the shared carrier wording) —
-                // no separate UI copy, by story 10.
-                div(
-                    cls := "alert alert-error shadow-lg text-xs py-1 px-2",
-                    span(reason)
-                )
+        activeKindRefusalSig
+            .combineWith(localeVar.signal)
+            .map: (refused, _) =>
+                refused.map: kind =>
+                    // Localized at render time under this component's own `Locale`,
+                    // through the SAME i18n key the remote-only carriers fold into
+                    // their blocking verdict — browser and report path refuse alike
+                    // (story 10). Depending on `localeVar` re-fires the notice on an
+                    // EN↔FR switch: nothing is rendered from a string baked at
+                    // resolution time.
+                    div(
+                        cls := "alert alert-error shadow-lg text-xs py-1 px-2",
+                        span(I18N.builder_errors.no_calculator_configured(FireboxKindLabel(kind)))
+                    )
 
     lazy val node: HtmlElement =
         div(

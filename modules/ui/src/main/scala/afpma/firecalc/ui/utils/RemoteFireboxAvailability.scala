@@ -118,27 +118,29 @@ enum KindComputation[+D]:
     /**
      * The single exhaustive dispatch over the verdict's shape.
      *
-     * The UI's derived signals (prefetched data, cached-at, in-flight) are
-     * trivial maps over [[projection]], so a new [[KindComputation]] variant
+     * The UI's derived signals (prefetched data, cached-at, in-flight, refusal)
+     * are trivial maps over [[projection]], so a new [[KindComputation]] variant
      * forces a decision here instead of silently missing them.
      *
      * Returns a [[KindComputationProjection]] (named fields) rather than a
-     * tuple, so the three consumer signals stay self-documenting. The
+     * tuple, so the four consumer signals stay self-documenting. The
      * projection type is covariant in `D` (see its scaladoc), which is what
      * makes it legal as the return type of this covariant enum.
      */
     def projection: KindComputationProjection[D] = this match
-        case KindComputation.Remote(cachedAtMs, data) => KindComputationProjection(Some(data), cachedAtMs, false)
-        case KindComputation.Local                    => KindComputationProjection(None, None, false)
-        case KindComputation.Pending(_)               => KindComputationProjection(None, None, true)
-        case KindComputation.Unavailable(_, _)        => KindComputationProjection(None, None, false)
-        case KindComputation.Rejected(_, _)           => KindComputationProjection(None, None, false)
-        case KindComputation.Refused(_, _)            => KindComputationProjection(None, None, false)
+        case KindComputation.Remote(cachedAtMs, data) => KindComputationProjection(Some(data), cachedAtMs, false, None)
+        case KindComputation.Local                    => KindComputationProjection(None, None, false, None)
+        case KindComputation.Pending(_)               => KindComputationProjection(None, None, true, None)
+        case KindComputation.Unavailable(_, _)        => KindComputationProjection(None, None, false, None)
+        case KindComputation.Rejected(_, _)           => KindComputationProjection(None, None, false, None)
+        case KindComputation.Refused(kind, _)         => KindComputationProjection(None, None, false, Some(kind))
 
 /**
- * The three facts the UI derives from one active-kind verdict: the remote
- * payload (if any), the cache timestamp (if replayed from cache), and whether
- * the fetch is still in flight.
+ * The four facts the UI derives from one active-kind verdict: the remote
+ * payload (if any), the cache timestamp (if replayed from cache), whether the
+ * fetch is still in flight, and the kind resolution refused, if any — the
+ * KIND, never a localized string: rendering sites build the displayed wording
+ * under their own `Locale`, so a locale switch refreshes it.
  *
  * Covariant in `D` so it is legal as the return type of
  * [[KindComputation.projection]] on the covariant enum. It must be a top-level
@@ -150,7 +152,8 @@ enum KindComputation[+D]:
 final case class KindComputationProjection[+D](
     data    : Option[D],
     cachedAt: Option[Double],
-    inFlight: Boolean
+    inFlight: Boolean,
+    refused : Option[FireboxKind]
 )
 
 /**
