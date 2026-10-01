@@ -229,8 +229,7 @@ object ConfigLoader:
         if envConfig.hasPath        ("calculation-client") then
             val section = envConfig.getConfig("calculation-client")
             CalculationClientConfig(
-                baseUri = Try(section.getString("base-uri")).getOrElse(CalculationClientConfig().baseUri),
-                enabled = Try(section.getBoolean("enabled")).getOrElse(true)
+                baseUri = Try(section.getString("base-uri")).getOrElse(CalculationClientConfig().baseUri)
             )
         else CalculationClientConfig(                    )
 

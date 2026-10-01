@@ -36,11 +36,10 @@ object CalculationClientConfigTest extends TestSuite {
         ConfigFactory.parseString(full).resolve().getConfig("payments.development")
 
     val tests = Tests {
-        test("block absent defaults to the standalone backend on port 9000, enabled") {
+        test("block absent defaults to the standalone backend on port 9000") {
             val cfg = envConfig("")
             val cc  = ConfigLoader.loadCalculationClientConfig(cfg)
             cc.baseUri ==> "http://localhost:9000/v1"
-            cc.enabled ==> true
         }
 
         test("base-uri override is honored (Docker calc-backend service)") {
@@ -51,26 +50,12 @@ object CalculationClientConfigTest extends TestSuite {
             )
             val cc  = ConfigLoader.loadCalculationClientConfig(cfg)
             cc.baseUri ==> "http://calc-backend:9000/v1"
-            cc.enabled ==> true
-        }
-
-        test("enabled = false is honored") {
-            val cfg = envConfig(
-                """calculation-client {
-                  |  base-uri = "http://calc-backend:9000/v1"
-                  |  enabled = false
-                  |}""".stripMargin
-            )
-            val cc  = ConfigLoader.loadCalculationClientConfig(cfg)
-            cc.baseUri ==> "http://calc-backend:9000/v1"
-            cc.enabled ==> false
         }
 
         test("empty block keeps the defaults") {
             val cfg = envConfig("calculation-client {}")
             val cc  = ConfigLoader.loadCalculationClientConfig(cfg)
             cc.baseUri ==> "http://localhost:9000/v1"
-            cc.enabled ==> true
         }
     }
 }
