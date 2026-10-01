@@ -237,6 +237,38 @@ class CarrierRefusalSuite extends AnyFreeSpec with Matchers:
             }
         }
 
+    // ── The canonical remote-only set is the fact all consumers share ──
+
+    "the canonical remote-only set agrees with the registry and the refusal verdicts" in {
+        given Locale = Locale(Languages.En)
+
+        // The registry's constraint-free entries — the ones registered via
+        // `FireboxEngineAny.foldedOnly`, observable statically as
+        // `constraintsAlg.isEmpty` — are exactly the canonical set. The
+        // derivation is the CHECK, not the definition: a future third
+        // remote-only kind cannot join the registry or the UI resolution
+        // without joining `FireboxKind.remoteOnly` too (ADR-0010).
+        val foldedOnlyKinds =
+            FireboxEngineRegistry_Strict.all.filter(_.constraintsAlg.isEmpty).map(_.kind).toSet
+        foldedOnlyKinds shouldBe FireboxKind.remoteOnly
+
+        // And every canonical kind's carrier refuses at the `constraints`
+        // seam through that same registry entry, so the verdicts cannot
+        // drift from the set either — while the non-Austrian guard below
+        // proves the converse: no other closed kind refuses.
+        val carriersByKind: Map[FireboxKind, Firebox_15544] = Map(
+            FireboxKind.Ecolabeled     -> RemoteOnlyFireboxes_Strict.EcolabeledCarrier(
+                RefusalStubs_15544.stubEcolabeledDTO
+            ),
+            FireboxKind.Door15aCatalog -> RemoteOnlyFireboxes_Strict.Door15aCatalogCarrier(
+                RefusalStubs_15544.stubDoor15aDTO
+            )
+        )
+        carriersByKind.keySet shouldBe FireboxKind.remoteOnly
+        carriersByKind.foreach: (kind, carrier) =>
+            refusals(carrierConstraints(kind, carrier)) should have size 1
+    }
+
     // ── The refusal must not fire where a calculator does exist ────────
 
     "Non-Austrian kinds report no refusal" - {

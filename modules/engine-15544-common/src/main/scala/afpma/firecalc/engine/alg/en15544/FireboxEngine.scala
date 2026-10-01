@@ -59,6 +59,26 @@ object FireboxKind:
         CustomForLab
     )
 
+    /**
+     * The kinds the public artifact has NO in-process engine for (ADR-0010):
+     * the two Austrian kinds whose engine sources were deleted in
+     * `f1fdfa03`. The public registry carries them as constraint-free
+     * remote-only carriers, and a deployment that resolves one of them to
+     * `Local` gets a refusal, not a result: the browser refuses the kind
+     * (`KindComputation.Refused`) and the carrier reports the blocking
+     * refusal verdict from `constraints`.
+     *
+     * This is the canonical fact — `RemoteFireboxAvailability` resolves
+     * against it and the strict registry's refusal cross-check asserts
+     * registry and verdicts agree with it, so a future third remote-only
+     * kind cannot drift the UI resolution and the registry apart. Name a
+     * new remote-only kind HERE and the consumers follow.
+     */
+    val remoteOnly: Set[FireboxKind] = Set(
+        Ecolabeled,
+        Door15aCatalog
+    )
+
 end FireboxKind
 
 /**
