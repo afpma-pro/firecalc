@@ -1,8 +1,8 @@
 # 0010 — Remote-Only Carriers Refuse a Locally Resolved Austrian Kind
 
 **Date:** 2026-10-01
-**Status:** Proposed
-**Commit:**
+**Status:** Accepted
+**Commit:** 99a4e0e38da132c13344b44a7102867506c5b297
 
 ## Context
 
