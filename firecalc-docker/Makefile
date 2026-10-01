@@ -8,8 +8,14 @@
 # build Docker images, and manage the container lifecycle.
 #
 # Environment Variables (set before invoking make, or in your shell profile):
-#   CALC_SERVER  — Set to "true" to deploy with calc-server (Mode B).
-#                  Unset or empty for without calc-server (Mode A).
+#   CALC_SERVER  — Set to "true" to deploy with calc-server (Mode B). This is
+#                  the only calculation seam for Ecolabeled and Door15aCatalog:
+#                  no Austrian engine source ships in this repository.
+#                  Unset or empty selects without calc-server (Mode A) — no
+#                  calculation seam at all, NOT local computation: the two
+#                  Austrian kinds are then unavailable (payments PDFs for them
+#                  fail) and should be disabled via firebox-availability and
+#                  VITE_FIREBOX_AVAIL_*; see DEPLOYMENT.md.
 #   MODE         — "standalone" (default) or "behind-proxy".
 #                  Controls TLS termination strategy.
 #
@@ -32,6 +38,8 @@ SHELL := /usr/bin/bash
 # Defaults for compose variant selection (override via environment or make args).
 # CALC_SERVER: set to "true" to include calc-server (Mode B).
 #              Any other value (false, empty, unset) excludes calc-server (Mode A).
+#              Mode A is not "calculations run locally": Ecolabeled and
+#              Door15aCatalog have no local engine, so they are unavailable.
 # MODE: "standalone" (default) or "behind-proxy".
 CALC_SERVER ?=
 export CALC_SERVER
@@ -39,6 +47,8 @@ MODE       ?= standalone
 
 # Resolve the active compose file from CALC_SERVER and MODE.
 # CALC_SERVER="true" → with calc-server; anything else → no calc-server.
+# The calc-server assembly JAR is built in the private (non-AGPL) repository,
+# pinned in VERSIONS and staged by scripts/deploy.sh.
 # MODE=standalone (default) or MODE=behind-proxy.
 COMPOSE_FILE := $(shell \
   calc_suffix=""; \

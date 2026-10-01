@@ -8,6 +8,9 @@
 # domain placeholders, then starts nginx with the generated config.
 # In no-calc mode (FIRECALC_MODE=no-calc), calc-* include files are
 # replaced with empty stubs so the unified configs work for both variants.
+# That deletes the /v1/calculate and /v1/kinds locations entirely: no-calc is
+# NOT a local fallback — Ecolabeled and Door15aCatalog have no engine in the
+# payments backend or in the browser, so they are unavailable in this mode.
 #
 # CORS regex fallback is controlled by envsubst via CORS_REGEX_FALLBACK:
 #   - Behind-proxy mode (UI_DOMAIN empty): echoes any origin.
@@ -87,6 +90,8 @@ done
 
 # In no-calc mode, empty the calc-specific include files so they are
 # harmless no-ops when included by the unified configs.
+# With no calculation upstream left to route to, nothing Austrian can be
+# calculated through this proxy; requests fail instead of falling back locally.
 if [ "${CALC_MODE}" = "no" ]; then
     for f in calc-pre-server.conf calc-endpoints.conf calc-healthcheck.conf calc-https-endpoints.conf; do
         if [ -f "${GENERATED_SHARED}/${f}" ]; then

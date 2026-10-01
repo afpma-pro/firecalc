@@ -116,6 +116,11 @@ fi
 # Report active configuration
 # ---------------------------------------------------------------------------
 
+# "no-calc" is NOT "all calculations local": it leaves no calculation seam for
+# Ecolabeled / Door15aCatalog (no Austrian engine source ships in the public
+# repository), so those two kinds are unavailable. Either self-host the calc
+# backend (CALC_SERVER=true) or disable the kinds with firebox-availability
+# and VITE_FIREBOX_AVAIL_* — see DEPLOYMENT.md.
 calc_label="no-calc"
 if [[ "${CALC_SERVER}" = "true" ]]; then
     calc_label="with-calc"
