@@ -580,9 +580,10 @@ object RemoteFireboxPrefetch:
     /**
      * The kinds whose remote data is genuinely missing — and only those.
      *
-     * Empty in the all-local configuration and while a fetch is in flight. A
-     * failure recorded for one kind grows this set by exactly that kind, which
-     * is what makes "the registry assembles partially" observable in the UI.
+     * Empty when no kind is configured `Remote` and while a fetch is in
+     * flight. A failure recorded for one kind grows this set by exactly
+     * that kind, which is what makes "the registry assembles partially"
+     * observable in the UI.
      */
     lazy val unavailableFireboxKindsSig: Signal[Set[FireboxKind]] =
         remoteDataStatesSig.map: states =>

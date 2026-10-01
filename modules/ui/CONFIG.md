@@ -95,9 +95,12 @@ All variables must be prefixed with `VITE_` to be accessible in the client.
 All `VITE_` variables (except `MODE`) are optional: a missing or empty var
 resolves to a documented default instead of crashing startup. Backend URL
 parts and `VITE_CGUV_URL` log a console warning naming the var when a
-fallback is used; absent availability switches silently stay enabled, and an
-absent remote-calc var degrades to all-local engine sources (visible in the
-startup log).
+fallback is used; absent availability switches silently stay enabled. An absent
+remote-calc var resolves every kind to `Local`, which is a real in-process
+engine only for the four non-Austrian kinds: `Ecolabeled` and `Door15aCatalog`
+then land on constraint-free `foldedOnly` carriers with no Austrian outputs, so
+a deploy without a calc backend must disable those kinds via
+`VITE_FIREBOX_AVAIL_*` / `firebox-availability`.
 
 - **VITE_BACKEND_PROTOCOL**: `http` or `https` (default `http`)
 - **VITE_BACKEND_HOST**: Domain or IP address (e.g., `localhost`, `api.example.com`) (default `localhost`)

@@ -60,7 +60,12 @@ enum RemoteDataState[+D]:
  */
 enum KindComputation[+D]:
 
-    /** The kind is configured `Local` — compute in-process, as always. */
+    /**
+     * The kind is configured `Local` — compute in-process with whatever the
+     * public registry serves for it. For the Austrian kinds that is the
+     * constraint-free `foldedOnly` carrier (no Austrian engine since
+     * ticket 16), so `Local` must never be relied on for them.
+     */
     case Local extends KindComputation[Nothing]
 
     /**

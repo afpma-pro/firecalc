@@ -18,7 +18,7 @@ import utest.*
  *
  * Acceptance covered:
  *  - a remote failure recorded for ONE kind marks only that kind unavailable;
- *    every other kind — in particular every locally computable one — stays
+ *    every other kind (in particular any kind the config resolved Local) stays
  *    usable;
  *  - a remote-only kind is NEVER satisfied by a local engine on failure: no
  *    combination of source config and state yields `KindComputation.Local` for a
@@ -70,9 +70,9 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
             assert(outcome == "current cycle 2")
         }
 
-        // ── Baseline: the historical all-local configuration ───────────────
+        // ── Baseline: no kind configured Remote (the AllLocal default) ──────
 
-        test("AllLocal — every closed kind is Local and usable, nothing unavailable") {
+        test("AllLocal — every kind resolves Local; for the Austrian kinds that means the constraint-free carriers") {
             val cfg = FireboxEngineSourceConfig.AllLocal
             FireboxKind.closed.foreach: kind =>
                 assert(RemoteFireboxAvailability.computationFor(kind, cfg, Map.empty) == KindComputation.Local)
@@ -83,7 +83,7 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
         test("AllLocal — a stray recorded failure cannot make a Local kind unavailable") {
             // Defensive: the state map is keyed by kind, and a Local kind must
             // ignore it entirely — otherwise a config flip would silently strand
-            // a locally computable kind.
+            // a kind the config resolved Local.
             val cfg    = FireboxEngineSourceConfig.AllLocal
             val states = Map(FireboxKind.Ecolabeled -> failed)
             assert(
@@ -276,7 +276,7 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
         test("ticket 09 — remote-only Ecolabeled: every failure mode ends Unavailable, never Local") {
             // Transport, protocol, decode and unsupported-kind failures all
             // arrive at the availability layer as a recorded Failed state;
-            // none of them may resolve to the local Austrian engine.
+            // none of them may resolve to `Local` — no in-process Austrian engine exists.
             val reasons = List(
                 "service unreachable",
                 "unexpected response status: 503",

@@ -75,8 +75,9 @@ end FireboxKind
  * it materialises a `PipeCanBe`.
  *
  * `AsDescr` plus a `PressureDiff` element is the PREFERRED black-box route —
- * Door15a catalog already does precisely this
- * (`Door15aCatalogFireboxToCombustionAirPipe_15544_Strict.scala:41-55`).
+ * the public Door15a catalog carrier does precisely this
+ * (`RemoteOnlyFireboxes_Strict.Door15aCatalogCarrier`, engine-15544-strict:
+ * generic catalog interpolation feeding `addPressureDiff`).
  * `AsResult` is the narrow escape hatch for an implementation that must dictate
  * `ph`; it owes the full continuation state at EVERY operating point (see the
  * case's scaladoc).
@@ -183,9 +184,12 @@ trait FireboxEngine[-F]:
     ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]]
 
     /**
-     * The combustion-air gas-path contribution — the path that genuinely varies
-     * per kind (Ecolabeled ~15 sections, SingleTested `Without`, Door15a a
-     * catalog `PressureDiff`).
+     * The combustion-air gas-path contribution — the path that genuinely
+     * varies per kind: SingleTested `Without`; Door15a a catalog
+     * `PressureDiff` `AsDescr` (generic interpolation in the public
+     * `Door15aCatalogCarrier`); Ecolabeled the ~15-section `AsResult` grid
+     * dictated by the private backend's remote response — the public
+     * `EcolabeledCarrier` engine itself contributes `Without`.
      */
     def combustionAirContribution(
         firebox: F

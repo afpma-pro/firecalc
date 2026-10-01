@@ -26,7 +26,9 @@ import io.taig.babel.Locale
 /**
  * Honest status of the remote firebox calculation.
  *
- * Three notices, all silent in the default all-local configuration:
+ * Three notices, all silent when no kind is configured `Remote` (that is
+ * not a working Austrian configuration: no remote vars means no calc
+ * backend is configured for the two kinds):
  *
  *  - '''Connecting''' — a remote fetch for the active kind is in flight and
  *    nothing matched in the cache; the sections show their carry-over or

@@ -687,7 +687,11 @@ private def dispatchResult(
  * Partial assembly: the remote verdict consulted here is the one recorded
  * for THIS project's firebox kind, never a global flag. A `Remote` kind whose
  * fetch failed yields an error for that kind alone; every other kind — in
- * particular every `Local` kind — keeps computing normally. No branch computes a
+ * particular every `Local` kind — keeps computing normally. `Local` covers
+ * the two Austrian kinds only as a misconfiguration: they have no
+ * in-process Austrian engine since ticket 16, so a locally-resolved
+ * Austrian kind yields just the constraint-free `foldedOnly` carrier —
+ * configure them `Remote` or disable them. No branch computes a
  * `Remote`-configured kind with the local engine: the Austrian kinds are
  * network-only, a silent local fallback would defeat IP protection; that
  * guarantee comes from [[KindComputation]] having no such case, not from a
