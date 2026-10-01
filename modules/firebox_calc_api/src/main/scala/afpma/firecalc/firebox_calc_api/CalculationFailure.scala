@@ -77,8 +77,9 @@ object CalculationFailure:
      *
      * The `error` field matches the OpenAPI error taxonomy (§7):
      * `unknown_kind`, `kind_not_served`, `malformed_request`,
-     * `unsupported_locale`, `unsupported_api_version`, `calculation_failed`,
-     * `payload_too_large`, `rate_limited`, `internal_error`.
+     * `unsupported_locale`, `unsupported_api_version`, `unsupported_standard`,
+     * `calculation_failed`, `payload_too_large`,
+     * `rate_limited`, `internal_error`.
      *
      * @param status HTTP status code (400, 404, 413, 422, 429, 500)
      * @param error  Error code from the response envelope

@@ -14,6 +14,7 @@ package afpma.firecalc.firebox_calc_api
  *   - MalformedRequest    → 400  (FireboxCalcError with details, error="malformed_request")
  *   - UnsupportedLocale   → 400  (ErrorResponseEnvelope, error="unsupported_locale")
  *   - UnsupportedApiVersion → 400  (ErrorResponseEnvelope, error="unsupported_api_version")
+ *   - UnsupportedStandard → 400  (ErrorResponseEnvelope, error="unsupported_standard")
  *   - CalculationFailed   → 422  (FireboxCalcError with details, error="calculation_failed")
  *   - InternalError       → 500  (ErrorResponseEnvelope, error="internal_error")
  *
@@ -44,6 +45,11 @@ object FireboxCalcServerError:
     ) extends FireboxCalcServerError
 
     case class UnsupportedApiVersion(
+        requested: String,
+        supported: List[String]
+    ) extends FireboxCalcServerError
+
+    case class UnsupportedStandard(
         requested: String,
         supported: List[String]
     ) extends FireboxCalcServerError
