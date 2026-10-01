@@ -197,7 +197,7 @@ object RemoteFireboxAvailability:
     )(using Locale): KindComputation[D] =
         sourceConfig.sourceFor(kind) match
             case FireboxEngineSource.Local     =>
-                if noInProcessEngine.contains(kind) then KindComputation.Refused(kind, refusalReason(kind))
+                if FireboxKind.remoteOnly.contains(kind) then KindComputation.Refused(kind, refusalReason(kind))
                 else KindComputation.Local
             case FireboxEngineSource.Remote(_) =>
                 state match
@@ -214,15 +214,6 @@ object RemoteFireboxAvailability:
         states      : Map[FireboxKind, RemoteDataState[D]]
     )(using Locale): KindComputation[D] =
         computationFor(kind, sourceConfig, stateOf(states, kind))
-
-    /**
-     * The kinds the public product carries WITHOUT an in-process engine: the
-     * two remote-only carriers of `RemoteOnlyFireboxes_Strict` (the Austrian
-     * engine sources were deleted in `f1fdfa03`, ADR-0010). Configured
-     * `Local`, they resolve [[KindComputation.Refused]] instead.
-     */
-    private val noInProcessEngine: Set[FireboxKind] =
-        Set(FireboxKind.Ecolabeled, FireboxKind.Door15aCatalog)
 
     /** The refusal reason, shared verbatim with the carriers' blocking verdict. */
     private def refusalReason(kind: FireboxKind)(using Locale): String =

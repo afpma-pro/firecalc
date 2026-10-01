@@ -65,8 +65,8 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
      */
     private given Locale = Locales.en
 
-    /** The kinds with no in-process engine in the public product (ADR-0010). */
-    private val austrianKinds: Set[FireboxKind] = Set(FireboxKind.Ecolabeled, FireboxKind.Door15aCatalog)
+    /** The kinds with no in-process engine in the public product — the canonical set (ADR-0010). */
+    private val austrianKinds: Set[FireboxKind] = FireboxKind.remoteOnly
 
     private val nonAustrianKinds: Set[FireboxKind] = FireboxKind.closed -- austrianKinds
 
