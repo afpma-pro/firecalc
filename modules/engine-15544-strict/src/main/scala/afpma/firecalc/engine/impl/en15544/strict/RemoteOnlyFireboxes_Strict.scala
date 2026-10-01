@@ -23,6 +23,9 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.InterpolationError
 import afpma.firecalc.firebox_calc_api.ConstraintVerdict
+import afpma.firecalc.firebox_calc_api.ConstraintDescriptor
+import afpma.firecalc.firebox_calc_api.ConstraintOutcome
+import afpma.firecalc.firebox_calc_api.ConstraintTerm
 
 import cats.data.ValidatedNel
 import cats.syntax.validated.*
@@ -183,14 +186,42 @@ object RemoteOnlyFireboxes_Strict:
             )
         )
 
+    /**
+     * The blocking refusal verdict a remote-only carrier reports when the kind is
+     * resolved to the in-process engine (ADR-0010).
+     *
+     * A `ConstraintTerm.Custom` verdict is firebox-specific, so `FoldedVerdicts`
+     * folds it into `FireboxErrorCustom` and
+     * `validateFireboxSpecificConstraints` fails: a locally resolved Austrian kind
+     * refuses instead of returning a silent, constraint-free result. The message is
+     * a non-standards condition — it names the refused kind and the missing
+     * calculator, and never presents itself as EN 15544 constraint physics.
+     *
+     * Placement is `constraints`, never the contribution methods: the remote flow
+     * builds the local base application through this carrier before every fetch, so
+     * a contribution-level refusal would silently kill every remote calculation.
+     */
+    private def refusalVerdict(kindName: String)(using Locale): ConstraintVerdict =
+        val code = "no_calculator_configured"
+        ConstraintVerdict(
+            ConstraintTerm.Custom,
+            code,
+            ConstraintDescriptor.Opaque,
+            ConstraintOutcome.Violated(
+                code,
+                I18N.builder_errors.no_calculator_configured(kindName),
+                blocking = true
+            )
+        )
+
     // ── Remote-only engine instances ─────────────────────────────────────
     //
     // These engines serve the generic application's descriptor assembly only.
     // For the proprietary kinds the calculation is remote: the wrapper swaps the
     // served entry for a `RemoteBackedFireboxEngine` (contributions, constraints,
-    // and report data all come from the wire). The engines here therefore own NO
-    // per-term constraint algebra (`constraints` yields nothing) and are
-    // registered through `FireboxEngineAny.foldedOnly`.
+    // and report data all come from the wire). Locally resolved, these engines own
+    // NO per-term constraint algebra (they are registered through
+    // `FireboxEngineAny.foldedOnly`) and `constraints` reports the refusal verdict.
 
     /** EN 15544 strict remote-only engine for the generic [[EcolabeledCarrier]]. */
     given ecolabeledRemoteOnlyEngine: (
@@ -211,7 +242,8 @@ object RemoteOnlyFireboxes_Strict:
                 firebox: EcolabeledCarrier,
                 ctx    : Option[ConstraintContext],
                 fctx   : FireboxConstraintContext
-            )(using io.taig.babel.Locale): List[ConstraintVerdict] = Nil
+            )(using io.taig.babel.Locale): List[ConstraintVerdict] =
+                List(refusalVerdict(I18N.firebox_names.ecolabeled))
 
     end ecolabeledRemoteOnlyEngine
 
@@ -263,7 +295,8 @@ object RemoteOnlyFireboxes_Strict:
                 firebox: Door15aCatalogCarrier,
                 ctx    : Option[ConstraintContext],
                 fctx   : FireboxConstraintContext
-            )(using io.taig.babel.Locale): List[ConstraintVerdict] = Nil
+            )(using io.taig.babel.Locale): List[ConstraintVerdict] =
+                List(refusalVerdict(I18N.firebox_names.door_15a_firebox))
 
     end door15aCatalogRemoteOnlyEngine
 
