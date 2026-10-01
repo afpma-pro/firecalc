@@ -197,8 +197,13 @@ contract, not by version equality:
 - same rate-limit policy and headers (`X-RateLimit-Limit/Remaining/Reset` with
   Unix-epoch reset semantics, `Retry-After` on 429),
 - same error taxonomy (`unknown_kind`, `kind_not_served`, `malformed_request`,
-  `unsupported_locale`, `unsupported_api_version`, `calculation_failed`,
-  `internal_error`, `rate_limited`, `payload_too_large`).
+  `unsupported_locale`, `unsupported_api_version`, `unsupported_standard`,
+  `calculation_failed`, `internal_error`, `rate_limited`, `payload_too_large`).
+  `unsupported_standard` is the strict-only posture: a request whose
+  `standard` is not `strict` is refused at the private calc-core checkpoint
+  with HTTP 400 and an `ErrorResponseEnvelope` (shared-contract variant
+  `FireboxCalcServerError.UnsupportedStandard`; additive under OpenAPI
+  `info.version: 1.0.0`, ADR-0011).
 
 Demonstrated compatibility evidence:
 
@@ -311,6 +316,6 @@ without linking public and private builds, and without bypassing HTTP.
 | Ecolabeled/Door15aCatalog end-to-end workflows with complete outputs and `AsResult` | Ticket 12 Phase 2 gate: `RemotePrefetchEndToEndSpec` (ui, 8 tests) + `CrossRepositoryAcceptanceSuite` AsResult fold; phase-2 gate evidence (private repository) §1 |
 | PDF only from a fresh backend response; no fallback/cache | Ticket 18: `RemotePdfAcceptanceSuite` (payments, 11 tests); ticket 06 implementation notes |
 | Explicit outage behavior (UI + PDF) | `RemotePrefetchFailureSpec` (ui, 10 tests), `FetchCalcClientSuite`, `Http4sCalcClientSuite`; `RemotePdfAcceptanceSuite` exhaustion tests; phase-2 gate evidence (private repository) §2, §4 |
-| Strict-backed calculation unchanged, every served kind advertised, no MCE HTTP path, non-Austrian behavior retained | Ticket 15 evidence §2 (Strict registry, 6 served kinds, zero MCE refs); ticket 12 evidence §6; `Phase2InvariantAcceptanceSuite` (nine invariants, JVM + JS) |
+| Strict-backed calculation unchanged, every served kind advertised, no MCE serving path — exactly one documented refusal site, non-Austrian behavior retained | Ticket 15 evidence §2 (Strict registry, 6 served kinds; the deployment is strict-only: no MCE serving path, and a non-strict `standard` request is refused at the private calc-core checkpoint with HTTP 400 `unsupported_standard` — the single documented refusal site); ticket 12 evidence §6; `Phase2InvariantAcceptanceSuite` (nine invariants, JVM + JS) |
 | Rollback deploys prior backend behind unchanged routes | `private-backend-rollback.md` |
 | No rollback restores proprietary source/artifacts, links builds, or bypasses HTTP | `private-backend-rollback.md` §4; SPEC_00 decision 14 |
