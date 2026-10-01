@@ -7,8 +7,20 @@
 # FireCalc — Docker Compose (Standalone Mode, without Calculation Server)
 # =============================================================================
 # Standalone deployment: inner nginx handles TLS termination + Let's Encrypt
-# certificate management. No calc-server — all calculations run locally in the
-# payments backend.
+# certificate management. No calc-server means NO calculation seam for the
+# Austrian kinds, NOT a local fallback: Ecolabeled and Door15aCatalog have no
+# local engine (this repository ships no Austrian engine source), so they are
+# unavailable — the payments backend rejects their PDFs with "Austrian firebox
+# detected but remote calculation service is not configured" and the browser
+# has no engine for them either. The four non-Austrian kinds (traditional,
+# afpma-prse, single-tested, custom-for-lab) still compute in-process. The two
+# supported options when no external calc backend exists: run the calc-server
+# service of this stack (docker-compose.standalone.yml; self-hostable on this
+# host, port 9000 behind the /v1 prefix; its assembly JAR is built in the
+# private repository), or disable the Austrian kinds with the payments HOCON
+# firebox-availability.ecolabeled = false and
+# firebox-availability.door15a-catalog = false, mirrored in the UI build flags
+# VITE_FIREBOX_AVAIL_ECOLABELED=false and VITE_FIREBOX_AVAIL_DOOR15A_CATALOG=false.
 #
 # To activate this mode, create a symlink:
 #   cd firecalc-docker && ln -s docker-compose.standalone.no-calc.yml docker-compose.yml

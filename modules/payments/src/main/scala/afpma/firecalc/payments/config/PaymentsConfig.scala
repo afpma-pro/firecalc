@@ -103,14 +103,17 @@ object LoggingConfig:
  * module to obtain calculation data for Austrian firebox PDF reports
  * through the standalone HTTP backend (GET /v1/kinds, POST /v1/calculate).
  *
+ * Ecolabeled and Door15aCatalog are always routed over HTTP: there is no
+ * per-kind local switch, no local fallback and no response cache. `base-uri`
+ * is the only knob.
+ *
  * The default base URI targets the standalone calculation backend on its
  * default port 9000 (private repository, `firebox-calc-server.conf`).
  * Deployments override `calculation-client.base-uri` in the payments HOCON
  * configuration — inside Docker this is `http://calc-backend:9000/v1`.
  */
 case class CalculationClientConfig(
-    baseUri: String  = "http://localhost:9000/v1",
-    enabled: Boolean = true
+    baseUri: String = "http://localhost:9000/v1"
 ) {
     require(baseUri.nonEmpty, "Calculation client baseUri cannot be empty")
 }

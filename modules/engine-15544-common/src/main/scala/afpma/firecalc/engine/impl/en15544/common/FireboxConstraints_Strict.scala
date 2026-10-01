@@ -235,8 +235,10 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
 
     /**
      * Minimum fuel mass constraint per EN 15544 §4.2.1 (default 10 kg).
-     * Every kind needing a different bound overrides this method
-     * (e.g. `EcolabeledConstraints` uses 6 kg).
+     * Every kind needing a different bound overrides this method — in the
+     * public repo only non-Austrian kinds ship such overrides: the Austrian
+     * constraint instances live only in the private calc backend, and the
+     * public `foldedOnly` carriers report no per-term constraints at all.
      * The previous type-match over `Traditional`/`SingleTested`/`CertifiedDesign`/`Door15aFirebox_Catalog`
      * was unreachable for all four (each has an overriding instance)
      * and became unsound when `Firebox_15544` was unsealed.

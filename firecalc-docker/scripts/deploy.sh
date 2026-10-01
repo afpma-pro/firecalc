@@ -15,7 +15,9 @@
 #
 # Expected repos:
 #   firecalc                      — public repo (backend + UI)
-#   firecalc-firebox-austrian-api — private repo (calc-server)
+#   firecalc-firebox-austrian-api — private repo; the calc-server assembly JAR
+#     it builds is the only calculation seam for Ecolabeled and Door15aCatalog
+#     (no Austrian engine source ships in the public repository)
 #
 # Build outputs (placed in artifacts/):
 #   firecalc-payments-assembly.jar       — backend JAR
@@ -31,6 +33,9 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERSIONS_FILE="$PROJECT_DIR/VERSIONS"
 BUILD_DIR="$PROJECT_DIR/.build"
 ARTIFACTS_DIR="$PROJECT_DIR/artifacts"
+# Mode A (unset/empty): no calc-server is built, so the Austrian kinds have no
+# calculator anywhere in the deployment — neither in the payments backend nor
+# in the browser. See firecalc-docker/DEPLOYMENT.md.
 CALC_SERVER="${CALC_SERVER:-}"
 
 
@@ -96,7 +101,10 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 for repo_name in "${!REPO_REFS[@]}"; do
-    # Skip private repo clone in Mode A (no calc-server)
+    # Skip private repo clone in Mode A (no calc-server). The private repo only
+    # builds the calc-server JAR — the sole Austrian calculation seam — so
+    # skipping it leaves Ecolabeled and Door15aCatalog unavailable, never
+    # computed locally.
     if [[ "$repo_name" == "firecalc-firebox-austrian-api" && "${CALC_SERVER}" != "true" ]]; then
         log "Skipping clone of '$repo_name' (CALC_SERVER is not 'true')"
         continue
@@ -156,7 +164,11 @@ for logo_path in \
 done
 
 # --- Calc-server (assembly JAR from private repo) ---
-# Only build calc-server if CALC_SERVER is set AND the private repo exists
+# Only build calc-server if CALC_SERVER is set AND the private repo exists.
+# Without it there is no calculation seam for Ecolabeled / Door15aCatalog: the
+# payments backend then fails their PDFs with "Austrian firebox detected but
+# remote calculation service is not configured" rather than falling back to a
+# local engine, which this repository no longer contains.
 if [[ "${CALC_SERVER}" = "true" && -d "$BUILD_DIR/firecalc-firebox-austrian-api" ]]; then
     log "Building calc-server assembly JAR..."
     (

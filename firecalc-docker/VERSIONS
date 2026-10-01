@@ -7,8 +7,8 @@
 
 # Public repository (AGPL-3.0)
 # Contains: payments backend, reports, invoices, UI (Scala.js + Vite)
-firecalc=162b2c8f3a36b60b2878a7f516605a7d6dbfdf4b
+firecalc=e4142f56dc205e68fddd6a7c129cad2d4385d322
 
 # Private repository (AFPMA Proprietary)
 # Contains: firebox_calc_server (Austrian calculation engine)
-firecalc-firebox-austrian-api=b0681c6a63516b078dbac44b66fc0a0930b8d36f
+firecalc-firebox-austrian-api=131ec13ba34e7cb5a2129e7f3da8daedcb47a8a3

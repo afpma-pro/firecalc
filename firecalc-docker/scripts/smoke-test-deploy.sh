@@ -16,6 +16,11 @@
 #   Nginx       — http://localhost/healthcheck
 #                — http://localhost/calc-healthcheck (with-calc modes only)
 #
+# In no-calc modes there is no calculation seam at all: nginx serves neither
+# /v1/calculate nor /v1/kinds and Ecolabeled / Door15aCatalog are unavailable —
+# no Austrian engine ships in this repository, so nothing is computed locally
+# as a fallback.
+#
 # Usage:
 #   bash scripts/smoke-test-deploy.sh                     # Check all services
 #   bash scripts/smoke-test-deploy.sh --service backend   # Check specific service
@@ -223,7 +228,8 @@ echo "--- Waiting for services ---"
 # Backend is always present
 wait_for_healthy "backend"
 
-# Calc-server only in with-calc modes
+# Calc-server only in with-calc modes. In no-calc modes there is no Austrian
+# calculation seam to wait for; the kinds are unavailable, not computed here.
 if [[ "${CALC_SERVER}" = "true" ]]; then
     wait_for_healthy "calc-server"
 else
@@ -240,6 +246,8 @@ echo ""
 
 echo "--- Docker Health ---"
 check_docker_health "backend" || true
+# Same for container health: a no-calc deployment has no calc-server to check,
+# and no local Austrian engine that could be verified instead.
 if [[ "${CALC_SERVER}" = "true" ]]; then
     check_docker_health "calc-server" || true
 else
@@ -270,6 +278,9 @@ if docker compose ps nginx --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:
         check_http_health "nginx-calc-calculate" "http://localhost/v1/calculate" "200" "POST" '{"kind":"payments","data":{}}' || true
         check_http_health "nginx-calc-kinds" "http://localhost/v1/kinds" || true
     fi
+    # no-calc mode: the calc locations must not resolve to any calculation
+    # upstream. Falling through to the payments backend yields a typed failure
+    # for Austrian fireboxes, never a locally computed result.
     if [[ "${CALC_SERVER}" != "true" ]]; then
         check_http_health "nginx-no-calc-calculate" "http://localhost/v1/calculate" "!200" || true
         check_http_health "nginx-no-calc-kinds" "http://localhost/v1/kinds" "!200" || true

@@ -8,7 +8,9 @@
 # =============================================================================
 # Behind-proxy deployment: external reverse proxy (e.g., nginx-proxy-manager)
 # handles TLS termination. Inner nginx serves plain HTTP on the Docker network
-# only — no host ports exposed. Includes calc-server.
+# only — no host ports exposed. Includes calc-server — the only calculation
+# seam for Ecolabeled and Door15aCatalog, which have no local engine in this
+# repository (the four non-Austrian kinds compute in-process).
 #
 # To activate this mode, create a symlink:
 #   cd firecalc-docker && ln -s docker-compose.behind-proxy.yml docker-compose.yml
@@ -65,6 +67,11 @@ services:
   # ===========================================================================
   # Calculation Server — Standalone Firebox Calculation API
   # ===========================================================================
+  # The only calculation seam for the Ecolabeled and Door15aCatalog kinds:
+  # neither has a local engine here. Self-host it in this stack (port 9000, /v1
+  # route prefix proxied by nginx) or disable those kinds with
+  # firebox-availability + VITE_FIREBOX_AVAIL_*. The assembly JAR is built in
+  # the private (non-AGPL) repository; see VERSIONS and scripts/deploy.sh.
   calc-server:
     image: firecalc-${FIRECALC_ENV}-calc-server:latest
     container_name: firecalc-${FIRECALC_ENV}-calc-server

@@ -15,7 +15,8 @@ final case class FireboxCalcError(
 /**
  * Simple error envelope for errors without per-item details.
  * Used by: unknown_kind, kind_not_served, unsupported_locale,
- * unsupported_api_version, payload_too_large, rate_limited, internal_error.
+ * unsupported_api_version, unsupported_standard, payload_too_large,
+ * rate_limited, internal_error.
  *
  * Defined here (firebox_calc_api) as part of the public wire contract.
  * The `payments-shared` module re-exports this type for use by the payments

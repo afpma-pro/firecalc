@@ -95,7 +95,8 @@ components:
         `malformed_request` — JSON invalid, required field missing,
         `WireQty.unit` not the expected `showUnitFull`, `firebox` not decodable as `Firebox_V4`;
         `unsupported_locale` — `locale` is not a `BackendCompatibleLanguage.code`;
-        `unsupported_api_version` — request `apiVersion` unknown to this server.
+        `unsupported_api_version` — request `apiVersion` unknown to this server;
+        `unsupported_standard` — request `standard` is not served by this strict-only deployment.
       content:
         application/json:
           schema:
@@ -122,6 +123,10 @@ components:
               value:
                 error: unsupported_api_version
                 message: "Unsupported API version: v2. Supported: v1"
+            unsupported_standard:
+              value:
+                error: unsupported_standard
+                message: "Unsupported standard: mce. Supported: strict"
 
     NotFound:
       description: >-
@@ -251,7 +256,10 @@ components:
     WireStandardVariant:
       type: string
       enum: [strict, mce]
-      description: Calculation standard variant
+      description: >-
+        Calculation standard variant. A value listed here is accepted by the schema;
+        a deployment MAY refuse a value it does not serve with HTTP 400
+        `unsupported_standard` (a strict-only deployment serves `strict` only).
 
     WirePipeType:
       type: string

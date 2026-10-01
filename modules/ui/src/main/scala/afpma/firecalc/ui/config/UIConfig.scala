@@ -128,9 +128,13 @@ object UIConfig {
      * [[FireboxEngineSourceConfig.fromRemoteKeys]] so unknown kind keys are
      * reported rather than silently dropped.
      *
-     * A missing or empty kinds list or base URL resolves to `AllLocal`: a
-     * deployment that omits the vars degrades to the historical all-local
-     * behaviour instead of crashing startup.
+     * A missing or empty kinds list or base URL resolves to `AllLocal`:
+     * startup does not crash, but that is not a working Austrian
+     * configuration — `Ecolabeled`/`Door15aCatalog` then resolve to `Local`,
+     * which selects their constraint-free `foldedOnly` carriers (no
+     * Austrian outputs). A deploy without a calc backend must disable the
+     * two kinds via `VITE_FIREBOX_AVAIL_*` instead of leaving these vars
+     * unset.
      */
     def resolveEngineSource(
         rawKinds: Option[String],
@@ -151,7 +155,8 @@ object UIConfig {
      * Per-kind firebox engine source, built from
      * `VITE_FIREBOX_REMOTE_KINDS` (comma-separated kebab-case kind keys) and
      * `VITE_FIREBOX_CALC_BASE_URL` (shared remote base URL). Missing/empty
-     * vars → `AllLocal` (see [[resolveEngineSource]]).
+     * vars → `AllLocal`, which leaves the Austrian kinds on their degenerate
+     * `foldedOnly` carriers (see [[resolveEngineSource]]).
      */
     lazy val fireboxEngineSource: FireboxEngineSourceConfig =
         resolveEngineSource(ViteEnv.fireboxRemoteKinds, ViteEnv.fireboxCalcBaseUrl)
@@ -182,7 +187,8 @@ object UIConfig {
      * the two configuration lines read alike in the console. Kinds are listed in
      * `FireboxEngineSourceConfig.kindKey` order via its kebab-case keys, so the
      * console names match what an operator writes in
-     * `VITE_FIREBOX_REMOTE_KINDS` / the HOCON `firebox-engine-source` block.
+     * `VITE_FIREBOX_REMOTE_KINDS` / `VITE_FIREBOX_CALC_BASE_URL` (no JVM-side
+     * source config exists).
      *
      * A `Remote` kind prints its base URI, so a misconfigured host is visible
      * without opening the network tab.

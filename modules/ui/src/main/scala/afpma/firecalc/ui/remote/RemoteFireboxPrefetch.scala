@@ -29,6 +29,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import afpma.firecalc.ui.models.engineStateHelperVar
 import afpma.firecalc.ui.models.firebox_var
+import afpma.firecalc.ui.models.localeVar
 import afpma.firecalc.ui.models.project.ProjectId
 import afpma.firecalc.ui.models.project.ProjectManager.activeProjectIdVar
 import afpma.firecalc.firebox_calc_client_js.FetchCalcClient
@@ -546,6 +547,7 @@ object RemoteFireboxPrefetch:
         remoteDataStatesSig
             .combineWith(firebox_var.signal)
             .map: (states, currentFirebox) =>
+                given Locale = localeVar.now()
                 RemoteFireboxAvailability.computationFor(
                     fireboxKindOf(currentFirebox),
                     UIConfig.fireboxEngineSource,
@@ -580,13 +582,33 @@ object RemoteFireboxPrefetch:
     /**
      * The kinds whose remote data is genuinely missing — and only those.
      *
-     * Empty in the all-local configuration and while a fetch is in flight. A
-     * failure recorded for one kind grows this set by exactly that kind, which
-     * is what makes "the registry assembles partially" observable in the UI.
+     * Empty when no kind is configured `Remote` and while a fetch is in
+     * flight. A failure recorded for one kind grows this set by exactly
+     * that kind, which is what makes "the registry assembles partially"
+     * observable in the UI.
      */
     lazy val unavailableFireboxKindsSig: Signal[Set[FireboxKind]] =
         remoteDataStatesSig.map: states =>
+            given Locale = localeVar.now()
             RemoteFireboxAvailability.unavailableKinds(UIConfig.fireboxEngineSource, states)
+
+    /**
+     * The refused kind when availability resolution refused the ACTIVE
+     * firebox kind — `Some` only for an Austrian kind configured `Local`
+     * (ADR-0010).
+     *
+     * The fourth rendering decision of the exhaustive projection: a trivial
+     * map over [[activeKindComputationSig]] like its siblings, so the module
+     * keeps its one-site promise for new [[KindComputation]] variants. It
+     * carries the KIND, not a baked string: the banner builds the displayed
+     * wording under its own `Locale` at render time, so an EN↔FR switch
+     * refreshes the notice. Kept strictly separate from the connecting and
+     * unavailable notices — a deploy condition never rides the network
+     * verdicts, and a network blip never surfaces as a missing calculator
+     * (story 8).
+     */
+    lazy val activeKindRefusalSig: Signal[Option[FireboxKind]] =
+        activeKindComputationSig.map(_.projection.refused)
 
     /**
      * Whether a remote fetch for the ACTIVE firebox kind is still in flight.

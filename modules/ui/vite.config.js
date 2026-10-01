@@ -27,7 +27,11 @@ export default defineConfig(({ mode }) => {
     // Remote firebox-calc origin (VITE_FIREBOX_CALC_BASE_URL): the browser must be
     // allowed to reach the standalone firebox-calc server for the remote kinds.
     // connect-src takes origins only, so any path prefix (e.g. /v1) is stripped.
-    // An unset or malformed value contributes nothing (all-local build).
+    // An unset or malformed value contributes nothing (no remote kinds
+    // configured). That is NOT an all-local build: Ecolabeled and
+    // Door15aCatalog have no browser-side engine (constraint-free foldedOnly
+    // carriers), so without a calc backend they must be disabled via
+    // VITE_FIREBOX_AVAIL_* / firebox-availability instead.
     const calcBaseUrl = env.VITE_FIREBOX_CALC_BASE_URL || '';
     const calcOriginMatch = calcBaseUrl.match(/^(https?:\/\/[^/]+)/i);
     const calcOrigin = calcOriginMatch ? calcOriginMatch[1] : '';
@@ -121,7 +125,7 @@ export default defineConfig(({ mode }) => {
                 const cspContent = `default-src 'self'; connect-src 'self' https://1.1.1.1 ${backendUrl}${calcOrigin ? ` ${calcOrigin}` : ''}${githubSourceMaps}; ${scriptSrc}; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' file: data: blob:;${hardeningDirectives}`;
                 
                 console.log(`[CSP] ${mode} mode - Backend: ${backendUrl}`);
-                console.log(`[CSP] ${mode} mode - Firebox-calc: ${calcOrigin || '(not configured, all-local)'}`);
+                console.log(`[CSP] ${mode} mode - Firebox-calc: ${calcOrigin || '(not configured, no remote kinds)'}`);
                 console.log(`[CSP] ${mode} mode - GitHub: ${githubSourceMaps ? 'enabled' : 'disabled'}`);
                 console.log(`[CSP] ${mode} mode - Script: ${scriptSrc}`);
                 

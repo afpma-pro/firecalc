@@ -89,7 +89,9 @@ object EN15544_Strict_Application:
 
     /**
      * Wrap an existing application so that its lazy `fc` (firebox engine)
-     * resolves from a remote-backed registry instead of the default local one.
+     * resolves from a remote-backed registry instead of the default
+     * `FireboxEngineRegistry_Strict` one — which serves the two Austrian kinds
+     * only as constraint-free `foldedOnly` carriers.
      *
      * The wrapper delegates all behaviour to `delegate` except for
      * `fireboxEngineRegistry`, which returns a six-entry registry (one per

@@ -187,30 +187,14 @@ payments {
     # ---------------------------------------------------------------------
     # Payments obtains Austrian (Ecolabeled, Door15aCatalog) calculation data
     # for PDF reports exclusively through the standalone firebox-calc backend
-    # over HTTP (GET /v1/kinds, POST /v1/calculate). There is no local
-    # Austrian fallback and no calculation-response cache: if the backend is
-    # unavailable through the client's timeout/retry policy, PDF generation
-    # fails explicitly. Inside Docker, base-uri targets the calc-backend
-    # compose service; for local development use http://localhost:9000/v1.
+    # over HTTP (GET /v1/kinds, POST /v1/calculate). There is no per-kind local
+    # switch, no Austrian fallback and no calculation-response cache: if the
+    # backend is unavailable through the client's timeout/retry policy, PDF
+    # generation fails explicitly. base-uri is the only knob. Inside Docker it
+    # targets the calc-backend compose service; for local development use
+    # http://localhost:9000/v1.
     calculation-client {
       base-uri = "http://calc-backend:9000/v1"
-      enabled = true
-    }
-
-    # ---------------------------------------------------------------------
-    # Firebox Engine Source
-    # ---------------------------------------------------------------------
-    # Per-kind selection of where firebox engine computations run.
-    # Each kind is either `local` (string) or `{ remote = "<baseUri>" }` (object).
-    # Omitting the block or a kind defaults to local (today's behaviour).
-    # Valid keys: traditional, ecolabeled, afpma-prse, single-tested, door15a-catalog, custom-for-lab
-    firebox-engine-source {
-      traditional     = local
-      ecolabeled      = local
-      afpma-prse      = local
-      single-tested   = local
-      door15a-catalog = local
-      custom-for-lab  = local
     }
   }
 }

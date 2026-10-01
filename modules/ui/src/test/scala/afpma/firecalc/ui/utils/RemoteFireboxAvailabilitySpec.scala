@@ -10,6 +10,9 @@ import afpma.firecalc.engine.alg.en15544.FireboxEngineSourceConfig
 import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.ui.remote.RemoteFireboxPrefetch
 
+import io.taig.babel.Locale
+import io.taig.babel.Locales
+
 import utest.*
 
 /**
@@ -18,11 +21,16 @@ import utest.*
  *
  * Acceptance covered:
  *  - a remote failure recorded for ONE kind marks only that kind unavailable;
- *    every other kind — in particular every locally computable one — stays
+ *    every other kind (in particular any kind the config resolved Local) stays
  *    usable;
  *  - a remote-only kind is NEVER satisfied by a local engine on failure: no
  *    combination of source config and state yields `KindComputation.Local` for a
- *    `Remote`-configured kind.
+ *    `Remote`-configured kind;
+ *  - S2 (Austrian refusal, ADR-0010): an Austrian kind configured `Local`
+ *    resolves `KindComputation.Refused` with the same localized reason the
+ *    remote-only carriers report; the four engine-backed kinds stay `Local`.
+ *    The pre-existing `AllLocal` baselines are INVERTED by this work, not
+ *    deleted — each inverted test says so.
  */
 object RemoteFireboxAvailabilitySpec extends TestSuite:
 
@@ -50,6 +58,27 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
 
     private val failed: RemoteDataState[StubData.type] = RemoteDataState.Failed("service unreachable")
 
+    /**
+     * Refusal resolution localizes its reason, so the spec runs under EN and
+     * pins the shipped copy as known-good literals: a silent wording drift
+     * must fail here, not in a browser.
+     */
+    private given Locale = Locales.en
+
+    /** The kinds with no in-process engine in the public product — the canonical set (ADR-0010). */
+    private val austrianKinds: Set[FireboxKind] = FireboxKind.remoteOnly
+
+    private val nonAustrianKinds: Set[FireboxKind] = FireboxKind.closed -- austrianKinds
+
+    private val ecoRefusalReasonEn =
+        "No calculator is configured for 'Austrian Eco firebox' — the firebox calculation service is not available in this deployment"
+
+    private val door15aRefusalReasonEn =
+        "No calculator is configured for '15a door' — the firebox calculation service is not available in this deployment"
+
+    private val ecoRefusalReasonFr =
+        "Aucun calculateur n'est configuré pour 'Foyer Ecolabellisé' — le service de calcul du foyer n'est pas disponible dans ce déploiement"
+
     val tests = Tests:
 
         test("cycle guard — cycle 1 cannot overwrite cycle 2 when outcomes complete out of order") {
@@ -70,27 +99,69 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
             assert(outcome == "current cycle 2")
         }
 
-        // ── Baseline: the historical all-local configuration ───────────────
+        // ── Baseline: no kind configured Remote (the AllLocal default) ──────
 
-        test("AllLocal — every closed kind is Local and usable, nothing unavailable") {
+        test(
+            "AllLocal — engine-backed kinds resolve Local, Austrian kinds REFUSE (inverted by the Austrian-refusal work)"
+        ) {
+            // Inverted baseline: before the refusal work every closed kind
+            // resolved `Local`. A misconfigured build now REFUSES the two kinds
+            // that have no in-process engine — with the carriers' own wording
+            // (story 10) — and only the four engine-backed kinds stay `Local`.
             val cfg = FireboxEngineSourceConfig.AllLocal
-            FireboxKind.closed.foreach: kind =>
+            nonAustrianKinds.foreach: kind =>
                 assert(RemoteFireboxAvailability.computationFor(kind, cfg, Map.empty) == KindComputation.Local)
-            assert(RemoteFireboxAvailability.usableKinds(cfg, Map.empty) == FireboxKind.closed)
+            assert(
+                RemoteFireboxAvailability.computationFor(FireboxKind.Ecolabeled, cfg, Map.empty) ==
+                    KindComputation.Refused(FireboxKind.Ecolabeled, ecoRefusalReasonEn)
+            )
+            assert(
+                RemoteFireboxAvailability.computationFor(FireboxKind.Door15aCatalog, cfg, Map.empty) ==
+                    KindComputation.Refused(FireboxKind.Door15aCatalog, door15aRefusalReasonEn)
+            )
+            assert(RemoteFireboxAvailability.usableKinds(cfg, Map.empty) == nonAustrianKinds)
+            // Refusal is NOT an availability failure: the unavailable banner
+            // stays strictly for genuinely missing remote data (story 8).
             assert(RemoteFireboxAvailability.unavailableKinds(cfg, Map.empty).isEmpty)
         }
 
-        test("AllLocal — a stray recorded failure cannot make a Local kind unavailable") {
-            // Defensive: the state map is keyed by kind, and a Local kind must
-            // ignore it entirely — otherwise a config flip would silently strand
-            // a locally computable kind.
+        test(
+            "AllLocal — a stray recorded failure cannot dress the Austrian refusal as a network verdict (inverted by the Austrian-refusal work)"
+        ) {
+            // Inverted baseline: this asserted `Local` for Ecolabeled before the
+            // refusal work. Under AllLocal the kind is now REFUSED — and a
+            // stray `Failed` state must not turn the deploy condition into
+            // `Unavailable`, nor grow the unavailable set.
             val cfg    = FireboxEngineSourceConfig.AllLocal
             val states = Map(FireboxKind.Ecolabeled -> failed)
             assert(
                 RemoteFireboxAvailability.computationFor(FireboxKind.Ecolabeled, cfg, states) ==
-                    KindComputation.Local
+                    KindComputation.Refused(FireboxKind.Ecolabeled, ecoRefusalReasonEn)
             )
-            assert(RemoteFireboxAvailability.unavailableKinds(cfg, states).isEmpty)
+            assert(!RemoteFireboxAvailability.isUsable(FireboxKind.Ecolabeled, cfg, states))
+            assert(RemoteFireboxAvailability.unavailableKinds(cfg, states).isEmpty         )
+        }
+
+        test("Austrian refusal — the reason is locale-aware (FR copy names the deploy condition)") {
+            val cfg = FireboxEngineSourceConfig.AllLocal
+            assert(
+                RemoteFireboxAvailability.computationFor(FireboxKind.Ecolabeled, cfg, Map.empty)(using Locales.fr) ==
+                    KindComputation.Refused(FireboxKind.Ecolabeled, ecoRefusalReasonFr)
+            )
+        }
+
+        test("Austrian refusal — a refused kind projects no data, no timestamp, no in-flight, and its refused kind") {
+            // The projection contract behind the banner and the prefetched-data
+            // signals: a refused kind renders NOTHING usable — no half-
+            // populated panel, no connecting spinner — and the refusal decision
+            // reaches the rendering site as the KIND, localized at render time
+            // under the component's own Locale.
+            val cfg = FireboxEngineSourceConfig.AllLocal
+            assert(
+                RemoteFireboxAvailability
+                    .computationFor(FireboxKind.Ecolabeled, cfg, Map.empty)
+                    .projection == KindComputationProjection(None, None, false, Some(FireboxKind.Ecolabeled))
+            )
         }
 
         // ── Q11: partial assembly — only the failing kind is unavailable ───
@@ -100,11 +171,18 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
 
             assert(RemoteFireboxAvailability.unavailableKinds(ecoRemote, states) == Set(FireboxKind.Ecolabeled))
 
-            // Every other closed kind keeps working.
-            val expectedUsable = FireboxKind.closed - FireboxKind.Ecolabeled
+            // Every other ENGINE-BACKED closed kind keeps working. Door15aCatalog
+            // is deliberately absent (inverted by the Austrian-refusal work):
+            // Local-configured under this config it REFUSES, and a refused
+            // kind is not usable.
+            val expectedUsable = FireboxKind.closed - FireboxKind.Ecolabeled - FireboxKind.Door15aCatalog
             assert(RemoteFireboxAvailability.usableKinds(ecoRemote, states) == expectedUsable)
             expectedUsable.foreach: kind =>
                 assert(RemoteFireboxAvailability.computationFor(kind, ecoRemote, states) == KindComputation.Local)
+            assert(
+                RemoteFireboxAvailability.computationFor(FireboxKind.Door15aCatalog, ecoRemote, states) ==
+                    KindComputation.Refused(FireboxKind.Door15aCatalog, door15aRefusalReasonEn)
+            )
         }
 
         test("partial assembly — one remote kind failing leaves the other remote kind alone") {
@@ -131,9 +209,15 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
                 RemoteFireboxAvailability.unavailableKinds(twoRemote, states) ==
                     Set(FireboxKind.Ecolabeled, FireboxKind.AFPMA_PRSE)
             )
+            // Door15aCatalog is excluded too (inverted by the Austrian-refusal
+            // work): Local-configured under twoRemote, it REFUSES.
             assert(
                 RemoteFireboxAvailability.usableKinds(twoRemote, states) ==
-                    FireboxKind.closed -- Set(FireboxKind.Ecolabeled, FireboxKind.AFPMA_PRSE)
+                    FireboxKind.closed -- Set(
+                        FireboxKind.Ecolabeled,
+                        FireboxKind.AFPMA_PRSE,
+                        FireboxKind.Door15aCatalog
+                    )
             )
         }
 
@@ -163,31 +247,44 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
             )
             assert(!RemoteFireboxAvailability.isUsable(FireboxKind.Door15aCatalog, door15aRemote, states))
             assert(RemoteFireboxAvailability.unavailableKinds(door15aRemote, states).isEmpty)
+            // Ecolabeled is excluded too (inverted by the Austrian-refusal
+            // work): Local-configured under door15aRemote, it REFUSES.
             assert(
                 RemoteFireboxAvailability.usableKinds(door15aRemote, states) ==
-                    FireboxKind.closed - FireboxKind.Door15aCatalog
+                    FireboxKind.closed -- austrianKinds
             )
-            // Every other closed kind is untouched — still Local.
-            (FireboxKind.closed - FireboxKind.Door15aCatalog).foreach: kind =>
+            // Every engine-backed kind is untouched — still Local.
+            nonAustrianKinds.foreach: kind =>
                 assert(RemoteFireboxAvailability.computationFor(kind, door15aRemote, states) == KindComputation.Local)
+            assert(
+                RemoteFireboxAvailability.computationFor(FireboxKind.Ecolabeled, door15aRemote, states) ==
+                    KindComputation.Refused(FireboxKind.Ecolabeled, ecoRefusalReasonEn)
+            )
         }
 
-        test("remote-only kind — NO state yields Local for any remote kind") {
+        test("remote-only kind — NO state yields Local or Refused for any remote kind") {
             // The invariant, checked exhaustively over the state space rather
-            // than on one sample: a Remote-configured kind must never resolve to
-            // the local engine, whatever its data provenance.
+            // than on one sample: a Remote-configured kind must never resolve
+            // to the local engine, whatever its data provenance — and a remote
+            // outcome must never be reported as the missing-calculator
+            // refusal either (story 8: a network blip is not a deploy condition).
             val allStates = List(
                 RemoteDataState.Absent,
-                RemoteDataState.Live  (StubData    ),
-                RemoteDataState.Cached(1d, StubData),
-                failed
+                RemoteDataState.Live    (StubData            ),
+                RemoteDataState.Cached  (1d, StubData        ),
+                failed,
+                RemoteDataState.Rejected("firebox_height = 0")
             )
             for
                 kind  <- List(FireboxKind.Ecolabeled, FireboxKind.AFPMA_PRSE)
                 state <- allStates
             do
                 val resolved = RemoteFireboxAvailability.computationFor(kind, twoRemote, state)
-                assert(resolved != KindComputation.Local)
+                assert(resolved != KindComputation.Local              )
+                // A `Remote`-configured kind never resolves `Refused` either:
+                // refusal is a fact of `Local` resolution (story 8) — asserted
+                // with the file's `assert(...)` idiom, not a raw throw.
+                assert(!resolved.isInstanceOf[KindComputation.Refused])
         }
 
         test("remote-only kind — pending is not usable and not unavailable") {
@@ -276,7 +373,7 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
         test("ticket 09 — remote-only Ecolabeled: every failure mode ends Unavailable, never Local") {
             // Transport, protocol, decode and unsupported-kind failures all
             // arrive at the availability layer as a recorded Failed state;
-            // none of them may resolve to the local Austrian engine.
+            // none of them may resolve to `Local` — no in-process Austrian engine exists.
             val reasons = List(
                 "service unreachable",
                 "unexpected response status: 503",
@@ -294,11 +391,16 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
 
         test("ticket 09 — an Ecolabeled outage leaves every other kind serving as before") {
             val states = Map(FireboxKind.Ecolabeled -> failed)
-            val others = FireboxKind.closed - FireboxKind.Ecolabeled
-            assert(RemoteFireboxAvailability.unavailableKinds(ecoRemote, states) == Set(FireboxKind.Ecolabeled))
-            others.foreach: kind =>
+            // Inverted by the Austrian-refusal work: `others` used to include
+            // Door15aCatalog resolving `Local` and usable; Local-configured it
+            // now REFUSES, so only the four engine-backed kinds serve as before.
+            nonAustrianKinds.foreach: kind =>
                 assert(RemoteFireboxAvailability.computationFor(kind, ecoRemote, states) == KindComputation.Local)
                 assert(RemoteFireboxAvailability.isUsable(kind, ecoRemote, states)                               )
+            assert(
+                RemoteFireboxAvailability.computationFor(FireboxKind.Door15aCatalog, ecoRemote, states) ==
+                    KindComputation.Refused(FireboxKind.Door15aCatalog, door15aRefusalReasonEn)
+            )
         }
 
         test("ticket 09 — a cached Ecolabeled verdict stays in Ecolabeled's slot, never another kind's") {
@@ -316,9 +418,11 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
                 RemoteFireboxAvailability.computationFor(FireboxKind.Traditional, ecoRemote, states) ==
                     KindComputation.Local
             )
+            // Inverted by the Austrian-refusal work: Door15aCatalog was
+            // asserted `Local` here; Local-configured, it now REFUSES.
             assert(
                 RemoteFireboxAvailability.computationFor(FireboxKind.Door15aCatalog, ecoRemote, states) ==
-                    KindComputation.Local
+                    KindComputation.Refused(FireboxKind.Door15aCatalog, door15aRefusalReasonEn)
             )
             assert(RemoteFireboxAvailability.unavailableKinds(ecoRemote, states).isEmpty        )
         }
@@ -342,10 +446,11 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
         }
 
         test("ticket 10 — remote-only Door15aCatalog: every failure mode ends Unavailable, never Local") {
-            // Door15aCatalog was locally computable before the cutover; pin
-            // that no failure reason — including an unsupported-kind verdict
-            // naming its own wire key — can send it back to the browser
-            // engine.
+            // The browser engine never serves Door15aCatalog any more: locally
+            // configured it REFUSES (see the AllLocal inversion), so no failure
+            // reason — including an unsupported-kind verdict naming its own
+            // wire key — may dress a missing calculator as a network verdict or
+            // send the kind back to an in-process path.
             val reasons = List(
                 "service unreachable",
                 "unexpected response status: 503",
@@ -389,9 +494,11 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
                     KindComputation.Remote(Some(1_700_000_000_000d), StubData)
             )
             assert(RemoteFireboxAvailability.isUsable(FireboxKind.Door15aCatalog, door15aRemote, states))
+            // Inverted by the Austrian-refusal work: Ecolabeled was asserted
+            // `Local` here; Local-configured, it now REFUSES.
             assert(
                 RemoteFireboxAvailability.computationFor(FireboxKind.Ecolabeled, door15aRemote, states) ==
-                    KindComputation.Local
+                    KindComputation.Refused(FireboxKind.Ecolabeled, ecoRefusalReasonEn)
             )
             assert(RemoteFireboxAvailability.unavailableKinds(door15aRemote, states).isEmpty            )
         }

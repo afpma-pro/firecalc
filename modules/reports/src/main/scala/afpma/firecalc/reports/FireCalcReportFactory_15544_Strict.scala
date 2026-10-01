@@ -14,9 +14,14 @@ import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr
 import afpma.firecalc.engine.api.v0_2024_10_strict.StoveProjectDescr_15544_Strict_Alg
 import afpma.firecalc.engine.impl.en15544.strict.EN15544_Strict_Application
 
+import afpma.firecalc.engine.standard.given_ShowUsingLocale_MCalc_Error
+import afpma.firecalc.engine.standard.MCalc_Error
+import afpma.firecalc.i18n.ShowUsingLocale
+
 import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict.Op
 import afpma.firecalc.reports.typst.TypstReportFactory_15544_Strict
 
+import cats.data.NonEmptyList
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 
@@ -25,6 +30,7 @@ import scala.util.Success
 
 import io.github.fatihcatalkaya.javatypst.JavaTypst
 import io.taig.babel.Locale
+import io.taig.babel.Locales
 
 trait FireCalcReportFactory_15544_Strict:
 
@@ -126,7 +132,7 @@ object FireCalcReportFactory_15544_Strict:
             fireCalcProj.en15544_Alg match
                 case Valid(en15544_appl) => fn(en15544_appl)
                 case Invalid(e)          =>
-                    Left(EN15544ValidationException(e.toList.map(_.toString)))
+                    Left(EN15544ValidationException(validationErrorMessages(e)))
 
         override def loadFireCalcProject_AndValidate(
             fireCalcProj: StoveProjectDescr_15544_Strict_Alg
@@ -135,9 +141,25 @@ object FireCalcReportFactory_15544_Strict:
                 val countryCode = fireCalcProj.project.country
                 en15544_appl.validateResultsExceptEmissionsValues(countryCode) match
                     case Invalid(e) =>
-                        Left(EN15544ValidationException(e.toList.map(_.toString)))
+                        Left(EN15544ValidationException(validationErrorMessages(e)))
                     case Valid(_)   =>
                         Right(newImpl(en15544_appl, fireCalcProj))
+
+        /**
+         * Render the validation errors into the human-readable strings that
+         * `EN15544ValidationException` owes its consumers: payments logs them
+         * and puts them verbatim into admin and customer notification emails.
+         * `_.toString` cannot carry a folded refusal's reason —
+         * `FireboxErrorCustom` is not a case class, so the refusal would
+         * reach the builder as an opaque `@hash` object string. Showing
+         * through the existing `ShowUsingLocale[MCalc_Error]` instance
+         * mirrors the constraint fold, which pins `Locale.en` when it
+         * localises verdict messages (`en15544_common_application.scala`),
+         * so pass-through messages like the carrier refusal arrive verbatim.
+         */
+        private def validationErrorMessages(errors: NonEmptyList[MCalc_Error]): List[String] =
+            given Locale = Locales.en
+            errors.toList.map(ShowUsingLocale[MCalc_Error].show)
 
         override def loadFireCalcProject_NoValidate(
             fireCalcProj: StoveProjectDescr_15544_Strict_Alg

@@ -8,14 +8,21 @@ package afpma.firecalc.engine.alg.en15544
 /**
  * Per-kind selection of [[FireboxEngineSource]] (fix-plan Phase 1, §6).
  *
- * This is the single cross-platform vocabulary for "which kinds compute
- * remotely". The JVM side builds it from HOCON (`firebox-engine-source.<kind>`)
- * and the Scala.js UI builds it from Vite environment variables; both go
- * through [[FireboxEngineSourceConfig.kindKey]] so the two can never drift.
+ * This is the single vocabulary for "which kinds compute remotely". Only
+ * the Scala.js UI builds it — from `VITE_FIREBOX_REMOTE_KINDS` plus
+ * `VITE_FIREBOX_CALC_BASE_URL`, via [[fromRemoteKeys]]. The former payments
+ * HOCON block (`firebox-engine-source.<kind>`) appears in no shipped config
+ * anymore and never had a parser; the UI cannot read JVM HOCON either. Kind
+ * names go through [[FireboxEngineSourceConfig.kindKey]], the same spelling as
+ * the `firebox-availability` block, so the two never drift apart.
  *
- * A kind absent from `perKind` resolves to [[FireboxEngineSource.Local]], so an
- * empty config reproduces the historical all-local behaviour and the change
- * stays additive and reversible.
+ * A kind absent from `perKind` resolves to [[FireboxEngineSource.Local]].
+ * That default is historical all-local behaviour ONLY for the four
+ * non-Austrian kinds, which ship real in-process engines:
+ * `Ecolabeled`/`Door15aCatalog` have no in-process Austrian engine since
+ * the ticket-16 cutover, so an empty config leaves them on their
+ * constraint-free `foldedOnly` carriers (no Austrian outputs) — configure
+ * those two kinds [[FireboxEngineSource.Remote]] or disable them.
  */
 final case class FireboxEngineSourceConfig(
     perKind: Map[FireboxKind, FireboxEngineSource]
@@ -32,7 +39,12 @@ final case class FireboxEngineSourceConfig(
 
 object FireboxEngineSourceConfig:
 
-    /** Historical behaviour: every kind computes in-process. */
+    /**
+     * No per-kind overrides: the four non-Austrian kinds compute
+     * in-process; `Ecolabeled`/`Door15aCatalog` resolve to
+     * [[FireboxEngineSource.Local]] and therefore to their constraint-free
+     * `foldedOnly` carriers — unsafe for them (see the class scaladoc).
+     */
     val AllLocal: FireboxEngineSourceConfig = FireboxEngineSourceConfig(Map.empty)
 
     /**

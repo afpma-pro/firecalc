@@ -69,7 +69,7 @@ class FireboxEngineSourceConfigSuite extends AnyFreeSpec with Matchers:
             cfg.sourceFor(FireboxKind.Ecolabeled) shouldBe FireboxEngineSource.Remote(baseUri)
         }
 
-        "empty input reproduces the historical all-local behaviour" in {
+        "empty input maps every kind to the Local default" in {
             val (cfg, unknown) = FireboxEngineSourceConfig.fromRemoteKeys(List.empty, baseUri)
             unknown shouldBe empty
             cfg shouldBe FireboxEngineSourceConfig.AllLocal

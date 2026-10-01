@@ -465,13 +465,25 @@ class Phase2InvariantAcceptanceSuite extends AnyFreeSpec with Matchers:
             FireboxKind.closed should contain(entry.kind)
         FireboxEngineRegistry_Strict.all.map(_.kind).toSet shouldBe FireboxKind.closed
 
-        // Grep evidence for the absence (recorded, not asserted on source text):
+        // Evidence for the posture (recorded, not asserted on source text):
+        // no MCE serving path; exactly one documented refusal site — the
+        // private calc-core checkpoint refuses every non-strict standard with
+        // HTTP 400 `unsupported_standard` (ErrorResponseEnvelope; the shared-
+        // contract variant `FireboxCalcServerError.UnsupportedStandard` ships
+        // in `firebox_calc_api`, ADR-0011). The public repository serves no
+        // Austrian calculation at all: its remote-only carriers refuse
+        // locally resolved Austrian kinds (ADR-0010) — a separate, locally
+        // recorded refusal, not a serving path either.
         //   grep -rE "HttpRoutes|http4s|FireboxCalcRequest|WireStandardVariant|route" modules/engine-15544-mce
-        //     → zero hits: the MCE engine module registers nothing HTTP-shaped.
+        //     → zero source hits: the MCE engine module registers nothing HTTP-shaped.
         //   grep -r "WireStandardVariant\.Mce" modules
-        //     → zero hits: no code path constructs an MCE-variant request.
+        //     → zero source hits: no public code path constructs or serves an
+        //     MCE-variant request; the enum case exists for the wire contract
+        //     only, and the strict-only deployment refuses it at the seam.
         //   grep -rE "Mce|MCE|mce" <private repository>/modules/firebox_calc_server
-        //     → zero hits: the private calculation server wires exactly one
-        //     engine, Strict (FireboxCalcRoutes builds the Strict service).
+        //     → no MCE serving path: the private calculation server wires
+        //     exactly one engine, Strict (FireboxCalcRoutes builds the Strict
+        //     service); the only standard-related code is the documented
+        //     refusal site above.
         succeed
     }

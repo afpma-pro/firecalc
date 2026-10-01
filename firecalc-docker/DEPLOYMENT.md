@@ -11,6 +11,39 @@ FireCalc supports four deployment configurations:
 | Behind-Proxy (with calc) | Yes | External proxy | `docker-compose.behind-proxy.yml` |
 | Behind-Proxy (no calc) | No | External proxy | `docker-compose.behind-proxy.no-calc.yml` |
 
+**Supported posture: self-host the calc backend over the HTTP seam** (the
+with-calc variants above). "Calculation Server: No" does **not** mean
+calculations happen locally — the public repository ships no Austrian engine
+source, so `Ecolabeled` and `Door15aCatalog` have no in-process calculator at
+all: a no-calc deployment simply has no calculation seam for those two kinds.
+
+- The four non-Austrian kinds (`traditional`, `afpma-prse`, `single-tested`,
+  `custom-for-lab`) still compute in-process as before.
+- The two Austrian kinds are unavailable: the UI has no browser-side engine for
+  them (they are registered as folded-only carriers with no constraint algebra,
+  so a local run yields degenerate results, never a real calculation) and
+  payments PDF generation fails with
+  `Austrian firebox detected but remote calculation service is not configured`.
+
+The two supported configurations:
+
+1. **Self-host the calc backend** — the approved posture (with-calc variants).
+   Set `CALC_SERVER=true` (Makefile) so `FIRECALC_MODE=with-calc`, and run the
+   `calc-server` container on the same host: it listens on port 9000 and nginx
+   proxies `GET /v1/kinds` and `POST /v1/calculate` under the API domain's `/v1`
+   prefix. Point the UI at it with `VITE_FIREBOX_REMOTE_KINDS=ecolabeled,door15a-catalog`
+   and `VITE_FIREBOX_CALC_BASE_URL=https://<api-domain>/v1`, and the payments
+   backend at it with `calculation-client.base-uri` (e.g. `http://calc-server:9000/v1`).
+   The calc-server assembly JAR is built in the private (non-AGPL) repository —
+   `scripts/deploy.sh` clones the ref pinned in `VERSIONS` and places
+   `artifacts/firecalc-calc-server-assembly.jar` in the Docker build context.
+2. **Disable the Austrian kinds** when no calc backend is available:
+   `firebox-availability.ecolabeled = false` and
+   `firebox-availability.door15a-catalog = false` in the payments HOCON config,
+   plus `VITE_FIREBOX_AVAIL_ECOLABELED=false` and
+   `VITE_FIREBOX_AVAIL_DOOR15A_CATALOG=false` in the UI environment. Explicit
+   unavailability is honest; a missing calc backend is not a local fallback.
+
 ### Standalone Mode
 
 Self-contained deployment with inner nginx handling TLS termination and Let's Encrypt certificate management. Exposes ports 80 and 443 on the host.

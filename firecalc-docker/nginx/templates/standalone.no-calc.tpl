@@ -7,6 +7,8 @@
 # Template for standalone mode without calculation server.
 # Domain placeholders are substituted by envsubst at container startup.
 # The entrypoint detects no-calc mode and empties calc-* include files.
+# Emptying them removes the only calculation seam for Ecolabeled and
+# Door15aCatalog: no local engine exists for either, so both are unavailable.
 # =============================================================================
 
 include /etc/nginx/conf.d/shared/common.conf;

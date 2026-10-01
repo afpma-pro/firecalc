@@ -37,12 +37,39 @@ interface. No public artifact links private code; the private server links no
 AGPL artifact (14c dependency-closure audit, recorded in the private
 repository).
 
+### 1.1 Deployment postures
+
+- **Self-hosted calc backend — the supported posture.** Both Austrian kinds
+  reach their calculation exclusively over the HTTP seam: UI
+  `VITE_FIREBOX_REMOTE_KINDS=ecolabeled,door15a-catalog` plus
+  `VITE_FIREBOX_CALC_BASE_URL=https://<api-domain>/v1`; payments
+  `calculation-client.base-uri`; compose `CALC_SERVER=true` (with-calc
+  files; containers run `FIRECALC_MODE=with-calc`). There is no per-kind
+  local switch on either side: no browser source toggle, and no JVM-side
+  `firebox-engine-source` HOCON block — it has been removed from every
+  shipped config and never had a parser; payments routes Austrian kinds to
+  the calc backend unconditionally by DTO subtype. The public registry
+  carries the two kinds only as constraint-free `foldedOnly` entries, so a
+  "local" resolution for them is a misconfiguration, never a fallback.
+- **Calc-free deploy.** With `CALC_SERVER` unset (the `.no-calc` compose
+  variants, `FIRECALC_MODE=no-calc`) the two Austrian kinds MUST be
+  disabled, not left to compute "locally": UI
+  `VITE_FIREBOX_AVAIL_ECOLABELED=false` and
+  `VITE_FIREBOX_AVAIL_DOOR15A_CATALOG=false` (plus the `..._BACKEND`
+  variants), payments HOCON `firebox-availability.ecolabeled = false` and
+  `firebox-availability.door15a-catalog = false`. The shipped staging
+  payments config (`docker/configs/staging/payments/payments-config.conf`)
+  already follows exactly this pattern. That is honest unavailability;
+  leaving the remote-calc vars unset instead resolves both kinds to
+  `Local` and yields degenerate empty results.
+
 ## 2. Routing configuration
 
 ### 2.1 Compose services (both modes)
 
 `docker/docker-compose.standalone.yml` and `docker/docker-compose.behind-proxy.yml`
-each define the calculation backend as an independent service:
+(selected when `CALC_SERVER=true`; the `.no-calc` variants omit this
+service entirely) each define the calculation backend as an independent service:
 
 | Service | Image | Port | Volumes | Healthcheck |
 |---|---|---|---|---|
@@ -112,13 +139,15 @@ have no browser-side calculation source (tickets 09/10 removed it).
 payments.<environment> {
   calculation-client {
     base-uri = "http://calc-backend:9000/v1"   # Docker: compose service DNS
-    enabled  = true
   }
 }
 ```
 
-Omitting the block defaults to `http://localhost:9000/v1` (enabled) — the
-standalone backend's default bind. Templates:
+Omitting the block defaults `base-uri` to `http://localhost:9000/v1` — the
+standalone backend's default bind. `calculation-client.base-uri` is the only
+key the block has: there is no `enabled` switch and no per-kind engine-source
+switch, an unreachable backend produces a typed `CalculationReportError`,
+never a local calculation. Templates:
 `configs/templates/payments/payments-config.conf.template` and
 `docker/configs/staging/payments/payments-config.conf.template` / `.example`.
 
@@ -168,8 +197,13 @@ contract, not by version equality:
 - same rate-limit policy and headers (`X-RateLimit-Limit/Remaining/Reset` with
   Unix-epoch reset semantics, `Retry-After` on 429),
 - same error taxonomy (`unknown_kind`, `kind_not_served`, `malformed_request`,
-  `unsupported_locale`, `unsupported_api_version`, `calculation_failed`,
-  `internal_error`, `rate_limited`, `payload_too_large`).
+  `unsupported_locale`, `unsupported_api_version`, `unsupported_standard`,
+  `calculation_failed`, `internal_error`, `rate_limited`, `payload_too_large`).
+  `unsupported_standard` is the strict-only posture: a request whose
+  `standard` is not `strict` is refused at the private calc-core checkpoint
+  with HTTP 400 and an `ErrorResponseEnvelope` (shared-contract variant
+  `FireboxCalcServerError.UnsupportedStandard`; additive under OpenAPI
+  `info.version: 1.0.0`, ADR-0011).
 
 Demonstrated compatibility evidence:
 
@@ -282,6 +316,6 @@ without linking public and private builds, and without bypassing HTTP.
 | Ecolabeled/Door15aCatalog end-to-end workflows with complete outputs and `AsResult` | Ticket 12 Phase 2 gate: `RemotePrefetchEndToEndSpec` (ui, 8 tests) + `CrossRepositoryAcceptanceSuite` AsResult fold; phase-2 gate evidence (private repository) §1 |
 | PDF only from a fresh backend response; no fallback/cache | Ticket 18: `RemotePdfAcceptanceSuite` (payments, 11 tests); ticket 06 implementation notes |
 | Explicit outage behavior (UI + PDF) | `RemotePrefetchFailureSpec` (ui, 10 tests), `FetchCalcClientSuite`, `Http4sCalcClientSuite`; `RemotePdfAcceptanceSuite` exhaustion tests; phase-2 gate evidence (private repository) §2, §4 |
-| Strict-backed calculation unchanged, every served kind advertised, no MCE HTTP path, non-Austrian behavior retained | Ticket 15 evidence §2 (Strict registry, 6 served kinds, zero MCE refs); ticket 12 evidence §6; `Phase2InvariantAcceptanceSuite` (nine invariants, JVM + JS) |
+| Strict-backed calculation unchanged, every served kind advertised, no MCE serving path — exactly one documented refusal site, non-Austrian behavior retained | Ticket 15 evidence §2 (Strict registry, 6 served kinds; the deployment is strict-only: no MCE serving path, and a non-strict `standard` request is refused at the private calc-core checkpoint with HTTP 400 `unsupported_standard` — the single documented refusal site); ticket 12 evidence §6; `Phase2InvariantAcceptanceSuite` (nine invariants, JVM + JS) |
 | Rollback deploys prior backend behind unchanged routes | `private-backend-rollback.md` |
 | No rollback restores proprietary source/artifacts, links builds, or bypasses HTTP | `private-backend-rollback.md` §4; SPEC_00 decision 14 |
