@@ -280,11 +280,11 @@ object RemoteFireboxAvailabilitySpec extends TestSuite:
                 state <- allStates
             do
                 val resolved = RemoteFireboxAvailability.computationFor(kind, twoRemote, state)
-                assert(resolved != KindComputation.Local)
-                resolved match
-                    case KindComputation.Refused(_, _) =>
-                        throw new java.lang.AssertionError(s"remote kind yielded Refused for state $state")
-                    case _                             => ()
+                assert(resolved != KindComputation.Local              )
+                // A `Remote`-configured kind never resolves `Refused` either:
+                // refusal is a fact of `Local` resolution (story 8) — asserted
+                // with the file's `assert(...)` idiom, not a raw throw.
+                assert(!resolved.isInstanceOf[KindComputation.Refused])
         }
 
         test("remote-only kind — pending is not usable and not unavailable") {
