@@ -168,7 +168,7 @@ make prod-electron
          │ outputs to
          ↓
 ┌─────────────────────────────────────┐
-│  modules/ui/target/scala-3.9.0/     │
+│  target/out/sjs1/scala-3.9.0/       │
 │  firecalc-ui-fastopt/               │
 └───────────────┬─────────────────────┘
                 │ watches
@@ -192,7 +192,7 @@ make prod-electron
 1. **Scala.js Compiler (`make dev-ui-compile`)**
    - Watches Scala source files
    - Compiles to JavaScript on changes
-   - Outputs to `modules/ui/target/scala-3.9.0/firecalc-ui-fastopt/`
+   - Outputs to `target/out/sjs1/scala-3.9.0/firecalc-ui/firecalc-ui-fastopt/` (repo root, sbt 2.x layout)
    - Alternative: `sbt ~ui/fastLinkJS`
 
 2. **Vite Dev Server**

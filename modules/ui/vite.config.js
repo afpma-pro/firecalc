@@ -165,7 +165,7 @@ export default defineConfig(({ mode }) => {
                 // Existing UI module paths
                 resolve(__dirname, '.'),
                 resolve(__dirname, './src/main/scala'),
-                resolve(__dirname, './target/scala-3.9.0/firecalc-ui-fastopt'),
+                // (sbt 2.x linker output lives under ../../target/out/sjs1/... — covered by the repo-root allow)
 
                 // IMPORTANT: Allow the repo root so Vite can serve any source via /@fs/...
                 // This matches the -scalajs-mapSourceURI added in build.sbt
@@ -173,10 +173,10 @@ export default defineConfig(({ mode }) => {
             ]
         },
         watch: {
-          // Watch only generated JS files and source maps for faster change detection
+          // Watch the sbt 2.x linker output (glob avoids rotting on Scala version bumps)
           include: [
-            './target/scala-3.9.0/firecalc-ui-fastopt/**/*.js',
-            './target/scala-3.9.0/firecalc-ui-fastopt/**/*.js.map',
+            resolve(__dirname, '../../target/out/**/firecalc-ui-fastopt/**/*.js'),
+            resolve(__dirname, '../../target/out/**/firecalc-ui-fastopt/**/*.js.map'),
           ],
           ignored: [
             '**/*.scala',              // Ignore source files (handled by sbt)
