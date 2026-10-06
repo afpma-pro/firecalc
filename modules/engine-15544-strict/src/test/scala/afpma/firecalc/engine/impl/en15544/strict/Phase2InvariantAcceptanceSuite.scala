@@ -153,7 +153,8 @@ class Phase2InvariantAcceptanceSuite extends AnyFreeSpec with Matchers:
             image                                  = None
         )
 
-    // Door15a DTO fields per modules/dto/src/main/scala/afpma/firecalc/dto/v5/Firebox_V4.scala:197-238.
+    // Door15a DTO fields per modules/dto/src/main/scala/afpma/firecalc/dto/v5/Firebox_V4.scala —
+    // Firebox_V4.Door15aFirebox_Catalog.
     private def stubDoor15aDTO: Firebox.Door15aFirebox_Catalog =
         Firebox.Door15aFirebox_Catalog                  (
             reference                   = "test",
@@ -255,7 +256,7 @@ class Phase2InvariantAcceptanceSuite extends AnyFreeSpec with Matchers:
 
     "Invariants 1+2 — registration stays contravariant with ClassTag evidence" in {
         // (The ticket's "ClassTag evidence" is the `TypeTest` that replaced it —
-        // see FireboxEngine.scala:290-297: `TypeTest` supplies the runtime
+        // see FireboxEngine.scala — FireboxEngineAny.toRemoteBacked: `TypeTest` supplies the runtime
         // evidence erasure destroys, where `ClassTag.unapply` could only test
         // the class component of a type.)
         //
@@ -321,7 +322,8 @@ class Phase2InvariantAcceptanceSuite extends AnyFreeSpec with Matchers:
 
     "Invariant 8 — Firebox_15544 remains unsealed" in {
         // `Firebox_15544` is declared in
-        // modules/engine-15544-common/src/main/scala/afpma/firecalc/engine/models/en15544/std.scala:72-296
+        // modules/engine-15544-common/src/main/scala/afpma/firecalc/engine/models/en15544/
+        // std.scala — Firebox_15544 (trait + companion)
         // and is NOT sealed: the two proprietary kinds' public engine models
         // are the generic remote-only carriers, defined OUTSIDE that
         // compilation unit (`RemoteOnlyFireboxes_Strict`), yet are
@@ -416,7 +418,8 @@ class Phase2InvariantAcceptanceSuite extends AnyFreeSpec with Matchers:
 
     "Strict seam — the normative request carries WireStandardVariant.Strict and the kind mapping is a total bijection" in {
         // Built the way the UI/PDF builders do (cf.
-        // modules/ui/src/main/scala/afpma/firecalc/ui/remote/RemoteFireboxPrefetch.scala:346-367):
+        // modules/ui/src/main/scala/afpma/firecalc/ui/remote/RemoteFireboxPrefetch.scala —
+        // RemoteFireboxPrefetch.prefetchFireboxCalc):
         // apiVersion v1, standard = WireStandardVariant.Strict.
         val ecoRequest = FireboxCalcRequest(
             apiVersion         = ApiVersion.v1,
@@ -443,7 +446,7 @@ class Phase2InvariantAcceptanceSuite extends AnyFreeSpec with Matchers:
         doorRequest.kind shouldBe WireFireboxKind.Door15aCatalog
 
         // The total bijection that keeps DTO kind and wire kind from ever
-        // disagreeing (WireConversions.scala:554-579): both round trips are the
+        // disagreeing (WireConversions.scala — toWireFireboxKind / fromWireFireboxKind): both round trips are the
         // identity. `BlackBox` is excluded on both sides by construction (open
         // family, no wire case). A dropped or renamed case on either side makes
         // one of these round trips fail — or the match non-exhaustive at compile
