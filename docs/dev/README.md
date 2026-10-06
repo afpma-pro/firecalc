@@ -141,12 +141,19 @@ sbt --server --batch "ui/test"    # fresh JVM, matches build.properties
 ```
 
 Verified 2026-10-06 on `chore/inert-calc-knobs-and-docs`: cold run is 332/332 green and
-every "red" suite executes. Two related traps when trusting test output:
-- `ui/test` resolves through Bloop to `testQuick`. A warm re-run printing
-  `Total 0 … No tests to run` means everything was **cache-skipped**, not executed.
-- Evidence-grade runs (release verification, spec acceptance) must therefore be cold
-  (`--server --batch`) or forced (`test` after touching the test sources), never a warm
-  green-on-skip.
+every "red" suite executes. Three related traps when trusting test output:
+- Under sbt 2.x (this build's `build.properties`), the `test` key maps to `testQuick` on a
+  fresh JVM too — a run printing `Total 0 … No tests to run` means everything was
+  **cache-skipped**, not executed. It is not only a warm/Bloop artifact.
+- Evidence-grade runs (release verification, spec acceptance) must therefore be
+  **forced**: `sbt --server --batch "<module>/testOnly *"` — never rely on bare `test`
+  (warm or cold) to execute anything.
+- sbt 2 also packages each project's own Test products into a `-tests.jar` first on the
+  Test classpath. Suites resolving classpath resources via `Paths.get(url.toURI)` die with
+  `jdk.zipfs FileSystemNotFoundException` there. The build exports exploded test-classes
+  dirs (`testClasspathAsDirectories`, i.e. `Test / exportJars := false`) for the JVM
+  projects with classpath-resource suites — see ticket
+  `.scratch/austrian-refusal-and-strict-only/issues/07` for the diagnosis recipe.
 
 ### Publishing the engine artifacts (local repository only)
 
