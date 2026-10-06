@@ -162,7 +162,7 @@ class CarrierRefusalReportFactorySuite extends AnyFreeSpec with Matchers:
         //    surfaces no refusal — at most the scaffold's pipe physics,
         //    which is pinned at the engine seam, not by this ticket.
         app.validateResultsExceptEmissionsValues(TestScaffold_15544.project.country) match
-            case Valid(_)   => succeed
+            case Valid(_)   => succeed: Unit
             case Invalid(e) =>
                 withClue("remote-wrapped checkpoint must not carry the refusal reason: ") {
                     e.toList
