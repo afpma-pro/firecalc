@@ -126,6 +126,28 @@ This installs a pre-commit hook that:
 
 See [`scripts/git-hooks/README.md`](../../scripts/git-hooks/README.md) for details.
 
+### Stale warm sbt server: `ui/test` red suites that are not actually broken
+
+`sbt --client "ui/test"` can report `java.lang.ClassNotFoundException` for suites that
+exist and pass (observed: 8 utest suites incl. `RemotePrefetch*Spec`, plus ~10
+"suite-load error" entries). Root cause is warm-state, not code: a server JVM started
+from an older launcher than `build.properties` expects, and a Metals/Bloop-side test
+link (`.bloop/ui/ui-test-js/…`) frozen before the suites were added. Recovery — run
+cold once:
+
+```bash
+sbt --client shutdown
+sbt --server --batch "ui/test"    # fresh JVM, matches build.properties
+```
+
+Verified 2026-10-06 on `chore/inert-calc-knobs-and-docs`: cold run is 332/332 green and
+every "red" suite executes. Two related traps when trusting test output:
+- `ui/test` resolves through Bloop to `testQuick`. A warm re-run printing
+  `Total 0 … No tests to run` means everything was **cache-skipped**, not executed.
+- Evidence-grade runs (release verification, spec acceptance) must therefore be cold
+  (`--server --batch`) or forced (`test` after touching the test sources), never a warm
+  green-on-skip.
+
 ### Publishing the engine artifacts (local repository only)
 
 The 14 engine-line modules granted to `firecalc-firebox-austrian-api` as binary
