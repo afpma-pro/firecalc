@@ -15,6 +15,7 @@ import afpma.firecalc.dto.FireCalcYAML
 import afpma.firecalc.dto.FireCalcYAMLMigrations
 import afpma.firecalc.dto.v5.Firebox_V4
 
+import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.engine.alg.en15544.RemoteFireboxData
 import afpma.firecalc.engine.api.FireCalcYAML_Loader
 import afpma.firecalc.engine.api.WireConversions
@@ -39,6 +40,29 @@ import scala.util.Try
 import afpma.firecalc.firebox_calc_api.*
 import io.github.fatihcatalkaya.javatypst.JavaTypst
 import io.taig.babel.Locale
+
+/**
+ * Payments' single remote-only membership decision.
+ *
+ * The roster is NOT hand-listed here: wire kinds transport to engine kinds
+ * through the total bijection [[WireConversions.fromWireFireboxKind]], and
+ * membership is the canonical [[FireboxKind.remoteOnly]] (ADR-0010) — name a
+ * new remote-only kind there and this routing follows. The DTO→wire step is
+ * payments' own wire-layer knowledge (the DTO vocabulary is frozen wire
+ * contract; the engine never sees it).
+ */
+object CalculationReportServiceImpl:
+
+    def fireboxToWireKind(firebox: Firebox_V4): WireFireboxKind =
+        firebox match
+            case _: Firebox_V4.Traditional            => WireFireboxKind.Traditional
+            case _: Firebox_V4.Ecolabeled             => WireFireboxKind.Ecolabeled
+            case _: Firebox_V4.AFPMA_PRSE             => WireFireboxKind.AfpmaPrse
+            case _: Firebox_V4.SingleTested           => WireFireboxKind.SingleTested
+            case _: Firebox_V4.Door15aFirebox_Catalog => WireFireboxKind.Door15aCatalog
+
+    def isRemoteOnlyFirebox(kind: WireFireboxKind): Boolean =
+        FireboxKind.remoteOnly.contains(WireConversions.fromWireFireboxKind(kind))
 
 class CalculationReportServiceImpl(
     calcClient: FireboxCalcClient[IO],
@@ -95,9 +119,9 @@ class CalculationReportServiceImpl(
         fc    : FireCalcYAML
     ): Either[CalculationReportError, FireboxCalcRequest] =
         val firebox = fc.firebox
-        val kind    = fireboxToWireKind(firebox)
+        val kind    = CalculationReportServiceImpl.fireboxToWireKind(firebox)
 
-        if !isAustrianFirebox(kind) then
+        if !CalculationReportServiceImpl.isRemoteOnlyFirebox(kind) then
             Left(
                 CalculationReportError.CalculationError(
                     s"Firebox kind $kind is not Austrian; expected Ecolabeled or Door15aCatalog"
@@ -299,14 +323,3 @@ class CalculationReportServiceImpl(
 
     private def errorMessage(error: Throwable): String =
         Option(error.getMessage).getOrElse(error.getClass.getSimpleName)
-
-    private def fireboxToWireKind(firebox: Firebox_V4): WireFireboxKind =
-        firebox match
-            case _: Firebox_V4.Traditional            => WireFireboxKind.Traditional
-            case _: Firebox_V4.Ecolabeled             => WireFireboxKind.Ecolabeled
-            case _: Firebox_V4.AFPMA_PRSE             => WireFireboxKind.AfpmaPrse
-            case _: Firebox_V4.SingleTested           => WireFireboxKind.SingleTested
-            case _: Firebox_V4.Door15aFirebox_Catalog => WireFireboxKind.Door15aCatalog
-
-    private def isAustrianFirebox(kind: WireFireboxKind): Boolean =
-        kind == WireFireboxKind.Ecolabeled || kind == WireFireboxKind.Door15aCatalog

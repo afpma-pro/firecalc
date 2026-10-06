@@ -9,7 +9,6 @@ import java.io.File
 import java.nio.file.Files
 
 import afpma.firecalc.dto.FireCalcYAML
-import afpma.firecalc.dto.v5.Firebox_V4
 
 import afpma.firecalc.reports.EN15544ValidationException
 import afpma.firecalc.reports.FireCalcReportFactory_15544_Strict
@@ -91,7 +90,7 @@ object Main extends IOApp:
                     None
                 )
 
-        if isAustrianFireboxYaml(yamlContent) then
+        if isRemoteOnlyFireboxYaml(yamlContent) then
             remoteService match
                 case Some(service) =>
                     LiftIO[F].liftIO(
@@ -139,15 +138,14 @@ object Main extends IOApp:
                             case Right(pdfFile) => pdfFile
             }
 
-    /** Detects whether the parsed project uses a remotely calculated firebox. */
-    private def isAustrianFireboxYaml(yamlContent: String): Boolean =
+    /** Detects whether the parsed project uses a remote-only firebox kind. */
+    private def isRemoteOnlyFireboxYaml(yamlContent: String): Boolean =
         import afpma.firecalc.dto.FireCalcYAMLMigrations
         FireCalcYAMLMigrations.decodeAndMigrateTry(yamlContent) match
             case scala.util.Success(fc: FireCalcYAML) =>
-                fc.firebox match
-                    case _: Firebox_V4.Ecolabeled             => true
-                    case _: Firebox_V4.Door15aFirebox_Catalog => true
-                    case _ => false
+                CalculationReportServiceImpl.isRemoteOnlyFirebox(
+                    CalculationReportServiceImpl.fireboxToWireKind(fc.firebox)
+                )
             case scala.util.Failure(_)                => false
 
     def generatePdfReportAndInvoiceNumber[F[_]: Log4CatsLogger: Async: LiftIO](
