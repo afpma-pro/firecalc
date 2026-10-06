@@ -584,6 +584,14 @@ lazy val engine_kernel = crossProject(JVMPlatform, JSPlatform)
     .settings(watchI18nSources("i18n"))
     .dependsOn(i18n, units, dto, domain)
 
+// sbt 2.x packages a project's own Test products into a -tests.jar placed on its
+// Test classpath. Suites resolving classpath resources through
+// Paths.get(resourceURL.toURI) (snapshot + generated-report files) then abort with
+// jdk.zipfs FileSystemNotFoundException. Export exploded test-classes directories
+// instead — the sbt 1.11.6 behaviour CI runs on — so the idiom works warm, cold,
+// locally and in CI. Applied to: engine (JVM), engineValidation, labo, reports.
+lazy val testClasspathAsDirectories = Def.settings(Test / exportJars := false)
+
 // =========
 // engine
 
@@ -621,7 +629,8 @@ lazy val engine = crossProject(JVMPlatform, JSPlatform)
     .jvmConfigure(
         _.settings(
             Test / unmanagedSourceDirectories += baseDirectory.value / ".." / "src" / "test-jvm" / "scala",
-            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test"
+            libraryDependencies += "org.scalatestplus" %% "scalacheck-1-19" % "3.2.19.0" % "test",
+            testClasspathAsDirectories
         )
     )
     .jsConfigure(_.settings(jsSourceMapSettings *))
@@ -640,7 +649,8 @@ lazy val engineValidation = (project in file("modules/engine-validation"))
         name                                   := "firecalc-engine-validation",
         version                                := engine_version,
         scalacOptions ++= Seq("-Xmax-inlines:32"),
-        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+        libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+        testClasspathAsDirectories
     )
     .dependsOn             (
         engine.jvm,
@@ -890,7 +900,8 @@ lazy val labo = (project in file("modules/labo"))
         commonSettings,
         scalacOptions ++= Seq(
             "-Xmax-inlines:32"
-        )
+        ),
+        testClasspathAsDirectories
     )
     .settings(watchI18nSources("i18n"))
     .dependsOn           (
@@ -1362,6 +1373,7 @@ lazy val reports = (project in file("modules/reports"))
         resolvers += Resolver.mavenLocal, // lookup "java-typst" in local maven repo (~/.m2/local/...)
         scalacOptions ++= Seq(
         ),
+        testClasspathAsDirectories,
 
         // Assembly configuration for fat jar
         assembly / assemblyJarName := "firecalc-reports-assembly.jar",
