@@ -12,7 +12,7 @@
 # Health endpoints:
 #   Backend     — http://localhost:8181/v1/healthcheck (Docker network only)
 #   Calc-server — http://localhost:9000/health (Docker network only, verified via nginx proxy)
-#   UI          — http://localhost:80/
+#   UI          — http://localhost:80/app/
 #   Nginx       — http://localhost/healthcheck
 #                — http://localhost/calc-healthcheck (with-calc modes only)
 #
@@ -270,7 +270,7 @@ if docker compose ps nginx --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:
     # Port 8181 is only exposed on the Docker network, not published to the host.
     # Calc-server health is verified via Docker healthcheck and nginx /calc-healthcheck proxy.
     # Port 9000 is only exposed on the Docker network, not published to the host.
-    check_http_health "ui-server" "http://localhost:80/" || true
+    check_http_health "ui-server" "http://localhost:80/app/" || true
     check_http_health "nginx" "http://localhost/healthcheck" || true
     if [[ "${CALC_SERVER}" = "true" ]]; then
         check_http_health "nginx-calc" "http://localhost/calc-healthcheck" || true
