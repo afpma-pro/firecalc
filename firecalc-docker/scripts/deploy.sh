@@ -6,15 +6,27 @@
 # =============================================================================
 # FireCalc Docker — Deploy Script
 # =============================================================================
-# Clones source repositories at pinned refs from VERSIONS, builds artifacts,
-# and copies them to the artifacts/ directory for Docker build context.
+# Builds artifacts from the source repositories and copies them to the
+# artifacts/ directory for Docker build context.
+#
+# Source-tree modes:
+#   clone mode (default) — every repo listed in VERSIONS is cloned from
+#     GitHub at its pinned SHA into .build/.
+#   local-tree mode (FIRECALC_BUILD_LOCAL=true) — no clone, no git
+#     credentials: .build/firecalc links to the repository holding this
+#     script and .build/firecalc-firebox-austrian-api links to
+#     $FIREBOX_LOCAL_DIR (both trees rsynced to the build host, .git and
+#     tags included). The private checkout's HEAD must equal its VERSIONS
+#     pin; the engine provenance gate then proves this tree matches the
+#     tagged engine source named by VERSIONS.firecalc before publishing.
 #
 # The VERSIONS file contains lines of the form:
 #   <repo-name>=<full-40-char-git-sha>
 # Lines starting with # are comments and are skipped.
 #
 # Expected repos:
-#   firecalc                      — public repo (backend + UI)
+#   firecalc                      — public repo (backend + UI); its pin names
+#     the exact engine stamp source (enforced by the provenance gate)
 #   firecalc-firebox-austrian-api — private repo; the calc-server assembly JAR
 #     it builds is the only calculation seam for Ecolabeled and Door15aCatalog
 #     (no Austrian engine source ships in the public repository)
@@ -33,10 +45,17 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERSIONS_FILE="$PROJECT_DIR/VERSIONS"
 BUILD_DIR="$PROJECT_DIR/.build"
 ARTIFACTS_DIR="$PROJECT_DIR/artifacts"
-# Mode A (unset/empty): no calc-server is built, so the Austrian kinds have no
-# calculator anywhere in the deployment — neither in the payments backend nor
-# in the browser. See firecalc-docker/DEPLOYMENT.md.
-CALC_SERVER="${CALC_SERVER:-}"
+# CALC_SERVER (Mode A when unset/empty): no calc-server is built, so the
+# Austrian kinds have no calculator anywhere in the deployment — neither in
+# the payments backend nor in the browser. See firecalc-docker/DEPLOYMENT.md.
+# The environment is read exactly once, in the build plan after VERSIONS
+# parsing; every later branch consults $build_calc_server, never the env.
+# Local-tree mode: link the working trees into .build instead of cloning
+# (rsync-based VPS deploy; the build host has no git credentials).
+FIRECALC_BUILD_LOCAL="${FIRECALC_BUILD_LOCAL:-}"
+# Path of the firecalc-firebox-austrian-api checkout (required in local-tree
+# mode when CALC_SERVER=true).
+FIREBOX_LOCAL_DIR="${FIREBOX_LOCAL_DIR:-}"
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +68,20 @@ die() { log "FATAL: $*" >&2; exit 1; }
 require_cmd() {
     command -v "$1" >/dev/null 2>&1 || die "'$1' is required but not found in PATH"
 }
+
+# Locate a freshly built assembly JAR. The build writes under
+# target/out/jvm/scala-<version>/; searching target/ by artifact name keeps
+# this independent of that layout while never matching the copies already in
+# artifacts/ — in local-tree mode the tree root contains artifacts/, so a
+# tree-wide name search would find the previous run's copy.
+find_assembly_jar() {
+    local tree="$1" jar_name="$2"
+    find "$tree/target" -name "$jar_name" -not -name "*.original" 2>/dev/null | head -1
+}
+
+# The engine provenance gate + publish lives in a sibling module; it uses the
+# helpers and paths defined above and is invoked once the source trees exist.
+source "$SCRIPT_DIR/engine-gate.sh"
 
 # ---------------------------------------------------------------------------
 # Pre-flight checks
@@ -82,8 +115,13 @@ done < "$VERSIONS_FILE"
 
 log "Parsed ${#REPO_REFS[@]} repo ref(s) from VERSIONS"
 
+# Build plan: resolve the calc-server decision once, straight from the
+# environment; every later branch consults $build_calc_server.
+build_calc_server=false
+[[ "${CALC_SERVER:-}" = "true" ]] && build_calc_server=true
+
 # ---------------------------------------------------------------------------
-# Clone source repos at pinned refs
+# Source trees: clone at pinned refs, or link local checkouts
 # ---------------------------------------------------------------------------
 
 clone_repo() {
@@ -97,20 +135,54 @@ clone_repo() {
     log "Repo '$name' checked out at $(cd "$dest" && git rev-parse --short HEAD)"
 }
 
+link_local_tree() {
+    local name="$1" src="$2"
+    [[ -d "$src/.git" ]] || die "Local-tree mode: '$src' is not a git checkout (needed for '$name')"
+    ln -s "$(cd "$src" && pwd)" "$BUILD_DIR/$name"
+    log "Linked '$name' → $(cd "$src" && pwd) (local-tree mode, no clone)"
+}
+
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-for repo_name in "${!REPO_REFS[@]}"; do
-    # Skip private repo clone in Mode A (no calc-server). The private repo only
-    # builds the calc-server JAR — the sole Austrian calculation seam — so
-    # skipping it leaves Ecolabeled and Door15aCatalog unavailable, never
-    # computed locally.
-    if [[ "$repo_name" == "firecalc-firebox-austrian-api" && "${CALC_SERVER}" != "true" ]]; then
-        log "Skipping clone of '$repo_name' (CALC_SERVER is not 'true')"
-        continue
+if [[ "${FIRECALC_BUILD_LOCAL}" = "true" ]]; then
+    # The public tree is the repository containing this script: the rsync flow
+    # carries the whole repo (.git and tags included) to the build host.
+    link_local_tree firecalc "$PROJECT_DIR/.."
+
+    if [[ "$build_calc_server" = "true" ]]; then
+        [[ -n "$FIREBOX_LOCAL_DIR" ]] || die "FIRECALC_BUILD_LOCAL=true with CALC_SERVER=true requires FIREBOX_LOCAL_DIR=<path of the firecalc-firebox-austrian-api checkout>"
+        link_local_tree firecalc-firebox-austrian-api "$FIREBOX_LOCAL_DIR"
+
+        # The private tree is built as-is, so its HEAD must be exactly the
+        # pinned stamp (clone mode instead forces the checkout to the pin).
+        private_pin="${REPO_REFS[firecalc-firebox-austrian-api]:-}"
+        [[ -n "$private_pin" ]] || die "VERSIONS has no firecalc-firebox-austrian-api pin to verify the private checkout against"
+        private_head="$(git -C "$FIREBOX_LOCAL_DIR" rev-parse HEAD)"
+        [[ "$private_head" = "$private_pin" ]] || die "Private checkout HEAD ($private_head) does not match VERSIONS.firecalc-firebox-austrian-api ($private_pin): rsync the pinned tree or re-pin VERSIONS"
+        log "Private checkout HEAD matches its VERSIONS pin"
     fi
-    clone_repo "$repo_name" "${REPO_REFS[$repo_name]}"
-done
+else
+    for repo_name in "${!REPO_REFS[@]}"; do
+        # Skip private repo clone in Mode A (no calc-server). The private repo only
+        # builds the calc-server JAR — the sole Austrian calculation seam — so
+        # skipping it leaves Ecolabeled and Door15aCatalog unavailable, never
+        # computed locally.
+        if [[ "$repo_name" == "firecalc-firebox-austrian-api" && "$build_calc_server" != "true" ]]; then
+            log "Skipping clone of '$repo_name' (CALC_SERVER is not 'true')"
+            continue
+        fi
+        clone_repo "$repo_name" "${REPO_REFS[$repo_name]}"
+    done
+fi
+
+# ---------------------------------------------------------------------------
+# Engine provenance gate + publish (CALC_SERVER=true only)
+# ---------------------------------------------------------------------------
+# The gate itself — allowlist sync check, provenance contract, tag checks,
+# publish and verification — lives in engine-gate.sh, sourced from the
+# Helpers section above.
+if [[ "$build_calc_server" = "true" ]]; then engine_gate_and_publish; fi
 
 # ---------------------------------------------------------------------------
 # Build artifacts
@@ -125,8 +197,7 @@ log "Building payments backend assembly JAR..."
     sbt "payments/assembly"
 )
 
-# Find the built JAR (handle varying Scala version in path)
-BACKEND_JAR=$(find "$BUILD_DIR/firecalc" -path "*/target/scala-*/firecalc-payments-assembly*.jar" -not -name "*.original" | head -1)
+BACKEND_JAR=$(find_assembly_jar "$BUILD_DIR/firecalc" "firecalc-payments-assembly*.jar")
 [[ -n "$BACKEND_JAR" && -f "$BACKEND_JAR" ]] || die "Backend assembly JAR not found after build"
 cp "$BACKEND_JAR" "$ARTIFACTS_DIR/firecalc-payments-assembly.jar"
 log "Copied backend JAR → artifacts/firecalc-payments-assembly.jar"
@@ -164,19 +235,21 @@ for logo_path in \
 done
 
 # --- Calc-server (assembly JAR from private repo) ---
-# Only build calc-server if CALC_SERVER is set AND the private repo exists.
-# Without it there is no calculation seam for Ecolabeled / Door15aCatalog: the
-# payments backend then fails their PDFs with "Austrian firebox detected but
-# remote calculation service is not configured" rather than falling back to a
-# local engine, which this repository no longer contains.
-if [[ "${CALC_SERVER}" = "true" && -d "$BUILD_DIR/firecalc-firebox-austrian-api" ]]; then
+# The source-trees section guarantees the private tree exists whenever
+# $build_calc_server is true (clone mode clones it, local-tree mode links
+# and verifies it), so no existence probe is needed here. Without the
+# calc-server there is no calculation seam for Ecolabeled / Door15aCatalog:
+# the payments backend then fails their PDFs with "Austrian firebox detected
+# but remote calculation service is not configured" rather than falling back
+# to a local engine, which this repository no longer contains.
+if [[ "$build_calc_server" = "true" ]]; then
     log "Building calc-server assembly JAR..."
     (
         cd "$BUILD_DIR/firecalc-firebox-austrian-api"
-        sbt "fireboxCalcServer/assembly"
+        sbt "firebox_calc_server/assembly"
     )
 
-    CALC_JAR=$(find "$BUILD_DIR/firecalc-firebox-austrian-api" -path "*/target/scala-*/firecalc-calc-server-assembly*.jar" -not -name "*.original" | head -1)
+    CALC_JAR=$(find_assembly_jar "$BUILD_DIR/firecalc-firebox-austrian-api" "firecalc-calc-server-assembly*.jar")
     if [[ -n "$CALC_JAR" && -f "$CALC_JAR" ]]; then
         cp "$CALC_JAR" "$ARTIFACTS_DIR/firecalc-calc-server-assembly.jar"
         log "Copied calc-server JAR → artifacts/firecalc-calc-server-assembly.jar"
@@ -184,11 +257,7 @@ if [[ "${CALC_SERVER}" = "true" && -d "$BUILD_DIR/firecalc-firebox-austrian-api"
         die "Calc-server assembly JAR not found after build"
     fi
 else
-    if [[ "${CALC_SERVER}" != "true" ]]; then
-        log "Skipping calc-server build (CALC_SERVER is not 'true')"
-    else
-        log "Skipping calc-server build (firecalc-firebox-austrian-api not in VERSIONS)"
-    fi
+    log "Skipping calc-server build (CALC_SERVER is not 'true')"
 fi
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,19 @@
 # FireCalc Docker — Source Version Pins
 #
-# Each value is a Git commit SHA (full 40-char hex) from the `firebox-api` branch.
-# The deploy script clones each repo at the pinned ref before building artifacts.
+# Each value is a full 40-char Git commit SHA.
+#
+# Clone mode (default): the deploy script clones each repo at its pinned ref
+# before building artifacts.
+#
+# Local-tree mode (FIRECALC_BUILD_LOCAL=true, the rsync-based VPS flow): no
+# clone happens and the build host needs no git credentials. The pins keep
+# their full provenance meaning:
+#   firecalc — names the exact engine stamp source. The deploy script requires
+#     an annotated tag `engine-<version>` (ADR-0007) peeling to this SHA and
+#     proves the working tree byte-identical to that tag across the published
+#     engine modules before publishing them at the pinned version.
+#   firecalc-firebox-austrian-api — must equal the local private checkout's
+#     HEAD exactly; that tree is built as-is.
 #
 # To update a pin after a release, replace the SHA and commit this file.
 

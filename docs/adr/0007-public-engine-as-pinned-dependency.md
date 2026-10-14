@@ -51,7 +51,13 @@ modules that sit above them.
   artifact path (no registry, no CI publishing; private builds are
   developer-local by choice). Daily dev uses `-SNAPSHOT`; anything committed or
   shipped pins a SHA-stamped version (`0.3.0-b25+<sha7>`, mirroring the
-  existing `+engine-` metadata idiom). Bumps are manual, on demand.
+  existing `+engine-` metadata idiom) **and is tagged**: an annotated
+  `engine-<version>` tag is the git-side twin of the artifact — created on the
+  exact commit that version is published from, pushed alongside it, never
+  moved. A pinned version is published only from its tagged commit; the deploy
+  pipeline enforces this (tag present, `VERSIONS.firecalc` equals the tag's
+  peeled commit, published modules' sources byte-identical to the tag). Bumps
+  are manual, on demand.
 - **Source of truth:** the public repository owns the generic engine and its
   golden EN-validation tests. The private correctness claims track whatever pin
   is checked out. Divergences introduced privately after the copy are

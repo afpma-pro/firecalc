@@ -168,6 +168,8 @@ closure (JVM artifacts only; the Scala.js sides stay skipped):
 sbt --client publishEngineLocal
 
 # Shipped/committed pins — SHA-stamped version (ADR-0007 shape 0.3.0-b25+<sha7>):
+# tag the exact published commit first (annotated, never moved afterwards):
+git tag -a "engine-0.3.0-b25+$(git rev-parse --short=7 HEAD)" -m "engine artifacts 0.3.0-b25+$(git rev-parse --short=7 HEAD)"
 FIRECALC_PUBLISH_VERSION=0.3.0-b25+$(git rev-parse --short=7 HEAD) sbt --batch publishEngineLocal
 ```
 
@@ -175,6 +177,13 @@ Notes:
 
 - Artifacts land in `~/.ivy2/local/pro.afpma/` (Ivy layout — sbt's implicit Local
   resolver; no remote registry is ever contacted, and there is no CI publishing).
+- Tag-and-publish discipline (ADR-0007): the annotated `engine-<version>` tag is
+  the git-side twin of the artifact. Create it on the exact commit being
+  published, push it, and **never move it**; publish only from the tagged
+  commit. `firecalc-docker/scripts/deploy.sh` gates every `CALC_SERVER=true`
+  build on this — tag present, `VERSIONS.firecalc` equal to the tag's peeled
+  commit, working tree byte-identical to the tag across the 14 modules' `src/main` —
+  and publishes at the pinned version as the FIRST sbt step (warm-server trap).
 - `FIRECALC_PUBLISH_VERSION` is read when `build.sbt` loads, so the stamp MUST be
   published with a fresh JVM (`sbt --batch`, or a new sbt shell). A warm
   `sbt --client` server keeps the version it loaded with; the same value can also

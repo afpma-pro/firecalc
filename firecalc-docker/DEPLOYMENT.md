@@ -35,7 +35,9 @@ The two supported configurations:
    and `VITE_FIREBOX_CALC_BASE_URL=https://<api-domain>/v1`, and the payments
    backend at it with `calculation-client.base-uri` (e.g. `http://calc-server:9000/v1`).
    The calc-server assembly JAR is built in the private (non-AGPL) repository —
-   `scripts/deploy.sh` clones the ref pinned in `VERSIONS` and places
+   `scripts/deploy.sh` builds it from the ref pinned in `VERSIONS` (clone mode)
+   or from a local checkout linked via `FIRECALC_BUILD_LOCAL=true` +
+   `FIREBOX_LOCAL_DIR` (rsync-based hosts, no git credentials), and places
    `artifacts/firecalc-calc-server-assembly.jar` in the Docker build context.
 2. **Disable the Austrian kinds** when no calc backend is available:
    `firebox-availability.ecolabeled = false` and
