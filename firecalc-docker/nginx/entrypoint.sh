@@ -108,5 +108,6 @@ done
 # Validate generated configuration before starting
 nginx -t -c "${GENERATED_CONF}"
 
-# Start nginx
-exec nginx -g 'daemon off;'
+# Start nginx — must pass -c: without it the daemon loads the image's stock
+# /etc/nginx/nginx.conf (default static server), not the generated config.
+exec nginx -c "${GENERATED_CONF}" -g 'daemon off;'
