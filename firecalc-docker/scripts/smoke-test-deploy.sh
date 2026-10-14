@@ -203,11 +203,10 @@ echo "CALC_SERVER    : ${CALC_SERVER:-<unset>}"
 echo "Timeout        : ${TIMEOUT}s"
 echo ""
 
-# Load FIRECALC_ENV from .env if available
-if [[ -f "$PROJECT_DIR/.env" ]]; then
-    FIRECALC_ENV=$(grep '^FIRECALC_ENV=' "$PROJECT_DIR/.env" | tail -1 | cut -d= -f2-)
-fi
-FIRECALC_ENV="${FIRECALC_ENV:-}"
+# Resolve FIRECALC_ENV with the shared reader from env.sh: an exported value
+# wins, otherwise the value comes from .env.
+source "$SCRIPT_DIR/env.sh"
+FIRECALC_ENV="$(deployment_env FIRECALC_ENV)"
 
 cd "$PROJECT_DIR"
 

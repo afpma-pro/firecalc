@@ -33,7 +33,8 @@ The versioning system provides:
 
 1. **UI_BASE_VERSION** - the current `ui_base_version` SNAPSHOT; `lazy val ui_base_version` in [`build.sbt`](build.sbt)
 2. **ENGINE_VERSION** - the current `engine_version_default` SNAPSHOT (see build.sbt / `make check`); scraped from `val engine_version_default`
-   in [`build.sbt`](build.sbt). Deliberate two-name split: the Makefile scrape reads
+   in [`build.sbt`](build.sbt). Deliberate two-name split: the scrape in
+   [`scripts/generate-ui-version.sh`](scripts/generate-ui-version.sh) reads
    `engine_version_default` (the moving default); `engine_version` is what the build
    actually uses and may be pinned at build-load time via `FIRECALC_PUBLISH_VERSION`
    (see [dev README](../README.md), "Publishing the engine artifacts") — the pin never
@@ -46,11 +47,11 @@ The versioning system provides:
    - Staging: `<UI_BASE_VERSION>-staging+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
    - Prod: `<UI_BASE_VERSION>+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
 
-**Note:** [`build.sbt`](build.sbt) is the single source of truth. The Makefile extracts values directly from it via text scraping (a `grep` of the line holding `val engine_version_default`), so the quoted literal MUST stay on that same line.
+**Note:** [`build.sbt`](build.sbt) is the single source of truth. [`scripts/generate-ui-version.sh`](scripts/generate-ui-version.sh) is the only reader of the version values: it extracts them from `build.sbt` via text scraping (a `grep` of the line holding `val engine_version_default`) unless a caller passes `UI_BASE_VERSION` / `ENGINE_VERSION` / `GIT_HASH` environment overrides, so the quoted literal MUST stay on that same line.
 
 ### Build Process
 
-[`Makefile`](Makefile:95-104) generates [`modules/ui/firecalc-ui.js`](modules/ui/firecalc-ui.js:1) with version exports:
+[`scripts/generate-ui-version.sh`](scripts/generate-ui-version.sh) generates [`modules/ui/firecalc-ui.js`](modules/ui/firecalc-ui.js:1) with version exports; the root [`Makefile`](Makefile) macros and [`firecalc-docker/scripts/deploy.sh`](firecalc-docker/scripts/deploy.sh) call the same script, so the two build recipes cannot drift apart. User-facing entry points:
 
 ```bash
 make dev-ui-build      # Generates dev version
@@ -71,7 +72,7 @@ make prod-ui-build     # Generates production version
 ### Quick Verification
 
 ```bash
-# Verify version extraction from build.sbt
+# Print the generated version module (run a build first if it is missing)
 make check
 
 # Build for your environment
@@ -103,7 +104,7 @@ cat modules/ui/firecalc-ui.js
 | Issue | Solution |
 |-------|----------|
 | Version not updating | Run correct build target, clear browser cache |
-| Engine version empty | Check the scrape: `make check` should print `ENGINE_VERSION`; verify the quoted literal is still on the `val engine_version_default` line in `build.sbt` (the Makefile greps that text — `engine_version` is a build-use alias, not what is scraped) |
+| Engine version empty | Check the scrape: `make check` should print `ENGINE_VERSION`; verify the quoted literal is still on the `val engine_version_default` line in `build.sbt` (generate-ui-version.sh greps that text — `engine_version` is a build-use alias, not what is scraped) |
 | Git hash missing | Ensure you're in a git repo, check `git describe --tags --always` |
 | Wrong environment | Check Vite mode and `.env.*` files |
 

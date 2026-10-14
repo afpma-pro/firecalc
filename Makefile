@@ -9,11 +9,6 @@ export SHELL := /bin/bash
 FIRECALC_VITE_DEV_SERVER_PORT ?= 5173
 export FIRECALC_VITE_DEV_SERVER_PORT
 REPO_DIR ?= $(shell pwd | xargs echo -n)
-GIT_COMMIT_HASH ?= $(shell git rev-parse --short=8 HEAD)
-UI_BASE_VERSION ?= $(shell grep 'lazy val ui_base_version' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
-# NOTE: scraped by text; must match the line holding the quoted default literal
-# in build.sbt (the publish pin override lives in engine_version, not here).
-ENGINE_VERSION ?= $(shell grep 'val engine_version_default' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 GITHUB_REPO_OWNER ?= $(shell grep 'lazy val githubOwner' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\(.*\)".*/\1/')
 
@@ -25,9 +20,8 @@ GITHUB_REPO_NAME ?= $(shell grep 'lazy val githubRepo' build.sbt | sed 's/.*= "\
 ## ================================
 
 check:
-	@echo "UI_BASE_VERSION: $(UI_BASE_VERSION)"
-	@echo "ENGINE_VERSION: $(ENGINE_VERSION)"
-	@echo "GIT_COMMIT_HASH: $(GIT_COMMIT_HASH)"
+	@echo "UI version module (modules/ui/firecalc-ui.js):"
+	@if [ -f modules/ui/firecalc-ui.js ]; then grep '^export const' modules/ui/firecalc-ui.js; else echo "  not generated yet — run make dev-ui-build"; fi
 	@echo "REPO_DIR: $(REPO_DIR)"
 	@echo "GITHUB_REPO_OWNER: $(GITHUB_REPO_OWNER)"
 	@echo "GITHUB_REPO_NAME: $(GITHUB_REPO_NAME)"
@@ -186,26 +180,24 @@ status-all: ui-status
 ## UTILITY TARGETS
 ## ================================
 
-# Generate version files for the UI
+# Generate version files for the UI.
 # Args: $(1) = environment suffix (e.g., "dev", "staging", or empty for prod)
+# scripts/generate-ui-version.sh is the only reader of the version values; it is
+# shared with firecalc-docker/scripts/deploy.sh so the two build recipes cannot
+# drift apart. make-command-line overrides of UI_BASE_VERSION / ENGINE_VERSION /
+# GIT_HASH reach it through the environment.
 define generate_ui_version
 	@echo "Generating version files for environment: $(1)"
-	@echo "export const UI_BASE_VERSION = '$(UI_BASE_VERSION)';" > modules/ui/firecalc-ui.js
-	@echo "export const ENGINE_VERSION = '$(ENGINE_VERSION)';" >> modules/ui/firecalc-ui.js
-	@echo "export const GIT_HASH = '$(GIT_COMMIT_HASH)';" >> modules/ui/firecalc-ui.js
-	@if [ -z "$(1)" ]; then \
-		echo "export const UI_FULL_VERSION = '$(UI_BASE_VERSION)+engine-$(ENGINE_VERSION)-$(GIT_COMMIT_HASH)';" >> modules/ui/firecalc-ui.js; \
-	else \
-		echo "export const UI_FULL_VERSION = '$(UI_BASE_VERSION)-$(1)+engine-$(ENGINE_VERSION)-$(GIT_COMMIT_HASH)';" >> modules/ui/firecalc-ui.js; \
-	fi
+	@UI_BASE_VERSION='$(UI_BASE_VERSION)' ENGINE_VERSION='$(ENGINE_VERSION)' GIT_HASH='$(GIT_HASH)' ./scripts/generate-ui-version.sh . "$(1)"
 endef
 
+# Build the landing export and merge it into the distribution root. The copy
+# is shared with deploy.sh via scripts/copy-landing-export.sh; a missing
+# export part is fatal because those paths are gateway routes.
 define copy_landing_page
 	@echo "Building and copying landing page to dist-app..."
 	@cd web/landing && npm run build
-	@cp -r web/landing/out/en web/landing/out/fr web/landing/out/_next web/dist-app/ 2>/dev/null || true
-	@cp -r web/landing/out/assets web/dist-app/ 2>/dev/null || true
-	@cp web/landing/out/404.html web/dist-app/ 2>/dev/null || true
+	@./scripts/copy-landing-export.sh .
 endef
 
 kill-vite:
@@ -243,8 +235,8 @@ dev-web-ui-open:
 dev-web-ui-zip:
 	@echo "Building and packaging UI for file:// usage..."
 	@make dev-web-ui-build
-	@cd web/dist-app && zip -r ../../firecalc-web-v$(UI_BASE_VERSION)-dev.zip app/
-	@echo "Created firecalc-web-v$(UI_BASE_VERSION)-dev.zip"
+	@version=$$(sed -n "s/^export const UI_BASE_VERSION = '\(.*\)';$$/\1/p" modules/ui/firecalc-ui.js); \
+		cd web/dist-app && zip -r "../../firecalc-web-v$$version-dev.zip" app/ && echo "Created firecalc-web-v$$version-dev.zip"
 
 ## ================================
 ## DEVELOPMENT - ELECTRON

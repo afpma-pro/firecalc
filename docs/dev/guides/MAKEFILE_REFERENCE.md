@@ -30,7 +30,7 @@ Display project version information and repository details.
 make check
 ```
 
-**Output:** UI_BASE_VERSION, ENGINE_VERSION, GIT_COMMIT_HASH, REPO_DIR, GITHUB_REPO_OWNER, GITHUB_REPO_NAME
+**Output:** the exports of the generated `modules/ui/firecalc-ui.js` (or a note that it has not been generated yet), then REPO_DIR, GITHUB_REPO_OWNER, GITHUB_REPO_NAME
 
 ---
 
@@ -979,9 +979,7 @@ Examples:
 
 The Makefile uses these environment variables:
 
-- `UI_BASE_VERSION` - UI base semantic version (from build.sbt)
-- `ENGINE_VERSION` - Engine version (from build.sbt)
-- `GIT_COMMIT_HASH` - 8-character git commit hash (from git rev-parse --short=8 HEAD)
+- `UI_BASE_VERSION`, `ENGINE_VERSION`, `GIT_HASH` - version overrides for the UI build. The Makefile defines none of them: `scripts/generate-ui-version.sh` reads the values from `build.sbt` and `git`, and a `make UI_BASE_VERSION=…` command-line override is forwarded to it through the environment.
 - `REPO_DIR` - Repository directory path
 - `GITHUB_REPO_OWNER` - GitHub repository owner (from build.sbt, e.g., "afpma-pro")
 - `GITHUB_REPO_NAME` - GitHub repository name (from build.sbt, e.g., "firecalc")
