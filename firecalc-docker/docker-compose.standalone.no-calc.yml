@@ -48,6 +48,9 @@ services:
   # ===========================================================================
   backend:
     image: firecalc-${FIRECALC_ENV}-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: firecalc-${FIRECALC_ENV}-backend
     restart: unless-stopped
 
@@ -91,6 +94,9 @@ services:
   # ===========================================================================
   ui-server:
     image: firecalc-${FIRECALC_ENV}-ui:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
     container_name: firecalc-${FIRECALC_ENV}-ui-server
     restart: unless-stopped
 
@@ -117,6 +123,9 @@ services:
   # ===========================================================================
   nginx:
     image: firecalc-${FIRECALC_ENV}-nginx:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     container_name: firecalc-${FIRECALC_ENV}-nginx
     restart: unless-stopped
 
