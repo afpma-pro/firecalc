@@ -20,7 +20,7 @@
 #                  Controls TLS termination strategy.
 #
 # Usage:
-#   make deploy          # Full deployment (clone, build, up)
+#   make deploy          # Full deployment (clone, build, up) — requires .env and configs/<FIRECALC_ENV>/… first ('make setup' creates both)
 #   make build           # Clone repos, build artifacts, build images
 #   make up              # Start containers (images must already exist)
 #   make down            # Stop and remove containers
@@ -59,12 +59,106 @@ COMPOSE_FILE := $(shell \
   if [ -z "$$deploy_mode" ]; then deploy_mode="standalone"; fi; \
   echo "docker-compose.$$deploy_mode$$calc_suffix.yml")
 
-.PHONY: deploy build up down restart logs smoke clean setup fix-db-perms
+.PHONY: deploy build up down restart logs smoke clean setup fix-db-perms .require-configs .require-variant
+
+# ---------------------------------------------------------------------------
+# .require-configs — internal guard: the runtime configs the backend mounts
+# ---------------------------------------------------------------------------
+# The backend mounts ./configs read-only at /app/configs and selects the
+# environment from FIRECALC_ENV (an exported value wins, otherwise .env — the
+# same resolution scripts/env.sh implements), so a missing or renamed runtime
+# config first surfaces as a crash-looping container, after the whole image
+# build. This guard runs before any of that: it names the missing config
+# directory or file and where it should come from. It also checks the two things
+# a copied template gets wrong in practice: the invoice path the backend actually
+# opens (invoice-generation.config-file-path in the payments config — BackendMain
+# resolves paymentsConfig.invoiceConfig.configFilePath, and the shipped template
+# default names configs/development/invoices/company-invoice.yaml, which does not
+# exist inside the container), and the in-file environment selector, which must
+# equal the directory name because nothing in the loader cross-checks them
+# (ConfigLoader falls back to "development" when the key is absent). The PDF
+# logos are checked by scripts/deploy.sh, which fails naming the path before the
+# image build can fail at its unconditional COPY of artifacts/logo.png (and logo.jpg).
+.require-configs:
+	@PROJECT_DIR="$(CURDIR)"; . scripts/env.sh; \
+	env_name="$$(deployment_env FIRECALC_ENV || true)"; \
+	if [ -z "$$env_name" ]; then \
+		echo "ERROR: FIRECALC_ENV is not set — neither in the environment nor in $(CURDIR)/.env."; \
+		echo "       Create .env with 'make setup' (it copies .env.defaults) and set FIRECALC_ENV to an environment that has a configs/<env>/ directory."; \
+		exit 1; \
+	fi; \
+	if [ ! -d "configs/$$env_name" ]; then \
+		available="$$(for d in configs/*/; do if [ -d "$$d" ]; then basename "$$d"; fi; done | tr '\n' ' ')"; \
+		echo "ERROR: FIRECALC_ENV=$$env_name names no deployment: configs/$$env_name/ does not exist."; \
+		echo "       Set FIRECALC_ENV in .env (or the environment) to an environment that has a configs/<env>/ directory — currently: $${available:-none}."; \
+		exit 1; \
+	fi; \
+	echo "Checking runtime configuration for FIRECALC_ENV=$$env_name..."; \
+	missing=0; \
+	for spec in \
+		"configs/$$env_name/payments/payments-config.conf|copy configs/templates/payments/payments-config.conf.template from the repository root, drop .template, set environment/section to $$env_name, and set invoice-generation.config-file-path to configs/$$env_name/invoices/invoice-config.yaml" \
+		"configs/$$env_name/payments/gocardless-config.conf|copy configs/templates/payments/gocardless-config.conf.template from the repository root, drop .template, and set gocardless.environment to live for production (sandbox elsewhere)" \
+		"configs/$$env_name/payments/email-config.conf|copy configs/templates/payments/email-config.conf.template from the repository root, drop .template" \
+		"configs/$$env_name/invoices/invoice-config.yaml|copy the tracked configs/staging/invoices/invoice-config.yaml.example, drop .example, and fill in the company values"; do \
+		path="$${spec%%|*}"; hint="$${spec#*|}"; \
+		if [ ! -f "$$path" ]; then \
+			echo "ERROR: missing $$path"; \
+			echo "       should come from: $$hint"; \
+			missing=1; \
+		fi; \
+	done; \
+	invoice_path="$$(sed -n 's/^[[:space:]]*config-file-path[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "configs/$$env_name/payments/payments-config.conf" | head -n1)"; \
+	invoice_env="$$(printf '%s\n' "$$invoice_path" | sed -n 's|^configs/\([a-z]*\)/.*|\1|p')"; \
+	if [ -z "$$invoice_path" ]; then \
+		echo "ERROR: configs/$$env_name/payments/payments-config.conf names no invoice-generation.config-file-path"; \
+		echo "       set it to configs/$$env_name/invoices/invoice-config.yaml"; \
+		missing=1; \
+	elif [ -n "$$invoice_env" ] && [ "$$invoice_env" != "$$env_name" ]; then \
+		echo "ERROR: invoice-generation.config-file-path points into configs/$$invoice_env/ while FIRECALC_ENV=$$env_name"; \
+		echo "       each environment's payments config must open its own invoice config: configs/$$env_name/invoices/invoice-config.yaml"; \
+		missing=1; \
+	elif [ ! -f "$$invoice_path" ]; then \
+		echo "ERROR: the payments config opens no invoice config: $$invoice_path"; \
+		echo "       invoice-generation.config-file-path must name a file inside the mounted configs/ tree"; \
+		missing=1; \
+	fi; \
+	for cfg in payments/payments-config.conf payments/email-config.conf; do \
+		selector="$$(sed -n 's/^[[:space:]]*environment[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "configs/$$env_name/$$cfg" | head -n1)"; \
+		if [ "$$selector" != "$$env_name" ]; then \
+			echo "ERROR: configs/$$env_name/$$cfg selects environment=\"$$selector\" but FIRECALC_ENV=$$env_name"; \
+			echo "       the directory name, the environment selector and the section it names must be the same string"; \
+			missing=1; \
+		elif ! grep -qE "^[[:space:]]*$$env_name[[:space:]]*[{]" "configs/$$env_name/$$cfg"; then \
+			echo "ERROR: configs/$$env_name/$$cfg selects $$env_name but defines no $$env_name { } section"; \
+			missing=1; \
+		fi; \
+	done; \
+	if [ -f "configs/$$env_name/payments/gocardless-config.conf" ]; then \
+		gc_env="$$(sed -n 's/^[[:space:]]*environment[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "configs/$$env_name/payments/gocardless-config.conf" | head -n1)"; \
+		case "$$gc_env" in sandbox|live) ;; *) \
+			echo "ERROR: configs/$$env_name/payments/gocardless-config.conf selects environment=\"$$gc_env\"; ConfigLoader reads only gocardless.sandbox and gocardless.live"; \
+			echo "       set gocardless.environment to live for production, sandbox elsewhere"; \
+			missing=1; ;; \
+		esac; \
+		if ! grep -qE "^[[:space:]]*$$gc_env[[:space:]]*[{]" "configs/$$env_name/payments/gocardless-config.conf"; then \
+			echo "ERROR: the gocardless config selects $$gc_env but defines no $$gc_env { } section"; \
+			missing=1; \
+		elif sed -n "/^[[:space:]]*$$gc_env[[:space:]]*{/,/^[[:space:]]*}/p" "configs/$$env_name/payments/gocardless-config.conf" | grep -qE '(access-token|webhook-secret)[[:space:]]*=[[:space:]]*[$$][{]'; then \
+			echo "ERROR: gocardless.$$gc_env reads its credentials from a GOCARDLESS_* env hook"; \
+			echo "       no GOCARDLESS_* variable reaches the container, so those keys resolve absent and startup fails — set them literally"; \
+			missing=1; \
+		fi; \
+	fi; \
+	if [ "$$missing" -ne 0 ]; then \
+		echo "Refusing to deploy: the backend would fail at startup."; \
+		exit 1; \
+	fi; \
+	echo "Runtime configuration present."
 
 # ---------------------------------------------------------------------------
 # deploy — Full deployment pipeline
 # ---------------------------------------------------------------------------
-deploy:
+deploy: .require-configs
 	@echo "========================================"
 	@echo " FireCalc Docker Deploy"
 	@echo "========================================"

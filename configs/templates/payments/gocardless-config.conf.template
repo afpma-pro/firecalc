@@ -13,6 +13,10 @@
 
 # For development/testing with sandbox
 gocardless {
+  # Selects the section ConfigLoader reads: "sandbox" or "live".
+  # Keep "sandbox" for development and staging; set "live" for production.
+  environment = "sandbox"
+
   # For development/testing
   sandbox {
     access-token = "sandbox_GC_TOKEN"
@@ -28,6 +32,11 @@ gocardless {
   
   # For production
   live {
+    # The ${?VAR} overrides in this section apply only when the backend reads
+    # this file directly (bare-metal run from the repository root). In the
+    # Docker stack no GOCARDLESS_* variable reaches the container, so an
+    # unresolved ${?…} makes the key absent and startup fails on
+    # gocardless.live.access-token — set these values literally instead.
     access-token = ${?GOCARDLESS_ACCESS_TOKEN}
     base-url = "https://api.gocardless.com"
     environment = "live"
@@ -38,14 +47,4 @@ gocardless {
     redirect-uri = "https://firecalc.afpma.pro/v1/payment_complete"
     exit-uri = "https://firecalc.afpma.pro/v1/payment_cancelled"
   }
-}
-
-# Alternative: Use environment variables for all settings
-gocardless-env {
-  access-token = ${?GOCARDLESS_ACCESS_TOKEN}
-  base-url = ${?GOCARDLESS_BASE_URL}
-  environment = ${?GOCARDLESS_ENVIRONMENT}
-  webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
-  redirect-uri = ${?GOCARDLESS_REDIRECT_URI}
-  exit-uri = ${?GOCARDLESS_EXIT_URI}
 }

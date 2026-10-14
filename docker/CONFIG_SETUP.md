@@ -1,5 +1,12 @@
 # FireCalc Docker Configuration Setup Guide
 
+> **⚠️ LEGACY — superseded by [`firecalc-docker/`](../firecalc-docker/).**
+> This layout is kept only for the running old stack until the VPS cutover is
+> confirmed. For any new deployment use `firecalc-docker/` (see its
+> [DEPLOYMENT.md](../firecalc-docker/DEPLOYMENT.md)); the root
+> `make docker-*` / `make *-docker-deploy-up` targets now delegate there, so
+> the configuration steps in this guide describe the old flow only.
+
 This guide explains how to configure the FireCalc payments backend for Docker deployment in staging and production environments.
 
 ## Table of Contents
@@ -67,25 +74,28 @@ make docker-setup-standalone     # Self-contained (nginx handles TLS)
 make docker-setup-behind-proxy   # External proxy handles TLS
 
 # 6. Create staging configuration files
-cd docker/configs/staging/payments
-cp payments-config.conf.example payments-config.conf
-cp email-config.conf.example email-config.conf
-cp gocardless-config.conf.example gocardless-config.conf
+# The docker/configs/ placeholders were removed with the migration; copy from
+# the tracked templates at the repository root and drop the .template suffix:
+mkdir -p docker/configs/staging/payments docker/configs/staging/invoices
+cp configs/templates/payments/payments-config.conf.template   docker/configs/staging/payments/payments-config.conf
+cp configs/templates/payments/email-config.conf.template      docker/configs/staging/payments/email-config.conf
+cp configs/templates/payments/gocardless-config.conf.template docker/configs/staging/payments/gocardless-config.conf
 
 # 7. Create staging invoice configuration
-cd ../invoices
-cp invoice-config.yaml.example invoice-config.yaml
+cp configs/templates/invoices/company-invoice.yaml.template   docker/configs/staging/invoices/invoice-config.yaml
 
 # 8. Edit all .conf and .yaml files with your actual values
+cd docker/configs/staging/payments
 nano payments-config.conf
 nano email-config.conf
 nano gocardless-config.conf
-nano invoice-config.yaml
+nano ../invoices/invoice-config.yaml
 
 # 9. Add company logo for invoices and reports
-# Copy your logo to BOTH directories (REQUIRED for PDF generation):
-cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
-cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
+# The image build COPYs the logos from the module tree (docker/Dockerfile:75-76),
+# so place them there once (REQUIRED for PDF generation):
+cp /path/to/your/logo.png modules/invoices/configs/logo.png
+cp /path/to/your/logo.jpg modules/reports/src/main/resources/logo.jpg
 
 # 10. Deploy to Docker (builds backend JAR + UI, then deploys)
 cd /path/to/firecalc
@@ -135,21 +145,16 @@ docker/
 │   ├── proxy.conf                # Unified server block (UI + API via location matching)
 │   └── default.conf              # Empty — neutralizes nginx image default server block
 │
-├── configs/
-│   └── staging/                  # Staging environment configs (git-ignored)
+├── configs/                      # Operator-created; mounted read-only at /app/configs
+│   └── staging/                  # Create it from configs/templates/ at the repo root
 │       ├── payments/
-│       │   ├── payments-config.conf.example      # Template
 │       │   ├── payments-config.conf              # Your config
-│       │   ├── email-config.conf.example         # Template
 │       │   ├── email-config.conf                 # Your config
-│       │   ├── gocardless-config.conf.example    # Template
 │       │   └── gocardless-config.conf            # Your config
-│       ├── invoices/
-│       │   ├── invoice-config.yaml.example       # Template
-│       │   ├── invoice-config.yaml               # Your config
-│       │   └── logo.png                          # Company logo for invoices (REQUIRED)
-│       └── reports/
-│           └── logo.jpg                          # Company logo for reports (REQUIRED)
+│       └── invoices/
+│           └── invoice-config.yaml               # Your config
+│           # No logos here: the image build takes them from the module tree
+│           # (modules/invoices/configs/logo.png, modules/reports/src/main/resources/logo.jpg)
 │
 └── databases/
     └── staging/                  # Staging database (git-ignored, auto-created)
@@ -249,7 +254,8 @@ The environment configuration uses a **base + override** pattern:
 
 1. **Copy template**
    ```bash
-   cp docker/configs/staging/payments/payments-config.conf.example \
+   mkdir -p docker/configs/staging/payments
+   cp configs/templates/payments/payments-config.conf.template \
       docker/configs/staging/payments/payments-config.conf
    ```
 
@@ -259,10 +265,10 @@ The environment configuration uses a **base + override** pattern:
    ```
 
 3. **Key settings to update**:
-   - `jwt.secret`: Requires `JWT_SECRET` environment variable in `.env` (generate with `openssl rand -base64 32`, must be at least 32 characters)
-   - `invoice.number-prefix`: Set to `"FCALC-STG-[YYYY]-"` for staging
+   - `jwt.secret`: Requires `JWT_SECRET` environment variable in `.env` (generate with `openssl rand -base64 32`, must be at least 32 characters). In the current `firecalc-docker/` layout this variable reaches the container via the compose `environment:` block, sourced from `firecalc-docker/.env`
+   - `invoice.number-prefix`: Set to `"FCALC-STG-[YYYY]-"` for staging — set literally here; the current layout has no `INVOICE_PREFIX` environment variable
    - `invoice-generation.config-file-path`: Verify path is correct
-   - `admin.email`: Set to your admin email
+   - `admin.email`: Set to your admin email — set literally here; the current layout has no `ADMIN_EMAIL` environment variable
    - `database.path`: Verify database path
 
 4. **Secure the file**
@@ -278,7 +284,7 @@ The environment configuration uses a **base + override** pattern:
 
 2. **Copy template**
    ```bash
-   cp docker/configs/staging/payments/email-config.conf.example \
+   cp configs/templates/payments/email-config.conf.template \
       docker/configs/staging/payments/email-config.conf
    ```
 
@@ -337,7 +343,7 @@ The environment configuration uses a **base + override** pattern:
 
 5. **Copy template**
    ```bash
-   cp docker/configs/staging/payments/gocardless-config.conf.example \
+   cp configs/templates/payments/gocardless-config.conf.template \
       docker/configs/staging/payments/gocardless-config.conf
    ```
 
@@ -355,7 +361,8 @@ The environment configuration uses a **base + override** pattern:
 
 1. **Copy template**
    ```bash
-   cp docker/configs/staging/invoices/invoice-config.yaml.example \
+   mkdir -p docker/configs/staging/invoices
+   cp configs/templates/invoices/company-invoice.yaml.template \
       docker/configs/staging/invoices/invoice-config.yaml
    ```
 
@@ -373,11 +380,12 @@ The environment configuration uses a **base + override** pattern:
 
 3. **Add company logo (REQUIRED for PDF generation)**
    ```bash
-   # Copy your company logo to BOTH directories
-   # These logos will be embedded in the JAR during build and used by Typst for PDF generation
+   # The image build COPYs the logos from the module tree (docker/Dockerfile:75-76),
+   # so place them there once; they are then embedded in the JAR and used by Typst
+   # for PDF generation.
    # NOTE: The invoices module requires PNG format; the reports module requires JPG format
-   cp /path/to/your/logo.png docker/configs/staging/invoices/logo.png
-   cp /path/to/your/logo.jpg docker/configs/staging/reports/logo.jpg
+   cp /path/to/your/logo.png modules/invoices/configs/logo.png
+   cp /path/to/your/logo.jpg modules/reports/src/main/resources/logo.jpg
 
    # Recommended size: 200x200 pixels or similar aspect ratio
    ```
@@ -560,7 +568,7 @@ This ensures SQLite can create its journal files
 - Admin contact
 - Firebox availability switches (optional — omitting the block defaults all types to enabled, safe for upgrades)
 
-**Location**: [`configs/staging/payments/payments-config.conf`](../configs/staging/payments/payments-config.conf.example)
+**Location**: `configs/staging/payments/payments-config.conf`, created from [`configs/templates/payments/payments-config.conf.template`](../configs/templates/payments/payments-config.conf.template)
 
 **Firebox Availability Switches**: The optional `firebox-availability` block (inside the environment section) controls which firebox types are available for purchase. Valid keys (kebab-case): `traditional`, `ecolabeled`, `afpma-prse`, `single-tested`, `door15a-catalog`. Each key defaults to `true` when omitted; omitting the entire block defaults to all-enabled. This is the safe choice for upgrades — existing behaviour is preserved with no configuration change.
 
@@ -573,7 +581,7 @@ This ensures SQLite can create its journal files
 - Authentication credentials
 - Sender information
 
-**Location**: [`configs/staging/payments/email-config.conf`](../configs/staging/payments/email-config.conf.example)
+**Location**: `configs/staging/payments/email-config.conf`, created from [`configs/templates/payments/email-config.conf.template`](../configs/templates/payments/email-config.conf.template)
 
 **Staging recommendation**: Use Mailtrap.io to avoid sending real emails
 
@@ -587,7 +595,7 @@ This ensures SQLite can create its journal files
 - Redirect URIs
 - Environment (sandbox/live)
 
-**Location**: [`configs/staging/payments/gocardless-config.conf`](../configs/staging/payments/gocardless-config.conf.example)
+**Location**: `configs/staging/payments/gocardless-config.conf`, created from [`configs/templates/payments/gocardless-config.conf.template`](../configs/templates/payments/gocardless-config.conf.template)
 
 **Critical**: Always use `sandbox` environment for staging!
 
@@ -601,6 +609,6 @@ This ensures SQLite can create its journal files
 - Template styling
 - Logo configuration
 
-**Location**: [`configs/staging/invoices/invoice-config.yaml`](../configs/staging/invoices/invoice-config.yaml.example)
+**Location**: `configs/staging/invoices/invoice-config.yaml`, created from [`configs/templates/invoices/company-invoice.yaml.template`](../configs/templates/invoices/company-invoice.yaml.template)
 
 **Supports**: Environment variable substitution for sensitive data

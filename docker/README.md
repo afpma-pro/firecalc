@@ -34,14 +34,14 @@ make docker-setup-standalone     # Self-contained (nginx handles TLS)
 # OR
 make docker-setup-behind-proxy   # External proxy handles TLS
 
-# 4. Copy configuration templates
-cd docker/configs/staging/payments
-cp payments-config.conf.example payments-config.conf
-cp email-config.conf.example email-config.conf
-cp gocardless-config.conf.example gocardless-config.conf
-
-cd ../invoices
-cp invoice-config.yaml.example invoice-config.yaml
+# 4. Create the configuration files the old stack mounts at /app/configs
+# The docker/configs/ placeholders were removed with the migration; copy from
+# the tracked templates at the repository root and drop the .template suffix:
+mkdir -p docker/configs/staging/payments docker/configs/staging/invoices
+cp configs/templates/payments/payments-config.conf.template   docker/configs/staging/payments/payments-config.conf
+cp configs/templates/payments/email-config.conf.template      docker/configs/staging/payments/email-config.conf
+cp configs/templates/payments/gocardless-config.conf.template docker/configs/staging/payments/gocardless-config.conf
+cp configs/templates/invoices/company-invoice.yaml.template   docker/configs/staging/invoices/invoice-config.yaml
 
 # 5. Edit all configuration files
 # Update with your actual credentials and company information
@@ -89,12 +89,6 @@ docker/
 │   ├── nginx.conf            # Global nginx configuration (HTTP only)
 │   ├── proxy.conf            # Unified server block (UI + API via location matching)
 │   └── default.conf          # Empty — neutralizes nginx image default server block
-│
-├── configs/                  # Configuration files
-│   └── staging/              # Staging environment configs (git-ignored)
-│       ├── payments/         # Payment backend configuration
-│       ├── invoices/         # Invoice generation configuration
-│       └── reports/          # Report configuration
 │
 └── databases/                # Database files (git-ignored)
     └── staging/              # Staging database

@@ -69,26 +69,28 @@ cp modules/invoices/config-templates/basic-invoice.yaml.template \
 
 ### 2. Configure Environment Variables
 
-Create a `.env` file in the project root:
+Business configuration (company identity, payment terms) lives in the
+environment's invoice config — for the Docker deployment that is
+`firecalc-docker/configs/staging/invoices/invoice-config.yaml` — not in the
+env file. The env file (`firecalc-docker/.env`) carries deployment plumbing,
+secrets, and only the override keys that the invoice config references via
+`${VAR:-default}` (the compose `environment:` block passes exactly these to
+the backend container):
 
 ```bash
-# Company Information
-COMPANY_LEGAL_NAME="Your Company Legal Name Inc"
-COMPANY_DISPLAY_NAME="Your Company"
-COMPANY_EMAIL="billing@yourcompany.com"
-COMPANY_PHONE="+1 555 123 4567"
-COMPANY_WEBSITE="https://www.yourcompany.com"
-
-# Financial Information (SENSITIVE)
-COMPANY_VAT_NUMBER="YOUR_VAT_NUMBER_HERE"
-COMPANY_IBAN="YOUR_IBAN_NUMBER_HERE"
-COMPANY_BIC="YOUR_BIC_CODE_HERE"
-
-# Payment Terms
+# Payment terms
 PAYMENT_DUE_DAYS=30
 LATE_FEE_PERCENTAGE=1.5
-EARLY_DISCOUNT_PERCENTAGE=2.0
+
+# Currency + template styling
+COMPANY_CURRENCY="EUR"
+TEMPLATE_LOGO_POSITION="top-left"
+TEMPLATE_PRIMARY_COLOR="#2563eb"
+TEMPLATE_FONT_FAMILY="Liberation Sans"
 ```
+
+Company identity fields (legal name, address, IBAN, VAT) are written directly
+in the invoice config's `sender:` block, not via environment variables.
 
 ### 3. Test Configuration
 
@@ -108,13 +110,18 @@ The system supports two patterns:
 - `${VAR_NAME}` - Required variable (fails if not set)
 - `${VAR_NAME:-default}` - Optional with default value
 
-Example in template:
+Example from the shipped staging config
+(`firecalc-docker/configs/staging/invoices/invoice-config.yaml`):
 ```yaml
-sender:
-  name: "${COMPANY_LEGAL_NAME:-Your Company Name}"
-  email: "${COMPANY_EMAIL:-info@yourcompany.com}"
-  vatNumber: "${COMPANY_VAT_NUMBER}"  # Required, no default
+paymentTerms:
+  dueDays: ${PAYMENT_DUE_DAYS:-30}
+  lateFeePercentage: ${LATE_FEE_PERCENTAGE:-1.5}
+currency: "${COMPANY_CURRENCY:-EUR}"
 ```
+
+These keys reach the backend only because the docker-compose `environment:`
+block passes them through; company identity fields are written literally in
+the config.
 
 ### Configuration Loading Process
 

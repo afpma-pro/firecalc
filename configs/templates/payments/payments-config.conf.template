@@ -109,27 +109,10 @@ payments {
     # over HTTP (GET /v1/kinds, POST /v1/calculate) — no per-kind local switch,
     # no local fallback and no response cache; base-uri is the only knob and
     # omitting the block defaults to http://localhost:9000/v1. Inside Docker
-    # point base-uri at the calc-backend service:
-    #   base-uri = "http://calc-backend:9000/v1"
+    # point base-uri at the calc-server service:
+    #   base-uri = "http://calc-server:9000/v1"
     calculation-client {
       base-uri = "http://localhost:9000/v1"
     }
-  }
-}
-
-# Alternative: Use environment variables for specific settings
-payments-env {
-  environment = ${?PAYMENTS_ENVIRONMENT}
-  
-  invoice {
-    number-prefix = ${?INVOICE_PREFIX}
-    number-digits = ${?INVOICE_DIGITS}
-    counter-starting-number = ${?INVOICE_STARTING_NUMBER}
-  }
-  
-  retry {
-    max-retries = ${?RETRY_MAX_RETRIES}
-    base-delay-ms = ${?RETRY_BASE_DELAY_MS}
-    max-delay-ms = ${?RETRY_MAX_DELAY_MS}
   }
 }

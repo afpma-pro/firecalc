@@ -259,11 +259,11 @@ Staging runs as the Docker stack in `firecalc-docker/` (behind-proxy mode with t
 ```bash
 make docker-env-setup
 ```
-`firecalc-docker/.env` IS the env carrier: set `FIRECALC_ENV=staging` and the host values (`TRUSTED_PROXY_CIDR`; `UI_DOMAIN`/`API_DOMAIN` only in standalone mode) directly in it — there are no per-env overlay files.
+`firecalc-docker/.env` IS the env carrier: set `FIRECALC_ENV=staging`, `JWT_SECRET` (REQUIRED; generate with `openssl rand -base64 32`), and the host values (`TRUSTED_PROXY_CIDR`; `UI_DOMAIN`/`API_DOMAIN` are required in every mode — `scripts/generate-certs.sh` fails without them — even though behind-proxy nginx does not use them, the outer proxy handling domain routing) directly in it — there are no per-env overlay files.
 
 2. **Place configs and logo assets**:
-   - Runtime configs → `firecalc-docker/configs/staging/` (mounted read-only at `/app/configs`; copy from the tracked `configs/staging/` and fill in staging credentials — never commit them)
-   - PDF logos once in the module tree: `modules/invoices/configs/logo.png` and `modules/reports/src/main/resources/logo.jpg` (gitignored operator assets; `firecalc-docker/scripts/deploy.sh` stages them into `artifacts/`)
+   - Runtime configs → `firecalc-docker/configs/staging/` (mounted read-only at `/app/configs`; copy from the tracked `configs/templates/` at the repository root, drop `.template`, and fill in staging credentials — never commit them)
+   - PDF logos once in the module tree: `modules/invoices/configs/logo.png` (gitignored operator asset) and `modules/reports/src/main/resources/logo.jpg` (tracked); `firecalc-docker/scripts/deploy.sh` stages both into `artifacts/` and fails naming the path if either is missing
    - UI build hosts → `modules/ui/.env.staging.local` (gitignored local override merged on top of the tracked `modules/ui/.env.staging` placeholders)
 
 3. **Pre-flight database permissions** (host side; the container user `appuser` is UID/GID 999):
@@ -271,7 +271,7 @@ make docker-env-setup
 make docker-fix-db-perms
 ```
 
-4. **Build and deploy** (behind-proxy + calc-server; full pipeline: artifact builds → image builds → certs → `up -d`):
+4. **Build and deploy** (behind-proxy + calc-server; the pipeline is described once, under `make prod-docker-deploy-up` in `docs/dev/guides/MAKEFILE_REFERENCE.md`):
 ```bash
 make staging-docker-deploy-up
 ```

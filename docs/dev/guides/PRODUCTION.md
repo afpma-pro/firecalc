@@ -51,7 +51,9 @@ Production runs as the Docker stack in `firecalc-docker/` (behind-proxy mode wit
 # One-time: create firecalc-docker/.env from .env.defaults, activate the compose variant
 make docker-env-setup
 # Edit firecalc-docker/.env — it IS the env carrier: FIRECALC_ENV=production,
-# TRUSTED_PROXY_CIDR (UI_DOMAIN/API_DOMAIN are handled by the outer proxy)
+# TRUSTED_PROXY_CIDR, and UI_DOMAIN/API_DOMAIN (required in every mode —
+# scripts/generate-certs.sh fails without them — even though behind-proxy
+# nginx does not use them; the outer proxy handles domain routing)
 
 # Build + deploy the full stack (backend, UI, calc-server, nginx)
 make prod-docker-deploy-up
@@ -106,20 +108,29 @@ production {
 
 ### GoCardless Configuration
 
-**File**: `configs/prod/payments/gocardless-config.conf`
+**File**: `configs/production/payments/gocardless-config.conf`
 
 **⚠️ CRITICAL**: Production MUST use GoCardless **LIVE** environment:
 
 ```hocon
-production {
-  # Use environment variables for security
-  access-token = ${?GOCARDLESS_ACCESS_TOKEN}
-  base-url = "https://api.gocardless.com"
+gocardless {
+  # Selects the section ConfigLoader reads — "sandbox" or "live".
+  # This is GoCardless's own vocabulary, not the deployment environment name.
   environment = "live"
-  webhook-secret = ${?GOCARDLESS_WEBHOOK_SECRET}
-  
-  redirect-uri = "https://firecalc.afpma.pro/v1/payment_complete"
-  exit-uri = "https://firecalc.afpma.pro/v1/payment_cancelled"
+
+  live {
+    # Credentials are written directly into this file (chmod 600). The
+    # firecalc-docker layout passes NO GOCARDLESS_* variables into the backend
+    # container — only the keys listed in the compose `environment:` block
+    # arrive — so `${?GOCARDLESS_*}` hooks would silently resolve to nothing.
+    access-token = "live_GC_TOKEN"
+    base-url = "https://api.gocardless.com"
+    environment = "live"
+    webhook-secret = "GC_WEBHOOK_TOKEN"
+
+    redirect-uri = "https://firecalc.afpma.pro/v1/payment_complete"
+    exit-uri = "https://firecalc.afpma.pro/v1/payment_cancelled"
+  }
 }
 ```
 
@@ -231,9 +242,9 @@ make docker-fix-db-perms
 #### 2. Build and Deploy
 
 ```bash
-# Full pipeline: setup-env → artifact builds (backend JAR, UI, and calc-server JAR
-# from the refs pinned in firecalc-docker/VERSIONS) → compose symlink →
-# image builds → certs → up -d
+# Full pipeline — described once, under 'make prod-docker-deploy-up' in
+# docs/dev/guides/MAKEFILE_REFERENCE.md (config preflight runs before any
+# build and names every missing runtime config)
 make prod-docker-deploy-up
 ```
 
@@ -560,14 +571,18 @@ sqlite3 /opt/firecalc/databases/prod/firecalc-payments-prod.db "PRAGMA integrity
 #### GoCardless API Errors
 
 ```bash
-# Verify credentials
+# Bare-metal flow only: the token is in the shell environment.
 echo $GOCARDLESS_ACCESS_TOKEN
+
+# In the Docker stack no GOCARDLESS_* variable reaches the backend container;
+# the credential lives in the mounted config instead:
+grep -n 'access-token' firecalc-docker/configs/*/payments/gocardless-config.conf
 
 # Check GoCardless status
 curl https://status.gocardless.com/
 
-# Test API connectivity
-curl -H "Authorization: Bearer $GOCARDLESS_ACCESS_TOKEN" \
+# Test API connectivity with the token the backend actually uses
+curl -H "Authorization: Bearer <access-token>" \
      https://api.gocardless.com/customers
 ```
 

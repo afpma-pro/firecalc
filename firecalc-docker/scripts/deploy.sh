@@ -324,15 +324,22 @@ cp -r "$dist_app/." "$ARTIFACTS_DIR/ui-dist/"
 log "Copied UI distribution (app/ + landing export) → artifacts/ui-dist/"
 
 # --- Logos (required by Typst for PDF generation) ---
+# A missing logo is fatal here, not a warning: Dockerfile.backend COPYs both
+# files out of artifacts/ unconditionally, so the image build would otherwise
+# fail later at that COPY with a less actionable error. logo.png is a
+# gitignored operator asset that must be present in the source tree being
+# built (a clone at the pinned SHA never contains it); logo.jpg is tracked,
+# so its absence means a broken checkout.
 log "Copying logo assets..."
-for logo_path in \
-    "$BUILD_DIR/firecalc/modules/invoices/configs/logo.png" \
-    "$BUILD_DIR/firecalc/modules/reports/src/main/resources/logo.jpg"; do
-    if [[ -f "$logo_path" ]]; then
-        cp "$logo_path" "$ARTIFACTS_DIR/"
-        log "Copied $(basename "$logo_path") → artifacts/"
+for logo_spec in \
+    "modules/invoices/configs/logo.png|logo.png is a gitignored operator asset, so a clone at the pinned SHA never contains it: build from the local tree (FIRECALC_BUILD_LOCAL=true) or commit the asset." \
+    "modules/reports/src/main/resources/logo.jpg|logo.jpg is tracked at modules/reports/src/main/resources/logo.jpg; its absence means a broken checkout."; do
+    logo_rel="${logo_spec%%|*}"
+    if [[ -f "$BUILD_DIR/firecalc/$logo_rel" ]]; then
+        cp "$BUILD_DIR/firecalc/$logo_rel" "$ARTIFACTS_DIR/"
+        log "Copied $(basename "$logo_rel") → artifacts/"
     else
-        log "WARNING: Logo not found at $logo_path — PDF generation may fail"
+        die "Logo not found at firecalc/$logo_rel — the image build fails at COPY artifacts/$(basename "$logo_rel"). ${logo_spec#*|}"
     fi
 done
 

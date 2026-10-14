@@ -30,7 +30,7 @@ the standalone private backend:
   `VITE_FIREBOX_CALC_BASE_URL` pointing at the API domain's `/v1` prefix.
 - **Public payments** — JVM/http4s client adapter (`firebox_calc_client`);
   `calculation-client.base-uri` in the payments HOCON configuration points at
-  the calc backend (`http://calc-backend:9000/v1` inside Docker).
+  the calc backend (`http://calc-server:9000/v1` inside Docker).
 
 The only calculation seam between the two repositories is the normative HTTP
 interface. No public artifact links private code; the private server links no
@@ -58,7 +58,7 @@ repository).
   `VITE_FIREBOX_AVAIL_DOOR15A_CATALOG=false` (plus the `..._BACKEND`
   variants), payments HOCON `firebox-availability.ecolabeled = false` and
   `firebox-availability.door15a-catalog = false`. The shipped staging
-  payments config (`docker/configs/staging/payments/payments-config.conf`)
+  payments config (`firecalc-docker/configs/staging/payments/payments-config.conf`)
   already follows exactly this pattern. That is honest unavailability;
   leaving the remote-calc vars unset instead resolves both kinds to
   `Local` and yields degenerate empty results.
@@ -67,16 +67,16 @@ repository).
 
 ### 2.1 Compose services (both modes)
 
-`docker/docker-compose.standalone.yml` and `docker/docker-compose.behind-proxy.yml`
+`firecalc-docker/docker-compose.standalone.yml` and `firecalc-docker/docker-compose.behind-proxy.yml`
 (selected when `CALC_SERVER=true`; the `.no-calc` variants omit this
 service entirely) each define the calculation backend as an independent service:
 
 | Service | Image | Port | Volumes | Healthcheck |
 |---|---|---|---|---|
 | `backend` (payments) | `firecalc-${FIRECALC_ENV}-payments:latest` | `8181` (internal) | `./configs:/app/configs:ro`, `./databases:/app/databases:rw` | `curl -f http://localhost:8181/v1/healthcheck` |
-| `calc-backend` | `firecalc-${FIRECALC_ENV}-calc-server:latest` | `9000` (internal) | `./configs:/app/configs:ro` only — no database mounts | `curl -f http://localhost:9000/health` |
+| `calc-server` | `firecalc-${FIRECALC_ENV}-calc-server:latest` | `9000` (internal) | `./configs:/app/configs:ro` only — no database mounts | `curl -f http://localhost:9000/health` |
 
-`calc-backend` is built from `docker/Dockerfile.calc-server` (JRE-only base,
+`calc-server` is built from `firecalc-docker/Dockerfile.calc-server` (JRE-only base,
 `eclipse-temurin:21-jre-jammy`, non-root user). The `COPY` instruction expects
 the private assembly jar at
 `modules/firebox_calc_server/target/scala-3.9.0/firecalc-calc-server-assembly.jar`
@@ -92,7 +92,7 @@ The reverse proxy routes public applications to the calc backend through
 reaches payments:
 
 ```nginx
-upstream calc_upstream { server calc-backend:9000; }
+upstream calc_upstream { server calc-server:9000; }
 
 location = /v1/calculate { ... proxy_pass http://calc_upstream; }   # POST
 location = /v1/kinds     { ... proxy_pass http://calc_upstream; }   # GET
@@ -104,9 +104,11 @@ location = /calc-healthcheck { proxy_pass http://calc_upstream/health; }  # heal
 - Payments routes (`/v1/purchase/*`, `/v1/payment_complete`,
   `/v1/payment_cancelled`, `/v1/healthcheck`, catch-all `/`) proxy to
   `api_upstream` (`backend:8181`) unchanged.
-- Files: `docker/nginx-standalone/proxy.conf.template` (standalone, envsubst
-  for `UI_DOMAIN`/`API_DOMAIN`) and `docker/nginx-behind-proxy/proxy.conf`
-  (behind-proxy, no envsubst).
+- Files: `firecalc-docker/nginx/templates/standalone.tpl` and
+  `firecalc-docker/nginx/templates/behind-proxy.tpl`, assembled with the shared
+  includes under `firecalc-docker/nginx/shared/` by
+  `firecalc-docker/nginx/entrypoint.sh` (envsubst of the domain placeholders in
+  both modes).
 
 ### 2.3 UI routing
 
@@ -138,7 +140,7 @@ have no browser-side calculation source (tickets 09/10 removed it).
 ```hocon
 payments.<environment> {
   calculation-client {
-    base-uri = "http://calc-backend:9000/v1"   # Docker: compose service DNS
+    base-uri = "http://calc-server:9000/v1"   # Docker: compose service DNS
   }
 }
 ```
@@ -147,9 +149,11 @@ Omitting the block defaults `base-uri` to `http://localhost:9000/v1` — the
 standalone backend's default bind. `calculation-client.base-uri` is the only
 key the block has: there is no `enabled` switch and no per-kind engine-source
 switch, an unreachable backend produces a typed `CalculationReportError`,
-never a local calculation. Templates:
-`configs/templates/payments/payments-config.conf.template` and
-`docker/configs/staging/payments/payments-config.conf.template` / `.example`.
+never a local calculation. Template:
+`configs/templates/payments/payments-config.conf.template` (the copy-source
+named by the `.require-configs` guard; the `docker/configs/staging/payments/`
+`.template` / `.example` pair belonged to the pre-migration `docker/` layout
+and was removed with it).
 
 Payments uses the client for Austrian PDF data only; non-Austrian kinds never
 touch it. There is no local Austrian fallback and no calculation-response
@@ -164,8 +168,10 @@ headers at the two calc locations (ticket 21):
 
 - `$firecalc_cors_origin` maps the request `Origin` to the allowed UI origin
   and nothing else. Standalone mode inserts `https://${UI_DOMAIN}` via
-  envsubst; behind-proxy mode ships fail-closed (empty map — uncomment and set
-  your UI origin in `docker/nginx-behind-proxy/proxy.conf`).
+  envsubst; behind-proxy mode leaves the domain entry empty and substitutes a
+  regex fallback that echoes the request origin (`CORS_REGEX_FALLBACK`, set by
+  `firecalc-docker/nginx/entrypoint.sh`; the outer proxy owns the CORS policy) —
+  the map lives in `firecalc-docker/nginx/shared/calc-pre-server.conf`.
 - `Access-Control-Allow-Origin` is emitted `always` (on success and error
   responses), with `Vary: Origin` and `Access-Control-Expose-Headers` for the
   rate-limit headers (`X-RateLimit-Limit/Remaining/Reset`, `Retry-After`).
@@ -227,7 +233,7 @@ routes.
 | Layer | Mechanism |
 |---|---|
 | Container | `HEALTHCHECK` in `Dockerfile.calc-server`: `curl -f http://localhost:9000/health` (30s interval, 3 retries, 5s start period) |
-| Compose | `calc-backend` healthcheck mirrors the container check; nginx `depends_on: calc-backend: condition: service_healthy` in both modes — the proxy admits no traffic before the calc backend is ready |
+| Compose | `calc-server` healthcheck mirrors the container check; nginx `depends_on: calc-server: condition: service_healthy` in both modes — the proxy admits no traffic before the calc backend is ready |
 | Nginx | nginx's own healthcheck probes both `/healthcheck` (payments) and `/calc-healthcheck` (calc) independently, so calc readiness loss is observable separately from payments |
 | Application | `GET /health` returns JSON `{status, endpoints}`; startup reporting prints bind address, served endpoints, rate limits, and app-key status, so a missing route is detectable before traffic is admitted |
 
@@ -262,22 +268,22 @@ at 10→30/min); the nginx edge zones above remain the binding first line.
    `modules/firebox_calc_server/target/scala-3.9.0/firecalc-calc-server-assembly.jar`.
 2. **Build the calc image with the private checkout as build context** so the
    `COPY` path resolves, while the Dockerfile stays in the public repo:
-   `docker build -f <public-checkout>/docker/Dockerfile.calc-server -t firecalc-${FIRECALC_ENV}-calc-server:latest <private-checkout>`
+   `docker build -f <public-checkout>/firecalc-docker/Dockerfile.calc-server -t firecalc-${FIRECALC_ENV}-calc-server:latest <private-checkout>`
    (Compose's `context: ..` assumes the public checkout layout; for the calc
    image, build explicitly against the private checkout and let compose use the
    resulting image, or point a compose override's `build.context` at the
    private checkout.)
-3. **Configure**: `docker/configs/<env>/payments/payments-config.conf` with
-   `calculation-client.base-uri = "http://calc-backend:9000/v1"`; UI built
+3. **Configure**: `firecalc-docker/configs/<env>/payments/payments-config.conf` with
+   `calculation-client.base-uri = "http://calc-server:9000/v1"`; UI built
    from `modules/ui/.env.<mode>` with the API-domain base URL (§2.3);
-   behind-proxy mode: set the CORS origin in
-   `docker/nginx-behind-proxy/proxy.conf` (§2.5).
+   behind-proxy mode: the CORS origin map lives in
+   `firecalc-docker/nginx/shared/calc-pre-server.conf` (§2.5).
 4. **Start**: `docker compose up -d` (mode selected by the
-   `docker-compose.yml` symlink — see `docker/DUAL-MODE-DEPLOYMENT.md`).
+   `docker-compose.yml` symlink — see `firecalc-docker/DEPLOYMENT.md`).
    Nginx waits for both backends' health.
-5. **Smoke test**: `docker/smoke-test-deploy.sh` — probes `/health`,
+5. **Smoke test**: `firecalc-docker/scripts/smoke-test-deploy.sh` — probes `/health`,
    `GET /v1/kinds`, `POST /v1/calculate` through nginx, then stops
-   calc-backend and verifies payments still answers while calc fails
+   calc-server and verifies payments still answers while calc fails
    explicitly (502/503), then restarts and verifies recovery.
 6. **Cross-repo acceptance** (optional, against the deployment):
    `sbt -Dfirecalc.private.server.uri=http://<host>:9000/v1 "firebox_calc_testkit/testOnly *CrossRepositoryAcceptanceSuite"`.
@@ -296,7 +302,7 @@ at 10→30/min); the nginx edge zones above remain the binding first line.
   `CalculationReportError` → `ReportFileAccessException`. No local fallback,
   no payments-side cache, and a browser-side cache can never satisfy a
   payments request (ticket 18 `RemotePdfAcceptanceSuite`).
-- **Proxy-level**: with calc-backend down, nginx returns 502/503 for the two
+- **Proxy-level**: with calc-server down, nginx returns 502/503 for the two
   calc locations while payments routes keep serving (smoke-test Phase 4).
 
 ## 8. Rollback
@@ -311,7 +317,7 @@ without linking public and private builds, and without bypassing HTTP.
 
 | Checklist item (ticket 21) | Evidence |
 |---|---|
-| Routing through exactly the two normative operations, health gating, payments routing preserved | §2 above; ticket 05 implementation notes (private repository); `docker/smoke-test-deploy.sh` |
+| Routing through exactly the two normative operations, health gating, payments routing preserved | §2 above; ticket 05 implementation notes (private repository); `firecalc-docker/scripts/smoke-test-deploy.sh` |
 | Independent versioning + demonstrated contract compatibility | §3; `BlackBoxHttpContractSuite` (ticket 15 evidence §7); `CrossRepositoryAcceptanceSuite` (ticket 17) |
 | Ecolabeled/Door15aCatalog end-to-end workflows with complete outputs and `AsResult` | Ticket 12 Phase 2 gate: `RemotePrefetchEndToEndSpec` (ui, 8 tests) + `CrossRepositoryAcceptanceSuite` AsResult fold; phase-2 gate evidence (private repository) §1 |
 | PDF only from a fresh backend response; no fallback/cache | Ticket 18: `RemotePdfAcceptanceSuite` (payments, 11 tests); ticket 06 implementation notes |

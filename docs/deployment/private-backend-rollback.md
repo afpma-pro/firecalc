@@ -36,26 +36,26 @@ release and is not what this runbook does.
 
 ## 2. Procedure
 
-1. **Freeze the failing rollout.** Stop issuing new calc-backend deployments.
+1. **Freeze the failing rollout.** Stop issuing new calc-server deployments.
 
 2. **Redeploy the prior private backend behind the unchanged routes.**
    - Image-based: retag or redeploy the retained prior image as the
-     `calc-backend` service image and recreate the service:
-     `docker compose up -d --no-deps --force-recreate calc-backend`
+     `calc-server` service image and recreate the service:
+     `docker compose up -d --no-deps --force-recreate calc-server`
      (after pointing the service at the prior image/tag via your deployment
      tooling or a compose override).
    - Jar-based: rebuild the image from the retained prior assembly jar using
-     the same public `docker/Dockerfile.calc-server` with the private
+     the same public `firecalc-docker/Dockerfile.calc-server` with the private
      checkout as build context (see cutover doc §6 step 2), then recreate the
      service as above.
    - The routes are unchanged: nginx still proxies exactly `/v1/kinds` and
-     `/v1/calculate` to `calc-backend:9000`, and the health gate
+     `/v1/calculate` to `calc-server:9000`, and the health gate
      (`/calc-healthcheck` → `/health`) is unchanged.
 
-3. **Wait for the health gate.** Compose recreates `calc-backend` and nginx
+3. **Wait for the health gate.** Compose recreates `calc-server` and nginx
    admits traffic only once `curl -f http://localhost:9000/health` passes
    (`depends_on: condition: service_healthy`). Confirm:
-   `docker compose ps` shows `calc-backend` healthy and nginx healthy
+   `docker compose ps` shows `calc-server` healthy and nginx healthy
    (nginx's healthcheck probes both `/healthcheck` and `/calc-healthcheck`).
 
 4. **Verify the normative seam through the proxy.**
@@ -65,7 +65,7 @@ release and is not what this runbook does.
      `AsResult` state.
    - Or run the cross-repo acceptance against the deployment:
      `sbt -Dfirecalc.private.server.uri=http://<host>:9000/v1 "firebox_calc_testkit/testOnly *CrossRepositoryAcceptanceSuite"`.
-   - `docker/smoke-test-deploy.sh` exercises the same probes plus the
+   - `firecalc-docker/scripts/smoke-test-deploy.sh` exercises the same probes plus the
      stop/restart recovery path.
 
 5. **Confirm public clients are untouched.** No UI rebuild, no payments

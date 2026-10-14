@@ -803,7 +803,7 @@ Build and deploy the production stack: behind-proxy mode with the calc-server ba
 make prod-docker-deploy-up
 ```
 
-**What it does:** Delegates to `$(MAKE) -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true`. Full pipeline: `scripts/setup-env.sh` (create/validate `.env`) → `scripts/deploy.sh` (build backend JAR, UI, and calc-server JAR from the refs pinned in `firecalc-docker/VERSIONS`; stage the PDF logos from the module tree into `artifacts/`) → activate the compose symlink → `docker compose build` → `scripts/generate-certs.sh` → `docker compose up -d`.
+**What it does (canonical description of the `deploy` pipeline — other docs point here):** Delegates to `$(MAKE) -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true`. Full pipeline: the `.require-configs` guard (fails before any build if `FIRECALC_ENV` names no config directory under `firecalc-docker/configs/`, a runtime config inside it is missing, the `environment` selector inside a payments/email config disagrees with its directory or names a section the file does not define, the GoCardless credentials for the selected section are still `${?GOCARDLESS_*}` hooks that no container receives, or the invoice config named by `invoice-generation.config-file-path` does not exist) → `scripts/setup-env.sh` (create/validate `.env`) → `scripts/deploy.sh` (build backend JAR, UI, and calc-server JAR from the refs pinned in `firecalc-docker/VERSIONS`; stage the PDF logos from the module tree into `artifacts/`, failing and naming the path if one is missing) → activate the compose symlink → `docker compose build` → `scripts/generate-certs.sh` → `docker compose up -d`.
 
 ---
 
@@ -868,7 +868,7 @@ Run directly on the deployment host (`make -C firecalc-docker <target>`, or `cd 
 
 | Target | Description |
 |--------|-------------|
-| `deploy` | Full pipeline: setup-env → artifact builds → compose symlink → image build → certs → `up -d` (default goal) |
+| `deploy` | Full deployment pipeline (default goal); requires `.env` and `configs/<FIRECALC_ENV>/…` first — steps described once under `make prod-docker-deploy-up` above |
 | `build` | Clone/build artifacts and Docker images; does not start containers |
 | `up` | Start containers (requires an active compose symlink and built images) |
 | `down` | Stop and remove containers |

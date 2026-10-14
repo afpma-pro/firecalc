@@ -34,10 +34,11 @@ import io.circe.JsonObject
  *
  * The repair cannot see the scalar style, so it also unescapes hand-written PLAIN scalars, where
  * YAML §7.1 keeps backslashes literal. Accepted knowingly: a scan of the corpus (213 real
- * `.fcalc`/`.fcalc-db` files plus `docker/configs/staging/invoices/invoice-config.yaml`) found
- * no backslash outside `pressure_loss_table_raw`, which the field-scoped storage repair below
- * already owns. If a hand-edited config starts carrying backslashes in plain scalars, it loses
- * one escape layer at load.
+ * `.fcalc`/`.fcalc-db` files plus
+ * `firecalc-docker/configs/staging/invoices/invoice-config.yaml`) found no backslash outside
+ * `pressure_loss_table_raw`, which the field-scoped storage repair below already owns. If a
+ * hand-edited config starts carrying backslashes in plain scalars, it loses one escape layer
+ * at load.
  *
  * The law is idempotent-safe for canonical values: a string without a backslash is returned
  * unchanged (same instance). As a pure function it is however NOT idempotent on escaped text —

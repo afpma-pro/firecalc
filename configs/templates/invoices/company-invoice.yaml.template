@@ -19,6 +19,35 @@ invoice:
     phone: "(+33) 5 55 83 46 29"
     website: "www.afpma.pro"
     logo: !!null
+  # Product catalog: the entries below MUST cover every active SKU of the
+  # Scala catalog (afpma.firecalc.payments.shared.api.v1.StagingProductCatalog).
+  # This block is machine-maintained — regenerate it with:
+  #   sbt --client "payments/genYamlTemplate"
+  # and every CI run verifies it covers every active SKU with a "default"
+  # locale entry (coverage, not byte-for-byte fidelity to the generator) by:
+  #   sbt --client "payments/verifyYamlAgainstCatalog"
+  productCatalog:
+    entries:
+      pdf_report_EN_15544_2023:
+        default:
+          name: "Calculation Report NF EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
+        en:
+          name: "Calculation Report NF EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
+        fr:
+          name: "Note de calcul NF EN 15544:2023"
+          description: "Note de calcul conforme à la norme NF EN 15544:2023"
+      pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE:
+        default:
+          name: "Calculation Report EN 15544:2023 + Firebox License"
+          description: "Calculation report compliant with NF EN 15544:2023 with firebox license"
+        en:
+          name: "Calculation Report EN 15544:2023 + Firebox License"
+          description: "Calculation report compliant with NF EN 15544:2023 with firebox license"
+        fr:
+          name: "Note de calcul EN 15544:2023 + Licence foyer"
+          description: "Note de calcul conforme à la norme NF EN 15544:2023 avec licence foyer"
   recipient: 
     name: "ACME France"
     displayName: !!null

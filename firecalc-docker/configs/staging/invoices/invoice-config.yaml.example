@@ -6,8 +6,6 @@
 # =============================================================================
 # Invoice Configuration - STAGING Environment
 # =============================================================================
-# SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
 #
 # Config = what the org is (sender identity, currency, payment terms, notes).
 # Runtime data (lineItems, recipient, invoiceNumber, etc.) lives elsewhere
@@ -19,6 +17,14 @@
 # - Remove .example extension when deploying:
 #   cp invoice-config.yaml.example invoice-config.yaml
 # - Update company details with your actual information
+#
+# ENV KEYS THAT ACTUALLY REACH THE CONTAINER
+# The compose files pass exactly six of the keys used below — each with a
+# default identical to the inline default here, so leaving them unset changes
+# nothing. The six are listed under "ENVIRONMENT VARIABLE REFERENCE" at the
+# end of this file. Every other $\{VAR\} hook in this file is never passed by
+# the deployment and resolves to its inline :- default; edit the value in the
+# YAML instead.
 # =============================================================================
 
 invoice:
@@ -54,8 +60,9 @@ invoice:
     website: "${COMPANY_WEBSITE:-https://www.yourcompany.com}"
     
     # Company logo (optional)
-    # Path relative to this config file or null to omit
-    # Place logo file at: configs/staging/invoices/logo.png
+    # Container-relative path, e.g. "configs/staging/invoices/logo.png", or
+    # null to omit — null falls back to the logo baked into the image.
+    # Where to place the file: see "Logo Setup" in the notes below.
     logo: null
     
     # Tax exemption notice (optional)
@@ -77,16 +84,25 @@ invoice:
   productCatalog:
     entries:
       pdf_report_EN_15544_2023:
+        default:
+          name: "Calculation Report NF EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
+        en:
+          name: "Calculation Report NF EN 15544:2023"
+          description: "Calculation report compliant with NF EN 15544:2023 standard"
         fr:
           name: "Note de calcul NF EN 15544:2023"
           description: "Note de calcul conforme à la norme NF EN 15544:2023"
-        en:
-          name: "Calculation Report EN 15544:2023"
-          description: "Calculation report compliant with NF EN 15544:2023 standard"
+      pdf_report_EN_15544_2023_WITH_FIREBOX_LICENSE_FEE:
         default:
-          name: "Calculation Report EN 15544:2023"
-          description: "Calculation report compliant with NF EN 15544:2023 standard"
-  
+          name: "Calculation Report EN 15544:2023 + Firebox License"
+          description: "Calculation report compliant with NF EN 15544:2023 with firebox license"
+        en:
+          name: "Calculation Report EN 15544:2023 + Firebox License"
+          description: "Calculation report compliant with NF EN 15544:2023 with firebox license"
+        fr:
+          name: "Note de calcul EN 15544:2023 + Licence foyer"
+          description: "Note de calcul conforme à la norme NF EN 15544:2023 avec licence foyer"
   # ---------------------------------------------------------------------------
   # Payment Terms
   # ---------------------------------------------------------------------------
@@ -143,17 +159,24 @@ template:
 # ENVIRONMENT VARIABLE REFERENCE
 # =============================================================================
 #
-# This configuration file supports environment variable substitution.
-# Variables can be set in docker/.env or as system environment variables.
+# Every hook in this file carries an inline `:-` default. The compose files
+# pass only the six keys listed first (through firecalc-docker/.env, with
+# defaults identical to this file). The rest are never set by the deployment:
+# they resolve to the default written here unless you export them into the
+# backend container yourself.
 #
-# Required Variables (no defaults):
-# ----------------------------------
+# Passed by the compose files:
+# ----------------------------
+# PAYMENT_DUE_DAYS          - Days until payment due (default: 30)
+# LATE_FEE_PERCENTAGE       - Late payment fee % (default: 1.5)
+# COMPANY_CURRENCY          - Currency code (EUR, USD, GBP, etc.)
+# TEMPLATE_LOGO_POSITION    - Logo position (default: top-left)
+# TEMPLATE_PRIMARY_COLOR    - Brand color hex (default: #2563eb)
+# TEMPLATE_FONT_FAMILY      - Font name (default: Liberation Sans)
+#
+# Company Information (not passed — set the value in the YAML):
+# -------------------------------------------------------------
 # COMPANY_LEGAL_NAME        - Your company's legal name
-# COMPANY_IBAN              - Bank account IBAN for payments
-# COMPANY_BIC               - Bank account BIC/SWIFT code
-#
-# Company Information:
-# --------------------
 # COMPANY_DISPLAY_NAME      - Marketing/display name
 # COMPANY_STREET            - Street address line 1
 # COMPANY_STREET_LINE2      - Street address line 2
@@ -166,26 +189,19 @@ template:
 # COMPANY_EMAIL             - Billing email address
 # COMPANY_PHONE             - Contact phone number
 # COMPANY_WEBSITE           - Company website URL
-# COMPANY_CURRENCY          - Currency code (EUR, USD, GBP, etc.)
+# COMPANY_IBAN              - Bank account IBAN for payments
+# COMPANY_BIC               - Bank account BIC/SWIFT code
 #
-# Tax Exemption Notices:
-# ----------------------
+# Tax Exemption Notices (not passed — set the value in the YAML):
+# ---------------------------------------------------------------
 # COMPANY_TAX_EXEMPT_FR     - French tax exemption notice
 # COMPANY_TAX_EXEMPT_EN     - English tax exemption notice
 # COMPANY_TAX_EXEMPT_DEFAULT - Fallback notice
 #
-# Payment Terms:
-# --------------
-# PAYMENT_DUE_DAYS          - Days until payment due (default: 30)
-# LATE_FEE_PERCENTAGE       - Late payment fee % (default: 1.5)
+# Early Payment Discount (not passed — set the value in the YAML):
+# ----------------------------------------------------------------
 # EARLY_DISCOUNT_PERCENTAGE - Early payment discount % (default: 2.0)
 # EARLY_DISCOUNT_DAYS       - Days to qualify for discount (default: 10)
-#
-# Template Styling:
-# -----------------
-# TEMPLATE_LOGO_POSITION    - Logo position (default: top-left)
-# TEMPLATE_PRIMARY_COLOR    - Brand color hex (default: #2563eb)
-# TEMPLATE_FONT_FAMILY      - Font name (default: Liberation Sans)
 #
 # =============================================================================
 # CONFIGURATION NOTES
@@ -193,18 +209,21 @@ template:
 #
 # File Location:
 #   This file must be located at:
-#   docker/configs/staging/invoices/invoice-config.yaml
+#   firecalc-docker/configs/staging/invoices/invoice-config.yaml
 #
 # Environment Detection:
 #   Set FIRECALC_ENV=staging when running the application
 #   The system automatically loads configs from configs/staging/
 #
 # Logo Setup:
-#   1. Place your logo file at: docker/configs/staging/invoices/logo.png
+#   1. Place your logo file at: firecalc-docker/configs/staging/invoices/logo.png
+#      (the compose mount exposes it to the backend at /app/configs/...)
 #   2. Supported formats: PNG (recommended), JPG, JPEG
 #   3. Recommended size: 200x200 pixels or similar aspect ratio
-#   4. Update 'sender.logo' field with filename: "logo.png"
-#   5. Or leave as null to omit logo
+#   4. Update 'sender.logo' with the container-relative path:
+#      "configs/staging/invoices/logo.png"
+#   5. Or leave as null: the backend then falls back to the logo baked into
+#      the image (modules/invoices/configs/logo.png, staged by scripts/deploy.sh)
 #
 # Testing Invoice Generation:
 #   1. Update company information in this file or via environment variables
@@ -246,7 +265,7 @@ template:
 # Related Files:
 #   - ../payments/payments-config.conf: Main payments config
 #   - ../payments/email-config.conf: Email delivery config
-#   - ../../.env: Environment variables for Docker deployment
+#   ../../../.env: Environment variables for Docker deployment
 #
 # Troubleshooting:
 #   - "YAML parsing error": Check indentation and syntax

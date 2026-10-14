@@ -8,59 +8,90 @@ package afpma.firecalc.payments.dev
 import afpma.firecalc.payments.shared.api.v1.StagingProductCatalog
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.charset.StandardCharsets
 
 /**
  * Regenerates the per-SKU productCatalog YAML block inside
- * `docker/configs/staging/invoices/invoice-config.yaml.example`
- * from the current Scala catalog's `exampleCopy` build-time field.
+ * `firecalc-docker/configs/staging/invoices/invoice-config.yaml.example`,
+ * `firecalc-docker/configs/staging/invoices/invoice-config.yaml.template`, and
+ * `configs/templates/invoices/company-invoice.yaml.template` from the current
+ * Scala catalog's `exampleCopy` build-time field. All three files are tracked
+ * and checked by VerifyYamlAgainstCatalog, so their blocks are
+ * machine-maintained and never hand-edited.
  *
- * The surrounding file (comments, env interpolations, other sections)
- * is preserved verbatim — only the `productCatalog:` block under
- * `sender:` (4-space indent) is replaced.
+ * Every target is validated (present, and containing the block marker) and
+ * its full replacement content computed BEFORE any file is written, so a
+ * failure mid-list leaves the whole tree untouched.
+ *
+ * The surrounding files (comments, env interpolations, other sections)
+ * are preserved verbatim — only the `productCatalog:` block under
+ * `invoice:` (2-space indent) is replaced.
  */
 object GenYamlTemplate:
 
+    private val targets: List[Path] = List(
+        Paths.get("firecalc-docker/configs/staging/invoices/invoice-config.yaml.example" ),
+        Paths.get("firecalc-docker/configs/staging/invoices/invoice-config.yaml.template"),
+        Paths.get("configs/templates/invoices/company-invoice.yaml.template"             )
+    )
+
     def main(args: Array[String]): Unit =
-        val exampleFile = Paths.get("docker/configs/staging/invoices/invoice-config.yaml.example")
-        if !Files.exists(exampleFile) then
-            Console.err.println(s"[GenYamlTemplate] file not found: ${exampleFile.toAbsolutePath}")
-            System.exit        (1                                                                 )
+        val blockLines = buildBlockLines()
+        // Strict List.map: every precondition (file present, block marker
+        // present) is checked and all replacement content computed here;
+        // nothing reaches the filesystem until all of it has succeeded.
+        val rebuilt    = targets.map { target =>
+            if !Files.exists(target) then
+                Console.err.println(s"[GenYamlTemplate] file not found: ${target.toAbsolutePath}")
+                System.exit        (1                                                            )
+            target -> regenerate(target, blockLines)
+        }
+        rebuilt.foreach { (file, content) =>
+            Files.write(file, content.getBytes(StandardCharsets.UTF_8)                           )
+            println    (s"[GenYamlTemplate] regenerated productCatalog in ${file.toAbsolutePath}")
+        }
 
-        val original = new String(Files.readAllBytes(exampleFile), StandardCharsets.UTF_8)
-
-        // Build replacement block from staging catalog.
+    /** The generated `  productCatalog:` block, one element per line. */
+    private def buildBlockLines(): List[String] =
         val sb = new StringBuilder
-        sb.append("    productCatalog:\n")
-        sb.append("      entries:\n"     )
+        sb.append("  productCatalog:\n")
+        sb.append("    entries:\n"     )
         StagingProductCatalog.allProducts.foreach { p =>
-            sb.append(s"        ${p.sku.value}:\n")
+            sb.append(s"      ${p.sku.value}:\n")
             p.exampleCopy.entries.toList.sortBy(_._1).foreach { case (localeTag, copy) =>
-                sb.append(s"          $localeTag:\n"                                         )
-                sb.append(s"            name: \"${escapeYamlDQ(copy.name)}\"\n"              )
-                sb.append(s"            description: \"${escapeYamlDQ(copy.description)}\"\n")
+                sb.append(s"        $localeTag:\n"                                         )
+                sb.append(s"          name: \"${escapeYamlDQ(copy.name)}\"\n"              )
+                sb.append(s"          description: \"${escapeYamlDQ(copy.description)}\"\n")
             }
         }
+        sb.toString.stripSuffix("\n").split("\n", -1).toList
 
-        // Splice into file: replace from "    productCatalog:" to next sibling key
-        // at same 4-space indent (line starts with exactly 4 spaces + non-space).
+    /**
+     * Computes the full replacement content for `file`, splicing in
+     * `newBlockLines`; never writes.
+     *
+     * Splice into file: replace from "  productCatalog:" to next sibling key
+     * at same 2-space indent (line starts with exactly 2 spaces + non-space).
+     * NOTE: any 2-space-indented line with a non-space at column 3 ends the
+     * block, so a comment line inside the productCatalog block would truncate
+     * the splice.
+     */
+    private def regenerate(file: Path, newBlockLines: List[String]): String =
+        val original = new String(Files.readAllBytes(file), StandardCharsets.UTF_8)
         val lines    = original.split("\n", -1).toList
-        val startIdx = lines.indexWhere(_.startsWith("    productCatalog:"))
+        val startIdx = lines.indexWhere(_.startsWith("  productCatalog:"))
         if startIdx < 0 then
-            Console.err.println(s"[GenYamlTemplate] could not find '    productCatalog:' in $exampleFile")
-            System.exit        (1                                                                        )
+            Console.err.println(s"[GenYamlTemplate] could not find '  productCatalog:' in $file")
+            System.exit        (1                                                               )
 
-        val afterStart    = lines.drop(startIdx + 1)
-        val relEnd        = afterStart.indexWhere { ln =>
-            ln.length >= 5 && ln.startsWith("    ") && ln.charAt(4) != ' ' && ln.trim.nonEmpty
+        val afterStart = lines.drop(startIdx + 1)
+        val relEnd     = afterStart.indexWhere { ln =>
+            ln.length >= 3 && ln.startsWith("  ") && ln.charAt(2) != ' ' && ln.trim.nonEmpty
         }
-        val endIdx        = if relEnd < 0 then lines.length else startIdx + 1 + relEnd
-        val newBlockLines = sb.toString.stripSuffix("\n").split("\n", -1).toList
-        val rebuilt       = (lines.take(startIdx) ++ newBlockLines ++ lines.drop(endIdx)).mkString("\n")
-
-        Files.write(exampleFile, rebuilt.getBytes(StandardCharsets.UTF_8)                           )
-        println    (s"[GenYamlTemplate] regenerated productCatalog in ${exampleFile.toAbsolutePath}")
+        val endIdx     = if relEnd < 0 then lines.length else startIdx + 1 + relEnd
+        (lines.take(startIdx) ++ newBlockLines ++ lines.drop(endIdx)).mkString("\n")
 
     private def escapeYamlDQ(s: String): String =
         s.replace("\\", "\\\\").replace("\"", "\\\"")

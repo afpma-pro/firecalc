@@ -1,8 +1,11 @@
 # Build artifacts (produced by deploy script, not committed)
 artifacts/
 
-# Runtime configs with credentials
-configs/
+# Runtime configs with credentials (use .template/.example counterparts instead)
+configs/**
+!configs/**/
+!configs/**/*.template
+!configs/**/*.example
 
 # Database files (transactional data)
 databases/

@@ -7,7 +7,9 @@
 # This file configures SMTP settings for sending emails
 
 email {
-  # Default environment - can be overridden by PAYMENTS_ENVIRONMENT env var
+  # Selects which section below is read. Only "development" and "production"
+  # sections are defined here; for any other environment, rename one of them to
+  # match the directory this file is copied into, and keep this value equal to it.
   environment = "development"
   
   # Development/Testing Configuration

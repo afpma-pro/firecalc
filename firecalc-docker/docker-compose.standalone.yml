@@ -24,6 +24,7 @@
 #
 # Environment Variables (via .env file):
 #   FIRECALC_ENV    - Environment name (staging, production, etc.)
+#   JWT_SECRET      - Payments JWT signing secret (REQUIRED)
 #   UI_DOMAIN       - UI domain name (e.g., firecalc.example.com)
 #   API_DOMAIN      - API domain name (e.g., api.example.com)
 #   LETSENCRYPT_EMAIL - Email for Let's Encrypt notifications
@@ -41,6 +42,16 @@ services:
 
     environment:
       - FIRECALC_ENV=${FIRECALC_ENV:?FIRECALC_ENV must be set in .env file}
+      # JWT signing secret; substituted into configs/<env>/payments/payments-config.conf (jwt.secret = ${JWT_SECRET})
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set in .env file}
+      # Invoice overrides referenced by configs/<env>/invoices/invoice-config.yaml via ${VAR:-default}.
+      # Defaults below mirror the YAML exactly: unset means unchanged behavior.
+      - PAYMENT_DUE_DAYS=${PAYMENT_DUE_DAYS:-30}
+      - LATE_FEE_PERCENTAGE=${LATE_FEE_PERCENTAGE:-1.5}
+      - COMPANY_CURRENCY=${COMPANY_CURRENCY:-EUR}
+      - TEMPLATE_LOGO_POSITION=${TEMPLATE_LOGO_POSITION:-top-left}
+      - TEMPLATE_PRIMARY_COLOR=${TEMPLATE_PRIMARY_COLOR:-#2563eb}
+      - TEMPLATE_FONT_FAMILY=${TEMPLATE_FONT_FAMILY:-Liberation Sans}
 
     volumes:
       - ./configs:/app/configs:ro

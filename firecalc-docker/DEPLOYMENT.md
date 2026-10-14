@@ -52,6 +52,7 @@ Self-contained deployment with inner nginx handling TLS termination and Let's En
 
 **Environment variables** (`.env` file):
 - `FIRECALC_ENV` — Environment name: `development`, `staging`, or `production` (any other value is fatal)
+- `JWT_SECRET` — payments JWT signing secret, REQUIRED in every mode; generate with `openssl rand -base64 32`
 - `UI_DOMAIN` — UI domain name (e.g., `firecalc.example.com`)
 - `API_DOMAIN` — API domain name (e.g., `api.example.com`)
 - `LETSENCRYPT_EMAIL` — Email for Let's Encrypt notifications
@@ -63,8 +64,9 @@ Inner nginx serves plain HTTP on the Docker network only — no host ports expos
 
 **Environment variables** (`.env` file):
 - `FIRECALC_ENV` — Environment name: `development`, `staging`, or `production` (any other value is fatal)
+- `JWT_SECRET` — payments JWT signing secret, REQUIRED in every mode; generate with `openssl rand -base64 32`
 
-> Note: `UI_DOMAIN` and `API_DOMAIN` are NOT needed in behind-proxy mode. The outer proxy handles domain routing and TLS.
+> Note: `UI_DOMAIN` and `API_DOMAIN` play no part in behind-proxy nginx — the outer proxy handles domain routing and TLS, and `nginx/entrypoint.sh` echoes the request origin for CORS. They are still REQUIRED in this mode: `make deploy` and `make up` always run `scripts/generate-certs.sh`, which fails without them.
 
 **UI build environment** (both modes, consumed by `scripts/deploy.sh`):
 - `FIRECALC_ENV` is resolved once: an exported value wins, otherwise `.env` is the fallback.
@@ -130,7 +132,11 @@ will use the pre-existing network. The inner nginx container joins it automatica
 ### 3. Pre-deployment Checklist
 
 - Build images: `docker compose build`
-- Create `configs/` directory with necessary YAML/CONF files
+- Place the runtime configs the backend mounts read-only at `/app/configs`:
+  `configs/<FIRECALC_ENV>/payments/{payments,gocardless,email}-config.conf` and
+  `configs/<FIRECALC_ENV>/invoices/invoice-config.yaml` (copy the `.example` /
+  repository-root templates and fill in the environment values). `make deploy`
+  checks these before the build and names any missing path.
 - Ensure `databases/` directory exists
 - Review and update `.env` file with production values
 - Configure outer proxy proxy hosts

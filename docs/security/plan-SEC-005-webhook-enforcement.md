@@ -140,11 +140,13 @@ The `${VAR:?message}` syntax causes docker-compose to fail with an error if the 
 
 ### Step 5: Ensure Sandbox Has a Real Webhook Secret ✅
 
-The sandbox config template already has a `webhook-secret` placeholder.
-Operators must replace `YOUR_GOCARDLESS_WEBHOOK_SECRET` with the real secret
-from the GoCardless dashboard when deploying to staging.
+The sandbox config template has a `webhook-secret` placeholder. Operators must
+replace it with the real secret from the GoCardless dashboard when deploying to
+staging (the current template writes `webhook-secret = "GC_WEBHOOK_TOKEN"` in its
+sandbox block; the `YOUR_GOCARDLESS_WEBHOOK_SECRET` placeholder this plan used
+lived in the pre-migration `docker/` template, which has since been removed).
 
-Config template: `docker/configs/staging/payments/gocardless-config.conf.template`
+Config template: `configs/templates/payments/gocardless-config.conf.template`
 
 ## Dependencies
 
