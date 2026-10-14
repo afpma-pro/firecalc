@@ -24,7 +24,7 @@ case class PaymentsConfig(
     reportAsDraft               : Boolean,
     jwtConfig                   : JwtConfig,
     loggingConfig               : LoggingConfig           = LoggingConfig(),
-    corsAllowedOrigins          : List[String]            = List("*"), // SEC-016: validated fail-closed in ConfigLoader for non-dev
+    corsAllowedOrigins          : List[String]            = List("*"), // SEC-016: validated fail-closed in ConfigLoader for non-development
     calculationClientConfig     : CalculationClientConfig = CalculationClientConfig()
 ) {
     require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
@@ -110,7 +110,7 @@ object LoggingConfig:
  * The default base URI targets the standalone calculation backend on its
  * default port 9000 (private repository, `firebox-calc-server.conf`).
  * Deployments override `calculation-client.base-uri` in the payments HOCON
- * configuration — inside Docker this is `http://calc-backend:9000/v1`.
+ * configuration — inside Docker this is `http://calc-server:9000/v1`.
  */
 case class CalculationClientConfig(
     baseUri: String = "http://localhost:9000/v1"

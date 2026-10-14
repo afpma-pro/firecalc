@@ -22,7 +22,7 @@ The production environment is the live environment serving real users with real 
 ### 1. Environment Setup
 
 The production environment configuration is located at:
-- ✅ Configuration directory: `configs/prod/`
+- ✅ Configuration directory: `configs/production/`
 - ✅ Database directory: `databases/prod/`
 - ✅ UI environment file: `modules/ui/.env.production`
 
@@ -32,12 +32,12 @@ The production environment configuration is located at:
 
 ```bash
 # Payments configuration
-configs/prod/payments/payments-config.conf
-configs/prod/payments/gocardless-config.conf  # LIVE credentials only!
-configs/prod/payments/email-config.conf
+configs/production/payments/payments-config.conf
+configs/production/payments/gocardless-config.conf  # LIVE credentials only!
+configs/production/payments/email-config.conf
 
 # Invoices configuration
-configs/prod/invoices/company-invoice.yaml
+configs/production/invoices/company-invoice.yaml
 
 # UI configuration
 modules/ui/.env.production
@@ -62,7 +62,7 @@ make prod-docker-deploy-up
 make -C firecalc-docker smoke
 ```
 
-Runtime configs are mounted from `firecalc-docker/configs/prod/` (read-only at `/app/configs`); the UI build hosts live in `modules/ui/.env.production.local` (gitignored override merged on top of the tracked `modules/ui/.env.production` placeholders).
+Runtime configs are mounted from `firecalc-docker/configs/production/` (read-only at `/app/configs`); the UI build hosts live in `modules/ui/.env.production.local` (gitignored override merged on top of the tracked `modules/ui/.env.production` placeholders).
 
 **LEGACY (bare-metal flow)** — predates the Docker layout; kept for reference only:
 ```bash
@@ -70,10 +70,10 @@ Runtime configs are mounted from `firecalc-docker/configs/prod/` (read-only at `
 sbt "payments/assembly"
 
 # Deploy and run with production environment
-FIRECALC_ENV=prod java -jar firecalc-payments-assembly.jar
+FIRECALC_ENV=production java -jar firecalc-payments-assembly.jar
 
 # Or using system property
-java -Dfirecalc.env=prod -jar firecalc-payments-assembly.jar
+java -Dfirecalc.env=production -jar firecalc-payments-assembly.jar
 
 # UI: build and rsync dist/ to the production web server
 cd modules/ui && npm run build:production
@@ -83,7 +83,7 @@ cd modules/ui && npm run build:production
 
 ### Database Configuration
 
-**File**: `configs/prod/payments/payments-config.conf`
+**File**: `configs/production/payments/payments-config.conf`
 
 Key settings:
 ```hocon
@@ -148,7 +148,7 @@ gocardless {
 
 ### Email Configuration
 
-**File**: `configs/prod/payments/email-config.conf`
+**File**: `configs/production/payments/email-config.conf`
 
 **CRITICAL**: Use production SMTP service:
 
@@ -229,7 +229,7 @@ VITE_BACKEND_BASE_PATH=/v1
 # .env carrier + active compose variant (skip if already set up)
 make docker-env-setup
 
-# Runtime configs in firecalc-docker/configs/prod/ (mounted read-only at /app/configs)
+# Runtime configs in firecalc-docker/configs/production/ (mounted read-only at /app/configs)
 # NEVER deploy with placeholder credentials!
 
 # PDF logos once in the module tree (staged into artifacts/ by scripts/deploy.sh):
@@ -317,7 +317,7 @@ scp modules/payments/target/scala-*/firecalc-payments-assembly.jar \
 
 # Deploy configs (if changed - use secure transfer!)
 # NEVER deploy with placeholder credentials!
-scp -r configs/prod/* prod-server:/opt/firecalc/configs/prod/
+scp -r configs/production/* prod-server:/opt/firecalc/configs/production/
 
 # Start new version
 ssh prod-server "systemctl start firecalc-backend"
@@ -544,7 +544,7 @@ systemctl status firecalc-backend
 netstat -tulpn | grep 8181
 
 # Verify configuration
-FIRECALC_ENV=prod java -jar firecalc-payments-assembly.jar --check-config
+FIRECALC_ENV=production java -jar firecalc-payments-assembly.jar --check-config
 ```
 
 #### Database Locked
@@ -602,7 +602,7 @@ java -Xmx2G -Xms1G -jar firecalc-payments-assembly.jar
 
 **What to Backup**:
 1. Database (`databases/prod/firecalc-payments-prod.db`)
-2. Configuration files (`configs/prod/`)
+2. Configuration files (`configs/production/`)
 3. Application logs (last 30 days)
 4. Generated invoices/reports
 

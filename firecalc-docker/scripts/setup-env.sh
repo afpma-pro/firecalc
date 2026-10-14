@@ -95,6 +95,18 @@ if [[ -z "$FIRECALC_ENV" ]]; then
     die "FIRECALC_ENV is not set in .env"
 fi
 
+# One vocabulary: the same three values deploy.sh and the backend accept. The
+# configs/<env>/ directory name, the HOCON section name inside those files and
+# this value are one string; a short form used to pass here and die later in
+# deploy.sh.
+case "$FIRECALC_ENV" in
+    development | staging | production)
+        ;;
+    *)
+        die "Unknown FIRECALC_ENV value: expected development, staging or production (set it in $ENV_FILE)"
+        ;;
+esac
+
 log "FIRECALC_ENV=$FIRECALC_ENV"
 
 # Standalone mode requires domain configuration

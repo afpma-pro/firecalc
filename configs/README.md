@@ -4,14 +4,14 @@
 
 This directory contains centralized configuration for all modules, organized by environment. This replaces the previous approach of embedding configuration files in JAR resources, providing better flexibility and security.
 
-**IMPORTANT PRINCIPLE**: Each environment directory (`dev/`, `staging/`, `prod/`) contains ONLY its own configuration. The [`ConfigPathResolver`](../modules/utils/src/main/scala/afpma/firecalc/config/ConfigPathResolver.scala) automatically loads the correct file based on the `FIRECALC_ENV` environment variable or `firecalc.env` system property.
+**IMPORTANT PRINCIPLE**: Each environment directory (`development/`, `staging/`, `production/`) contains ONLY its own configuration. The [`ConfigPathResolver`](../modules/utils/src/main/scala/afpma/firecalc/config/ConfigPathResolver.scala) automatically loads the correct file based on the `FIRECALC_ENV` environment variable or `firecalc.env` system property.
 
 ## Quick Start
 
 1. **Copy template files to your environment directory:**
    ```bash
-   cp -r configs/templates/* configs/dev/
-   cd configs/dev && find . -name "*.template" -exec bash -c 'mv "$1" "${1%.template}"' _ {} \;
+   cp -r configs/templates/* configs/development/
+   cd configs/development && find . -name "*.template" -exec bash -c 'mv "$1" "${1%.template}"' _ {} \;
    ```
 
 2. **Edit configuration files with your actual values:**
@@ -21,9 +21,9 @@ This directory contains centralized configuration for all modules, organized by 
 
 3. **Run application with environment:**
    ```bash
-   FIRECALC_ENV=dev sbt "payments/run"
+   FIRECALC_ENV=development sbt "payments/run"
    # or
-   java -Dfirecalc.env=dev -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
+   java -Dfirecalc.env=development -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
    ```
 
 ## Directory Structure
@@ -45,7 +45,7 @@ configs/
 │       ├── .env.development.template
 │       ├── .env.staging.template
 │       └── .env.production.template
-├── dev/                         # Development environment (not in git)
+├── development/                 # Development environment (not in git)
 │   ├── payments/
 │   │   ├── payments-config.conf
 │   │   ├── gocardless-config.conf
@@ -65,7 +65,7 @@ configs/
 │   └── invoices/
 │       ├── company-invoice.yaml
 │       └── logo.png (optional)
-└── prod/                        # Production environment (not in git)
+└── production/                  # Production environment (not in git)
     ├── payments/
     │   ├── payments-config.conf
     │   ├── gocardless-config.conf
@@ -84,16 +84,16 @@ configs/
 The system determines which environment to use through this priority order:
 
 1. `FIRECALC_ENV` environment variable
-2. `firecalc.env` system property (`-Dfirecalc.env=dev`)
-3. Default to `dev`
+2. `firecalc.env` system property (`-Dfirecalc.env=development`)
+3. Default to `development`
 
 ### Configuration File Structure
 
 **Each environment directory should contain ONLY its own configuration section.** For example:
 
-- `configs/dev/payments/payments-config.conf` contains only `payments.development { ... }`
+- `configs/development/payments/payments-config.conf` contains only `payments.development { ... }`
 - `configs/staging/payments/payments-config.conf` contains only `payments.staging { ... }`
-- `configs/prod/payments/payments-config.conf` contains only `payments.production { ... }`
+- `configs/production/payments/payments-config.conf` contains only `payments.production { ... }`
 
 This separation ensures:
 - Clear environment boundaries
@@ -124,27 +124,27 @@ This separation ensures:
 
 ### Initial Setup
 ```bash
-# 1. Copy templates to dev environment
-cp -r configs/templates/* configs/dev/
+# 1. Copy templates to the development environment
+cp -r configs/templates/* configs/development/
 
 # 2. Remove .template extensions
-cd configs/dev
+cd configs/development
 find . -name "*.template" -exec bash -c 'mv "$1" "${1%.template}"' _ {} \;
 
 # 3. Edit configuration files with your development values
-# Edit configs/dev/payments/payments-config.conf
-# Edit configs/dev/payments/gocardless-config.conf
-# Edit configs/dev/invoices/company-invoice.yaml
-# Add your logos to configs/dev/reports/ and configs/dev/invoices/
+# Edit configs/development/payments/payments-config.conf
+# Edit configs/development/payments/gocardless-config.conf
+# Edit configs/development/invoices/company-invoice.yaml
+# Add your logos to configs/development/reports/ and configs/development/invoices/
 ```
 
 ### Running in Development
 ```bash
-# Using sbt (environment defaults to dev)
+# Using sbt (environment defaults to development)
 sbt "payments/run"
 
 # Explicitly set environment
-FIRECALC_ENV=dev sbt "payments/run"
+FIRECALC_ENV=development sbt "payments/run"
 ```
 
 ## Staging Environment
@@ -182,7 +182,7 @@ cd modules/ui && npm run dev -- --mode staging
 - **GoCardless**: Always use SANDBOX environment, never live
 - **Email**: Use test email service (Mailtrap.io) to avoid sending real emails
 - **Database**: Use separate staging database (`firecalc-payments-staging.db`)
-- **Invoice Prefix**: Use `FCALC-STG-` to differentiate from dev/prod
+- **Invoice Prefix**: Use `FCALC-STG-` to differentiate from development/production
 - **Domain**: Use staging subdomain (e.g., `staging.firecalc.afpma.pro`)
 
 ## Production Deployment
@@ -190,16 +190,20 @@ cd modules/ui && npm run dev -- --mode staging
 ### Setup Production Configuration
 ```bash
 # 1. Create production directory
-mkdir -p configs/prod/{payments,reports,invoices}
+mkdir -p configs/production/{payments,reports,invoices}
 
 # 2. Copy and customize templates
-cp configs/templates/payments/*.template configs/prod/payments/
-cp configs/templates/reports/*.template configs/prod/reports/
-cp configs/templates/invoices/*.template configs/prod/invoices/
+cp configs/templates/payments/*.template configs/production/payments/
+cp configs/templates/reports/*.template configs/production/reports/
+cp configs/templates/invoices/*.template configs/production/invoices/
 
 # 3. Remove .template extensions and edit with production values
-cd configs/prod
+cd configs/production
 find . -name "*.template" -exec bash -c 'mv "$1" "${1%.template}"' _ {} \;
+
+# 3b. In gocardless-config.conf set environment = "live" — the GoCardless
+#     selector vocabulary is sandbox|live, not the environment name, and the
+#     template ships sandbox.
 
 # 4. Add production logos and sensitive configuration
 ```
@@ -210,20 +214,18 @@ find . -name "*.template" -exec bash -c 'mv "$1" "${1%.template}"' _ {} \;
 sbt "payments/assembly"
 
 # Run with production environment
-java -Dfirecalc.env=prod -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
+java -Dfirecalc.env=production -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
 
 # Or using environment variable
-FIRECALC_ENV=prod java -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
+FIRECALC_ENV=production java -jar modules/payments/target/scala-*/firecalc-payments-assembly.jar
 ```
 
 ## Test Scaffolding Directories
 
-Two additional directories exist for test infrastructure:
-
-- **`test-exists/`** — Contains `payments/` subdirectory. Used by tests to verify that the `ConfigPathResolver` correctly detects the existence of environment-specific configuration files.
-- **`test-logos/`** — Contains `reports/` subdirectory. Used by tests to verify logo file detection and fallback behavior.
-
-
+`ConfigPathResolverTest` creates its own `configs/<env>/…` fixtures inside a system
+temporary directory and deletes them afterwards, so no directory under `configs/` is
+load-bearing for the test suite. A `test-exists/` or `test-logos/` directory in a local
+checkout is an illustrative example of that layout only — nothing in the build reads it.
 
 ## Configuration File Details
 
@@ -251,7 +253,7 @@ Two additional directories exist for test infrastructure:
 ### Logo Files
 - **Reports**: `reports/logo.{jpg,png}` - Used in PDF reports
 - **Invoices**: `invoices/logo.png` - Used in invoice generation
-- **Optional**: System continues without logos if files are missing
+- **Optional at runtime only**: the bare-metal runtime continues without logos if these files are missing. A Docker deployment does not — `firecalc-docker/scripts/deploy.sh` fails naming the missing logo before `firecalc-docker/Dockerfile.backend`'s unconditional `COPY artifacts/logo.png` / `COPY artifacts/logo.jpg` would fail the image build.
 
 ## Security Considerations
 
@@ -265,7 +267,7 @@ Two additional directories exist for test infrastructure:
 
 ### Configuration Not Found
 ```
-Error: ConfigurationNotFoundException: configs/dev/payments/payments-config.conf
+Error: ConfigurationNotFoundException: configs/development/payments/payments-config.conf
 ```
 **Solution**: Ensure you've copied templates to the appropriate environment directory and removed `.template` extensions.
 
@@ -279,13 +281,13 @@ println(ConfigPathResolver.debugInfo())
 ### Logo Not Loading
 - Check file exists: `configs/{env}/reports/logo.{jpg,png}`
 - Verify file permissions are readable
-- System will continue without logo if file is missing
+- The bare-metal runtime continues without the logo if the file is missing; a Docker deployment fails earlier and loudly — in `firecalc-docker/scripts/deploy.sh`, before the image build (see "Logo Files" above)
 
 ## Migration from Old System
 
 If migrating from the old `getClassLoader` approach:
 
-1. **Copy existing configs** from `modules/*/src/main/resources/` to appropriate `configs/dev/` directories
+1. **Copy existing configs** from `modules/*/src/main/resources/` to appropriate `configs/development/` directories
 2. **Update any hardcoded paths** in your code to use the new centralized approach
 3. **Test thoroughly** in development environment before deploying to production
 4. **Remove old resource files** once migration is complete and tested

@@ -110,15 +110,22 @@ configs/
 │   ├── payments-config.conf.template
 │   ├── gocardless-config.conf.template
 │   └── email-config.conf.template
-└── test-exists/payments/
-    └── test.conf
+└── {development,staging,production}/payments/
+    ├── payments-config.conf
+    ├── gocardless-config.conf
+    └── email-config.conf
 ```
 
 **Environment Detection:**
 Set `FIRECALC_ENV` environment variable:
-- `dev` (default)
+- `development` (default)
 - `staging`
-- `prod`
+- `production`
+
+`FIRECALC_ENV` selects the configuration *directory*. Which `payments.<env>` /
+`email.<env>` section inside that file is used is decided solely by the
+`environment` key in the file itself — there is no second environment variable
+overriding it.
 
 ## 📦 Product Catalog
 

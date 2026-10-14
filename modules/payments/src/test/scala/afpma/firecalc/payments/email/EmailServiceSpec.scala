@@ -14,10 +14,10 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import afpma.firecalc.payments.config.ConfigLoader
 
 /**
- * Test suite for EmailService using dev environment configuration
+ * Test suite for EmailService using the development environment configuration
  *
- * IMPORTANT: Before running these tests, you must configure your dev SMTP credentials
- * in configs/dev/payments/email-config.conf
+ * IMPORTANT: Before running these tests, you must configure your development SMTP credentials
+ * in configs/development/payments/email-config.conf
  *
  * Recommended setup for testing:
  * - Use Mailtrap.io (free account) for catching test emails
@@ -35,7 +35,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
 
         "send email with no attachments" in {
             val result = for {
-                // Load email config from dev environment
+                // Load email config from the development environment
                 emailConfig <- ConfigLoader.loadEmailConfig[IO]()
 
                 // Create email service
@@ -81,7 +81,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
             val pdfContent = "Fake PDF content for testing".getBytes("UTF-8")
 
             val result = for {
-                // Load email config from dev environment
+                // Load email config from the development environment
                 emailConfig <- ConfigLoader.loadEmailConfig[IO]()
 
                 // Create email service
@@ -135,7 +135,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
             val pdfContent2 = "Fake PDF content for report".getBytes("UTF-8")
 
             val result = for {
-                // Load email config from dev environment
+                // Load email config from the development environment
                 emailConfig <- ConfigLoader.loadEmailConfig[IO]()
 
                 // Create email service
@@ -232,7 +232,7 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
 
     "EmailService configuration loading" should {
 
-        "successfully load email config from dev environment" in {
+        "successfully load email config from the development environment" in {
             val result = ConfigLoader.loadEmailConfig[IO]()
 
             result.asserting { config =>

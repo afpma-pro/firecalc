@@ -259,7 +259,7 @@ dev-electron-app-run:
 
 dev-backend-run:
 	@echo "Starting payments backend in development mode..."
-	@FIRECALC_ENV=dev sbt "payments/run"
+	@FIRECALC_ENV=development sbt "payments/run"
 
 ## ================================
 ## DEVELOPMENT - SETUP/VERIFICATION
@@ -268,10 +268,10 @@ dev-backend-run:
 dev-env-setup:
 	@echo "Setting up development environment..."
 	@echo "Checking development configuration files..."
-	@test -f configs/dev/payments/payments-config.conf || echo "WARNING: configs/dev/payments/payments-config.conf not found"
-	@test -f configs/dev/payments/gocardless-config.conf || echo "WARNING: configs/dev/payments/gocardless-config.conf not found"
-	@test -f configs/dev/payments/email-config.conf || echo "WARNING: configs/dev/payments/email-config.conf not found"
-	@test -f configs/dev/invoices/company-invoice.yaml || echo "WARNING: configs/dev/invoices/company-invoice.yaml not found"
+	@test -f configs/development/payments/payments-config.conf || echo "WARNING: configs/development/payments/payments-config.conf not found"
+	@test -f configs/development/payments/gocardless-config.conf || echo "WARNING: configs/development/payments/gocardless-config.conf not found"
+	@test -f configs/development/payments/email-config.conf || echo "WARNING: configs/development/payments/email-config.conf not found"
+	@test -f configs/development/invoices/company-invoice.yaml || echo "WARNING: configs/development/invoices/company-invoice.yaml not found"
 	@test -f modules/ui/.env.development || echo "WARNING: modules/ui/.env.development not found"
 	@echo "Development configuration check complete"
 
@@ -368,7 +368,7 @@ prod-electron-app-run:
 
 prod-backend-run:
 	@echo "Starting payments backend in production mode..."
-	@FIRECALC_ENV=prod sbt "payments/run"
+	@FIRECALC_ENV=production sbt "payments/run"
 
 prod-backend-build:
 	@echo "Building for production deployment..."
@@ -384,16 +384,16 @@ prod-backend-build:
 prod-env-setup:
 	@echo "Setting up production environment..."
 	@echo "Checking production configuration files..."
-	@test -f configs/prod/payments/payments-config.conf || echo "WARNING: configs/prod/payments/payments-config.conf not found"
-	@test -f configs/prod/payments/gocardless-config.conf || echo "WARNING: configs/prod/payments/gocardless-config.conf not found"
-	@test -f configs/prod/payments/email-config.conf || echo "WARNING: configs/prod/payments/email-config.conf not found"
-	@test -f configs/prod/invoices/company-invoice.yaml || echo "WARNING: configs/prod/invoices/company-invoice.yaml not found"
+	@test -f configs/production/payments/payments-config.conf || echo "WARNING: configs/production/payments/payments-config.conf not found"
+	@test -f configs/production/payments/gocardless-config.conf || echo "WARNING: configs/production/payments/gocardless-config.conf not found"
+	@test -f configs/production/payments/email-config.conf || echo "WARNING: configs/production/payments/email-config.conf not found"
+	@test -f configs/production/invoices/company-invoice.yaml || echo "WARNING: configs/production/invoices/company-invoice.yaml not found"
 	@test -f modules/ui/.env.production || echo "WARNING: modules/ui/.env.production not found"
 	@echo "Production configuration check complete"
 
 prod-env-test:
 	@echo "Testing production environment detection..."
-	@FIRECALC_ENV=prod sbt "console" <<< 'import afpma.firecalc.config.ConfigPathResolver; println(ConfigPathResolver.debugInfo()); sys.exit(0)'
+	@FIRECALC_ENV=production sbt "console" <<< 'import afpma.firecalc.config.ConfigPathResolver; println(ConfigPathResolver.debugInfo()); sys.exit(0)'
 
 ## ================================
 ## SHARED ELECTRON BUILD TARGETS

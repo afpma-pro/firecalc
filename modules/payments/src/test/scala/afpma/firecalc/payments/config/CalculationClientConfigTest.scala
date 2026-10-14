@@ -14,7 +14,7 @@ import utest.*
  * The payments module reaches the standalone calculation backend solely
  * through HTTP (GET /v1/kinds, POST /v1/calculate). The base URI must be
  * deployment-configurable so Docker deployments can point at the
- * `calc-backend` service without code changes.
+ * `calc-server` service without code changes.
  */
 object CalculationClientConfigTest extends TestSuite {
 
@@ -42,14 +42,14 @@ object CalculationClientConfigTest extends TestSuite {
             cc.baseUri ==> "http://localhost:9000/v1"
         }
 
-        test("base-uri override is honored (Docker calc-backend service)") {
+        test("base-uri override is honored (Docker calc-server service)") {
             val cfg = envConfig(
                 """calculation-client {
-                  |  base-uri = "http://calc-backend:9000/v1"
+                  |  base-uri = "http://calc-server:9000/v1"
                   |}""".stripMargin
             )
             val cc  = ConfigLoader.loadCalculationClientConfig(cfg)
-            cc.baseUri ==> "http://calc-backend:9000/v1"
+            cc.baseUri ==> "http://calc-server:9000/v1"
         }
 
         test("empty block keeps the defaults") {

@@ -6,9 +6,9 @@
 # Payments Configuration Template
 # 
 # IMPORTANT: This template should be copied to the appropriate environment directory:
-#   - configs/dev/payments/payments-config.conf (for development)
+#   - configs/development/payments/payments-config.conf (for development)
 #   - configs/staging/payments/payments-config.conf (for staging)
-#   - configs/prod/payments/payments-config.conf (for production)
+#   - configs/production/payments/payments-config.conf (for production)
 #
 # Each environment directory should contain ONLY its own configuration section.
 # Update the 'environment' field and the section name to match your target environment.
@@ -42,7 +42,7 @@ payments {
     invoice-generation {
       enabled = true
       # Update path to match your environment directory
-      config-file-path = "configs/dev/invoices/company-invoice.yaml"
+      config-file-path = "configs/development/invoices/company-invoice.yaml"
       email-enabled = true
       pdf-generation-enabled = true
     }

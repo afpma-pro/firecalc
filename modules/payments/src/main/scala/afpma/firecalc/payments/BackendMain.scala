@@ -350,7 +350,7 @@ object Main extends IOApp:
         val firecalcEnv = sys.env.get("FIRECALC_ENV").getOrElse {
             throw new IllegalStateException(
                 "FIRECALC_ENV is not set. " +
-                    "Set to 'production', 'staging', or 'dev' explicitly. " +
+                    "Set to 'development', 'staging', or 'production' explicitly. " +
                     "Refusing to start with a default to prevent accidental misconfiguration."
             )
         }

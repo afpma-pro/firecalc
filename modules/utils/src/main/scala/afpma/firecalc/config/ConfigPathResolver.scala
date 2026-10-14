@@ -21,13 +21,13 @@ object ConfigPathResolver {
      * Priority order:
      * 1. FIRECALC_ENV environment variable
      * 2. firecalc.env system property
-     * 3. Default to "dev"
+     * 3. Default to "development"
      */
     def resolveEnvironment(): String =
         sys.env
             .get("FIRECALC_ENV")
             .orElse(sys.props.get("firecalc.env"))
-            .getOrElse("dev")
+            .getOrElse("development")
 
     /**
      * Resolves a configuration file path for a specific module.

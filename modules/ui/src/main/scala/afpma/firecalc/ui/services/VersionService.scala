@@ -6,6 +6,7 @@
 package afpma.firecalc.ui.services
 
 import afpma.firecalc.ui.FIRECALC_UI
+import afpma.firecalc.ui.config.BuildMode
 import afpma.firecalc.ui.config.ViteEnv
 
 /**
@@ -32,33 +33,57 @@ object VersionService {
     )
 
     /**
-     * Get version information based on current environment
+     * Pure version-display rule: build the `VersionInfo` for a given mode
+     * from explicit version strings.
      *
-     * @return VersionInfo configured for the current environment
+     * `getVersionInfo()` is the only production caller. The seam exists so
+     * the mode-dependent display rule can be pinned by `VersionServiceSuite`:
+     * the Node test runtime pins `MODE` to `"development"` (see
+     * `src/main/js/vite-env.js`) and resolves no `firecalc-ui` module, so the
+     * mode cannot be varied through `getVersionInfo()` there.
+     *
+     * The match is exhaustive over the enum, so a new `BuildMode` case is a
+     * compile error here rather than a silent fall-through.
+     *
+     * @param mode The build mode whose display policy applies
+     * @param base The clean UI base version (no git metadata)
+     * @param engine The engine version appended in production
+     * @param fullVersion The complete version string with all metadata
+     * @return VersionInfo configured for that mode
      */
-    def getVersionInfo(): VersionInfo = {
-        val mode        = ViteEnv.modeString
-        val base        = FIRECALC_UI.UI_BASE_VERSION
-        val engine      = FIRECALC_UI.ENGINE_VERSION
-        FIRECALC_UI.GIT_HASH
-        val fullVersion = FIRECALC_UI.UI_FULL_VERSION
-
-        mode match {
-            case "production" =>
+    def versionInfoFor(mode: BuildMode, base: String, engine: String, fullVersion: String): VersionInfo =
+        mode match
+            case BuildMode.Production =>
                 VersionInfo(
                     displayVersion = s"$base+engine-$engine",
                     fullVersion    = fullVersion,
                     showTooltip    = true
                 )
 
-            case "staging" | "dev" | _ =>
+            case BuildMode.Development | BuildMode.Staging =>
                 VersionInfo(
                     displayVersion = fullVersion,
                     fullVersion    = fullVersion,
                     showTooltip    = false
                 )
-        }
-    }
+
+    /**
+     * Get version information for the current build mode.
+     *
+     * Reads the mode through `ViteEnv.buildMode` (the typed view of Vite's
+     * `MODE`, whose vocabulary `BuildMode` owns) and the version strings from
+     * the `firecalc-ui` facade, and hands them to [[versionInfoFor]]. It
+     * holds no display policy of its own.
+     *
+     * @return VersionInfo configured for the current build mode
+     */
+    def getVersionInfo(): VersionInfo =
+        versionInfoFor       (
+            mode        = ViteEnv.buildMode,
+            base        = FIRECALC_UI.UI_BASE_VERSION,
+            engine      = FIRECALC_UI.ENGINE_VERSION,
+            fullVersion = FIRECALC_UI.UI_FULL_VERSION
+        )
 
     /**
      * Log version information to browser console

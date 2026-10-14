@@ -322,8 +322,8 @@ make dev-env-setup
 ```
 
 **Checks:**
-- `configs/dev/payments/*.conf`
-- `configs/dev/invoices/*.yaml`
+- `configs/development/payments/*.conf`
+- `configs/development/invoices/*.yaml`
 - `modules/ui/.env.development`
 
 ---
@@ -1063,7 +1063,7 @@ The Makefile uses these environment variables:
 - `REPO_DIR` - Repository directory path
 - `GITHUB_REPO_OWNER` - GitHub repository owner (from build.sbt, e.g., "afpma-pro")
 - `GITHUB_REPO_NAME` - GitHub repository name (from build.sbt, e.g., "firecalc")
-- `FIRECALC_ENV` - Environment (dev/staging/prod) for backend
+- `FIRECALC_ENV` - Environment (`development` | `staging` | `production`) for the backend
 - `BUILD_ENV` - Environment identifier for Electron artifact naming (values: dev, staging, production)
 - `ARTIFACT_SUFFIX` - Artifact name suffix for Electron builds
   - Local builds: Always set to include environment (e.g., "-dev", "-staging", "-production")

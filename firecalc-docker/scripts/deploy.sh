@@ -182,7 +182,7 @@ case "$(deployment_env FIRECALC_ENV)" in
         vite_mode="production"
         ui_version_suffix=""
         ;;
-    ""|dev|development)
+    ""|development)
         vite_mode="development"
         ui_version_suffix="dev"
         ;;

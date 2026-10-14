@@ -96,6 +96,18 @@ object ConfigLoader:
             )
         }
 
+    /**
+     * Loads the payments configuration for the current environment.
+     *
+     * The file is located through `ConfigPathResolver` (driven by `FIRECALC_ENV`),
+     * and the `payments.<env>` section to read is selected solely by the
+     * `payments.environment` key inside that file. There is deliberately no
+     * environment-variable override: the config file is the single source of truth,
+     * so the selected section cannot drift out of sync with `FIRECALC_ENV`.
+     *
+     * @param configFilename Configuration file name inside the environment directory
+     * @return The validated configuration for the environment named in the file
+     */
     def loadPaymentsConfig[F[_]: Async](
         configFilename: String = "payments-config.conf"
     ): F[PaymentsConfig] =
@@ -118,12 +130,9 @@ object ConfigLoader:
                 }
             }
 
-            // Determine environment from config (with env var override and fallback)
+            // Determine environment from the configuration file only
             environment <- Async[F].delay {
-                sys.env
-                    .get("PAYMENTS_ENVIRONMENT")
-                    .orElse(Try(config.getString("payments.environment")).toOption)
-                    .getOrElse("development")
+                Try(config.getString("payments.environment")).getOrElse("development")
             }
 
             // Load configuration based on environment
@@ -250,6 +259,16 @@ object ConfigLoader:
                 else Async[F].pure     (config)
         }
 
+    /**
+     * Loads the email configuration for the current environment.
+     *
+     * As for [[loadPaymentsConfig]], the `email.<env>` section to read is selected
+     * solely by the `email.environment` key inside the configuration file; there is
+     * no environment-variable override.
+     *
+     * @param configFilename Configuration file name inside the environment directory
+     * @return The configuration for the environment named in the file
+     */
     def loadEmailConfig[F[_]: Async](
         configFilename: String = "email-config.conf"
     ): F[EmailConfig] =
@@ -272,12 +291,9 @@ object ConfigLoader:
                 }
             }
 
-            // Determine environment from config (with env var override and fallback)
+            // Determine environment from the configuration file only
             environment <- Async[F].delay {
-                sys.env
-                    .get("PAYMENTS_ENVIRONMENT")
-                    .orElse(Try(config.getString("email.environment")).toOption)
-                    .getOrElse("development")
+                Try(config.getString("email.environment")).getOrElse("development")
             }
 
             // Load configuration based on environment

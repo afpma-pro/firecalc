@@ -10,7 +10,7 @@ import java.io.File
 
 class ConfigPathResolverTest extends munit.FunSuite {
 
-    test("resolveEnvironment returns default 'dev' when no environment is set") {
+    test("resolveEnvironment returns default 'development' when no environment is set") {
         // Clear any existing environment variables for test isolation
         // val originalEnv = sys.env.get("FIRECALC_ENV")
         val originalProp = sys.props.get("firecalc.env")
@@ -23,7 +23,7 @@ class ConfigPathResolverTest extends munit.FunSuite {
             // In a real test environment, this would typically be the case
 
             val env = ConfigPathResolver.resolveEnvironment()
-            assertEquals(env, "dev")
+            assertEquals(env, "development")
         } finally {
             // Restore original values if they existed
             originalProp.foreach(sys.props.put("firecalc.env", _))
@@ -35,7 +35,7 @@ class ConfigPathResolverTest extends munit.FunSuite {
         // This test documents the expected behavior
         // In integration tests or with test containers, we could actually set env vars
 
-        // If FIRECALC_ENV is set to "prod", it should return "prod"
+        // If FIRECALC_ENV is set to "production", it should return "production"
         // This is tested by the priority order documentation
         assert(true) // Placeholder - real test would require test framework support for env vars
     }
@@ -44,9 +44,9 @@ class ConfigPathResolverTest extends munit.FunSuite {
         val originalProp = sys.props.get("firecalc.env")
 
         try {
-            sys.props.put("firecalc.env", "prod")
+            sys.props.put("firecalc.env", "production")
             val env = ConfigPathResolver.resolveEnvironment()
-            assertEquals(env, "prod")
+            assertEquals(env, "production")
         } finally {
             originalProp match {
                 case Some(value) => sys.props.put("firecalc.env", value)
