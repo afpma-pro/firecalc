@@ -8,7 +8,15 @@
 # No domain substitution needed (outer proxy handles domains).
 # =============================================================================
 
-include /etc/nginx/conf.d/shared/common.conf;
-include /etc/nginx/conf.d/shared/default-server.conf;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
 
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/conf.d/shared/common.conf;
+    include /etc/nginx/conf.d/shared/default-server.conf;
 }
