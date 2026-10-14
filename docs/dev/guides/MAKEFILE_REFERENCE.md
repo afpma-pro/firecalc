@@ -391,9 +391,10 @@ make staging-backend-build
 ```
 
 **Builds:**
-1. Copies staging logos (invoices: `logo.png`, reports: `logo.jpg`)
-2. Backend JAR (`sbt payments/assembly`)
-3. UI staging build (`make staging-web-ui-build`)
+1. Backend JAR (`sbt payments/assembly`)
+2. UI staging build (`make staging-web-ui-build`)
+
+**Logos:** no longer copied by this target. Place the operator assets once in the module tree (`modules/invoices/configs/logo.png`, `modules/reports/src/main/resources/logo.jpg`, gitignored); `firecalc-docker/scripts/deploy.sh` stages them into `artifacts/` and `Dockerfile.backend` bakes them into the image (see "Docker Deployment").
 
 ---
 
@@ -471,9 +472,10 @@ make prod-backend-build
 ```
 
 **Builds:**
-1. Copies production logos (invoices: `logo.png`, reports: `logo.jpg`), with staging fallback
-2. Backend JAR (`sbt payments/assembly`)
-3. UI production build (`make prod-web-ui-build`)
+1. Backend JAR (`sbt payments/assembly`)
+2. UI production build (`make prod-web-ui-build`)
+
+**Logos:** no longer copied by this target (the old staging fallback is gone) — same module-tree placement as described under `staging-backend-build`.
 
 ---
 
@@ -740,48 +742,101 @@ make prod-electron-package-linux
 
 ## Docker Deployment
 
+The deployment layout lives in `firecalc-docker/`: its Makefile owns the compose variants, the artifact builds, and the container lifecycle. The root `docker-*` targets below are thin delegations (`$(MAKE) -C firecalc-docker …`) kept as stable entry points. The old `docker/` directory is LEGACY — it only serves the running old stack until the VPS cutover is confirmed; do not use it for new deployments.
+
+**Compose variant selection** (variables of `firecalc-docker/Makefile`):
+- `MODE` — `standalone` (default; inner nginx terminates TLS via Let's Encrypt) or `behind-proxy` (an external reverse proxy terminates TLS; no host ports exposed)
+- `CALC_SERVER` — `true` includes the `calc-server` backend container (the only calculation seam for the Austrian kinds `Ecolabeled`/`Door15aCatalog`); any other value selects the no-calc variant, where those two kinds are unavailable
+
+Together they select `docker-compose.<mode>[.no-calc].yml`. Full mode/variable documentation: `firecalc-docker/DEPLOYMENT.md`.
+
+---
+
+### `make docker-env-setup`
+Create `firecalc-docker/.env` from `.env.defaults` and activate the compose variant.
+
+```bash
+make docker-env-setup
+```
+
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker setup` (runs `scripts/setup-env.sh`, then symlinks the active compose file). `firecalc-docker/.env` IS the env carrier: real values (`FIRECALC_ENV`, `UI_DOMAIN`, `API_DOMAIN`, `TRUSTED_PROXY_CIDR`, …) are edited directly in it. There are no per-env overlay files (no `.env.staging`/`.env.production`).
+
+---
+
+### `make docker-setup-standalone`
+Activate the standalone compose variant (also creates `.env` and the `configs/`/`databases/` directories if missing).
+
+```bash
+make docker-setup-standalone
+```
+
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker setup MODE=standalone`
+
+---
+
+### `make docker-setup-behind-proxy`
+Activate the behind-proxy compose variant (external reverse proxy terminates TLS).
+
+```bash
+make docker-setup-behind-proxy
+```
+
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker setup MODE=behind-proxy`
+
+---
+
+### `make docker-fix-db-perms`
+Fix host-side permissions for `firecalc-docker/databases/` before deploying.
+
+```bash
+make docker-fix-db-perms
+```
+
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker fix-db-perms` — directories 700, files 600, `chown 999:999` (the container user `appuser` is UID/GID 999). Use after manually creating `databases/` or switching users; the backend entrypoint fixes permissions inside the container on every start, this fixes the host side.
+
+---
+
 ### `make prod-docker-deploy-up`
-Build and deploy to Docker in production mode.
+Build and deploy the production stack: behind-proxy mode with the calc-server backend.
 
 ```bash
 make prod-docker-deploy-up
 ```
 
-**What it does:**
-1. Runs `prod-backend-build` (logos + JAR + UI)
-2. Stops existing containers (`docker compose down`)
-3. Rebuilds and starts containers (`docker compose up -d --build`)
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true`. Full pipeline: `scripts/setup-env.sh` (create/validate `.env`) → `scripts/deploy.sh` (build backend JAR, UI, and calc-server JAR from the refs pinned in `firecalc-docker/VERSIONS`; stage the PDF logos from the module tree into `artifacts/`) → activate the compose symlink → `docker compose build` → `scripts/generate-certs.sh` → `docker compose up -d`.
 
 ---
 
 ### `make staging-docker-deploy-up`
-Build and deploy to Docker in staging mode.
+Build and deploy the staging stack.
 
 ```bash
 make staging-docker-deploy-up
 ```
 
-**What it does:** Same as prod but uses `staging-backend-build`
+**What it does:** Same as `prod-docker-deploy-up`: delegates to `$(MAKE) -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true`. Staging vs production is selected by `FIRECALC_ENV` in `firecalc-docker/.env`, not by the target.
 
 ---
 
 ### `make dev-docker-deploy-up`
-Build and deploy to Docker in development mode.
+Build and deploy the local Docker stack in standalone mode, without calc-server (Mode A).
 
 ```bash
 make dev-docker-deploy-up
 ```
 
-**What it does:** Builds UI with `dev-web-ui-build`, then deploys to Docker
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker deploy MODE=standalone`. Without the calc-server seam the two Austrian kinds (`Ecolabeled`, `Door15aCatalog`) are unavailable — see `firecalc-docker/DEPLOYMENT.md`.
 
 ---
 
 ### `make docker-deploy-down`
-Stop Docker containers.
+Stop and remove Docker containers.
 
 ```bash
 make docker-deploy-down
 ```
+
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker down`
 
 ---
 
@@ -792,6 +847,8 @@ Restart Docker containers without rebuilding.
 make docker-deploy-restart
 ```
 
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker restart`
+
 ---
 
 ### `make docker-deploy-logs`
@@ -800,6 +857,29 @@ View Docker container logs (follows).
 ```bash
 make docker-deploy-logs
 ```
+
+**What it does:** Delegates to `$(MAKE) -C firecalc-docker logs`
+
+---
+
+### `firecalc-docker/Makefile` targets
+
+Run directly on the deployment host (`make -C firecalc-docker <target>`, or `cd firecalc-docker && make <target>`). The root targets above are thin wrappers around these.
+
+| Target | Description |
+|--------|-------------|
+| `deploy` | Full pipeline: setup-env → artifact builds → compose symlink → image build → certs → `up -d` (default goal) |
+| `build` | Clone/build artifacts and Docker images; does not start containers |
+| `up` | Start containers (requires an active compose symlink and built images) |
+| `down` | Stop and remove containers |
+| `restart` | Restart containers without rebuilding |
+| `logs` | Stream logs from all services |
+| `smoke` | Run smoke tests against the running services (`scripts/smoke-test-deploy.sh`) |
+| `setup` | Create `.env` from `.env.defaults`, create `configs/` + `databases/`, activate the compose variant |
+| `fix-db-perms` | Host-side permissions for `databases/` (dirs 700, files 600, chown 999:999) |
+| `clean` | Remove build artifacts and generated files (`.build/`, `artifacts/`, `.certs/`, compose symlink) |
+
+**Smoke test:** `make -C firecalc-docker smoke` (no root wrapper target).
 
 ---
 

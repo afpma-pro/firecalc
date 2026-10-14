@@ -251,7 +251,42 @@ FIRECALC_ENV=staging sbt "payments/run"
 cd modules/ui && npm run dev -- --mode staging
 ```
 
-### Server Deployment
+### Server Deployment (Docker — current)
+
+Staging runs as the Docker stack in `firecalc-docker/` (behind-proxy mode with the private calc-server backend). On the staging host, from the repository root:
+
+1. **One-time environment setup** — create `firecalc-docker/.env` from `.env.defaults` and activate the compose variant:
+```bash
+make docker-env-setup
+```
+`firecalc-docker/.env` IS the env carrier: set `FIRECALC_ENV=staging` and the host values (`TRUSTED_PROXY_CIDR`; `UI_DOMAIN`/`API_DOMAIN` only in standalone mode) directly in it — there are no per-env overlay files.
+
+2. **Place configs and logo assets**:
+   - Runtime configs → `firecalc-docker/configs/staging/` (mounted read-only at `/app/configs`; copy from the tracked `configs/staging/` and fill in staging credentials — never commit them)
+   - PDF logos once in the module tree: `modules/invoices/configs/logo.png` and `modules/reports/src/main/resources/logo.jpg` (gitignored operator assets; `firecalc-docker/scripts/deploy.sh` stages them into `artifacts/`)
+   - UI build hosts → `modules/ui/.env.staging.local` (gitignored local override merged on top of the tracked `modules/ui/.env.staging` placeholders)
+
+3. **Pre-flight database permissions** (host side; the container user `appuser` is UID/GID 999):
+```bash
+make docker-fix-db-perms
+```
+
+4. **Build and deploy** (behind-proxy + calc-server; full pipeline: artifact builds → image builds → certs → `up -d`):
+```bash
+make staging-docker-deploy-up
+```
+
+5. **Verify**:
+```bash
+make -C firecalc-docker smoke
+curl https://staging.firecalc.afpma.pro/v1/health
+```
+
+Day-to-day operations: `make docker-deploy-logs`, `make docker-deploy-restart` (no rebuild), `make docker-deploy-down`.
+
+### Server Deployment (LEGACY — bare-metal flow)
+
+The manual JAR/rsync flow below predates the Docker layout. Kept for reference only; do not use it for new deployments.
 
 1. **Build Backend**:
 ```bash
@@ -291,6 +326,8 @@ rsync -avz dist/ staging-server:/var/www/staging.firecalc.afpma.pro/
 
 ### Database Backups
 
+On the Docker stack the staging database lives on the host at `firecalc-docker/databases/` (mounted at `/app/databases`, owner 999:999 — see `make docker-fix-db-perms`). The commands below use the local repo layout.
+
 ```bash
 # Backup staging database
 cp databases/staging/firecalc-payments-staging.db \
@@ -322,6 +359,15 @@ sqlite3 databases/staging/firecalc-payments-staging.db \
 
 ### Log Monitoring
 
+```bash
+# View staging stack logs (Docker layout)
+make docker-deploy-logs
+
+# Check for errors
+make docker-deploy-logs | grep ERROR
+```
+
+Legacy (bare-metal flow):
 ```bash
 # View staging logs
 tail -f /var/log/firecalc/staging-backend.log
@@ -425,7 +471,7 @@ After verifying staging works correctly:
 ## Support
 
 For issues with staging environment:
-1. Check logs in `/var/log/firecalc/` (server) or console (local)
+1. Check logs with `make docker-deploy-logs` (Docker stack) or the console (local)
 2. Verify configuration files are correctly set up
 3. Consult `configs/README.md` for configuration details
 4. Review `STAGING_SETUP_PLAN.md` for implementation checklist

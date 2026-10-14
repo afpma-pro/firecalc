@@ -45,7 +45,24 @@ modules/ui/.env.production
 
 ### 3. Running in Production
 
-**On Production Server**:
+Production runs as the Docker stack in `firecalc-docker/` (behind-proxy mode with the private calc-server backend). On the production host, from the repository root:
+
+```bash
+# One-time: create firecalc-docker/.env from .env.defaults, activate the compose variant
+make docker-env-setup
+# Edit firecalc-docker/.env — it IS the env carrier: FIRECALC_ENV=production,
+# TRUSTED_PROXY_CIDR (UI_DOMAIN/API_DOMAIN are handled by the outer proxy)
+
+# Build + deploy the full stack (backend, UI, calc-server, nginx)
+make prod-docker-deploy-up
+
+# Verify
+make -C firecalc-docker smoke
+```
+
+Runtime configs are mounted from `firecalc-docker/configs/prod/` (read-only at `/app/configs`); the UI build hosts live in `modules/ui/.env.production.local` (gitignored override merged on top of the tracked `modules/ui/.env.production` placeholders).
+
+**LEGACY (bare-metal flow)** — predates the Docker layout; kept for reference only:
 ```bash
 # Build backend
 sbt "payments/assembly"
@@ -55,14 +72,9 @@ FIRECALC_ENV=prod java -jar firecalc-payments-assembly.jar
 
 # Or using system property
 java -Dfirecalc.env=prod -jar firecalc-payments-assembly.jar
-```
 
-**UI Deployment**:
-```bash
-cd modules/ui
-npm run build:production
-
-# Deploy dist/ to production web server
+# UI: build and rsync dist/ to the production web server
+cd modules/ui && npm run build:production
 ```
 
 ## Configuration Details
@@ -198,7 +210,68 @@ VITE_BACKEND_BASE_PATH=/v1
 - [ ] Team notified of deployment
 - [ ] Maintenance window scheduled (if needed)
 
-### Deployment Steps
+### Deployment Steps (Docker — current)
+
+#### 1. Pre-flight (once per host, or after config changes)
+
+```bash
+# .env carrier + active compose variant (skip if already set up)
+make docker-env-setup
+
+# Runtime configs in firecalc-docker/configs/prod/ (mounted read-only at /app/configs)
+# NEVER deploy with placeholder credentials!
+
+# PDF logos once in the module tree (staged into artifacts/ by scripts/deploy.sh):
+#   modules/invoices/configs/logo.png, modules/reports/src/main/resources/logo.jpg
+
+# Host-side database permissions (container user appuser is UID/GID 999)
+make docker-fix-db-perms
+```
+
+#### 2. Build and Deploy
+
+```bash
+# Full pipeline: setup-env → artifact builds (backend JAR, UI, and calc-server JAR
+# from the refs pinned in firecalc-docker/VERSIONS) → compose symlink →
+# image builds → certs → up -d
+make prod-docker-deploy-up
+```
+
+#### 3. Post-Deployment Verification
+
+```bash
+# Smoke tests against the running stack
+make -C firecalc-docker smoke
+
+# Health check
+curl https://firecalc.afpma.pro/v1/health
+
+# Test critical endpoints
+curl https://firecalc.afpma.pro/v1/products
+
+# Stream stack logs
+make docker-deploy-logs
+
+# Check metrics
+# (Access your monitoring dashboard)
+```
+
+Day-to-day operations: `make docker-deploy-restart` (no rebuild), `make docker-deploy-down`.
+
+### Rollback Procedure
+
+If a deployment fails, roll the pinned refs back: `firecalc-docker/scripts/deploy.sh` builds artifacts from the refs pinned in `firecalc-docker/VERSIONS` (clone mode) or from a local checkout (`FIRECALC_BUILD_LOCAL=true` + `FIREBOX_LOCAL_DIR`). Point them at the last known-good version and redeploy:
+
+```bash
+make prod-docker-deploy-up
+make -C firecalc-docker smoke
+```
+
+For config-only changes, `make docker-deploy-restart` is enough.
+
+### Deployment Steps (LEGACY — bare-metal flow)
+
+The manual JAR/systemd/rsync flow below predates the Docker layout. Kept for reference only; do not use it for new deployments.
 
 #### 1. Build Application
 
@@ -269,9 +342,7 @@ ssh prod-server "tail -f /var/log/firecalc/backend.log"
 # (Access your monitoring dashboard)
 ```
 
-### Rollback Procedure
-
-If deployment fails:
+#### Rollback (LEGACY)
 
 ```bash
 # Stop new version
@@ -307,6 +378,9 @@ ssh prod-server "systemctl status firecalc-backend"
 ### Database Backups
 
 **Daily Backups** (CRITICAL):
+
+On the Docker stack the production database lives on the host at `firecalc-docker/databases/prod/firecalc-payments-prod.db` (mounted at `/app/databases`, owner 999:999). The script below uses the legacy bare-metal paths.
+
 ```bash
 #!/bin/bash
 # /opt/firecalc/scripts/backup-db.sh
@@ -336,6 +410,8 @@ find $BACKUP_DIR -name "*.db.gz" -mtime +7 -delete
 ```
 
 ### Log Rotation
+
+Applies to the legacy bare-metal stack. The Docker stack logs to container logs (`make docker-deploy-logs`); rotation is handled by the Docker daemon's logging configuration.
 
 ```bash
 # /etc/logrotate.d/firecalc
@@ -438,6 +514,15 @@ find $BACKUP_DIR -name "*.db.gz" -mtime +7 -delete
 #### Service Won't Start
 
 ```bash
+# Stream stack logs (Docker layout)
+make docker-deploy-logs
+
+# Check container status (from firecalc-docker/)
+docker compose ps
+```
+
+Legacy (bare-metal flow):
+```bash
 # Check logs
 tail -f /var/log/firecalc/backend.log
 
@@ -453,6 +538,17 @@ FIRECALC_ENV=prod java -jar firecalc-payments-assembly.jar --check-config
 
 #### Database Locked
 
+On the Docker stack the database lives on the host at `firecalc-docker/databases/prod/`:
+
+```bash
+# Check for other processes
+lsof firecalc-docker/databases/prod/firecalc-payments-prod.db
+
+# Check database integrity
+sqlite3 firecalc-docker/databases/prod/firecalc-payments-prod.db "PRAGMA integrity_check;"
+```
+
+Legacy (bare-metal flow):
 ```bash
 # Check for other processes
 lsof /opt/firecalc/databases/prod/firecalc-payments-prod.db
@@ -507,10 +603,10 @@ java -Xmx2G -Xms1G -jar firecalc-payments-assembly.jar
 
 **Full System Recovery**:
 1. Provision new server
-2. Install dependencies (Java, SQLite)
+2. Install Docker (the stack builds all images itself)
 3. Restore latest database backup
 4. Restore configuration files
-5. Deploy latest application version
+5. Deploy the stack: `make prod-docker-deploy-up`
 6. Verify all services operational
 7. Update DNS if needed
 8. Notify users of service restoration

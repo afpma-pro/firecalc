@@ -137,7 +137,8 @@ make dev-backend-run
 ├── configs/             # Configuration files
 │   ├── templates/
 │   └── dev/ staging/ prod/
-├── docker/              # Docker deployment
+├── firecalc-docker/     # Docker deployment (current layout)
+├── docker/              # Docker deployment (LEGACY — old stack only)
 └── docs/                # Documentation
 ```
 ## Build Commands

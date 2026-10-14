@@ -1,6 +1,12 @@
 # FireCalc Docker Deployment
 
-This directory contains everything needed to deploy the FireCalc payments backend using Docker.
+> **⚠️ LEGACY — superseded by [`firecalc-docker/`](../firecalc-docker/).**
+> This layout is kept only for the running old stack until the VPS cutover is
+> confirmed. For any new deployment use `firecalc-docker/` (see its
+> [DEPLOYMENT.md](../firecalc-docker/DEPLOYMENT.md)); the root
+> `make docker-*` / `make *-docker-deploy-up` targets now delegate there, so the
+> commands in this folder's docs (`CONFIG_SETUP.md`, `DUAL-MODE-DEPLOYMENT.md`)
+> describe the old flow only.
 
 ## Quick Start
 

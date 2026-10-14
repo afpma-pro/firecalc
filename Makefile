@@ -310,12 +310,12 @@ staging-backend-run:
 	@echo "Starting payments backend in staging mode..."
 	@FIRECALC_ENV=staging sbt "payments/run"
 
+# PDF logos are staged from the module tree by firecalc-docker/scripts/deploy.sh
+# (modules/invoices/configs/logo.png, modules/reports/src/main/resources/logo.jpg).
+# Place them there once; the old docker/configs/ copy step is gone with the
+# legacy layout.
 staging-backend-build:
 	@echo "Building for staging deployment..."
-	@echo "Copying staging logos for PDF generation..."
-	@mkdir -p modules/invoices/configs modules/reports/src/main/resources
-	@cp docker/configs/staging/invoices/logo.png modules/invoices/configs/logo.png
-	@cp docker/configs/staging/reports/logo.jpg modules/reports/src/main/resources/logo.jpg
 	@echo "Building backend JAR..."
 	@sbt "payments/assembly"
 	@echo "Building UI..."
@@ -372,10 +372,6 @@ prod-backend-run:
 
 prod-backend-build:
 	@echo "Building for production deployment..."
-	@echo "Copying production logos for PDF generation..."
-	@mkdir -p modules/invoices/configs modules/reports/src/main/resources
-	@cp docker/configs/prod/invoices/logo.png modules/invoices/configs/logo.png 2>/dev/null || cp docker/configs/staging/invoices/logo.jpg modules/invoices/configs/logo.jpg
-	@cp docker/configs/prod/reports/logo.jpg modules/reports/src/main/resources/logo.jpg 2>/dev/null || cp docker/configs/staging/reports/logo.jpg modules/reports/src/main/resources/logo.jpg
 	@echo "Building backend JAR..."
 	@sbt "payments/assembly"
 	@echo "Building UI..."
@@ -525,126 +521,55 @@ prod-electron-package-linux:
 	@rm -f web/.build-env
 
 ## ================================
-## DOCKER DEPLOYMENT — MODE SETUP
+## DOCKER DEPLOYMENT (delegates to firecalc-docker/)
 ## ================================
-
-# Internal: validate that docker-compose.yml symlink exists
-.docker-check-symlink:
-	@test -L docker/docker-compose.yml || (echo "ERROR: docker/docker-compose.yml symlink not found." && echo "Run 'make docker-setup-standalone' or 'make docker-setup-behind-proxy' first." && exit 1)
+# The deployment layout lives in firecalc-docker/: its Makefile owns the
+# compose variants, env setup, and the artifact/image build pipeline
+# (scripts/deploy.sh). The targets below are thin shims kept as the operator
+# entry points. The old docker/ directory is LEGACY — it only serves the
+# running old stack until the VPS cutover is confirmed.
+#
+# MODE        = standalone (our nginx terminates TLS) | behind-proxy
+# CALC_SERVER = true includes the private calc-server backend (Mode B)
 
 docker-setup-standalone:
-	@echo "Setting up Docker for standalone mode..."
-	@cd docker && rm -f docker-compose.yml && ln -s docker-compose.standalone.yml docker-compose.yml
-	@echo "✅ Symlink: docker-compose.yml → docker-compose.standalone.yml"
+	@$(MAKE) -C firecalc-docker setup MODE=standalone
 
 docker-setup-behind-proxy:
-	@echo "Setting up Docker for behind-proxy mode..."
-	@cd docker && rm -f docker-compose.yml && ln -s docker-compose.behind-proxy.yml docker-compose.yml
-	@echo "✅ Symlink: docker-compose.yml → docker-compose.behind-proxy.yml"
-# Pre-flight: fix database directory permissions on the host for container user (UID 999).
-# The entrypoint.sh script handles this automatically inside the container on startup.
-# This target is for operators who want to verify/fix host-side permissions before deploying
-# (e.g., after manually creating the database directory or switching users).
-docker-fix-db-perms:
-	@echo "Fixing database directory permissions on host (UID 999)..."
-	@if [ ! -d "docker/databases" ]; then \
-		echo "WARNING: docker/databases does not exist. Create it first: mkdir -p docker/databases"; \
-	fi
-	@find docker/databases -type d -exec chmod 700 {} \; 2>/dev/null || true
-	@find docker/databases -type f -exec chmod 600 {} \; 2>/dev/null || true
-	@chown -R 999:999 docker/databases 2>/dev/null || \
-		echo "WARNING: Could not change ownership (may need sudo). Run: sudo chown -R 999:999 docker/databases"
-	@echo "✅ Database permissions fixed on host!"
+	@$(MAKE) -C firecalc-docker setup MODE=behind-proxy
 
-## ================================
-## DOCKER ENVIRONMENT SETUP
-## ================================
-
-# Merge .env.defaults + .env.{env} -> .env
+# Create .env from .env.defaults and activate the compose variant (default:
+# standalone; pass MODE=behind-proxy to select the other). Real values
+# (FIRECALC_ENV, domains, TRUSTED_PROXY_CIDR) are edited directly in
+# firecalc-docker/.env — it is the env carrier; there are no per-env overlays.
 docker-env-setup:
-	@ENV="${FIRECALC_ENV:-development}"; \
-	echo "Merging docker/.env.defaults + docker/.env.$$ENV -> docker/.env (env=$$ENV)"; \
-	bash docker/setup-env.sh "$$ENV"
+	@$(MAKE) -C firecalc-docker setup
 
+# Pre-flight host-side permissions for firecalc-docker/databases (UID 999).
+docker-fix-db-perms:
+	@$(MAKE) -C firecalc-docker fix-db-perms
 
+# Full deploy: env setup, artifact builds (scripts/deploy.sh), images, up.
+# Staging and production run behind-proxy with the calc-server backend.
+prod-docker-deploy-up:
+	@$(MAKE) -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true
 
-## ================================
-## DOCKER DEPLOYMENT
-## ================================
+staging-docker-deploy-up:
+	@$(MAKE) -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true
 
-# Deploy UI to Docker Compose (production)
-prod-docker-deploy-up: .docker-check-symlink
-	@echo "Deploying to Docker (production)..."
-	@make prod-backend-build
-	@bash docker/setup-env.sh production
-	@cd docker && docker compose down && docker compose up -d --build
-	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
-	if [ "$$MODE" = "standalone" ]; then \
-		echo "✅ Deployment complete!"; \
-		echo "   UI:  https://$$${UI_DOMAIN}"; \
-		echo "   API: https://$$${API_DOMAIN}"; \
-		echo "   (Configured in docker/.env)"; \
-	elif [ "$$MODE" = "behind-proxy" ]; then \
-		echo "✅ Deployment complete!"; \
-		echo "   (Behind-proxy mode — URLs managed by outer proxy)"; \
-	else \
-		echo "✅ Deployment complete!"; \
-	fi
+# Development: standalone, no calc-server (Mode A — the two Austrian kinds
+# are unavailable; see firecalc-docker/DEPLOYMENT.md).
+dev-docker-deploy-up:
+	@$(MAKE) -C firecalc-docker deploy MODE=standalone
 
-# Deploy UI to Docker Compose (staging)
-staging-docker-deploy-up: .docker-check-symlink
-	@echo "Deploying to Docker (staging)..."
-	@make staging-backend-build
-	@bash docker/setup-env.sh staging
-	@cd docker && docker compose down && docker compose up -d --build
-	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
-	if [ "$$MODE" = "standalone" ]; then \
-		echo "✅ Deployment complete!"; \
-		echo "   UI:  https://$$${UI_DOMAIN}"; \
-		echo "   API: https://$$${API_DOMAIN}"; \
-		echo "   (Configured in docker/.env)"; \
-	elif [ "$$MODE" = "behind-proxy" ]; then \
-		echo "✅ Deployment complete!"; \
-		echo "   (Behind-proxy mode — URLs managed by outer proxy)"; \
-	else \
-		echo "✅ Deployment complete!"; \
-	fi
+docker-deploy-down:
+	@$(MAKE) -C firecalc-docker down
 
-# Deploy UI to Docker Compose (development)
-dev-docker-deploy-up: .docker-check-symlink
-	@echo "Deploying UI to Docker (development)..."
-	@make dev-web-ui-build
-	@bash docker/setup-env.sh development
-	@cd docker && docker compose down && docker compose up -d --build
-	@MODE=$$(readlink docker/docker-compose.yml 2>/dev/null | grep -o 'standalone\|behind-proxy' || echo 'unknown'); \
-	if [ "$$MODE" = "standalone" ]; then \
-		echo "✅ Deployment complete!"; \
-		echo "   UI:  https://$$${UI_DOMAIN}"; \
-		echo "   API: https://$$${API_DOMAIN}"; \
-		echo "   (Configured in docker/.env)"; \
-	elif [ "$$MODE" = "behind-proxy" ]; then \
-		echo "✅ Deployment complete!"; \
-		echo "   (Behind-proxy mode — URLs managed by outer proxy)"; \
-	else \
-		echo "✅ Deployment complete!"; \
-	fi
+docker-deploy-restart:
+	@$(MAKE) -C firecalc-docker restart
 
-# Stop Docker containers
-docker-deploy-down: .docker-check-symlink
-	@echo "Stopping Docker containers..."
-	@cd docker && docker compose down
-	@echo "✅ Containers stopped!"
-
-# Restart Docker containers without rebuilding
-docker-deploy-restart: .docker-check-symlink
-	@echo "Restarting Docker containers..."
-	@cd docker && docker compose restart
-	@echo "✅ Containers restarted!"
-
-# View Docker logs
-docker-deploy-logs: .docker-check-symlink
-	@cd docker && docker compose logs -f
-
+docker-deploy-logs:
+	@$(MAKE) -C firecalc-docker logs
 
 ## ================================
 ## ENGINE VALIDATION
