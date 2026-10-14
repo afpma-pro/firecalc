@@ -19,7 +19,8 @@ RUN chmod +x /docker-entrypoint.sh
 # (entrypoint writes processed config here at container startup)
 RUN mkdir -p /etc/nginx/generated && chown nginx:nginx /etc/nginx/generated
 
-# Drop root — run nginx worker processes as the nginx user
-USER nginx
+# Master runs as root (binds port 80, writes /var/run/nginx.pid); worker
+# processes drop to the nginx user via the "user nginx;" directive that the
+# variant templates put in every generated config.
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
