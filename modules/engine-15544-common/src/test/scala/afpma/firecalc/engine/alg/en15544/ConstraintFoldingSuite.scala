@@ -110,6 +110,77 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         ): List[FireboxError] =
             List(AirIntakePipeShapeMismatch(expected = "Circle 0.2 m", actual = "Circle 0.173 m"))
 
+    /**
+     * A `FoldsConstraints[TraditionalFirebox]` that declares exactly one advisory
+     * ("Hinweis") finding via `advisory_firebox_custom_constraints` and no
+     * blocking custom errors.  Everything else is identical to `TestEngine`, so
+     * the only difference in the folded verdict list is the advisory verdict.
+     */
+    private object AdvisoryTestEngine
+        extends FoldsConstraints[TraditionalFirebox]
+        with FireboxConstraints_Strict[TraditionalFirebox]:
+
+        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
+
+        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
+        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
+
+        override def kind: FireboxKind = FireboxKind.Traditional
+
+        override def fireboxContribution(
+            firebox: TraditionalFirebox
+        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
+            FireboxContribution.Without.validNel
+
+        override def combustionAirContribution(
+            firebox: TraditionalFirebox
+        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
+            FireboxContribution.Without.validNel
+
+        /** One "Hinweis"-class finding; shown verbatim by the `FireboxErrorCustom` case. */
+        override def advisory_firebox_custom_constraints(
+            firebox: TraditionalFirebox,
+            ctx    : FireboxConstraintContext
+        ): List[FireboxError] =
+            List(new FireboxErrorCustom(advisoryReason))
+
+    /**
+     * The fold-twin of [[AdvisoryTestEngine]]: the same finding declared on the
+     * blocking channel (`firebox_custom_constraints`).  Pinning both sides shows
+     * the advisory verdict shares its code and message rendering with a blocking
+     * custom verdict, and differs only in the `blocking` flag.
+     */
+    private object BlockingCustomTwinEngine
+        extends FoldsConstraints[TraditionalFirebox]
+        with FireboxConstraints_Strict[TraditionalFirebox]:
+
+        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
+
+        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
+        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
+
+        override def kind: FireboxKind = FireboxKind.Traditional
+
+        override def fireboxContribution(
+            firebox: TraditionalFirebox
+        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
+            FireboxContribution.Without.validNel
+
+        override def combustionAirContribution(
+            firebox: TraditionalFirebox
+        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
+            FireboxContribution.Without.validNel
+
+        /** The same finding, declared blocking — the twin of the advisory override. */
+        override def firebox_custom_constraints(
+            firebox: TraditionalFirebox,
+            ctx    : FireboxConstraintContext
+        ): List[FireboxError] =
+            List(new FireboxErrorCustom(advisoryReason))
+
+    /** Shared fixture finding; `FireboxErrorCustom` renders its reason verbatim. */
+    private val advisoryReason = "cleaning hatch obstructed by the air column"
+
     // ── Fixture: clean TraditionalFirebox ──────────────────────────────────
 
     /**
@@ -401,6 +472,113 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
                 .getOrElse(fail("expected an AirIntakePipeShapeMismatch verdict"))
 
             catalogVerdict.descriptor shouldBe ConstraintDescriptor.Opaque
+        }
+    }
+
+    // ── Advisory ("Hinweis") custom-constraint channel ───────────────────
+
+    "advisory_firebox_custom_constraints folds to trailing non-blocking verdicts" - {
+
+        "one advisory finding yields exactly one blocking = false Custom verdict" in {
+            val baseline = TestEngine.constraints(
+                cleanFirebox,
+                Some(constraintContext),
+                fireboxCtxNoShape
+            )
+            val verdicts = AdvisoryTestEngine.constraints(
+                cleanFirebox,
+                Some(constraintContext),
+                fireboxCtxNoShape
+            )
+
+            verdicts.length shouldBe baseline.length + 1
+
+            val advisories = verdicts.filter(_.term == ConstraintTerm.Custom)
+            advisories.length shouldBe 1
+
+            val advisory = advisories.head
+            // Code = error class simple name, message = its localised show —
+            // exactly the rendering `errorToCustomVerdict` uses on both channels.
+            advisory.label shouldBe "FireboxErrorCustom"
+            advisory.descriptor shouldBe ConstraintDescriptor.Opaque
+            advisory.outcome shouldBe ConstraintOutcome.Violated(
+                "FireboxErrorCustom",
+                advisoryReason,
+                blocking = false
+            )
+        }
+
+        "every other verdict is unchanged versus the un-adorned fold" in {
+            val baseline = TestEngine.constraints(
+                cleanFirebox,
+                Some(constraintContext),
+                fireboxCtxNoShape
+            )
+            val verdicts = AdvisoryTestEngine.constraints(
+                cleanFirebox,
+                Some(constraintContext),
+                fireboxCtxNoShape
+            )
+
+            // The default `advisory_firebox_custom_constraints = Nil` keeps
+            // existing kinds byte-identical; adding one finding adds exactly
+            // that one verdict and touches nothing else.
+            verdicts.filter(_.term != ConstraintTerm.Custom) shouldBe baseline
+        }
+
+        "the advisory verdict sits last inside the custom-verdict block" in {
+            val verdicts = AdvisoryTestEngine.constraints(
+                cleanFirebox,
+                Some(constraintContext),
+                fireboxCtxNoShape
+            )
+
+            val advisoryIdx = verdicts.indexWhere(_.term == ConstraintTerm.Custom)
+            assert(advisoryIdx >= 0, "expected an advisory Custom verdict")
+
+            // Appended after the shape/topology verdicts of §10…
+            advisoryIdx shouldBe verdicts.length - 2
+            // …only the §11 nominal-load verdict follows it.
+            verdicts.last.term shouldBe ConstraintTerm.NominalLoadInRange
+        }
+
+        "advisory verdict equals its blocking twin except for the severity flag" in {
+            val advisories = AdvisoryTestEngine
+                .constraints(
+                    cleanFirebox,
+                    Some(constraintContext),
+                    fireboxCtxNoShape
+                )
+                .filter(_.term == ConstraintTerm.Custom)
+            val twins      = BlockingCustomTwinEngine
+                .constraints(
+                    cleanFirebox,
+                    Some(constraintContext),
+                    fireboxCtxNoShape
+                )
+                .filter(_.term == ConstraintTerm.Custom)
+
+            advisories.length shouldBe 1
+            twins.length shouldBe 1
+
+            val advisory = advisories.head
+            val twin     = twins.head
+
+            twin.label shouldBe "FireboxErrorCustom"
+            twin.outcome shouldBe ConstraintOutcome.Violated(
+                "FireboxErrorCustom",
+                advisoryReason,
+                blocking = true
+            )
+
+            // Same code, same message rendering, same descriptor: the two
+            // channels differ only in `blocking`.
+            advisory.label shouldBe twin.label
+            advisory.descriptor shouldBe twin.descriptor
+            val twinViolation = twin.outcome match
+                case v: ConstraintOutcome.Violated => v
+                case other => fail(s"expected a blocking Violated twin, got $other")
+            advisory.outcome shouldBe twinViolation.copy(blocking = false)
         }
     }
 

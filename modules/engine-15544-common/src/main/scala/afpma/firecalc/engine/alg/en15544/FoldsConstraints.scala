@@ -72,14 +72,14 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                 ConstraintOutcome.NotEvaluated(NotEvaluatedReason.MissingMB)
             )
 
-        def errorToCustomVerdict(err: FireboxError): ConstraintVerdict =
+        def errorToCustomVerdict(err: FireboxError, blocking: Boolean): ConstraintVerdict =
             val code    = err.getClass.getSimpleName
             val message = ShowUsingLocale[FireboxError].show(err)
             ConstraintVerdict(
                 ConstraintTerm.Custom,
                 code,
                 ConstraintDescriptor.Opaque,
-                ConstraintOutcome.Violated(code, message, blocking = true)
+                ConstraintOutcome.Violated(code, message, blocking = blocking)
             )
 
         def errorToNominalVerdict(
@@ -478,7 +478,19 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                             )
                         )
 
-                val customVerdicts = shapeVerdicts ++ topologyVerdict ++ otherErrors.map(errorToCustomVerdict)
+                // Advisory ("Hinweis") findings fold to the same verdict shape with
+                // `blocking = false`: they ride inside the 200 body's verdict list, are
+                // excluded from the 422 detail list by the consumer's `if blocking`
+                // filter, and never reach validation (`FoldedVerdicts.violations`
+                // collects blocking violations only).
+                val advisoryVerdicts =
+                    constraintsAlg
+                        .advisory_firebox_custom_constraints(firebox, fctx)
+                        .map(errorToCustomVerdict(_, blocking = false))
+
+                val customVerdicts = shapeVerdicts ++ topologyVerdict ++
+                    otherErrors.map(errorToCustomVerdict(_, blocking = true)) ++
+                    advisoryVerdicts
 
                 // ── 11. internal_firebox_custom_constraints → Range ─────
                 val (nomDesc, _) = nominalLoadDescriptor

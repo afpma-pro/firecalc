@@ -224,6 +224,25 @@ class RemoteConstraintReportingSuite extends AnyFreeSpec with Matchers:
             app.primary.validateCitedConstraints.isValid shouldBe true
         }
 
+        // The advisory ("Hinweis") channel: `FoldsConstraints` folds a kind's
+        // `advisory_firebox_custom_constraints` into `ConstraintTerm.Custom`
+        // verdicts with `blocking = false`. They must never fail validation —
+        // the severity flag is their only difference from a blocking custom
+        // violation, which does fail the firebox-specific validator.
+        "an advisory Custom violation leaves both validations valid, unlike its blocking twin" in {
+            val app = remoteApp(
+                List(violated(ConstraintTerm.Custom, "cleaning hatch obstructed", blocking = false))
+            )
+            app.primary.validateCitedConstraints.isValid shouldBe true
+            app.primary.validateFireboxSpecificConstraints.isValid shouldBe true
+
+            val twin = remoteApp(
+                List(violated(ConstraintTerm.Custom, "cleaning hatch obstructed", blocking = true))
+            )
+            twin.primary.validateCitedConstraints.isValid shouldBe true
+            twin.primary.validateFireboxSpecificConstraints.isValid shouldBe false
+        }
+
         // The remote verdicts stay reachable — they are what the UI/report show.
         "the engine's folded verdicts remain available through `constraints`" in {
             given Locale = Locale(Languages.En)

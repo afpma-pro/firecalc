@@ -169,6 +169,23 @@ trait FireboxConstraints[-F <: Firebox_15544]:
         ctx    : FireboxConstraintContext
     ): List[FireboxError]
 
+    /**
+     * Advisory findings (the Austrian-TA "Hinweis" class, as opposed to the blocking
+     * "Fehler" class of [[firebox_custom_constraints]]): reported to the user as
+     * `ConstraintOutcome.Violated(_, _, blocking = false)` verdicts — they never fail
+     * the calculation, and they never reach the 422 detail list.
+     *
+     * Severity is a property of the rule, so it is declared at the rule site: a kind
+     * that grades its own checks returns the advisory ones here and keeps the blocking
+     * ones in `firebox_custom_constraints`. Default: none, so every existing kind keeps
+     * its all-blocking behaviour.
+     */
+    def advisory_firebox_custom_constraints(
+        firebox: F,
+        ctx    : FireboxConstraintContext
+    ): List[FireboxError] =
+        Nil
+
     /** Validate internal firebox-specific constraints not covered by EN 15544. */
     def internal_firebox_custom_constraints(
         firebox: F

@@ -420,6 +420,12 @@ class WireCodecRoundTripSuite extends AnyFreeSpec with Matchers {
         roundTrip[ConstraintOutcome](ConstraintOutcome.Violated("TooShort", "too short", true))
     }
 
+    "ConstraintOutcome.Violated with blocking = false round-trips" in {
+        roundTrip[ConstraintOutcome](
+            ConstraintOutcome.Violated("CleaningHatchObstructed", "cleaning hatch obstructed", false)
+        )
+    }
+
     "ConstraintOutcome.NotEvaluated round-trips" in {
         roundTrip[ConstraintOutcome](ConstraintOutcome.NotEvaluated(NotEvaluatedReason.MissingMB))
     }
