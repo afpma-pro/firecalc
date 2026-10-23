@@ -21,7 +21,7 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 trait FireboxFormulas[-F]:
 
     extension (firebox: F)
-        /** Section "4.3.1.1" – Firebox surface area O_BR */
+        /** Section "4.3.1.2", "Firebox surface" – formula (3): O_BR = 900·m_B (printed p. 11) */
         def O_BR_calc: m_B => O_BR
 
         /**

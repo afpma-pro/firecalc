@@ -39,7 +39,9 @@ import io.taig.babel.Locale
  * essential members.  Both strict and MCE `ForwardsConstraints` traits
  * extend this to avoid duplicating the fold logic.
  *
- * `eta_constraints` is deliberately excluded (§4.6).
+ * `eta_constraints` is deliberately excluded — our own fold-scope choice,
+ * not an EN matter (the EN 15544:2023 efficiency check is §4.10.3
+ * « Calculation of the nominal output », printed p. 24).
  * When `ctx` is `None` (m_B unavailable) every m_B-dependent term
  * yields `NotEvaluated(MissingMB)`.
  *
@@ -188,7 +190,8 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                     )
 
         /**
-         * Descriptor for check 1 (catalog air-intake shape match, §4.7).
+         * Descriptor for check 1 (MB10-2022 / MB17 "Door 15a" catalog
+         * air-intake shape match — not an EN 15544 clause).
          *
          * Mirrors [[nominalLoadDescriptor]]: reads the accepted shapes off
          * the firebox via the Seam R virtual member
@@ -505,7 +508,7 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                             ConstraintOutcome.NotApplicable
                         )
 
-                // ── 10. firebox_custom_constraints → split shape checks (§4.7) ──
+                // ── 10. firebox_custom_constraints → split shape checks (MB10-2022 / MB17 catalog) ──
                 val allCustomErrors            = constraintsAlg.firebox_custom_constraints(firebox, fctx)
                 val (shapeErrors, otherErrors) = allCustomErrors.partition {
                     case _: AirIntakePipeShapeMismatch         => true
@@ -513,13 +516,15 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                     case _ => false
                 }
 
-                // Check 1 (catalog shape match, §4.7) is client-live: emit a
+                // Check 1 (MB10-2022 / MB17 "Door 15a" catalog shape match —
+                // not an EN 15544 clause) is client-live: emit a
                 // declarative `ShapeOneOf(expected)` carrying the firebox's
                 // accepted shapes — sourced via the Seam R virtual member so
                 // the UI can re-evaluate locally — falling back to `Opaque`
                 // for kinds with no inlet restriction (unchanged behaviour).
-                // Check 2 (topology) stays `Opaque`: §4.7 leaves its
-                // client-side re-evaluation as a SHOULD, not required.
+                // Check 2 (topology, same catalog rules) stays `Opaque`: its
+                // client-side re-evaluation is our own design choice, no EN
+                // 15544:2023 clause governs it.
                 val catalogShapeVerdicts  = shapeErrors.collect { case err: AirIntakePipeShapeMismatch =>
                     val code    = err.getClass.getSimpleName
                     val message = ShowUsingLocale[FireboxError].show(err)

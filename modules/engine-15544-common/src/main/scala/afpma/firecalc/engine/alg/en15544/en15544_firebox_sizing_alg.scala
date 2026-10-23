@@ -12,7 +12,9 @@ import afpma.firecalc.engine.models.en15544.typedefs.*
 /** Firebox sizing algebra (Section 4.3 of EN 15544:2023) */
 trait FireboxSizing_15544_Alg:
 
-    // Section "4.3.1.2", "Firebox surface"
+    // §3.10 perimeter term (printed p. 8); it is never defined in
+    // §4.3.1.2 and first appears in a formula in §4.3.1.3 (5) and
+    // §4.3.1.4 (7).
     def U_BR: U_BR
 
     def O_BR: O_BR

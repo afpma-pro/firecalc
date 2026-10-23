@@ -215,12 +215,15 @@ trait FireboxEngine[-F]:
         firebox: F
     ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]]
 
-    // ── Constraints folding (§4.4) ─────────────────────────────────────
+    // ── Constraints folding (our own model checks; no EN 15544 clause) ──
 
     /**
      * Folds the per-term constraint methods into a flat list of wire verdicts.
      *
-     * `eta_constraints` is deliberately excluded (§4.6).
+     * `eta_constraints` is deliberately excluded — our own fold-scope
+     * choice, not an EN matter.  The EN 15544:2023 efficiency check is
+     * §4.10.3 « Calculation of the nominal output » (printed p. 24);
+     * either way it is outside this fold.
      *
      * When `ctx` is `None` (m_B unavailable) every m_B-dependent term
      * yields `NotEvaluated(MissingMB)`.

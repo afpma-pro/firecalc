@@ -260,13 +260,16 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
 
         Seq(minConstraint, max5pDev)
 
-    // ── Section "4.2.1" – fuel mass m_B ──────────────────────────────────
+    // ── Fuel mass m_B — clause 1 scope band (printed p. 6) ───────────────
 
     protected val DEFAULT_m_B_MIN: Mass = 10.kg
     protected val DEFAULT_m_B_MAX: Mass = 40.kg
 
     /**
-     * Minimum fuel mass constraint per EN 15544 §4.2.1 (default 10 kg).
+     * Minimum fuel mass constraint (default 10 kg).  The 10–40 kg band is
+     * the EN 15544:2023 *clause 1* scope band (printed p. 6); §4.2.1
+     * (printed p. 10) only requires a maximum charge of at least 5 kg and
+     * gives formula (1).
      * Every kind needing a different bound overrides this method — in the
      * public repo only non-Austrian kinds ship such overrides: the Austrian
      * constraint instances live only in the private calc backend, and the
