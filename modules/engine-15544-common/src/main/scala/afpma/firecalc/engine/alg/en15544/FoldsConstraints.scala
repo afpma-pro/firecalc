@@ -121,8 +121,12 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
          * is the slot label — the stable per-rule identifier this verdict
          * already carries — and `message` is the same localised text the
          * full-application path shows for that failure
-         * (`TermConstraintError.failMsg`), so the HTTP fold and the desktop
-         * app judge the same firebox identically.  `blocking` comes from the
+         * (`TermConstraintError.failMsg`).  The verdicts agree only for
+         * `Blocking`: the full-application path (`checkFireboxConstraints`
+         * in en15544 `typedefs.scala`) runs every cited constraint through
+         * `foldToErrDeep` regardless of the marker, so an `Advisory`
+         * finding still hard-fails there and the mark changes the outcome
+         * on this fold alone until ticket 17 lands.  `blocking` comes from the
          * mark (`Blocking` = Fehler, `Advisory` = Hinweis), mirroring the
          * `firebox_custom_constraints` / `advisory_firebox_custom_constraints`
          * split of 3ab73d1b; both severities already ride the wire shape and

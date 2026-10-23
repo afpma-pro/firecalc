@@ -303,7 +303,15 @@ object TermConstraint:
      * `Blocking` (the Austrian-TA "Fehler" class) folds to
      * `ConstraintOutcome.Violated(_, _, blocking = true)` and reaches the
      * consumer's 422 detail list; `Advisory` ("Hinweis") folds to
-     * `blocking = false` and rides inside the 200 body only.
+     * `blocking = false` and on the HTTP path surfaces inside the 200
+     * body only.
+     *
+     * The severity distinction is honoured by the `firebox-calc` HTTP
+     * fold only.  The full-application path (`checkFireboxConstraints`,
+     * en15544 `typedefs.scala`) runs every cited constraint's
+     * validation through `foldToErrDeep` regardless of the marker and
+     * still grades an `Advisory` term as blocking there.  Grading
+     * local results by severity is not implemented.
      */
     enum EvaluatedSeverity:
         case Blocking
