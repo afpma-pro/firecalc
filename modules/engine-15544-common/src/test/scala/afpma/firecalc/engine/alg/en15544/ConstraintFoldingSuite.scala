@@ -85,8 +85,9 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
     /**
      * A `FoldsConstraints[TraditionalFirebox]` that always emits an
      * `AirIntakePipeShapeMismatch` from `firebox_custom_constraints`, so the
-     * folding's §4.7 shape-check branch is exercised even for a Traditional
-     * firebox (whose real `firebox_custom_constraints` returns `Nil`).
+     * folding's MB10-2022 / MB17 catalog shape-check branch is exercised
+     * even for a Traditional firebox (whose real
+     * `firebox_custom_constraints` returns `Nil`).
      */
     private object ShapeTestEngine
         extends FoldsConstraints[TraditionalFirebox]
@@ -109,7 +110,10 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
             FireboxContribution.Without.validNel
 
-        /** Forces a catalog shape-mismatch error so the folding's §4.7 branch fires. */
+        /**
+         * Forces a catalog shape-mismatch error so the folding's catalog
+         * shape-check branch fires (no EN 15544 clause; see FoldsConstraints).
+         */
         override def firebox_custom_constraints(
             firebox: TraditionalFirebox,
             ctx    : FireboxConstraintContext
@@ -603,7 +607,9 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
                 fireboxCtxNoShape
             )
 
-            // ConstraintTerm enum has no `eta` case (§4.6).
+            // ConstraintTerm enum has no `eta` case — η is deliberately
+            // outside the fold (our own fold-scope choice, no EN 15544:2023
+            // counterpart; see the FoldsConstraints scaladoc).
             // Verify by checking that no verdict label contains "eta".
             val hasEta = verdicts.exists { v =>
                 v.term.toString.equalsIgnoreCase("eta") ||

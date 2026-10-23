@@ -40,8 +40,9 @@ import io.taig.babel.Locale
  * extend this to avoid duplicating the fold logic.
  *
  * `eta_constraints` is deliberately excluded — our own fold-scope choice,
- * not an EN matter (the EN 15544:2023 efficiency check is §4.10.3
- * « Calculation of the nominal output », printed p. 24).
+ * not an EN matter (the old "(§4.6)" marker resembled EN 15544:2009
+ * numbering, which we do not hold; the EN 15544:2023 efficiency check is
+ * §4.10.3 « Calculation of the nominal output », printed p. 24).
  * When `ctx` is `None` (m_B unavailable) every m_B-dependent term
  * yields `NotEvaluated(MissingMB)`.
  *
@@ -509,6 +510,9 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                         )
 
                 // ── 10. firebox_custom_constraints → split shape checks (MB10-2022 / MB17 catalog) ──
+                // The old "(§4.7)" marker resembled EN 15544:2009
+                // numbering, which we do not hold; 2023 §4.7 computes
+                // combustion-air and flue-gas densities, not pipe shape.
                 val allCustomErrors            = constraintsAlg.firebox_custom_constraints(firebox, fctx)
                 val (shapeErrors, otherErrors) = allCustomErrors.partition {
                     case _: AirIntakePipeShapeMismatch         => true
