@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.alg.en15544
 
+import algebra.instances.all.given
+
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.PipeShape
@@ -15,12 +17,16 @@ import afpma.firecalc.engine.biblio.kov.firebox_emissions.Standing_Standard_Burn
 import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
 import afpma.firecalc.engine.models.CombustionAirPipe_Module_15544
 import afpma.firecalc.engine.models.FireboxPipe_Module_15544
+import afpma.firecalc.engine.models.TermConstraint
 import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.standard.*
 
 import cats.data.ValidatedNel
 import cats.syntax.validated.*
+
+import coulomb.*
+import coulomb.policy.standard.given
 
 import afpma.firecalc.firebox_calc_api.*
 import io.taig.babel.Locales
@@ -862,6 +868,207 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
                     q.value.toDouble shouldBe 0.188 +- 1e-9
                 case other                             =>
                     fail(s"expected Max(built/5), got $other")
+        }
+    }
+
+    // ── Per-term evaluation switch (ticket 23) ─────────────────────────────
+    //
+    // The fold is described-only by default: a standard verdict reflects the
+    // constraint's existence, not its validation.  A kind opts a term into
+    // real evaluation by carrying `evaluated = Some(severity)` on its own
+    // `TermConstraint.Generic` / `GenericTyped` construction; a marked
+    // failure then folds through the same `Violated(code, message,
+    // blocking)` path the custom channels use, and the severity mirrors the
+    // Fehler/Hinweis split of 3ab73d1b.
+    //
+    // The pinned mechanism is the real strict rule copied with the marker —
+    // exactly what a kind does to opt in — on `builtBelowNominalFirebox`,
+    // whose glass area strictly FAILS the built/5 cap (established by the
+    // ticket-13 section above), so marked-vs-unmarked is the only variable.
+
+    /**
+     * `TestEngine` with the evaluation switch set on individual terms:
+     * `markGlassArea` / `markGlassRatio` re-mark the strict rule for that
+     * slot; `glassAreaOverride` replaces the slot outright (hand-built
+     * constraints go through the same fold path).
+     */
+    private class MarkedEngine(
+        markGlassArea    : Option[TermConstraint.EvaluatedSeverity]               = None,
+        markGlassRatio   : Option[TermConstraint.EvaluatedSeverity]               = None,
+        glassAreaOverride: Option[ConstraintContext => TermConstraint[GlassArea]] = None
+    ) extends FoldsConstraints[TraditionalFirebox]
+        with FireboxConstraints_Strict[TraditionalFirebox]:
+
+        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
+
+        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
+        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
+
+        override def kind: FireboxKind = FireboxKind.Traditional
+
+        override def fireboxContribution(
+            firebox: TraditionalFirebox
+        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
+            FireboxContribution.Without.validNel
+
+        override def combustionAirContribution(
+            firebox: TraditionalFirebox
+        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
+            FireboxContribution.Without.validNel
+
+        override def glassArea_constraints(
+            firebox: TraditionalFirebox,
+            ctx    : ConstraintContext
+        ): Seq[Option[TermConstraint[GlassArea]]] =
+            glassAreaOverride match
+                case Some(build) => Seq(Some(build(ctx)))
+                case None        =>
+                    markGlassArea match
+                        case Some(severity) =>
+                            super
+                                .glassArea_constraints(firebox, ctx)
+                                .map:
+                                    case Some(gt: TermConstraint.GenericTyped[GlassArea, GlassAreaTooLarge]) =>
+                                        Some(gt.copy(evaluated = Some(severity)))
+                                    case other                                                               => other
+                        case None           => super.glassArea_constraints(firebox, ctx)
+
+        override def firebox_glass_surface_ratio_constraint(
+            firebox: TraditionalFirebox
+        ): Option[TermConstraint[Unit]] =
+            import afpma.firecalc.engine.models.en15544.typedefs.given_TermDefDetails_Unit
+            markGlassRatio match
+                case Some(severity) =>
+                    super.firebox_glass_surface_ratio_constraint(firebox).map {
+                        case gt: TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed] =>
+                            gt.copy(evaluated = Some(severity))
+                        case other => other
+                    }
+                case None           => super.firebox_glass_surface_ratio_constraint(firebox)
+
+    "per-term evaluation switch: described-only by default, evaluated when marked (ticket 23)" - {
+
+        def outcomeOf(
+            verdicts: List[ConstraintVerdict],
+            term    : ConstraintTerm,
+            rule    : String
+        ): ConstraintOutcome =
+            verdicts
+                .find(v => v.term == term && v.label == rule)
+                .map(_.outcome)
+                .getOrElse(fail(s"no verdict for term=$term label=$rule"))
+
+        "an unmarked failing constraint keeps the existence-only Satisfied verdict" in {
+            // `builtBelowNominalFirebox`'s glass area exceeds built/5 (see the
+            // ticket-13 section: the strict rule's validation FAILS), yet the
+            // folded verdict must stay byte-identical to the pre-switch
+            // behaviour — marking is what opts a term into evaluation.
+            val verdicts = TestEngine.constraints(
+                builtBelowNominalFirebox,
+                Some(ctxBuiltBelowNominal),
+                fireboxCtxNoShape
+            )
+
+            outcomeOf(verdicts, ConstraintTerm.GlassArea, "glassArea") shouldBe ConstraintOutcome.Satisfied
+        }
+
+        "a marked failing standard constraint folds to a blocking Violated with the slot code and the localized message" in {
+            val engine   = MarkedEngine(markGlassArea = Some(TermConstraint.EvaluatedSeverity.Blocking))
+            val verdicts = engine.constraints(
+                builtBelowNominalFirebox,
+                Some(ctxBuiltBelowNominal),
+                fireboxCtxNoShape
+            )
+
+            val verdict = verdicts
+                .find(_.term == ConstraintTerm.GlassArea)
+                .getOrElse(fail("expected a GlassArea verdict"))
+
+            // The descriptor stays exactly as built (ticket 13's value): a
+            // term keeps being described whether or not it is evaluated.
+            verdict.descriptor match
+                case ConstraintDescriptor.Max(Left(q)) =>
+                    q.value.toDouble shouldBe 0.188 +- 1e-9
+                case other                             =>
+                    fail(s"expected Max(built/5), got $other")
+
+            verdict.outcome match
+                case ConstraintOutcome.Violated(code, message, blocking) =>
+                    code shouldBe "glassArea"
+                    // Same localised text the full-application path shows for
+                    // this failure (`GlassAreaTooLarge`), locale en as given
+                    // at the top of the suite.
+                    message should include("must be less than 1/5th of the firebox surface area")
+                    blocking shouldBe true
+                case other                                               =>
+                    fail(s"expected a blocking Violated, got $other")
+        }
+
+        "a marked constraint that passes keeps the Satisfied outcome" in {
+            val engine   = MarkedEngine(markGlassArea = Some(TermConstraint.EvaluatedSeverity.Blocking))
+            val verdicts = engine.constraints(
+                builtAboveNominalFirebox,
+                Some(ctxBuiltAboveNominal),
+                fireboxCtxNoShape
+            )
+
+            // glass 2500 cm² ≤ built/5 = 4200 cm²: valid → unchanged outcome.
+            outcomeOf(verdicts, ConstraintTerm.GlassArea, "glassArea") shouldBe ConstraintOutcome.Satisfied
+        }
+
+        "an Advisory mark folds to a non-blocking violation, on the ctx = None path too" in {
+            val engine   = MarkedEngine(markGlassRatio = Some(TermConstraint.EvaluatedSeverity.Advisory))
+            val verdicts = engine.constraints(
+                builtBelowNominalFirebox,
+                None,
+                fireboxCtxNoShape
+            )
+
+            // glass 2000 cm² over built 9400 cm² exceeds 1/5, so the strict
+            // ratio rule is invalid — the mark routes it through the shared
+            // violation path with `blocking = false` (Hinweis).
+            verdicts
+                .find(_.term == ConstraintTerm.GlassSurfaceRatio)
+                .map(_.outcome)
+                .getOrElse(fail("expected a GlassSurfaceRatio verdict")) match
+                case ConstraintOutcome.Violated(code, message, blocking) =>
+                    code shouldBe "glassSurfaceRatio"
+                    message shouldBe "The glass surface must be less than 1/5th of the firebox surface area."
+                    blocking shouldBe false
+                case other                                               =>
+                    fail(s"expected a non-blocking Violated, got $other")
+        }
+
+        "a hand-built `Generic` mark folds through the same path, message from its own text" in {
+            val engine   = MarkedEngine(glassAreaOverride = Some { ctx =>
+                TermConstraint.Generic[GlassArea]    (
+                    value     = 0.6.squareMeters,
+                    source    = "test: hand-built marked glassArea",
+                    isValid   = area =>
+                        if area <= ctx.area_O_BR / 5.0 then Right(area                                  )
+                        else Left                                ("beyond the hand-built glass-area cap"),
+                    evaluated = Some(TermConstraint.EvaluatedSeverity.Blocking)
+                )
+            })
+            val verdicts = engine.constraints(
+                // built > nominal fixture: the unmarked strict rule would
+                // pass, but the hand-built rule's own value fails.
+                builtAboveNominalFirebox,
+                Some(ctxBuiltAboveNominal),
+                fireboxCtxNoShape
+            )
+
+            val verdict = verdicts
+                .find(_.term == ConstraintTerm.GlassArea)
+                .getOrElse(fail("expected a GlassArea verdict"))
+
+            verdict.outcome match
+                case ConstraintOutcome.Violated(code, message, blocking) =>
+                    code shouldBe "glassArea"
+                    message should include("beyond the hand-built glass-area cap")
+                    blocking shouldBe true
+                case other                                               =>
+                    fail(s"expected a blocking Violated, got $other")
         }
     }
 

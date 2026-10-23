@@ -279,10 +279,42 @@ object TermConstraint:
         def apply[Q: {Show, Ordering, TermDefDetails}](max: Q): Max[Q] =
             Max[Q](max, "")
 
+    /**
+     * Severity carried by the per-constraint evaluation marker that opts a term
+     * into evaluation on the `firebox-calc` HTTP fold (`FoldsConstraints`,
+     * KOV-2026-10 air-supply map ticket 23, option 1).
+     *
+     * Mechanism: a constraint is described-only unless its constructor carries
+     * the named argument `evaluated = Some(severity)` (default `None`).  This
+     * was chosen over a per-term table the fold consults because the decision
+     * then lives at the constraint's own definition site — the same place that
+     * wrote the rule — and cannot be set accidentally: absence of the argument
+     * is the default, so no shipped kind changes behaviour until it opts a
+     * term in explicitly.
+     *
+     * The marker exists only on the value-carrying constructors (`Generic`,
+     * `GenericTyped`): a marked constraint always embeds the value the kind
+     * built it from, so the fold can always evaluate exactly what was marked;
+     * the bound-only `Min`/`Max` descriptors stay description-only by
+     * construction, and there is no slot where a marker would be silently
+     * ignored.
+     *
+     * Severity mirrors the two custom-constraint channels (3ab73d1b):
+     * `Blocking` (the Austrian-TA "Fehler" class) folds to
+     * `ConstraintOutcome.Violated(_, _, blocking = true)` and reaches the
+     * consumer's 422 detail list; `Advisory` ("Hinweis") folds to
+     * `blocking = false` and rides inside the 200 body only.
+     */
+    enum EvaluatedSeverity:
+        case Blocking
+        case Advisory
+
     case class Generic[Q: TermDefDetails](
         value              : Q,
         override val source: String,
-        isValid            : Q => Either[String, Q]
+        isValid            : Q => Either[String, Q],
+        // Opt-in HTTP-fold evaluation marker; default None = described-only.
+        evaluated          : Option[EvaluatedSeverity] = None
     ) extends TermConstraint[Q](
             source,
             validate = q =>
@@ -307,7 +339,9 @@ object TermConstraint:
     case class GenericTyped[Q, E](
         value              : Q,
         override val source: String,
-        isValid            : Q => Either[E, Q]
+        isValid            : Q => Either[E, Q],
+        // Opt-in HTTP-fold evaluation marker; default None = described-only.
+        evaluated          : Option[EvaluatedSeverity] = None
     )                            (using showE: ShowUsingLocale[E], tdd: TermDefDetails[Q])
         extends TermConstraint[Q](
             source,
