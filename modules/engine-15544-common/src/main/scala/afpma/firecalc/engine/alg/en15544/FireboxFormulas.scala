@@ -36,8 +36,11 @@ trait FireboxFormulas[-F]:
         def area_O_BR: Area
 
         /**
-         * See EN 15544 – Section 4.3.1.2 – Derived boolean: glass area ≤ 1/5 of
-         *  total enclosing firebox surface area.
+         * EN 15544:2023 clause 1 (scope exclusion) + MB10/MB17 §3 – Derived
+         * boolean: glass area ≤ 1/5 of the BUILT interior chamber surface
+         * ([[area_O_BR]], §3.7).  The 1/5 is a clause-1 scope boundary, not
+         * a §4.3.1.x sizing rule; see the banner above `glassArea_constraints`
+         * in `FireboxConstraints_Strict`.
          */
         def firebox_glass_surface_ratio_below_one_fifth: Boolean
 

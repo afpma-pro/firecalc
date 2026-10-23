@@ -219,7 +219,8 @@ case class FireboxConstraintContext(
 )
 
 /**
- * Mixin trait that removes all §4.3.1.x firebox sizing constraints.
+ * Mixin trait that removes the §4.3.1.x firebox sizing constraints and the
+ * clause-1 glass-area cap.
  *
  * Mix this in **last** (rightmost position) so that its overrides take
  * precedence over any base implementation, e.g.:
@@ -228,9 +229,9 @@ case class FireboxConstraintContext(
  *   new DefaultFireboxConstraints[MyFirebox] with RemovedFireboxSizingConstraints
  * }}}
  *
- * Sections removed:
+ * Removed sections:
  *   - 4.3.1.1 height of lowest opening
- *   - 4.3.1.2 glass area
+ *   - clause 1 glass-area cap (scope exclusion)
  *   - 4.3.1.3 firebox base dimensions
  *   - 4.3.1.4 firebox height
  */
