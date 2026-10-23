@@ -437,9 +437,9 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
     }
 
-    // ── §4.7 ShapeOneOf descriptor for the catalog shape check ──────────
+    // ── ShapeOneOf descriptor for the MB10-2022 / MB17 catalog shape check ──
 
-    "§4.7 ShapeOneOf: catalog shape descriptor reflects the firebox's accepted shapes" - {
+    "ShapeOneOf: catalog shape descriptor reflects the firebox's accepted shapes" - {
 
         "ShapeOneOf(expected) is emitted when expectedAirIntakePipeShapes is Some" in {
             val verdicts = ShapeTestEngine.constraints(
@@ -450,7 +450,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
 
             // The catalog-mismatch verdict (check 1) must carry a declarative
             // ShapeOneOf with the firebox's accepted shapes, so the UI can
-            // re-evaluate locally (§4.7, spec AC-3).
+            // re-evaluate locally (MB10-2022 / MB17 catalog rule, spec AC-3).
             val catalogVerdict = verdicts
                 .find(v =>
                     v.term == ConstraintTerm.AirIntakePipeShape &&
