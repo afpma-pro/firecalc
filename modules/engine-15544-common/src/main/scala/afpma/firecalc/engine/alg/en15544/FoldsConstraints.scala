@@ -129,7 +129,7 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
          * `foldToErrDeep` regardless of the marker, so an `Advisory`
          * finding still hard-fails there and the mark changes the outcome
          * on this fold alone until ticket 17 lands.  `blocking` comes from the
-         * mark (`Blocking` = Fehler, `Advisory` = Hinweis), mirroring the
+         * `EvaluatedSeverity` mark (`Blocking` / `Advisory`), mirroring the
          * `firebox_custom_constraints` / `advisory_firebox_custom_constraints`
          * split of 3ab73d1b; both severities already ride the wire shape and
          * the consumer's 422 filter unchanged.  Descriptors stay as built: a
@@ -575,7 +575,7 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                             )
                         )
 
-                // Advisory ("Hinweis") findings fold to the same verdict shape with
+                // Advisory findings fold to the same verdict shape with
                 // `blocking = false`: they ride inside the 200 body's verdict list, are
                 // excluded from the 422 detail list by the consumer's `if blocking`
                 // filter, and never reach validation (`FoldedVerdicts.violations`

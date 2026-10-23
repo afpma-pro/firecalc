@@ -118,7 +118,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
 
     /**
      * A `FoldsConstraints[TraditionalFirebox]` that declares exactly one advisory
-     * ("Hinweis") finding via `advisory_firebox_custom_constraints` and no
+     * finding via `advisory_firebox_custom_constraints` and no
      * blocking custom errors.  Everything else is identical to `TestEngine`, so
      * the only difference in the folded verdict list is the advisory verdict.
      */
@@ -143,7 +143,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
             FireboxContribution.Without.validNel
 
-        /** One "Hinweis"-class finding; shown verbatim by the `FireboxErrorCustom` case. */
+        /** One advisory finding; shown verbatim by the `FireboxErrorCustom` case. */
         override def advisory_firebox_custom_constraints(
             firebox: TraditionalFirebox,
             ctx    : FireboxConstraintContext
@@ -485,7 +485,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
     }
 
-    // ── Advisory ("Hinweis") custom-constraint channel ───────────────────
+    // ── Advisory custom-constraint channel ───────────────────────────────
 
     "advisory_firebox_custom_constraints folds to trailing non-blocking verdicts" - {
 
@@ -879,7 +879,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
     // `TermConstraint.Generic` / `GenericTyped` construction; a marked
     // failure then folds through the same `Violated(code, message,
     // blocking)` path the custom channels use, and the severity mirrors the
-    // Fehler/Hinweis split of 3ab73d1b.
+    // blocking/advisory split of 3ab73d1b.
     //
     // The pinned mechanism is the real strict rule copied with the marker —
     // exactly what a kind does to opt in — on `builtBelowNominalFirebox`,
@@ -1026,7 +1026,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
 
             // glass 2000 cm² over built 9400 cm² exceeds 1/5, so the strict
             // ratio rule is invalid — the mark routes it through the shared
-            // violation path with `blocking = false` (Hinweis).
+            // violation path with `blocking = false`.
             verdicts
                 .find(_.term == ConstraintTerm.GlassSurfaceRatio)
                 .map(_.outcome)

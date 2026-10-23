@@ -177,8 +177,8 @@ trait FireboxConstraints[-F <: Firebox_15544]:
     ): List[FireboxError]
 
     /**
-     * Advisory findings (the Austrian-TA "Hinweis" class, as opposed to the blocking
-     * "Fehler" class of [[firebox_custom_constraints]]): reported to the user as
+     * Advisory findings (as opposed to the blocking findings of
+     * [[firebox_custom_constraints]]): reported to the user as
      * `ConstraintOutcome.Violated(_, _, blocking = false)` verdicts — they never fail
      * the calculation, and they never reach the 422 detail list.
      *

@@ -874,9 +874,9 @@ components:
                 Per §7.2, blocking violations are still returned as 200
                 with the full response body — HTTP status does not encode
                 constraint satisfaction. `blocking: false` marks the advisory
-                tier (Austrian-TA "Hinweis", as opposed to the blocking
-                "Fehler"): an informational finding that never blocks
-                submission and is never appended to a 422 `details` list.
+                tier (as opposed to the blocking tier): an informational
+                finding that never blocks submission and is never appended
+                to a 422 `details` list.
                 Consumers must not present it as a failure.
         - type: object
           required: [status, reason]

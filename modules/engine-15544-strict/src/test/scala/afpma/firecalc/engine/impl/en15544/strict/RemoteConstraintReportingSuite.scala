@@ -224,7 +224,7 @@ class RemoteConstraintReportingSuite extends AnyFreeSpec with Matchers:
             app.primary.validateCitedConstraints.isValid shouldBe true
         }
 
-        // The advisory ("Hinweis") channel: `FoldsConstraints` folds a kind's
+        // The advisory channel: `FoldsConstraints` folds a kind's
         // `advisory_firebox_custom_constraints` into `ConstraintTerm.Custom`
         // verdicts with `blocking = false`. They must never fail validation —
         // the severity flag is their only difference from a blocking custom
