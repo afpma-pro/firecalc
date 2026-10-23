@@ -9,6 +9,7 @@ import cats.*
 import cats.syntax.all.catsSyntaxOptionId
 import cats.syntax.all.toFunctorOps
 import cats.syntax.all.toFlatMapOps
+import afpma.firecalc.units.coulombutils.Area
 
 import afpma.firecalc.engine.*
 import afpma.firecalc.engine.alg.en15544.FireboxSizing_15544_Alg
@@ -27,6 +28,11 @@ class FireboxSizing_15544_Common(
 
     // Section "4.3.1.2", "Firebox surface"
     override def O_BR: O_BR = firebox.O_BR_calc(m_B)
+
+    // §3.7 built interior surface — glass-area cap denominator.  The
+    // formula itself lives in `FireboxFormulas`; this only threads it
+    // into the constraint context.
+    override def area_O_BR: Area = firebox.area_O_BR
 
     override def U_BR: U_BR =
         firebox.dimensions.base.perimeter

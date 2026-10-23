@@ -223,17 +223,17 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                         outcome
                     )
 
-                // ── 3. glassArea_constraints → Max(obrFifth) ────────────
+                // ── 3. glassArea_constraints → Max(built area / 5) ─────
                 val glassAreaVerdicts = constraintsAlg
                     .glassArea_constraints(firebox, c)
                     .flatMap:
                         case Some(_) =>
-                            val obrFifth: GlassArea = c.O_BR / 5.0
+                            val glassAreaCap: GlassArea = c.area_O_BR / 5.0
                             List(
                                 ConstraintVerdict(
                                     ConstraintTerm.GlassArea,
                                     "glassArea",
-                                    ConstraintDescriptor.Max(Left(qtyDToWireQty(obrFifth))),
+                                    ConstraintDescriptor.Max(Left(qtyDToWireQty(glassAreaCap))),
                                     ConstraintOutcome.Satisfied
                                 )
                             )

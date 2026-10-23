@@ -106,13 +106,12 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
     // stoves is an open question to KOV (tracker ticket 20 item 2).
     // Owner decision 2026-10-23: 1/5 stays the cap for every kind.
     //
-    // Denominator note: this path caps against `ctx.O_BR / 5` — one fifth
-    // of the §4.3.1.2 REQUIRED surface (formula (3), 900·m_B), which is
-    // what `ConstraintContext` carries.  The formula path
-    // (`FireboxFormulas_Strict.firebox_glass_surface_ratio_below_one_fifth`)
-    // divides by the BUILT §3.7 surface (`area_O_BR`) instead.  The two
-    // denominators coincide only when the firebox sits exactly at the
-    // required surface.
+    // Denominator: the cap is measured against `ctx.area_O_BR / 5` — one
+    // fifth of the BUILT §3.7 interior surface — the same denominator the
+    // formula path uses (`FireboxFormulas_Strict.firebox_glass_surface_ratio_below_one_fifth`
+    // divides by `area_O_BR`).  `ctx.O_BR` (the §4.3.1.2 REQUIRED surface,
+    // formula (3), 900·m_B) drives only the base-area/height bounds; it is
+    // NOT the cap's denominator (owner decision 2026-10-23, ticket 13).
 
     override def glassArea_constraints(
         firebox: F,
@@ -124,12 +123,12 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
         firebox: F,
         ctx    : ConstraintContext
     ): TermConstraint[GlassArea] =
-        val obrFifth: GlassArea = ctx.O_BR / 5.0
+        val glassAreaMax: GlassArea = ctx.area_O_BR / 5.0
         TermConstraint.GenericTyped[GlassArea, GlassAreaTooLarge]  (
             value   = firebox.glass_area,
             isValid = glarea =>
-                if (glarea <= obrFifth) glarea.asRight
-                else Left(GlassAreaTooLarge(glarea.showP, obrFifth.showP))
+                if (glarea <= glassAreaMax) glarea.asRight
+                else Left(GlassAreaTooLarge(glarea.showP, glassAreaMax.showP))
         )
 
     // ── Section "4.3.1.3" – firebox base dimensions ───────────────────────

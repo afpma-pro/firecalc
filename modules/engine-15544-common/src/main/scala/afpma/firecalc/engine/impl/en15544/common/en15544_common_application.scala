@@ -269,6 +269,7 @@ abstract class EN15544_V_2023_Common_Application
         ConstraintContext                           (
             m_B                            = m_B,
             O_BR                           = firebox_sizing.O_BR,
+            area_O_BR                      = firebox_sizing.area_O_BR,
             FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MIN_RATIO,
             FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = firebox_sizing.FLOOR_DEPTH_TO_WIDTH_MAX_RATIO,
             A_BR_min                       = firebox_sizing.A_BR_min,

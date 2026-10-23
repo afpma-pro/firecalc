@@ -191,7 +191,8 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
      *   - depth/width ratio = 1.0 ∈ [0.5, 2.0]
      *   - width 50 cm ≥ 23 cm
      *   - height 80 cm ∈ [76, 84] (H_BR ± 5%)
-     *   - glass area 30x40 = 1200 cm² ≤ O_BR/5 = 1800 cm² (m_B=10)
+     *   - glass area 30x40 = 1200 cm² ≤ area_O_BR/5 = 4200 cm² (the built
+     *     50x50x80 surface is 21000 cm²; also under the nominal O_BR/5 = 1800)
      *   - ash pit height 10 cm ≥ 5 cm minimum
      */
     private val cleanFirebox: TraditionalFirebox =
@@ -234,7 +235,9 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
     /**
      * A ConstraintContext with m_B = 10 kg (the default minimum for Traditional).
      *
-     * O_BR = 900 * m_B = 9000 cm&#178; (EN 15544 &#167;4.3.1.1 formula).
+     * O_BR = 900 * m_B = 9000 cm&#178; (EN 15544 required surface, formula (3)).
+     * area_O_BR = 21000 cm&#178;, the BUILT §3.7 interior surface of `cleanFirebox`
+     * (2 · (50·50 + 80·50 + 80·50)) — the glass-area-cap denominator.
      * A_BR_min/max derived from standard formulas for m_B=10.
      * H_BR = firebox height (80 cm).
      */
@@ -242,6 +245,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         ConstraintContext                           (
             m_B                            = 10.kg,
             O_BR                           = 9000.cm2,
+            area_O_BR                      = 21000.cm2,
             FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = 0.5,
             FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = 2.0,
             A_BR_min                       = Some(1000.cm2),
@@ -730,6 +734,134 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
             )
 
             verdicts.length shouldBe 10
+        }
+    }
+
+    // ── Glass-area cap denominator: BUILT surface, not 900·m_B ─────────────
+    //
+    // Owner decision 2026-10-23 (tracker ticket 13): the 1/5 denominator of
+    // the EN 15544:2023 clause-1 glass cap is the BUILT interior surface
+    // (§3.7), NOT the §4.3.1.2 required surface (formula (3), 900·m_B)
+    // carried by `ctx.O_BR`.  Both fixtures use m_B = 12 kg, so the
+    // nominal O_BR is 10800 cm² and O_BR/5 is 2160 cm²; the glass area
+    // sits strictly between the two readings in each direction.
+
+    /**
+     * 50×50×80 cm: built interior surface = 2·(2500 + 4000 + 4000) =
+     * 21000 cm² > nominal 10800 cm².  Glass 50×50 = 2500 cm² exceeds the
+     * nominal threshold 2160 cm² but stays under built/5 = 4200 cm²:
+     * PASSES under the built-surface decision, would FAIL nominal-based.
+     */
+    private val builtAboveNominalFirebox: TraditionalFirebox =
+        TraditionalFirebox                     (
+            emissions_values                      = Standing_Standard_Burning_Firebox,
+            firebox_depth_B                       = 50.cm,
+            firebox_width_A                       = 50.cm,
+            firebox_height_H                      = 80.cm,
+            pressure_loss_coefficient_from_door   = 0.5.unitless,
+            total_air_intake_surface_area_on_door = 0.1.squareMeters,
+            glass_width                           = 50.cm,
+            glass_height                          = 50.cm,
+            ash_pit_height_AF                     = 10.cm
+        )
+
+    private val ctxBuiltAboveNominal: ConstraintContext =
+        ConstraintContext                           (
+            m_B                            = 12.kg,
+            O_BR                           = 10800.cm2,
+            area_O_BR                      = 21000.cm2,
+            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = 0.5,
+            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = 2.0,
+            A_BR_min                       = Some(1200.cm2),
+            A_BR_max                       = Some(4000.cm2),
+            A_BR                           = 2500.cm2,
+            H_BR_min                       = None,
+            H_BR                           = 80.cm,
+            n_min                          = 70.percent
+        )
+
+    /**
+     * 40(w)×30(d)×50(h) cm: built interior surface = 2·(1200 + 1500 +
+     * 2000) = 9400 cm² < nominal 10800 cm².  Glass 40×50 = 2000 cm² stays
+     * under the nominal threshold 2160 cm² but exceeds built/5 = 1880 cm²:
+     * FAILS under the built-surface decision, would PASS nominal-based.
+     */
+    private val builtBelowNominalFirebox: TraditionalFirebox =
+        TraditionalFirebox                     (
+            emissions_values                      = Standing_Standard_Burning_Firebox,
+            firebox_depth_B                       = 30.cm,
+            firebox_width_A                       = 40.cm,
+            firebox_height_H                      = 50.cm,
+            pressure_loss_coefficient_from_door   = 0.5.unitless,
+            total_air_intake_surface_area_on_door = 0.1.squareMeters,
+            glass_width                           = 40.cm,
+            glass_height                          = 50.cm,
+            ash_pit_height_AF                     = 10.cm
+        )
+
+    private val ctxBuiltBelowNominal: ConstraintContext =
+        ConstraintContext                           (
+            m_B                            = 12.kg,
+            O_BR                           = 10800.cm2,
+            area_O_BR                      = 9400.cm2,
+            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = 0.5,
+            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = 2.0,
+            A_BR_min                       = Some(1200.cm2),
+            A_BR_max                       = Some(4000.cm2),
+            A_BR                           = 1200.cm2,
+            H_BR_min                       = None,
+            H_BR                           = 50.cm,
+            n_min                          = 70.percent
+        )
+
+    "glass-area cap measures the BUILT surface, not 900·m_B (ticket 13)" - {
+
+        "glass between O_BR/5 and built/5 PASSES when built > nominal" in {
+            val constraints = TestEngine
+                .glassArea_constraints(builtAboveNominalFirebox, ctxBuiltAboveNominal)
+                .flatten
+            constraints.length shouldBe 1
+            constraints.head.validate(builtAboveNominalFirebox.glass_area).isValid shouldBe true
+        }
+
+        "glass between built/5 and O_BR/5 FAILS when built < nominal" in {
+            val constraints = TestEngine
+                .glassArea_constraints(builtBelowNominalFirebox, ctxBuiltBelowNominal)
+                .flatten
+            constraints.length shouldBe 1
+            constraints.head.validate(builtBelowNominalFirebox.glass_area).isValid shouldBe false
+        }
+
+        "the folded Max descriptor reports built/5 = 0.42 m², not O_BR/5 = 0.216 m²" in {
+            val verdicts     = TestEngine.constraints(
+                builtAboveNominalFirebox,
+                Some(ctxBuiltAboveNominal),
+                fireboxCtxNoShape
+            )
+            val glassVerdict = verdicts
+                .find(_.term == ConstraintTerm.GlassArea)
+                .getOrElse(fail("expected a GlassArea verdict"))
+            glassVerdict.descriptor match
+                case ConstraintDescriptor.Max(Left(q)) =>
+                    q.value.toDouble shouldBe 0.42 +- 1e-9
+                case other                             =>
+                    fail(s"expected Max(built/5), got $other")
+        }
+
+        "the folded Max descriptor reports built/5 = 0.188 m² on the failing side" in {
+            val verdicts     = TestEngine.constraints(
+                builtBelowNominalFirebox,
+                Some(ctxBuiltBelowNominal),
+                fireboxCtxNoShape
+            )
+            val glassVerdict = verdicts
+                .find(_.term == ConstraintTerm.GlassArea)
+                .getOrElse(fail("expected a GlassArea verdict"))
+            glassVerdict.descriptor match
+                case ConstraintDescriptor.Max(Left(q)) =>
+                    q.value.toDouble shouldBe 0.188 +- 1e-9
+                case other                             =>
+                    fail(s"expected Max(built/5), got $other")
         }
     }
 

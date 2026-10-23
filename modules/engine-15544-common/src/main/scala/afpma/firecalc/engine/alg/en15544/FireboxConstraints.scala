@@ -5,7 +5,7 @@
 
 package afpma.firecalc.engine.alg.en15544
 
-import afpma.firecalc.units.coulombutils.VolumeFlow
+import afpma.firecalc.units.coulombutils.{Area, VolumeFlow}
 
 import afpma.firecalc.dto.all.PipeShape
 
@@ -31,6 +31,13 @@ import coulomb.policy.standard.given
 case class ConstraintContext(
     m_B                           : m_B,
     O_BR                          : O_BR,
+    /**
+     * The BUILT interior surface (EN 15544:2023 §3.7 `surface de la
+     * chambre de combustion`, computed by `FireboxFormulas.area_O_BR`) —
+     * the denominator of the clause-1 glass-area cap.  Distinct from
+     * `O_BR`, the §4.3.1.2 REQUIRED surface (formula (3), 900·m_B).
+     */
+    area_O_BR                     : Area,
     FLOOR_DEPTH_TO_WIDTH_MIN_RATIO: Double,
     FLOOR_DEPTH_TO_WIDTH_MAX_RATIO: Double,
     A_BR_min                      : Option[A_BR],

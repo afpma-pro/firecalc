@@ -5,6 +5,8 @@
 
 package afpma.firecalc.engine.alg.en15544
 
+import afpma.firecalc.units.coulombutils.Area
+
 import afpma.firecalc.engine.models.en15544.typedefs.*
 
 /** Firebox sizing algebra (Section 4.3 of EN 15544:2023) */
@@ -14,6 +16,13 @@ trait FireboxSizing_15544_Alg:
     def U_BR: U_BR
 
     def O_BR: O_BR
+
+    // §3.7 "surface de la chambre de combustion" — the BUILT interior
+    // surface (sum of the interior surfaces; `FireboxFormulas.area_O_BR`).
+    // Denominator of the clause-1 glass-area cap; feeds
+    // `ConstraintContext.area_O_BR`.  NOT §4.3.1.2's required surface
+    // (`O_BR`, formula (3), 900·m_B).
+    def area_O_BR: Area
 
     // Section "4.3.1.3", "Firebox base"
 
