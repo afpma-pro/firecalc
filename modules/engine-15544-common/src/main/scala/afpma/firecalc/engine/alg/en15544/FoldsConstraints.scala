@@ -15,7 +15,6 @@ import afpma.firecalc.i18n.ShowUsingLocale
 import afpma.firecalc.engine.api.WireConversions.qtyDToWireQty
 import afpma.firecalc.engine.api.WireConversions.toWireShape
 import afpma.firecalc.engine.models.TermConstraint
-import afpma.firecalc.engine.models.TermConstraint.ValidatedResult.showInvalidConstraintErrors
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.standard.AirIntakePipeShapeMismatch
@@ -43,17 +42,26 @@ import io.taig.babel.Locale
  * not an EN matter (the old "(§4.6)" marker resembled EN 15544:2009
  * numbering, which we do not hold; the EN 15544:2023 efficiency check is
  * §4.10.3 « Calculation of the nominal output », printed p. 24).
- * When `ctx` is `None` (m_B unavailable) every m_B-dependent term
- * yields `NotEvaluated(MissingMB)`.
+ * `ctx = None` means the sizing context was not supplied — the HTTP
+ * request path builds `ctx = None` exactly when `m_B`/`n_min` are
+ * missing.  Every term that needs the sizing context then yields
+ * `NotEvaluated(MissingMB)`: the reason names the missing request
+ * parameter, not a data dependency on `m_B` itself (the glass-area cap
+ * reads built geometry from the context, and the custom/advisory
+ * channels need neither).  Precondition, accepted with ticket 23: on
+ * that branch the blocking and advisory custom-constraint channels are
+ * not evaluated at all — their `Custom` verdict is the same
+ * placeholder — so advisory findings ride inside the 200 body only on
+ * the `ctx = Some` branch.
  *
  * Every term defaults to described-only: the verdict reflects the
  * constraint's existence, not its validation (unchanged for every shipped
  * kind).  A kind opts a term into real evaluation by constructing its
  * `TermConstraint.Generic`/`GenericTyped` with `evaluated = Some(severity)`
  * (see [[TermConstraint.EvaluatedSeverity]]); marked slots additionally run
- * their validation here (`evaluatedOrPresent` below) and a failure folds
- * into the same `ConstraintOutcome.Violated(code, message, blocking)` path
- * the custom-constraint channels use.
+ * their validation here (the `slot`/`slotOutcome` pair below) and a failure
+ * folds into the same `ConstraintOutcome.Violated(code, message, blocking)`
+ * path the custom-constraint channels use.
  */
 trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
 
@@ -97,26 +105,27 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
 
         def errorToNominalVerdict(
             err       : FireboxError,
+            label     : String,
             descriptor: ConstraintDescriptor
         ): ConstraintVerdict =
             val code    = err.getClass.getSimpleName
             val message = ShowUsingLocale[FireboxError].show(err)
             ConstraintVerdict(
                 ConstraintTerm.NominalLoadInRange,
-                "nominalLoadInRange",
+                label,
                 descriptor,
                 ConstraintOutcome.Violated(code, message, blocking = true)
             )
 
         /**
-         * Fold one standard-constraint slot to an outcome behind the per-term
-         * evaluation switch (KOV-2026-10 air-supply map, ticket 23, option 1).
+         * The evaluation switch behind every slot (KOV-2026-10 air-supply
+         * map, ticket 23, option 1).
          *
          * Unmarked (the default for every `TermConstraint` any shipped kind
          * returns): returns `present` — the existence-derived outcome, i.e.
          * the pre-ticket behaviour unchanged.
          *
-         * Marked (`TermConstraint.Generic`/`GenericTyped` constructed with
+         * Marked (`TermConstraint.Evaluatable` constructed with
          * `evaluated = Some(severity)`): additionally runs the constraint's
          * validation against the value the kind embedded at its own
          * definition site, and a failure routes through the existing
@@ -135,13 +144,24 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
          * split of 3ab73d1b; both severities already ride the wire shape and
          * the consumer's 422 filter unchanged.  Descriptors stay as built: a
          * term keeps being described whether or not it is evaluated.
+         *
+         * Only the value-carrying constructors extend `Evaluatable`, so the
+         * type test below covers every constraint that can carry the marker;
+         * the capability method is self-contained, hence no unchecked cast is
+         * needed anywhere.  First marked failure wins when a slot holds
+         * several marked failing constraints (one rendering per constraint,
+         * no aggregation — pinned by the severity suite).
          */
-        def evaluatedOrPresent[O](
+        def slotOutcome[O](
             label  : String,
-            tcs    : Seq[TermConstraint[O]],
+            tcs    : Iterable[TermConstraint[O]],
             present: ConstraintOutcome
         ): ConstraintOutcome =
-            firstEvaluatedFailure(tcs) match
+            tcs.iterator
+                .collect:
+                    case e: TermConstraint.Evaluatable[t] => e.evaluatedFailure
+                .flatten
+                .nextOption() match
                 case Some((severity, message)) =>
                     ConstraintOutcome.Violated    (
                         code     = label,
@@ -151,33 +171,32 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                 case None                      => present
 
         /**
-         * The first evaluated failure among one slot's constraints.  Only the
-         * value-carrying constructors can carry the marker, so a marked
-         * constraint can always be evaluated here; unmarked constraints never
-         * run their validation.
+         * Fold one standard-constraint slot into its wire verdict; the single
+         * entry point every term below uses, so a slot label is taken once
+         * for both the verdict identity and a marked failure's `code`, and
+         * the present/absent pair cannot drift apart.
+         *
+         * An empty slot yields `absent` (descriptor + outcome together); a
+         * non-empty slot keeps `descriptor` and runs `tcs` through
+         * [[slotOutcome]].  Generic in the slot's value type — the fold
+         * always knows it at each slot — which keeps [[slotOutcome]]'s type
+         * test sound without casts.
          */
-        def firstEvaluatedFailure[O](
-            tcs: Seq[TermConstraint[O]]
-        ): Option[(TermConstraint.EvaluatedSeverity, String)] =
-            tcs.iterator
-                .flatMap {
-                    case g : TermConstraint.Generic[t]         => evaluatedFailure(g.evaluated, g, g.value)
-                    case gt: TermConstraint.GenericTyped[t, e] => evaluatedFailure(gt.evaluated, gt, gt.value)
-                    case _ => Iterator.empty
-                }
-                .nextOption()
-
-        def evaluatedFailure[O](
-            marker: Option[TermConstraint.EvaluatedSeverity],
-            tc    : TermConstraint[O],
-            value : O
-        ): Option[(TermConstraint.EvaluatedSeverity, String)] =
-            marker match
-                case None           => None
-                case Some(severity) =>
-                    tc.validate(value)
-                        .showInvalidConstraintErrors
-                        .map(errors => (severity, errors.head.failMsg))
+        def slot[O](
+            term      : ConstraintTerm,
+            label     : String,
+            descriptor: ConstraintDescriptor,
+            tcs       : Iterable[TermConstraint[O]],
+            absent    : (ConstraintDescriptor, ConstraintOutcome)
+        ): ConstraintVerdict =
+            if (tcs.isEmpty) ConstraintVerdict(term, label, absent._1, absent._2)
+            else
+                ConstraintVerdict(
+                    term,
+                    label,
+                    descriptor,
+                    slotOutcome(label, tcs, ConstraintOutcome.Satisfied)
+                )
 
         def nominalLoadDescriptor: (ConstraintDescriptor, Boolean) =
             firebox match
@@ -215,12 +234,45 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                         case Some(shapes) => ConstraintDescriptor.ShapeOneOf(shapes.map(toWireShape))
                         case None         => ConstraintDescriptor.Opaque
 
+        // Terms 9 and 11 need no sizing context; both ctx branches below
+        // emit identical verdicts for them, so they are built once here.
+        val glassSurfaceRatioVerdict = slot(
+            ConstraintTerm.GlassSurfaceRatio,
+            "glassSurfaceRatio",
+            ConstraintDescriptor.Opaque,
+            constraintsAlg.firebox_glass_surface_ratio_constraint(firebox).toList,
+            (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+        )
+
+        val nominalLoadLabel    = "nominalLoadInRange"
+        val nominalLoadVerdicts =
+            val (nomDesc, _) = nominalLoadDescriptor
+            constraintsAlg.internal_firebox_custom_constraints(firebox) match
+                case Nil    =>
+                    List(
+                        ConstraintVerdict(
+                            ConstraintTerm.NominalLoadInRange,
+                            nominalLoadLabel,
+                            nomDesc,
+                            ConstraintOutcome.Satisfied
+                        )
+                    )
+                case errors =>
+                    errors.map(errorToNominalVerdict(_, nominalLoadLabel, nomDesc)).toList
+
         ctx match
 
-            // ── ctx = None: m_B unavailable ─────────────────────────────
+            // ── ctx = None: sizing context not supplied ─────────────────
             case None =>
-                // Terms requiring ctx (1,2,3,4,5,6,8,10) → NotEvaluated(MissingMB)
-                // Terms 9,11 don't need ctx → evaluate normally
+                // Terms 1–6, 8 and the custom channels (10) are not
+                // evaluated without the sizing context → the
+                // NotEvaluated(MissingMB) placeholder.  The reason names
+                // the request parameter whose absence built this branch
+                // (`m_B`/`n_min` missing), not a data dependency on
+                // `m_B`: e.g. the glass-area cap (3) reads built
+                // geometry from the context, and the custom channels
+                // would run on `fctx` alone — the no-advisory
+                // without-context precondition, see the trait scaladoc.
                 val notEvaluated = List(
                     notEvaluatedMB(ConstraintTerm.MB                   ),
                     notEvaluatedMB(ConstraintTerm.MBMin                ),
@@ -232,109 +284,59 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                     notEvaluatedMB(ConstraintTerm.Custom               )
                 )
 
-                // Term 9: glass surface ratio (no ctx needed)
-                val glassRatioVerdicts = constraintsAlg.firebox_glass_surface_ratio_constraint(firebox) match
-                    case Some(tc) =>
-                        List(
-                            ConstraintVerdict(
-                                ConstraintTerm.GlassSurfaceRatio,
-                                "glassSurfaceRatio",
-                                ConstraintDescriptor.Opaque,
-                                evaluatedOrPresent("glassSurfaceRatio", List(tc), ConstraintOutcome.Satisfied)
-                            )
-                        )
-                    case None     =>
-                        List(
-                            ConstraintVerdict(
-                                ConstraintTerm.GlassSurfaceRatio,
-                                "glassSurfaceRatio",
-                                ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.NotApplicable
-                            )
-                        )
-
-                // Term 11: nominal load range (no ctx needed)
-                val nominalLoadVerdicts = {
-                    val (nomDesc, _) = nominalLoadDescriptor
-                    constraintsAlg.internal_firebox_custom_constraints(firebox) match
-                        case Nil    =>
-                            List(
-                                ConstraintVerdict(
-                                    ConstraintTerm.NominalLoadInRange,
-                                    "nominalLoadInRange",
-                                    nomDesc,
-                                    ConstraintOutcome.Satisfied
-                                )
-                            )
-                        case errors =>
-                            errors.map(errorToNominalVerdict(_, nomDesc)).toList
-                }
-
-                notEvaluated ++ glassRatioVerdicts ++ nominalLoadVerdicts
+                notEvaluated ++ List(glassSurfaceRatioVerdict) ++ nominalLoadVerdicts
 
             // ── ctx = Some: m_B available, evaluate all ─────────────────
             case Some(c) =>
 
                 // ── 1. m_B_constraints → Range(min, max) ────────────────
                 val mBConstraints = constraintsAlg.m_B_constraints(firebox, c)
-                val mBVerdict     =
-                    val mins    = mBConstraints.collect { case Some(tc: TermConstraint.Min[?]) =>
-                        Left(qtyDToWireQty(tc.min))
-                    }
-                    val maxes   = mBConstraints.collect { case Some(tc: TermConstraint.Max[?]) =>
-                        Left(qtyDToWireQty(tc.max))
-                    }
-                    val all     = mBConstraints.flatten
-                    val outcome =
-                        if all.nonEmpty then evaluatedOrPresent("m_B", all, ConstraintOutcome.Satisfied)
-                        else ConstraintOutcome.NotApplicable
-                    ConstraintVerdict(
-                        ConstraintTerm.MB,
-                        "m_B",
-                        ConstraintDescriptor.Range(mins.headOption, maxes.headOption),
-                        outcome
+                val mBDescriptor  =
+                    ConstraintDescriptor.Range(
+                        mBConstraints.collectFirst { case Some(tc: TermConstraint.Min[?]) =>
+                            Left(qtyDToWireQty(tc.min))
+                        },
+                        mBConstraints.collectFirst { case Some(tc: TermConstraint.Max[?]) =>
+                            Left(qtyDToWireQty(tc.max))
+                        }
                     )
+                val mBVerdict     = slot(
+                    ConstraintTerm.MB,
+                    "m_B",
+                    mBDescriptor,
+                    mBConstraints.flatten,
+                    (mBDescriptor, ConstraintOutcome.NotApplicable)
+                )
 
                 // ── 2. m_B_min_constraints → Range(min, None) ───────────
                 val mBMinConstraints = constraintsAlg.m_B_min_constraints(firebox, c)
-                val mBMinVerdict     =
-                    val mins    = mBMinConstraints.collect { case Some(tc: TermConstraint.Min[?]) =>
-                        Left(qtyDToWireQty(tc.min))
-                    }
-                    val allMin  = mBMinConstraints.flatten
-                    val outcome =
-                        if allMin.nonEmpty then evaluatedOrPresent("m_B_min", allMin, ConstraintOutcome.Satisfied)
-                        else ConstraintOutcome.NotApplicable
-                    ConstraintVerdict(
-                        ConstraintTerm.MBMin,
-                        "m_B_min",
-                        ConstraintDescriptor.Range(mins.headOption, None),
-                        outcome
+                val mBMinDescriptor  =
+                    ConstraintDescriptor.Range(
+                        mBMinConstraints.collectFirst { case Some(tc: TermConstraint.Min[?]) =>
+                            Left(qtyDToWireQty(tc.min))
+                        },
+                        None
                     )
+                val mBMinVerdict     = slot(
+                    ConstraintTerm.MBMin,
+                    "m_B_min",
+                    mBMinDescriptor,
+                    mBMinConstraints.flatten,
+                    (mBMinDescriptor, ConstraintOutcome.NotApplicable)
+                )
 
                 // ── 3. glassArea_constraints → Max(built area / 5) ─────
+                val glassAreaCap: GlassArea = c.area_O_BR / 5.0
                 val glassAreaVerdicts = constraintsAlg
                     .glassArea_constraints(firebox, c)
-                    .flatMap:
-                        case Some(tc) =>
-                            val glassAreaCap: GlassArea = c.area_O_BR / 5.0
-                            List(
-                                ConstraintVerdict(
-                                    ConstraintTerm.GlassArea,
-                                    "glassArea",
-                                    ConstraintDescriptor.Max(Left(qtyDToWireQty(glassAreaCap))),
-                                    evaluatedOrPresent("glassArea", List(tc), ConstraintOutcome.Satisfied)
-                                )
-                            )
-                        case None     =>
-                            List(
-                                ConstraintVerdict(
-                                    ConstraintTerm.GlassArea,
-                                    "glassArea",
-                                    ConstraintDescriptor.Opaque,
-                                    ConstraintOutcome.NotApplicable
-                                )
-                            )
+                    .map: tcOpt =>
+                        slot(
+                            ConstraintTerm.GlassArea,
+                            "glassArea",
+                            ConstraintDescriptor.Max(Left(qtyDToWireQty(glassAreaCap))),
+                            tcOpt.toList,
+                            (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+                        )
 
                 // ── 4. fireboxDimensions_Base_constraints (3 verdicts) ──
                 val baseConstraints     = constraintsAlg.fireboxDimensions_Base_constraints(firebox, c)
@@ -348,45 +350,31 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                                 Some(Left(qtyDToWireQty(aMin))),
                                 Some(Left(qtyDToWireQty(aMax)))
                             )
-                            val outcome    = baseConstraints.headOption.flatten match
-                                case Some(tc) =>
-                                    evaluatedOrPresent("fireboxBase_area", List(tc), ConstraintOutcome.Satisfied)
-                                case None     => ConstraintOutcome.NotApplicable
-                            ConstraintVerdict(ConstraintTerm.FireboxBase, "fireboxBase_area", descriptor, outcome)
+                            slot(
+                                ConstraintTerm.FireboxBase,
+                                "fireboxBase_area",
+                                descriptor,
+                                baseConstraints.headOption.flatten.toList,
+                                (descriptor, ConstraintOutcome.NotApplicable)
+                            )
 
                     // Ratio check → Opaque
-                    val ratioVerdict = baseConstraints.lift(1).flatten match
-                        case Some(tc) =>
-                            ConstraintVerdict(
-                                ConstraintTerm.FireboxBase,
-                                "fireboxBase_ratio",
-                                ConstraintDescriptor.Opaque,
-                                evaluatedOrPresent("fireboxBase_ratio", List(tc), ConstraintOutcome.Satisfied)
-                            )
-                        case None     =>
-                            ConstraintVerdict(
-                                ConstraintTerm.FireboxBase,
-                                "fireboxBase_ratio",
-                                ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.NotApplicable
-                            )
+                    val ratioVerdict = slot(
+                        ConstraintTerm.FireboxBase,
+                        "fireboxBase_ratio",
+                        ConstraintDescriptor.Opaque,
+                        baseConstraints.lift(1).flatten.toList,
+                        (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+                    )
 
                     // MinWidth check → Opaque
-                    val minWidthVerdict = baseConstraints.lift(2).flatten match
-                        case Some(tc) =>
-                            ConstraintVerdict(
-                                ConstraintTerm.FireboxBase,
-                                "fireboxBase_minWidth",
-                                ConstraintDescriptor.Opaque,
-                                evaluatedOrPresent("fireboxBase_minWidth", List(tc), ConstraintOutcome.Satisfied)
-                            )
-                        case None     =>
-                            ConstraintVerdict(
-                                ConstraintTerm.FireboxBase,
-                                "fireboxBase_minWidth",
-                                ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.NotApplicable
-                            )
+                    val minWidthVerdict = slot(
+                        ConstraintTerm.FireboxBase,
+                        "fireboxBase_minWidth",
+                        ConstraintDescriptor.Opaque,
+                        baseConstraints.lift(2).flatten.toList,
+                        (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+                    )
 
                     List(areaVerdict, ratioVerdict, minWidthVerdict)
 
@@ -394,120 +382,61 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                 val hBrConstraints = constraintsAlg.h_br_constraints(firebox, c)
                 val hBrVerdicts    =
                     // First: Min(H_BR_min) → Range(Some(min), None)
-                    val minVerdict = hBrConstraints.headOption.flatten match
+                    val firstHBr      = hBrConstraints.headOption.flatten
+                    val minDescriptor = firstHBr match
                         case Some(tc: TermConstraint.Min[?]) =>
-                            ConstraintVerdict(
-                                ConstraintTerm.H_BR,
-                                "h_BR_min",
-                                ConstraintDescriptor.Range(Some(Left(qtyDToWireQty(tc.min))), None),
-                                ConstraintOutcome.Satisfied
-                            )
-                        case Some(tc)                        =>
-                            ConstraintVerdict(
-                                ConstraintTerm.H_BR,
-                                "h_BR_min",
-                                ConstraintDescriptor.Range(None, None                                       ),
-                                evaluatedOrPresent        ("h_BR_min", List(tc), ConstraintOutcome.Satisfied)
-                            )
-                        case None                            =>
-                            ConstraintVerdict(
-                                ConstraintTerm.H_BR,
-                                "h_BR_min",
-                                ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.NotApplicable
-                            )
+                            ConstraintDescriptor.Range(Some(Left(qtyDToWireQty(tc.min))), None)
+                        case _                               => ConstraintDescriptor.Range(None, None)
+                    val minVerdict    = slot(
+                        ConstraintTerm.H_BR,
+                        "h_BR_min",
+                        minDescriptor,
+                        firstHBr.toList,
+                        (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+                    )
 
                     // Second: ±5% band → Range(H_BR*0.95, H_BR*1.05)
-                    val bandVerdict = hBrConstraints.lift(1).flatten match
-                        case Some(tc) =>
-                            val hBR = c.H_BR
-                            val tol5p: H_BR = hBR * 5.percent / 100.percent
-                            val minH = hBR - tol5p
-                            val maxH = hBR + tol5p
-                            ConstraintVerdict(
-                                ConstraintTerm.H_BR,
-                                "h_BR_band",
-                                ConstraintDescriptor
-                                    .Range        (Some(Left(qtyDToWireQty(minH))), Some(Left(qtyDToWireQty(maxH)))),
-                                evaluatedOrPresent("h_BR_band", List(tc), ConstraintOutcome.Satisfied              )
-                            )
-                        case None     =>
-                            ConstraintVerdict(
-                                ConstraintTerm.H_BR,
-                                "h_BR_band",
-                                ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.NotApplicable
-                            )
+                    val hBR = c.H_BR
+                    val tol5p: H_BR = hBR * 5.percent / 100.percent
+                    val bandVerdict = slot(
+                        ConstraintTerm.H_BR,
+                        "h_BR_band",
+                        ConstraintDescriptor.Range(
+                            Some(Left(qtyDToWireQty(hBR - tol5p))),
+                            Some(Left(qtyDToWireQty(hBR + tol5p)))
+                        ),
+                        hBrConstraints.lift(1).flatten.toList,
+                        (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+                    )
 
                     List(minVerdict, bandVerdict)
 
                 // ── 6. lambda_constraints → Range(1.95, 3.95) ───────────
-                val lambdaConstraints = constraintsAlg.lambda_constraints(firebox, c)
-                val lambdaVerdict     =
-                    val allLambda = lambdaConstraints.flatten
-                    val outcome   =
-                        if allLambda.nonEmpty then evaluatedOrPresent("lambda", allLambda, ConstraintOutcome.Satisfied)
-                        else ConstraintOutcome.NotApplicable
-                    ConstraintVerdict(
-                        ConstraintTerm.Lambda,
-                        "lambda",
-                        ConstraintDescriptor.Range(Some(Right(1.95)), Some(Right(3.95))),
-                        outcome
-                    )
+                val lambdaDescriptor = ConstraintDescriptor.Range(Some(Right(1.95)), Some(Right(3.95)))
+                val lambdaVerdict    = slot(
+                    ConstraintTerm.Lambda,
+                    "lambda",
+                    lambdaDescriptor,
+                    constraintsAlg.lambda_constraints(firebox, c).flatten,
+                    (lambdaDescriptor, ConstraintOutcome.NotApplicable)
+                )
 
                 // ── 8. height_of_lowest_opening_constraints → Min(5cm) ──
                 val heightLowestVerdicts =
                     constraintsAlg
                         .height_of_lowest_opening_constraints(firebox, c)
-                        .flatMap:
-                            case Some(tc: TermConstraint.Min[?]) =>
-                                List(
-                                    ConstraintVerdict(
-                                        ConstraintTerm.HeightOfLowestOpening,
-                                        "heightOfLowestOpening",
-                                        ConstraintDescriptor.Min(Left(qtyDToWireQty(tc.min))),
-                                        ConstraintOutcome.Satisfied
-                                    )
-                                )
-                            case Some(tc)                        =>
-                                List(
-                                    ConstraintVerdict(
-                                        ConstraintTerm.HeightOfLowestOpening,
-                                        "heightOfLowestOpening",
-                                        ConstraintDescriptor.Opaque,
-                                        evaluatedOrPresent(
-                                            "heightOfLowestOpening",
-                                            List(tc),
-                                            ConstraintOutcome.Satisfied
-                                        )
-                                    )
-                                )
-                            case None                            =>
-                                List(
-                                    ConstraintVerdict(
-                                        ConstraintTerm.HeightOfLowestOpening,
-                                        "heightOfLowestOpening",
-                                        ConstraintDescriptor.Opaque,
-                                        ConstraintOutcome.NotApplicable
-                                    )
-                                )
-
-                // ── 9. firebox_glass_surface_ratio_constraint → Opaque ──
-                val glassRatioVerdict = constraintsAlg.firebox_glass_surface_ratio_constraint(firebox) match
-                    case Some(tc) =>
-                        ConstraintVerdict(
-                            ConstraintTerm.GlassSurfaceRatio,
-                            "glassSurfaceRatio",
-                            ConstraintDescriptor.Opaque,
-                            evaluatedOrPresent("glassSurfaceRatio", List(tc), ConstraintOutcome.Satisfied)
-                        )
-                    case None     =>
-                        ConstraintVerdict(
-                            ConstraintTerm.GlassSurfaceRatio,
-                            "glassSurfaceRatio",
-                            ConstraintDescriptor.Opaque,
-                            ConstraintOutcome.NotApplicable
-                        )
+                        .map: tcOpt =>
+                            val descriptor = tcOpt match
+                                case Some(tc: TermConstraint.Min[?]) =>
+                                    ConstraintDescriptor.Min(Left(qtyDToWireQty(tc.min)))
+                                case _                               => ConstraintDescriptor.Opaque
+                            slot(
+                                ConstraintTerm.HeightOfLowestOpening,
+                                "heightOfLowestOpening",
+                                descriptor,
+                                tcOpt.toList,
+                                (ConstraintDescriptor.Opaque, ConstraintOutcome.NotApplicable)
+                            )
 
                 // ── 10. firebox_custom_constraints → split shape checks (MB10-2022 / MB17 catalog) ──
                 // The old "(§4.7)" marker resembled EN 15544:2009
@@ -557,33 +486,30 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                 // warning for it). The topology term is only evaluated
                 // when a pipe is drawn.
                 val topologyVerdict = fctx.airIntakePipeShape match
-                    case None    =>
-                        List(
-                            ConstraintVerdict(
-                                ConstraintTerm.AirIntakePipeShape,
-                                "airIntakePipeShape_topology",
-                                ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.NotApplicable
-                            )
-                        )
-                    case Some(_)
-                        if shapeErrors.collect { case _: AirIntakePipeShapeTopologyMismatch => true }.nonEmpty =>
+                    case Some(_) if shapeErrors.exists(_.isInstanceOf[AirIntakePipeShapeTopologyMismatch]) =>
                         Nil // already emitted as Violated above
-                    case Some(_) =>
+                    case drawn =>
+                        val outcome =
+                            if (drawn.isDefined) ConstraintOutcome.Satisfied
+                            else ConstraintOutcome.NotApplicable
                         List(
                             ConstraintVerdict(
                                 ConstraintTerm.AirIntakePipeShape,
                                 "airIntakePipeShape_topology",
                                 ConstraintDescriptor.Opaque,
-                                ConstraintOutcome.Satisfied
+                                outcome
                             )
                         )
 
                 // Advisory findings fold to the same verdict shape with
-                // `blocking = false`: they ride inside the 200 body's verdict list, are
-                // excluded from the 422 detail list by the consumer's `if blocking`
-                // filter, and never reach validation (`FoldedVerdicts.violations`
-                // collects blocking violations only).
+                // `blocking = false`: on this branch — the sizing context was
+                // supplied — they ride inside the 200 body's verdict list,
+                // are excluded from the 422 detail list by the consumer's
+                // `if blocking` filter, and never reach validation
+                // (`FoldedVerdicts.violations` collects blocking violations
+                // only).  Without the context this channel is not evaluated
+                // at all: the `ctx = None` branch emits the `Custom`
+                // placeholder instead (accepted precondition, trait scaladoc).
                 val advisoryVerdicts =
                     constraintsAlg
                         .advisory_firebox_custom_constraints(firebox, fctx)
@@ -593,25 +519,9 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                     otherErrors.map(errorToCustomVerdict(_, blocking = true)) ++
                     advisoryVerdicts
 
-                // ── 11. internal_firebox_custom_constraints → Range ─────
-                val (nomDesc, _) = nominalLoadDescriptor
-                val nominalLoadVerdicts =
-                    constraintsAlg.internal_firebox_custom_constraints(firebox) match
-                        case Nil    =>
-                            List(
-                                ConstraintVerdict(
-                                    ConstraintTerm.NominalLoadInRange,
-                                    "nominalLoadInRange",
-                                    nomDesc,
-                                    ConstraintOutcome.Satisfied
-                                )
-                            )
-                        case errors =>
-                            errors.map(errorToNominalVerdict(_, nomDesc)).toList
-
                 List(mBVerdict, mBMinVerdict) ++ glassAreaVerdicts ++
                     fireboxBaseVerdicts ++ hBrVerdicts ++
                     List(lambdaVerdict) ++ heightLowestVerdicts ++
-                    List(glassRatioVerdict) ++ customVerdicts ++ nominalLoadVerdicts
+                    List(glassSurfaceRatioVerdict) ++ customVerdicts ++ nominalLoadVerdicts
 
 end FoldsConstraints
