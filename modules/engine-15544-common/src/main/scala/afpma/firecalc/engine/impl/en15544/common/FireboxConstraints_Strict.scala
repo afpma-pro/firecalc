@@ -79,39 +79,9 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
             )
         Seq                                            (minConstraint)
 
-    // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1 (scope) + MB10/MB17 ─
+    // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1, printed p. 7 ───────
     //
-    // The cap's primary authority is EN 15544:2023 itself: clause 1
-    // (Domaine d'application) puts the scope boundary at 1/5 —
-    //
-    //   « chambres de combustion avec des plaques de verre supérieures à
-    //    1/5 de la surface de la chambre de combustion ; »
-    //
-    // i.e. the standard does not apply to combustion chambers whose glass
-    // plates exceed 1/5 of the chamber surface; "surface de la chambre de
-    // combustion" is the §3.7 definition of O_BR ("somme des surfaces
-    // intérieures de la chambre de combustion").  The KOV technical papers
-    // state the same 1/5 affirmatively: MB10-2022 §3 "Détails d'exécution"
-    // (English p. 8, French p. 10) and MB17 §3 (English p. 5, French p. 6),
-    // identically worded in both languages:
-    //
-    //   "Stove doors with glass areas up to 1/5 of the internal combustion
-    //    chamber area may be used."
-    //
-    // There is no 1/6 threshold anywhere in the 2023 text; its avant-propos
-    // lists only modification (i), a change to "la portion de la plaque de
-    // verre par rapport à la surface intérieure de la chambre de
-    // combustion" vs the 2009 edition.  The UZ37 workbook's O_BR/6 note
-    // predates this edition; whether a 1/6 cap still governs certified UZ37
-    // stoves is an open question to KOV (tracker ticket 20 item 2).
-    // Owner decision 2026-10-23: 1/5 stays the cap for every kind.
-    //
-    // Denominator: the cap is measured against `ctx.area_O_BR / 5` — one
-    // fifth of the BUILT §3.7 interior surface — the same denominator the
-    // formula path uses (`FireboxFormulas_Strict.firebox_glass_surface_ratio_below_one_fifth`
-    // divides by `area_O_BR`).  `ctx.O_BR` (the §4.3.1.2 REQUIRED surface,
-    // formula (3), 900·m_B) drives only the base-area/height bounds; it is
-    // NOT the cap's denominator (owner decision 2026-10-23, ticket 13).
+    // Authority: EN 15544:2023 clause 1, printed p. 7.
 
     override def glassArea_constraints(
         firebox: F,
@@ -333,12 +303,12 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
     ): Seq[Option[TermConstraint[η]]] =
         Seq.empty
 
-    // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1 (see above) ────────
+    // ── Glass-area cap: the second hook of the same cap ───────────────────
     //
-    // Second enforcement path of the cap quoted at `glassArea_constraints`
-    // above: it delegates to the formula boolean, which divides the glass
-    // area by the BUILT §3.7 interior surface `area_O_BR`, not by `ctx.O_BR`
-    // (the §4.3.1.2 required surface, formula (3)).
+    // Authority: EN 15544:2023 clause 1, printed p. 7 (see `glassArea_constraints`
+    // above).  NOT removed by `RemovedFireboxSizingConstraints`: this hook
+    // keeps enforcing the same clause through the formula boolean, whose
+    // denominator is the BUILT §3.7 surface `area_O_BR` — not `ctx.O_BR`.
 
     override def firebox_glass_surface_ratio_constraint(
         firebox: F

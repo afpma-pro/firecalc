@@ -39,9 +39,13 @@ import io.taig.babel.Locale
  * extend this to avoid duplicating the fold logic.
  *
  * `eta_constraints` is deliberately excluded — our own fold-scope choice,
- * not an EN matter (the old "(§4.6)" marker resembled EN 15544:2009
- * numbering, which we do not hold; the EN 15544:2023 efficiency check is
- * §4.10.3 « Calculation of the nominal output », printed p. 24).
+ * not an EN matter.  This scaladoc is the single owner of that explanation:
+ * the stale "§4.4"/"(§4.6)" markers once carried on the fold resembled
+ * EN 15544:2009 numbering, which we do not hold (the 2023 §4.4 is the
+ * burning-rate calculation), and the only EN 15544:2023 efficiency clause is
+ * §4.10.3 « Calculation of the nominal output », printed p. 24 — outside
+ * this fold either way.  Do not restate it at the call sites.
+ *
  * `ctx = None` means the sizing context was not supplied — the HTTP
  * request path builds `ctx = None` exactly when `m_B`/`n_min` are
  * missing.  Every term that needs the sizing context then yields
@@ -439,9 +443,10 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                             )
 
                 // ── 10. firebox_custom_constraints → split shape checks (MB10-2022 / MB17 catalog) ──
-                // The old "(§4.7)" marker resembled EN 15544:2009
-                // numbering, which we do not hold; 2023 §4.7 computes
-                // combustion-air and flue-gas densities, not pipe shape.
+                // The old "(§4.7)" marker resembled EN 15544:2009 numbering,
+                // which we do not hold; the 2023 §4.7 is « Dichten der
+                // Verbrennungsluft und Abgase berechnen » (printed pp. 15–16),
+                // a tightness calculation, not pipe shape.
                 val allCustomErrors            = constraintsAlg.firebox_custom_constraints(firebox, fctx)
                 val (shapeErrors, otherErrors) = allCustomErrors.partition {
                     case _: AirIntakePipeShapeMismatch         => true

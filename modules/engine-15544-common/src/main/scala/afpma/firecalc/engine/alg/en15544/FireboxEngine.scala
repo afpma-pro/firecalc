@@ -216,20 +216,14 @@ trait FireboxEngine[-F]:
     ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]]
 
     // ── Constraints folding (our own model checks; no EN 15544:2023 clause) ──
-    // The old "§4.4" marker resembled EN 15544:2009 numbering, which we
-    // do not hold — 2023 §4.4 is the burning-rate calculation.
 
     /**
      * Folds the per-term constraint methods into a flat list of wire verdicts.
      *
-     * `eta_constraints` is deliberately excluded — our own fold-scope
-     * choice, not an EN matter.  The old "(§4.6)" marker resembled
-     * EN 15544:2009 numbering, which we do not hold; the EN 15544:2023
-     * efficiency check is §4.10.3 « Calculation of the nominal output »
-     * (printed p. 24), and it is outside this fold either way.
-     *
-     * When `ctx` is `None` (m_B unavailable) every m_B-dependent term
-     * yields `NotEvaluated(MissingMB)`.
+     * η is excluded from this fold, and with `ctx = None` the terms that
+     * would need the sizing context yield a `NotEvaluated(MissingMB)`
+     * placeholder.  [[FoldsConstraints]] implements the fold and is the
+     * single owner of why both are so.
      */
     def constraints(
         firebox: F,

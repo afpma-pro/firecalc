@@ -24,9 +24,11 @@ import afpma.firecalc.engine.standard.*
 /**
  * EN 15544 constraints for [[SingleTested]] fireboxes.
  *
- * Clause 4.3.1 does not apply to tested fireboxes, so all §4.3.1.x sizing
- * constraints are removed via [[RemovedFireboxSizingConstraints]].
- * Only m_B bounds (from type-test data) and λ bounds are retained.
+ * Clause 4.3.1 does not apply to tested fireboxes, so the sizing verdict
+ * hooks are emptied by [[RemovedFireboxSizingConstraints]].  The glass-cap
+ * ratio hook is not among those: it is re-implemented below against the
+ * tested firebox's own `is_glass_surface_ratio_below_one_fifth` field, and
+ * only m_B bounds from type-test data and λ bounds are added back.
  */
 given singleTestedConstraints: (FireboxConstraints[SingleTested] & RemovedFireboxSizingConstraints[SingleTested]) =
     new FireboxConstraints_Strict[SingleTested] with RemovedFireboxSizingConstraints[SingleTested]:

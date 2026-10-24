@@ -226,8 +226,10 @@ case class FireboxConstraintContext(
 )
 
 /**
- * Mixin trait that removes the §4.3.1.x firebox sizing constraints and the
- * clause-1 glass-area cap.
+ * Mixin trait that empties the firebox sizing verdict hooks: the
+ * `height_of_lowest_opening_constraints`, `glassArea_constraints`,
+ * `fireboxDimensions_Base_constraints` and `h_br_constraints` overrides
+ * declared below each return no verdict at all.
  *
  * Mix this in **last** (rightmost position) so that its overrides take
  * precedence over any base implementation, e.g.:
@@ -236,11 +238,10 @@ case class FireboxConstraintContext(
  *   new DefaultFireboxConstraints[MyFirebox] with RemovedFireboxSizingConstraints
  * }}}
  *
- * Removed sections:
- *   - 4.3.1.1 height of lowest opening
- *   - clause 1 glass-area cap (scope exclusion)
- *   - 4.3.1.3 firebox base dimensions
- *   - 4.3.1.4 firebox height
+ * `firebox_glass_surface_ratio_constraint` is NOT among them — the clause-1
+ * glass cap keeps being enforced through that hook and the formula path, so
+ * a kind using this mixin still reports a `GlassSurfaceRatio` verdict.
+ * Cap authority: EN 15544:2023 clause 1, printed p. 7.
  */
 trait RemovedFireboxSizingConstraints[-F <: Firebox_15544] extends FireboxConstraints[F]:
 

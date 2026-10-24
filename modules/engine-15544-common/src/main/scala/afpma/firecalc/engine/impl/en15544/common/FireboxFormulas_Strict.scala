@@ -45,7 +45,8 @@ trait FireboxFormulas_Strict[F <: Firebox_15544] extends FireboxFormulas[F]:
         override def O_BR_calc: m_B => O_BR =
             mb => (900 * mb.value).squareCentimeters
 
-        // ── Section "4.3.1.2" – Total enclosing firebox surface area ──────────
+        // ── §3.7 (printed p. 8) – BUILT interior surface, measured per the ──
+        //    §4.3.1.2 note « comme si l'ouverture n'existait pas » (p. 11) ──
 
         override def area_calc_method: AreaCalcMethod =
             AreaCalcMethod.AutoIfCubic
@@ -64,27 +65,14 @@ trait FireboxFormulas_Strict[F <: Firebox_15544] extends FireboxFormulas[F]:
                     2 * (base_or_ceiling + left_or_right + front_or_back)
                 case AreaCalcMethod.Manual(v)   => v
 
-        // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1 + MB10/MB17 ─────
+        // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1, printed p. 7 ───
         //
-        // The 1/5 cap IS in EN 15544:2023 — clause 1 (Domaine d'application)
-        // excludes combustion chambers with glass plates above 1/5 of the
-        // chamber surface; the verbatim text is quoted in the banner above
-        // `glassArea_constraints` in `FireboxConstraints_Strict`.  The KOV
-        // technical papers carry the same 1/5 affirmatively (MB10-2022 §3
-        // "Détails d'exécution", English p. 8 / French p. 10; MB17 §3,
-        // English p. 5 / French p. 6).
+        // Authority: EN 15544:2023 clause 1, printed p. 7 — not restated here.
         //
-        // The denominator below is the BUILT interior surface (`area_O_BR`
-        // above): §3.7 defines "surface de la chambre de combustion" as
-        // "somme des surfaces intérieures de la chambre de combustion", so
-        // the cap is measured against all walls + ceiling + base + glazing
-        // as built — not against the §4.3.1.2 REQUIRED surface (formula (3),
-        // 900·m_B) that `ctx.O_BR` carries on the constraint path.
-        //
-        // 1/6 appears nowhere in the 2023 text; the UZ37 workbook's O_BR/6
-        // predates this edition, and whether it still governs a certified
-        // UZ37 stove is an open question to KOV (tracker ticket 20 item 2);
-        // until answered, 1/5 stands for every kind.
+        // Local to this path: the denominator is `area_O_BR` above, the BUILT
+        // §3.7 interior surface; the ratio feeds the
+        // `firebox_glass_surface_ratio_constraint` hook of
+        // `FireboxConstraints_Strict`.
 
         override def firebox_glass_surface_ratio_below_one_fifth: Boolean =
             (firebox.glass_area / firebox.area_O_BR) <= (1.0 / 5.0)

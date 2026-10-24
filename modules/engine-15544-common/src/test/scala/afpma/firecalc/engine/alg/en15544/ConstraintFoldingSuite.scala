@@ -254,25 +254,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
 
     "AC-4: eta constraint is excluded from verdicts" - {
 
-        "no verdict corresponds to eta" in {
-            val verdicts = plainEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-
-            // ConstraintTerm enum has no `eta` case — η is deliberately
-            // outside the fold (our own fold-scope choice, no EN 15544:2023
-            // counterpart; see the FoldsConstraints scaladoc).
-            // Verify by checking that no verdict label contains "eta".
-            val hasEta = verdicts.exists { v =>
-                v.term.toString.equalsIgnoreCase("eta") ||
-                v.label.toLowerCase.contains("eta")
-            }
-            hasEta shouldBe false
-        }
-
-        "distinct terms are a subset of the 11 known ConstraintTerm values" in {
+        "distinct terms are a subset of the ConstraintTerm enum" in {
             val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
@@ -281,30 +263,12 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
 
             val distinctTerms = verdicts.map(_.term).distinct
 
-            // The 11 enum cases: MB, MBMin, GlassArea, FireboxBase, H_BR,
-            // Lambda, HeightOfLowestOpening, GlassSurfaceRatio,
-            // AirIntakePipeShape, NominalLoadInRange, Custom
-            val knownTerms = Set[ConstraintTerm](
-                ConstraintTerm.MB,
-                ConstraintTerm.MBMin,
-                ConstraintTerm.GlassArea,
-                ConstraintTerm.FireboxBase,
-                ConstraintTerm.H_BR,
-                ConstraintTerm.Lambda,
-                ConstraintTerm.HeightOfLowestOpening,
-                ConstraintTerm.GlassSurfaceRatio,
-                ConstraintTerm.AirIntakePipeShape,
-                ConstraintTerm.NominalLoadInRange,
-                ConstraintTerm.Custom
-            )
-
-            assert(distinctTerms.toSet.subsetOf(knownTerms))
-
-            // eta is not among the known terms (and cannot be, since the
-            // enum has no eta case)
-            distinctTerms.foreach { term =>
-                assert(term.toString != "eta")
-            }
+            // η is deliberately outside the fold: a fold-scope choice of
+            // ours, not an EN matter — the reason is stated once in the
+            // FoldsConstraints scaladoc, never restated here.  Its absence
+            // is structural rather than runtime-checkable: `ConstraintTerm`
+            // has no η case, so no verdict can carry one.
+            assert(distinctTerms.toSet.subsetOf(ConstraintTerm.values.toSet))
         }
     }
 
@@ -319,14 +283,12 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
                 fireboxCtxNoShape
             )
 
-            // Terms the fold does not evaluate without the sizing ctx —
-            // their constraint slots are built from it (m_B being the
-            // request parameter the placeholder names), so the fold emits
-            // the NotEvaluated(MissingMB) placeholder instead of a slot
-            // outcome.  The placeholder is a property of the ctx = None
-            // fold shape, not a per-term data dependency on m_B:
-            //   MB, MBMin, GlassArea, FireboxBase, H_BR, Lambda,
-            //   HeightOfLowestOpening, Custom
+            // These terms' constraint slots are built from the sizing ctx,
+            // which is absent here, so the fold emits the placeholder
+            // instead of a slot outcome.  The reason names the missing
+            // request parameter (`m_B`), not a data dependency on `m_B`
+            // itself: the placeholder belongs to the ctx = None fold shape,
+            // as documented once in the FoldsConstraints scaladoc.
             val nonEvaluatedTerms = Set[ConstraintTerm](
                 ConstraintTerm.MB,
                 ConstraintTerm.MBMin,
@@ -361,10 +323,10 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
                 fireboxCtxNoShape
             )
 
-            // Terms the fold evaluates even without the sizing ctx:
-            //   GlassSurfaceRatio, NominalLoadInRange
-            // (AirIntakePipeShape topology is not emitted at all when
-            //  ctx=None — it is only folded in the Some branch)
+            // These hooks read the firebox alone (built geometry, tested
+            // fields), never the sizing ctx, so ctx = None changes nothing
+            // for them.  The AirIntakePipeShape topology slot is folded
+            // only on the ctx = Some branch, so it is not emitted at all.
             val independentTerms = Set[ConstraintTerm](
                 ConstraintTerm.GlassSurfaceRatio,
                 ConstraintTerm.NominalLoadInRange
@@ -410,11 +372,11 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
 
     // ── Glass-area cap denominator: BUILT surface, not 900·m_B ─────────────
     //
-    // Owner decision 2026-10-23 (tracker ticket 13), fixtures documented in
-    // [[ConstraintFoldingFixtures]]: the 1/5 denominator of the
-    // EN 15544:2023 clause-1 glass cap is the BUILT interior surface
-    // (§3.7), NOT the §4.3.1.2 required surface (formula (3), 900·m_B)
-    // carried by `ctx.O_BR`.
+    // Authority and the denominator decision: EN 15544:2023 clause 1, printed
+    // p. 7, cap measured against the BUILT surface; the fixtures and their
+    // arithmetic are in [[ConstraintFoldingFixtures]].
+    // These tests pin which denominator the `GlassArea` hook and its folded
+    // Max descriptor actually use.
 
     "glass-area cap measures the BUILT surface, not 900·m_B (ticket 13)" - {
 

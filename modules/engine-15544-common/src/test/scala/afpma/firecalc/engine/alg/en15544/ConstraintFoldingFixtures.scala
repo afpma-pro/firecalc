@@ -200,14 +200,10 @@ trait ConstraintFoldingFixtures:
             airIntakePipeShape = None
         )
 
-    // ── Glass-area cap denominator: BUILT surface, not 900·m_B ─────────────
-    //
-    // Owner decision 2026-10-23 (tracker ticket 13): the 1/5 denominator of
-    // the EN 15544:2023 clause-1 glass cap is the BUILT interior surface
-    // (§3.7), NOT the §4.3.1.2 required surface (formula (3), 900·m_B)
-    // carried by `ctx.O_BR`.  Both fixtures use m_B = 12 kg, so the
-    // nominal O_BR is 10800 cm² and O_BR/5 is 2160 cm²; the glass area
-    // sits strictly between the two readings in each direction.
+    // Authority and the denominator decision behind these numbers: EN
+    // 15544:2023 clause 1, printed p. 7.  Each fixture's glass area sits
+    // strictly between the built/5 threshold and the 900·m_B/5 threshold,
+    // so the two readings give opposite verdicts.
     //
     // The two directional tests live in [[ConstraintFoldingSuite]]; the
     // per-term evaluation switch in [[SeverityFoldingSuite]] pins its
@@ -216,7 +212,7 @@ trait ConstraintFoldingFixtures:
 
     /**
      * 50×50×80 cm: built interior surface = 2·(2500 + 4000 + 4000) =
-     * 21000 cm² > nominal 10800 cm².  Glass 50×50 = 2500 cm² exceeds the
+     * 21000 cm² > nominal 10800 cm².  Glass 48×48 = 2304 cm² exceeds the
      * nominal threshold 2160 cm² but stays under built/5 = 4200 cm²:
      * PASSES under the built-surface decision, would FAIL nominal-based.
      */

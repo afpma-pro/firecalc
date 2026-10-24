@@ -25,22 +25,24 @@ trait FireboxFormulas[-F]:
         def O_BR_calc: m_B => O_BR
 
         /**
-         * See EN 15544 – Section 4.3.1.2 – Firebox area calculation method.
-         *
-         * Implementations typically return [[AreaCalcMethod.AutoIfCubic]] unless
-         * a manual area override is specified.
+         * Our own input switch: derive the surface from the cubic dimensions,
+         * or take a manual override.  No EN 15544 clause prescribes it — the
+         * identity of the surface itself belongs to [[area_O_BR]].
          */
         def area_calc_method: AreaCalcMethod
 
-        /** See EN 15544 – Section 4.3.1.2 – Total enclosing firebox surface area. */
+        /**
+         * The BUILT interior chamber surface: EN 15544:2023 §3.7 « surface de
+         * la chambre de combustion » (printed p. 8), measured per the §4.3.1.2
+         * note « comme si l'ouverture n'existait pas » (printed p. 11).  Not
+         * the §4.3.1.2 design target ([[O_BR_calc]]).
+         */
         def area_O_BR: Area
 
         /**
-         * EN 15544:2023 clause 1 (scope exclusion) + MB10/MB17 §3 – Derived
-         * boolean: glass area ≤ 1/5 of the BUILT interior chamber surface
-         * ([[area_O_BR]], §3.7).  The 1/5 is a clause-1 scope boundary, not
-         * a §4.3.1.x sizing rule; see the banner above `glassArea_constraints`
-         * in `FireboxConstraints_Strict`.
+         * EN 15544:2023 clause 1 (scope exclusion), printed p. 7.  Derived boolean:
+         * glass area ≤ 1/5 of the BUILT interior chamber surface
+         * ([[area_O_BR]], §3.7) — not the §4.3.1.2 required surface.
          */
         def firebox_glass_surface_ratio_below_one_fifth: Boolean
 
