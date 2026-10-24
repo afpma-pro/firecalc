@@ -299,7 +299,10 @@ object TermConstraint:
      * next to the code that enforces it.
      *
      * Marking happens at a constraint's definition site via
-     * `.copy(evaluated = Some(severity))`; the companion `apply` helpers of
+     * `.copy(evaluated = Some(severity))`; re-marking an existing instance —
+     * the only sound form from a consumer that statically holds just
+     * `TermConstraint[O]`, where `E` is erased — goes through
+     * [[Evaluatable.withEvaluated]].  The companion `apply` helpers of
      * the value-carrying constructors deliberately keep their marker-free
      * shape (marker-aware overloads were reviewed and rejected).
      *
@@ -348,6 +351,21 @@ object TermConstraint:
         def evaluated: Option[EvaluatedSeverity]
 
         /**
+         * The same constraint with the evaluation marker set to `severity`.
+         *
+         * The marker write lives here — and on the concrete value-carrying
+         * classes, which implement it with `copy`, where their own `E` and
+         * its givens are in scope — because a consumer that statically holds
+         * only `TermConstraint[O]` cannot otherwise re-mark a constraint at
+         * all: the error type argument is erased, so no call naming `E`
+         * (a `copy`, or the companion `apply`) can be reached through that
+         * type.  A plain `case e: Evaluatable[?]`-shaped class test plus this
+         * method is the sound form; a `GenericTyped[O, SomeError]` type test
+         * would claim a runtime check the JVM cannot perform.
+         */
+        def withEvaluated(severity: EvaluatedSeverity): Evaluatable[O]
+
+        /**
          * Evaluate the embedded value: `Some((severity, message))` iff the
          * marker is set AND the value fails validation; `None` for
          * unmarked constraints and for passing ones.  The message goes
@@ -387,7 +405,11 @@ object TermConstraint:
                     case Right(q)     => q.validResult
                     case Left(errMsg) =>
                         TermConstraintError.GenericError(value, errMsg).invalidResult
-        )
+        ):
+
+        /** The same rule and value, marked at `severity`. */
+        override def withEvaluated(severity: EvaluatedSeverity): Generic[Q] =
+            copy(evaluated = Some(severity))
 
     object Generic:
 
@@ -416,7 +438,11 @@ object TermConstraint:
                     case Left(error) =>
                         val showFn: Any => Locale ?=> String = (e: Any) => showE.show(e.asInstanceOf[E])
                         TermConstraintError.TypedError(value, error, showFn).invalidResult
-        )
+        ):
+
+        /** The same rule and value, marked at `severity`. */
+        override def withEvaluated(severity: EvaluatedSeverity): GenericTyped[Q, E] =
+            copy(evaluated = Some(severity))
 
     object GenericTyped:
         def apply[Q: TermDefDetails, E: ShowUsingLocale](

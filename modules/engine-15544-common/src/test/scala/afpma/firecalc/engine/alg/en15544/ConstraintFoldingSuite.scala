@@ -1,32 +1,14 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Copyright (C) 2026 Association Fran&#231;aise du Po&#234;le Ma&#231;onn&#233; Artisanal
+ * Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
  */
 
 package afpma.firecalc.engine.alg.en15544
 
-import algebra.instances.all.given
-
 import afpma.firecalc.units.coulombutils.*
 
 import afpma.firecalc.dto.common.PipeShape
-
-import afpma.firecalc.engine.alg.en15544.FireboxContribution
 import afpma.firecalc.engine.api.WireConversions.toWireShape
-import afpma.firecalc.engine.biblio.kov.firebox_emissions.Standing_Standard_Burning_Firebox
-import afpma.firecalc.engine.impl.en15544.common.FireboxConstraints_Strict
-import afpma.firecalc.engine.models.CombustionAirPipe_Module_15544
-import afpma.firecalc.engine.models.FireboxPipe_Module_15544
-import afpma.firecalc.engine.models.TermConstraint
-import afpma.firecalc.engine.models.en15544.firebox.TraditionalFirebox
-import afpma.firecalc.engine.models.en15544.typedefs.*
-import afpma.firecalc.engine.standard.*
-
-import cats.data.ValidatedNel
-import cats.syntax.validated.*
-
-import coulomb.*
-import coulomb.policy.standard.given
 
 import afpma.firecalc.firebox_calc_api.*
 import io.taig.babel.Locales
@@ -34,9 +16,14 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.*
 
 /**
- * Characterisation tests for the `constraints` folding method on `FireboxEngine`.
+ * Characterisation tests for the `constraints` folding method on `FireboxEngine`:
+ * the fold's structure — verdict count, per-term descriptors, the ctx = None
+ * placeholder shape — and the glass-area-cap denominator decision.
  *
- * Covers spec &#167;9 Slice 2 AC-1 through AC-5.
+ * Covers spec §9 Slice 2 AC-1 through AC-5.  The severity side of the same
+ * fold (the advisory custom channel, the per-term evaluation switch) lives in
+ * [[SeverityFoldingSuite]]; engines and fixtures are shared through
+ * [[ConstraintFoldingFixtures]].
  *
  * Uses a synthetic `FireboxEngine[TraditionalFirebox]` that delegates all
  * constraint methods to `FireboxConstraints_Strict` and provides no-op pipe
@@ -48,239 +35,15 @@ import org.scalatest.matchers.should.*
  * `fctx.airIntakePipeShape` path (the Strict engine's `firebox_custom_constraints`
  * returns `Nil`, so no shape mismatch errors are emitted).
  */
-class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
+class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFoldingFixtures:
     given io.taig.babel.Locale = Locales.en
-
-    // ── Synthetic test engine ──────────────────────────────────────────────
-
-    /**
-     * Minimal `FoldsConstraints[TraditionalFirebox]` for testing `constraints`.
-     *
-     * Mixes in `FireboxConstraints_Strict` and hands itself back as
-     * `constraintsAlg`, so the fold under test delegates to the real strict
-     * per-term constraints.  Pipe contributions are stubbed because the
-     * `constraints` method does not use them.
-     */
-    private object TestEngine
-        extends FoldsConstraints[TraditionalFirebox]
-        with FireboxConstraints_Strict[TraditionalFirebox]:
-
-        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
-
-        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
-        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
-
-        override def kind: FireboxKind = FireboxKind.Traditional
-
-        override def fireboxContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        override def combustionAirContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-    /**
-     * A `FoldsConstraints[TraditionalFirebox]` that always emits an
-     * `AirIntakePipeShapeMismatch` from `firebox_custom_constraints`, so the
-     * folding's MB10-2022 / MB17 catalog shape-check branch is exercised
-     * even for a Traditional firebox (whose real
-     * `firebox_custom_constraints` returns `Nil`).
-     */
-    private object ShapeTestEngine
-        extends FoldsConstraints[TraditionalFirebox]
-        with FireboxConstraints_Strict[TraditionalFirebox]:
-
-        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
-
-        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
-        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
-
-        override def kind: FireboxKind = FireboxKind.Traditional
-
-        override def fireboxContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        override def combustionAirContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        /**
-         * Forces a catalog shape-mismatch error so the folding's catalog
-         * shape-check branch fires (no EN 15544 clause; see FoldsConstraints).
-         */
-        override def firebox_custom_constraints(
-            firebox: TraditionalFirebox,
-            ctx    : FireboxConstraintContext
-        ): List[FireboxError] =
-            List(AirIntakePipeShapeMismatch(expected = "Circle 0.2 m", actual = "Circle 0.173 m"))
-
-    /**
-     * A `FoldsConstraints[TraditionalFirebox]` that declares exactly one advisory
-     * finding via `advisory_firebox_custom_constraints` and no
-     * blocking custom errors.  Everything else is identical to `TestEngine`, so
-     * the only difference in the folded verdict list is the advisory verdict.
-     */
-    private object AdvisoryTestEngine
-        extends FoldsConstraints[TraditionalFirebox]
-        with FireboxConstraints_Strict[TraditionalFirebox]:
-
-        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
-
-        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
-        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
-
-        override def kind: FireboxKind = FireboxKind.Traditional
-
-        override def fireboxContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        override def combustionAirContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        /** One advisory finding; shown verbatim by the `FireboxErrorCustom` case. */
-        override def advisory_firebox_custom_constraints(
-            firebox: TraditionalFirebox,
-            ctx    : FireboxConstraintContext
-        ): List[FireboxError] =
-            List(new FireboxErrorCustom(advisoryReason))
-
-    /**
-     * The fold-twin of [[AdvisoryTestEngine]]: the same finding declared on the
-     * blocking channel (`firebox_custom_constraints`).  Pinning both sides shows
-     * the advisory verdict shares its code and message rendering with a blocking
-     * custom verdict, and differs only in the `blocking` flag.
-     */
-    private object BlockingCustomTwinEngine
-        extends FoldsConstraints[TraditionalFirebox]
-        with FireboxConstraints_Strict[TraditionalFirebox]:
-
-        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
-
-        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
-        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
-
-        override def kind: FireboxKind = FireboxKind.Traditional
-
-        override def fireboxContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        override def combustionAirContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        /** The same finding, declared blocking — the twin of the advisory override. */
-        override def firebox_custom_constraints(
-            firebox: TraditionalFirebox,
-            ctx    : FireboxConstraintContext
-        ): List[FireboxError] =
-            List(new FireboxErrorCustom(advisoryReason))
-
-    /** Shared fixture finding; `FireboxErrorCustom` renders its reason verbatim. */
-    private val advisoryReason = "cleaning hatch obstructed by the air column"
-
-    // ── Fixture: clean TraditionalFirebox ──────────────────────────────────
-
-    /**
-     * A TraditionalFirebox that passes all standard constraints.
-     *
-     * Dimensions chosen so that:
-     *   - base area 50x50 = 2500 cm² ∈ [1000, 4000]
-     *   - depth/width ratio = 1.0 ∈ [0.5, 2.0]
-     *   - width 50 cm ≥ 23 cm
-     *   - height 80 cm ∈ [76, 84] (H_BR ± 5%)
-     *   - glass area 30x40 = 1200 cm² ≤ area_O_BR/5 = 4200 cm² (the built
-     *     50x50x80 surface is 21000 cm²; also under the nominal O_BR/5 = 1800)
-     *   - ash pit height 10 cm ≥ 5 cm minimum
-     */
-    private val cleanFirebox: TraditionalFirebox =
-        TraditionalFirebox                     (
-            emissions_values                      = Standing_Standard_Burning_Firebox,
-            firebox_depth_B                       = 50.cm,
-            firebox_width_A                       = 50.cm,
-            firebox_height_H                      = 80.cm,
-            pressure_loss_coefficient_from_door   = 0.5.unitless,
-            total_air_intake_surface_area_on_door = 0.1.squareMeters,
-            glass_width                           = 30.cm,
-            glass_height                          = 40.cm,
-            ash_pit_height_AF                     = 10.cm
-        )
-
-    /**
-     * A `TraditionalFirebox` that exposes accepted air-intake shapes via the
-     * Seam R member (`expectedAirIntakePipeShapes`), mimicking a Door15a
-     * catalog firebox. Lets the folding's `ShapeOneOf` path be exercised
-     * without the proprietary Austrian engine module (private repository,
-     * not on the `engine_15544_common` test classpath): the folding reads the shapes
-     * through the same virtual dispatch a real Door15a firebox uses.
-     */
-    private val catalogShapesFirebox: TraditionalFirebox =
-        new TraditionalFirebox                      (
-            firebox_depth_B                       = 50.cm,
-            firebox_width_A                       = 50.cm,
-            firebox_height_H                      = 80.cm,
-            pressure_loss_coefficient_from_door   = 0.5.unitless,
-            total_air_intake_surface_area_on_door = 0.1.squareMeters,
-            glass_width                           = 30.cm,
-            glass_height                          = 40.cm,
-            ash_pit_height_AF                     = 10.cm
-        ):
-            override def expectedAirIntakePipeShapes: Option[List[PipeShape]] =
-                Some(List(PipeShape.Circle(0.2.meters)))
-
-    // ── Fixture: ConstraintContext ────────────────────────────────────────
-
-    /**
-     * A ConstraintContext with m_B = 10 kg (the default minimum for Traditional).
-     *
-     * O_BR = 900 * m_B = 9000 cm&#178; (EN 15544 required surface, formula (3)).
-     * area_O_BR = 21000 cm&#178;, the BUILT §3.7 interior surface of `cleanFirebox`
-     * (2 · (50·50 + 80·50 + 80·50)) — the glass-area-cap denominator.
-     * A_BR_min/max derived from standard formulas for m_B=10.
-     * H_BR = firebox height (80 cm).
-     */
-    private val constraintContext: ConstraintContext =
-        ConstraintContext                           (
-            m_B                            = 10.kg,
-            O_BR                           = 9000.cm2,
-            area_O_BR                      = 21000.cm2,
-            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = 0.5,
-            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = 2.0,
-            A_BR_min                       = Some(1000.cm2),
-            A_BR_max                       = Some(4000.cm2),
-            A_BR                           = 2500.cm2,
-            H_BR_min                       = None,
-            H_BR                           = 80.cm,
-            n_min                          = 70.percent
-        )
-
-    // ── Fixture: FireboxConstraintContext (no air intake shape) ───────────
-
-    private val fireboxCtxNoShape: FireboxConstraintContext =
-        FireboxConstraintContext                (
-            mB                 = 10.kg,
-            flow_rate          = None,
-            airIntakePipeShape = None
-        )
 
     // ── AC-1: verdict count + no None ─────────────────────────────────────
 
     "AC-1: verdict count and no None outcomes" - {
 
         "returns non-empty list of verdicts with expected count" in {
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -309,7 +72,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "no verdict has null outcome" in {
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -325,7 +88,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
             // where None meant "not applicable".  The new folding method
             // always emits a verdict — even for inapplicable terms, the
             // outcome is NotApplicable, not None.
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -350,7 +113,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
     "AC-2: clean firebox yields no Violated verdicts" - {
 
         "all verdicts are Satisfied, NotApplicable, or NotEvaluated" in {
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -378,7 +141,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
     "AC-3: air-intake pipe shape topology verdict" - {
 
         "fctx.airIntakePipeShape=None yields NotApplicable" in {
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -402,15 +165,13 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "fctx.airIntakePipeShape=Some yields Satisfied (no shape errors)" in {
-            import afpma.firecalc.dto.common.PipeShape
-
             val fireboxCtxWithShape = FireboxConstraintContext(
                 mB                 = 10.kg,
                 flow_rate          = None,
                 airIntakePipeShape = Some(PipeShape.Circle(15.cm))
             )
 
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxWithShape
@@ -446,7 +207,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
     "ShapeOneOf: catalog shape descriptor reflects the firebox's accepted shapes" - {
 
         "ShapeOneOf(expected) is emitted when expectedAirIntakePipeShapes is Some" in {
-            val verdicts = ShapeTestEngine.constraints(
+            val verdicts = shapeMismatchEngine.constraints(
                 catalogShapesFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -468,7 +229,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "Opaque is emitted when expectedAirIntakePipeShapes is None (unchanged behaviour)" in {
-            val verdicts = ShapeTestEngine.constraints(
+            val verdicts = shapeMismatchEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -489,119 +250,12 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
     }
 
-    // ── Advisory custom-constraint channel ───────────────────────────────
-
-    "advisory_firebox_custom_constraints folds to trailing non-blocking verdicts" - {
-
-        "one advisory finding yields exactly one blocking = false Custom verdict" in {
-            val baseline = TestEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-            val verdicts = AdvisoryTestEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-
-            verdicts.length shouldBe baseline.length + 1
-
-            val advisories = verdicts.filter(_.term == ConstraintTerm.Custom)
-            advisories.length shouldBe 1
-
-            val advisory = advisories.head
-            // Code = error class simple name, message = its localised show —
-            // exactly the rendering `errorToCustomVerdict` uses on both channels.
-            advisory.label shouldBe "FireboxErrorCustom"
-            advisory.descriptor shouldBe ConstraintDescriptor.Opaque
-            advisory.outcome shouldBe ConstraintOutcome.Violated(
-                "FireboxErrorCustom",
-                advisoryReason,
-                blocking = false
-            )
-        }
-
-        "every other verdict is unchanged versus the un-adorned fold" in {
-            val baseline = TestEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-            val verdicts = AdvisoryTestEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-
-            // The default `advisory_firebox_custom_constraints = Nil` keeps
-            // existing kinds byte-identical; adding one finding adds exactly
-            // that one verdict and touches nothing else.
-            verdicts.filter(_.term != ConstraintTerm.Custom) shouldBe baseline
-        }
-
-        "the advisory verdict sits last inside the custom-verdict block" in {
-            val verdicts = AdvisoryTestEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-
-            val advisoryIdx = verdicts.indexWhere(_.term == ConstraintTerm.Custom)
-            assert(advisoryIdx >= 0, "expected an advisory Custom verdict")
-
-            // Appended after the shape/topology verdicts of §10…
-            advisoryIdx shouldBe verdicts.length - 2
-            // …only the §11 nominal-load verdict follows it.
-            verdicts.last.term shouldBe ConstraintTerm.NominalLoadInRange
-        }
-
-        "advisory verdict equals its blocking twin except for the severity flag" in {
-            val advisories = AdvisoryTestEngine
-                .constraints(
-                    cleanFirebox,
-                    Some(constraintContext),
-                    fireboxCtxNoShape
-                )
-                .filter(_.term == ConstraintTerm.Custom)
-            val twins      = BlockingCustomTwinEngine
-                .constraints(
-                    cleanFirebox,
-                    Some(constraintContext),
-                    fireboxCtxNoShape
-                )
-                .filter(_.term == ConstraintTerm.Custom)
-
-            advisories.length shouldBe 1
-            twins.length shouldBe 1
-
-            val advisory = advisories.head
-            val twin     = twins.head
-
-            twin.label shouldBe "FireboxErrorCustom"
-            twin.outcome shouldBe ConstraintOutcome.Violated(
-                "FireboxErrorCustom",
-                advisoryReason,
-                blocking = true
-            )
-
-            // Same code, same message rendering, same descriptor: the two
-            // channels differ only in `blocking`.
-            advisory.label shouldBe twin.label
-            advisory.descriptor shouldBe twin.descriptor
-            val twinViolation = twin.outcome match
-                case v: ConstraintOutcome.Violated => v
-                case other => fail(s"expected a blocking Violated twin, got $other")
-            advisory.outcome shouldBe twinViolation.copy(blocking = false)
-        }
-    }
-
     // ── AC-4: eta excluded ────────────────────────────────────────────────
 
     "AC-4: eta constraint is excluded from verdicts" - {
 
         "no verdict corresponds to eta" in {
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -619,7 +273,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "distinct terms are a subset of the 11 known ConstraintTerm values" in {
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 Some(constraintContext),
                 fireboxCtxNoShape
@@ -656,19 +310,24 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
 
     // ── AC-5: ctx=None -> NotEvaluated(MissingMB) ─────────────────────────
 
-    "AC-5: ctx=None yields NotEvaluated(MissingMB) for m_B-dependent terms" - {
+    "AC-5: ctx=None yields the NotEvaluated(MissingMB) placeholder" - {
 
-        "m_B-dependent terms are NotEvaluated(MissingMB)" in {
-            val verdicts = TestEngine.constraints(
+        "the terms the fold cannot evaluate without the sizing ctx are NotEvaluated(MissingMB)" in {
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 None,
                 fireboxCtxNoShape
             )
 
-            // Terms that depend on m_B (ctx):
+            // Terms the fold does not evaluate without the sizing ctx —
+            // their constraint slots are built from it (m_B being the
+            // request parameter the placeholder names), so the fold emits
+            // the NotEvaluated(MissingMB) placeholder instead of a slot
+            // outcome.  The placeholder is a property of the ctx = None
+            // fold shape, not a per-term data dependency on m_B:
             //   MB, MBMin, GlassArea, FireboxBase, H_BR, Lambda,
             //   HeightOfLowestOpening, Custom
-            val mbDependentTerms = Set[ConstraintTerm](
+            val nonEvaluatedTerms = Set[ConstraintTerm](
                 ConstraintTerm.MB,
                 ConstraintTerm.MBMin,
                 ConstraintTerm.GlassArea,
@@ -679,9 +338,9 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
                 ConstraintTerm.Custom
             )
 
-            val mbDependentVerdicts = verdicts.filter(v => mbDependentTerms.contains(v.term))
+            val nonEvaluatedVerdicts = verdicts.filter(v => nonEvaluatedTerms.contains(v.term))
 
-            mbDependentVerdicts.foreach { v =>
+            nonEvaluatedVerdicts.foreach { v =>
                 v.outcome match
                     case ConstraintOutcome.NotEvaluated(
                             NotEvaluatedReason.MissingMB
@@ -695,14 +354,14 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
             }
         }
 
-        "non-m_B-dependent terms are evaluated normally" in {
-            val verdicts = TestEngine.constraints(
+        "the terms that keep real outcomes with ctx=None are evaluated normally" in {
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 None,
                 fireboxCtxNoShape
             )
 
-            // Terms that do NOT depend on m_B:
+            // Terms the fold evaluates even without the sizing ctx:
             //   GlassSurfaceRatio, NominalLoadInRange
             // (AirIntakePipeShape topology is not emitted at all when
             //  ctx=None — it is only folded in the Some branch)
@@ -734,12 +393,12 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
 
         "verdict count with ctx=None is 10" in {
             // With ctx=None:
-            //   8 NotEvaluated(MissingMB) terms +
+            //   8 NotEvaluated(MissingMB) placeholder terms +
             //   1 GlassSurfaceRatio +
             //   1 NominalLoadInRange = 10
             // (AirIntakePipeShape topology is NOT included in the None branch —
             //  it's only in the Some branch)
-            val verdicts = TestEngine.constraints(
+            val verdicts = plainEngine.constraints(
                 cleanFirebox,
                 None,
                 fireboxCtxNoShape
@@ -751,85 +410,16 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
 
     // ── Glass-area cap denominator: BUILT surface, not 900·m_B ─────────────
     //
-    // Owner decision 2026-10-23 (tracker ticket 13): the 1/5 denominator of
-    // the EN 15544:2023 clause-1 glass cap is the BUILT interior surface
+    // Owner decision 2026-10-23 (tracker ticket 13), fixtures documented in
+    // [[ConstraintFoldingFixtures]]: the 1/5 denominator of the
+    // EN 15544:2023 clause-1 glass cap is the BUILT interior surface
     // (§3.7), NOT the §4.3.1.2 required surface (formula (3), 900·m_B)
-    // carried by `ctx.O_BR`.  Both fixtures use m_B = 12 kg, so the
-    // nominal O_BR is 10800 cm² and O_BR/5 is 2160 cm²; the glass area
-    // sits strictly between the two readings in each direction.
-
-    /**
-     * 50×50×80 cm: built interior surface = 2·(2500 + 4000 + 4000) =
-     * 21000 cm² > nominal 10800 cm².  Glass 50×50 = 2500 cm² exceeds the
-     * nominal threshold 2160 cm² but stays under built/5 = 4200 cm²:
-     * PASSES under the built-surface decision, would FAIL nominal-based.
-     */
-    private val builtAboveNominalFirebox: TraditionalFirebox =
-        TraditionalFirebox                     (
-            emissions_values                      = Standing_Standard_Burning_Firebox,
-            firebox_depth_B                       = 50.cm,
-            firebox_width_A                       = 50.cm,
-            firebox_height_H                      = 80.cm,
-            pressure_loss_coefficient_from_door   = 0.5.unitless,
-            total_air_intake_surface_area_on_door = 0.1.squareMeters,
-            glass_width                           = 50.cm,
-            glass_height                          = 50.cm,
-            ash_pit_height_AF                     = 10.cm
-        )
-
-    private val ctxBuiltAboveNominal: ConstraintContext =
-        ConstraintContext                           (
-            m_B                            = 12.kg,
-            O_BR                           = 10800.cm2,
-            area_O_BR                      = 21000.cm2,
-            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = 0.5,
-            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = 2.0,
-            A_BR_min                       = Some(1200.cm2),
-            A_BR_max                       = Some(4000.cm2),
-            A_BR                           = 2500.cm2,
-            H_BR_min                       = None,
-            H_BR                           = 80.cm,
-            n_min                          = 70.percent
-        )
-
-    /**
-     * 40(w)×30(d)×50(h) cm: built interior surface = 2·(1200 + 1500 +
-     * 2000) = 9400 cm² < nominal 10800 cm².  Glass 40×50 = 2000 cm² stays
-     * under the nominal threshold 2160 cm² but exceeds built/5 = 1880 cm²:
-     * FAILS under the built-surface decision, would PASS nominal-based.
-     */
-    private val builtBelowNominalFirebox: TraditionalFirebox =
-        TraditionalFirebox                     (
-            emissions_values                      = Standing_Standard_Burning_Firebox,
-            firebox_depth_B                       = 30.cm,
-            firebox_width_A                       = 40.cm,
-            firebox_height_H                      = 50.cm,
-            pressure_loss_coefficient_from_door   = 0.5.unitless,
-            total_air_intake_surface_area_on_door = 0.1.squareMeters,
-            glass_width                           = 40.cm,
-            glass_height                          = 50.cm,
-            ash_pit_height_AF                     = 10.cm
-        )
-
-    private val ctxBuiltBelowNominal: ConstraintContext =
-        ConstraintContext                           (
-            m_B                            = 12.kg,
-            O_BR                           = 10800.cm2,
-            area_O_BR                      = 9400.cm2,
-            FLOOR_DEPTH_TO_WIDTH_MIN_RATIO = 0.5,
-            FLOOR_DEPTH_TO_WIDTH_MAX_RATIO = 2.0,
-            A_BR_min                       = Some(1200.cm2),
-            A_BR_max                       = Some(4000.cm2),
-            A_BR                           = 1200.cm2,
-            H_BR_min                       = None,
-            H_BR                           = 50.cm,
-            n_min                          = 70.percent
-        )
+    // carried by `ctx.O_BR`.
 
     "glass-area cap measures the BUILT surface, not 900·m_B (ticket 13)" - {
 
         "glass between O_BR/5 and built/5 PASSES when built > nominal" in {
-            val constraints = TestEngine
+            val constraints = plainEngine
                 .glassArea_constraints(builtAboveNominalFirebox, ctxBuiltAboveNominal)
                 .flatten
             constraints.length shouldBe 1
@@ -837,7 +427,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "glass between built/5 and O_BR/5 FAILS when built < nominal" in {
-            val constraints = TestEngine
+            val constraints = plainEngine
                 .glassArea_constraints(builtBelowNominalFirebox, ctxBuiltBelowNominal)
                 .flatten
             constraints.length shouldBe 1
@@ -845,7 +435,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "the folded Max descriptor reports built/5 = 0.42 m², not O_BR/5 = 0.216 m²" in {
-            val verdicts     = TestEngine.constraints(
+            val verdicts     = plainEngine.constraints(
                 builtAboveNominalFirebox,
                 Some(ctxBuiltAboveNominal),
                 fireboxCtxNoShape
@@ -861,7 +451,7 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
         }
 
         "the folded Max descriptor reports built/5 = 0.188 m² on the failing side" in {
-            val verdicts     = TestEngine.constraints(
+            val verdicts     = plainEngine.constraints(
                 builtBelowNominalFirebox,
                 Some(ctxBuiltBelowNominal),
                 fireboxCtxNoShape
@@ -874,207 +464,6 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers:
                     q.value.toDouble shouldBe 0.188 +- 1e-9
                 case other                             =>
                     fail(s"expected Max(built/5), got $other")
-        }
-    }
-
-    // ── Per-term evaluation switch (ticket 23) ─────────────────────────────
-    //
-    // The fold is described-only by default: a standard verdict reflects the
-    // constraint's existence, not its validation.  A kind opts a term into
-    // real evaluation by carrying `evaluated = Some(severity)` on its own
-    // `TermConstraint.Generic` / `GenericTyped` construction; a marked
-    // failure then folds through the same `Violated(code, message,
-    // blocking)` path the custom channels use, and the severity mirrors the
-    // blocking/advisory split of 3ab73d1b.
-    //
-    // The pinned mechanism is the real strict rule copied with the marker —
-    // exactly what a kind does to opt in — on `builtBelowNominalFirebox`,
-    // whose glass area strictly FAILS the built/5 cap (established by the
-    // ticket-13 section above), so marked-vs-unmarked is the only variable.
-
-    /**
-     * `TestEngine` with the evaluation switch set on individual terms:
-     * `markGlassArea` / `markGlassRatio` re-mark the strict rule for that
-     * slot; `glassAreaOverride` replaces the slot outright (hand-built
-     * constraints go through the same fold path).
-     */
-    private class MarkedEngine(
-        markGlassArea    : Option[TermConstraint.EvaluatedSeverity]               = None,
-        markGlassRatio   : Option[TermConstraint.EvaluatedSeverity]               = None,
-        glassAreaOverride: Option[ConstraintContext => TermConstraint[GlassArea]] = None
-    ) extends FoldsConstraints[TraditionalFirebox]
-        with FireboxConstraints_Strict[TraditionalFirebox]:
-
-        override def constraintsAlg: FireboxConstraints[TraditionalFirebox] = this
-
-        override type FireboxPipe_FullDescr       = FireboxPipe_Module_15544.FullDescr
-        override type CombustionAirPipe_FullDescr = CombustionAirPipe_Module_15544.FullDescr
-
-        override def kind: FireboxKind = FireboxKind.Traditional
-
-        override def fireboxContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[FireboxPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        override def combustionAirContribution(
-            firebox: TraditionalFirebox
-        ): ValidatedNel[IncrementalValidation_Error, FireboxContribution[CombustionAirPipe_FullDescr]] =
-            FireboxContribution.Without.validNel
-
-        override def glassArea_constraints(
-            firebox: TraditionalFirebox,
-            ctx    : ConstraintContext
-        ): Seq[Option[TermConstraint[GlassArea]]] =
-            glassAreaOverride match
-                case Some(build) => Seq(Some(build(ctx)))
-                case None        =>
-                    markGlassArea match
-                        case Some(severity) =>
-                            super
-                                .glassArea_constraints(firebox, ctx)
-                                .map:
-                                    case Some(gt: TermConstraint.GenericTyped[GlassArea, GlassAreaTooLarge]) =>
-                                        Some(gt.copy(evaluated = Some(severity)))
-                                    case other                                                               => other
-                        case None           => super.glassArea_constraints(firebox, ctx)
-
-        override def firebox_glass_surface_ratio_constraint(
-            firebox: TraditionalFirebox
-        ): Option[TermConstraint[Unit]] =
-            import afpma.firecalc.engine.models.en15544.typedefs.given_TermDefDetails_Unit
-            markGlassRatio match
-                case Some(severity) =>
-                    super.firebox_glass_surface_ratio_constraint(firebox).map {
-                        case gt: TermConstraint.GenericTyped[Unit, GlassSurfaceRatioNotConfirmed] =>
-                            gt.copy(evaluated = Some(severity))
-                        case other => other
-                    }
-                case None           => super.firebox_glass_surface_ratio_constraint(firebox)
-
-    "per-term evaluation switch: described-only by default, evaluated when marked (ticket 23)" - {
-
-        def outcomeOf(
-            verdicts: List[ConstraintVerdict],
-            term    : ConstraintTerm,
-            rule    : String
-        ): ConstraintOutcome =
-            verdicts
-                .find(v => v.term == term && v.label == rule)
-                .map(_.outcome)
-                .getOrElse(fail(s"no verdict for term=$term label=$rule"))
-
-        "an unmarked failing constraint keeps the existence-only Satisfied verdict" in {
-            // `builtBelowNominalFirebox`'s glass area exceeds built/5 (see the
-            // ticket-13 section: the strict rule's validation FAILS), yet the
-            // folded verdict must stay byte-identical to the pre-switch
-            // behaviour — marking is what opts a term into evaluation.
-            val verdicts = TestEngine.constraints(
-                builtBelowNominalFirebox,
-                Some(ctxBuiltBelowNominal),
-                fireboxCtxNoShape
-            )
-
-            outcomeOf(verdicts, ConstraintTerm.GlassArea, "glassArea") shouldBe ConstraintOutcome.Satisfied
-        }
-
-        "a marked failing standard constraint folds to a blocking Violated with the slot code and the localized message" in {
-            val engine   = MarkedEngine(markGlassArea = Some(TermConstraint.EvaluatedSeverity.Blocking))
-            val verdicts = engine.constraints(
-                builtBelowNominalFirebox,
-                Some(ctxBuiltBelowNominal),
-                fireboxCtxNoShape
-            )
-
-            val verdict = verdicts
-                .find(_.term == ConstraintTerm.GlassArea)
-                .getOrElse(fail("expected a GlassArea verdict"))
-
-            // The descriptor stays exactly as built (ticket 13's value): a
-            // term keeps being described whether or not it is evaluated.
-            verdict.descriptor match
-                case ConstraintDescriptor.Max(Left(q)) =>
-                    q.value.toDouble shouldBe 0.188 +- 1e-9
-                case other                             =>
-                    fail(s"expected Max(built/5), got $other")
-
-            verdict.outcome match
-                case ConstraintOutcome.Violated(code, message, blocking) =>
-                    code shouldBe "glassArea"
-                    // Same localised text the full-application path shows for
-                    // this failure (`GlassAreaTooLarge`), locale en as given
-                    // at the top of the suite.
-                    message should include("must be less than 1/5th of the firebox surface area")
-                    blocking shouldBe true
-                case other                                               =>
-                    fail(s"expected a blocking Violated, got $other")
-        }
-
-        "a marked constraint that passes keeps the Satisfied outcome" in {
-            val engine   = MarkedEngine(markGlassArea = Some(TermConstraint.EvaluatedSeverity.Blocking))
-            val verdicts = engine.constraints(
-                builtAboveNominalFirebox,
-                Some(ctxBuiltAboveNominal),
-                fireboxCtxNoShape
-            )
-
-            // glass 2500 cm² ≤ built/5 = 4200 cm²: valid → unchanged outcome.
-            outcomeOf(verdicts, ConstraintTerm.GlassArea, "glassArea") shouldBe ConstraintOutcome.Satisfied
-        }
-
-        "an Advisory mark folds to a non-blocking violation, on the ctx = None path too" in {
-            val engine   = MarkedEngine(markGlassRatio = Some(TermConstraint.EvaluatedSeverity.Advisory))
-            val verdicts = engine.constraints(
-                builtBelowNominalFirebox,
-                None,
-                fireboxCtxNoShape
-            )
-
-            // glass 2000 cm² over built 9400 cm² exceeds 1/5, so the strict
-            // ratio rule is invalid — the mark routes it through the shared
-            // violation path with `blocking = false`.
-            verdicts
-                .find(_.term == ConstraintTerm.GlassSurfaceRatio)
-                .map(_.outcome)
-                .getOrElse(fail("expected a GlassSurfaceRatio verdict")) match
-                case ConstraintOutcome.Violated(code, message, blocking) =>
-                    code shouldBe "glassSurfaceRatio"
-                    message shouldBe "The glass surface must be less than 1/5th of the firebox surface area."
-                    blocking shouldBe false
-                case other                                               =>
-                    fail(s"expected a non-blocking Violated, got $other")
-        }
-
-        "a hand-built `Generic` mark folds through the same path, message from its own text" in {
-            val engine   = MarkedEngine(glassAreaOverride = Some { ctx =>
-                TermConstraint.Generic[GlassArea]    (
-                    value     = 0.6.squareMeters,
-                    source    = "test: hand-built marked glassArea",
-                    isValid   = area =>
-                        if area <= ctx.area_O_BR / 5.0 then Right(area                                  )
-                        else Left                                ("beyond the hand-built glass-area cap"),
-                    evaluated = Some(TermConstraint.EvaluatedSeverity.Blocking)
-                )
-            })
-            val verdicts = engine.constraints(
-                // built > nominal fixture: the unmarked strict rule would
-                // pass, but the hand-built rule's own value fails.
-                builtAboveNominalFirebox,
-                Some(ctxBuiltAboveNominal),
-                fireboxCtxNoShape
-            )
-
-            val verdict = verdicts
-                .find(_.term == ConstraintTerm.GlassArea)
-                .getOrElse(fail("expected a GlassArea verdict"))
-
-            verdict.outcome match
-                case ConstraintOutcome.Violated(code, message, blocking) =>
-                    code shouldBe "glassArea"
-                    message should include("beyond the hand-built glass-area cap")
-                    blocking shouldBe true
-                case other                                               =>
-                    fail(s"expected a blocking Violated, got $other")
         }
     }
 
