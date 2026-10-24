@@ -292,12 +292,16 @@ object TermConstraint:
      * is the default, so no shipped kind changes behaviour until it opts a
      * term in explicitly.
      *
-     * The marker exists only on the value-carrying constructors (`Generic`,
-     * `GenericTyped`): a marked constraint always embeds the value the kind
-     * built it from, so the fold can always evaluate exactly what was marked;
-     * the bound-only `Min`/`Max` descriptors stay description-only by
-     * construction, and there is no slot where a marker would be silently
-     * ignored.
+     * The marker lives only on the value-carrying constructors (`Generic`,
+     * `GenericTyped`); that restriction is structural, not a convention —
+     * the capability sub-ADT they extend ([[TermConstraint.Evaluatable]],
+     * which `Min`/`Max` do not) and the reasoning are documented there,
+     * next to the code that enforces it.
+     *
+     * Marking happens at a constraint's definition site via
+     * `.copy(evaluated = Some(severity))`; the companion `apply` helpers of
+     * the value-carrying constructors deliberately keep their marker-free
+     * shape (marker-aware overloads were reviewed and rejected).
      *
      * Severity mirrors the two custom-constraint channels (3ab73d1b):
      * `Blocking` folds to `ConstraintOutcome.Violated(_, _, blocking =
@@ -316,13 +320,67 @@ object TermConstraint:
         case Blocking
         case Advisory
 
+    /**
+     * The evaluation-capability sub-ADT of `TermConstraint`: only the
+     * value-carrying constructors (`Generic`, `GenericTyped`) extend it,
+     * and the HTTP fold consumes evaluation exclusively through it.
+     *
+     * This is the structural form of the rule the marker prose on
+     * [[EvaluatedSeverity]] used to state: a marked constraint always
+     * embeds the value the kind built it from, so evaluating exactly what
+     * was marked is always possible.  The bound-only `Min`/`Max`
+     * constructors deliberately do not extend this class — their embedded
+     * value is a bound, so `validate(own bound)` would trivially pass and
+     * a marker there could only ever be a self-check — and they stay
+     * description-only by construction.  There is no slot where a marker
+     * could be silently ignored: a constraint without this capability
+     * cannot carry one.
+     */
+    sealed abstract class Evaluatable[O](
+        source  : String,
+        validate: O => TermConstraint.ValidatedResult[O]
+    ) extends TermConstraint[O](source, validate):
+
+        /** The value the kind embedded at the constraint's definition site. */
+        val value: O
+
+        /** The opt-in HTTP-fold evaluation marker; `None` = described-only. */
+        def evaluated: Option[EvaluatedSeverity]
+
+        /**
+         * Evaluate the embedded value: `Some((severity, message))` iff the
+         * marker is set AND the value fails validation; `None` for
+         * unmarked constraints and for passing ones.  The message goes
+         * through the single rendering path — `TermConstraintError.failMsg`
+         * via [[showTermConstraintErrorNel]]; a constructor's `validate`
+         * yields at most one error, so it is that error's text.
+         *
+         * *First only*: a slot holding several marked failing constraints
+         * reports the first of them — one rendering per constraint, no
+         * aggregation API by design.
+         *
+         * Self-contained on purpose — it touches only this instance's own
+         * `evaluated`, `value` and `validate` — so consuming folds need no
+         * unchecked cast: a plain `case e: Evaluatable[t] =>
+         * e.evaluatedFailure` type test suffices, with `t` unrelated to the
+         * slot's element type.
+         */
+        final def evaluatedFailure(using Locale): Option[(EvaluatedSeverity, String)] =
+            evaluated match
+                case None           => None
+                case Some(severity) =>
+                    val result: ValidatedNel[TermConstraintError[O], O] = validate(value)
+                    result match
+                        case Valid(_)     => None
+                        case Invalid(nel) => (severity, showTermConstraintErrorNel[O].show(nel)).some
+
     case class Generic[Q: TermDefDetails](
-        value              : Q,
-        override val source: String,
-        isValid            : Q => Either[String, Q],
+        override val value    : Q,
+        override val source   : String,
+        isValid               : Q => Either[String, Q],
         // Opt-in HTTP-fold evaluation marker; default None = described-only.
-        evaluated          : Option[EvaluatedSeverity] = None
-    ) extends TermConstraint[Q](
+        override val evaluated: Option[EvaluatedSeverity] = None
+    ) extends Evaluatable[Q](
             source,
             validate = q =>
                 isValid(q) match
@@ -344,13 +402,13 @@ object TermConstraint:
             )
 
     case class GenericTyped[Q, E](
-        value              : Q,
-        override val source: String,
-        isValid            : Q => Either[E, Q],
+        override val value    : Q,
+        override val source   : String,
+        isValid               : Q => Either[E, Q],
         // Opt-in HTTP-fold evaluation marker; default None = described-only.
-        evaluated          : Option[EvaluatedSeverity] = None
+        override val evaluated: Option[EvaluatedSeverity] = None
     )                            (using showE: ShowUsingLocale[E], tdd: TermDefDetails[Q])
-        extends TermConstraint[Q](
+        extends Evaluatable[Q](
             source,
             validate = q =>
                 isValid(q) match
