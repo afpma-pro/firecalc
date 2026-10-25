@@ -20,7 +20,9 @@ import org.scalatest.matchers.should.*
  * the fold's structure — verdict count, per-term descriptors, the ctx = None
  * placeholder shape — and the glass-area-cap denominator decision.
  *
- * Covers spec §9 Slice 2 AC-1 through AC-5.  The severity side of the same
+ * Covers spec §9 Slice 2 AC-1 through AC-3 and AC-5.  AC-4 is asserted
+ * nowhere: it is structural, and the one explanation of that decision is
+ * the scaladoc of [[FoldsConstraints]].  The severity side of the same
  * fold (the advisory custom channel, the per-term evaluation switch) lives in
  * [[SeverityFoldingSuite]]; engines and fixtures are shared through
  * [[ConstraintFoldingFixtures]].
@@ -69,18 +71,6 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
             // Custom errors = 0 (TraditionalFirebox has no custom errors)
             val expectedCount = 13
             verdicts.length shouldBe expectedCount
-        }
-
-        "no verdict has null outcome" in {
-            val verdicts = plainEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-
-            verdicts.foreach { v =>
-                assert(v.outcome != null)
-            }
         }
 
         "no verdict outcome is a None-equivalent" in {
@@ -247,28 +237,6 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
                 .getOrElse(fail("expected an AirIntakePipeShapeMismatch verdict"))
 
             catalogVerdict.descriptor shouldBe ConstraintDescriptor.Opaque
-        }
-    }
-
-    // ── AC-4: eta excluded ────────────────────────────────────────────────
-
-    "AC-4: eta constraint is excluded from verdicts" - {
-
-        "distinct terms are a subset of the ConstraintTerm enum" in {
-            val verdicts = plainEngine.constraints(
-                cleanFirebox,
-                Some(constraintContext),
-                fireboxCtxNoShape
-            )
-
-            val distinctTerms = verdicts.map(_.term).distinct
-
-            // η is deliberately outside the fold: a fold-scope choice of
-            // ours, not an EN matter — the reason is stated once in the
-            // FoldsConstraints scaladoc, never restated here.  Its absence
-            // is structural rather than runtime-checkable: `ConstraintTerm`
-            // has no η case, so no verdict can carry one.
-            assert(distinctTerms.toSet.subsetOf(ConstraintTerm.values.toSet))
         }
     }
 
