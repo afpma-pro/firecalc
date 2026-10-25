@@ -93,7 +93,12 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
         firebox: F,
         ctx    : ConstraintContext
     ): TermConstraint[GlassArea] =
-        val glassAreaMax: GlassArea = ctx.area_O_BR / 5.0
+        // Division by the ratio's reciprocal, never multiplication by the ratio:
+        // `x / 5.0` and `x * 0.2` are not bit-identical under IEEE-754, while
+        // `1.0 / (1.0 / 5.0)` rounds back to exactly 5.0 — so the cm² cap
+        // stays arithmetically byte-identical to the pre-naming code.
+        val glassAreaMax: GlassArea =
+            ctx.area_O_BR /                                        (1.0 / FireboxFormulas_Strict.GLASS_AREA_MAX_RATIO)
         TermConstraint.GenericTyped[GlassArea, GlassAreaTooLarge]  (
             value   = firebox.glass_area,
             isValid = glarea =>

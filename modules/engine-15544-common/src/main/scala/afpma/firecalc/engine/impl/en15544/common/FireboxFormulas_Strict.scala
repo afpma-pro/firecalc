@@ -30,6 +30,11 @@ given fireboxFormulas_Strict: FireboxFormulas[Firebox_15544] =
 object FireboxFormulas_Strict:
     def make[F <: Firebox_15544] = new FireboxFormulas_Strict[F] {}
 
+    // Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1, printed p. 7 — as one number.
+    // Both code hooks derive from this constant: the formula check below, and
+    // the cm² cap in `FireboxConstraints_Strict.glassArea_constraint_oneFifth_maxRatio`.
+    val GLASS_AREA_MAX_RATIO: Double = 1.0 / 5.0
+
 /**
  * Base class for formula instances that override only specific methods.
  *
@@ -75,7 +80,8 @@ trait FireboxFormulas_Strict[F <: Firebox_15544] extends FireboxFormulas[F]:
         // `FireboxConstraints_Strict`.
 
         override def firebox_glass_surface_ratio_below_one_fifth: Boolean =
-            (firebox.glass_area / firebox.area_O_BR) <= (1.0 / 5.0)
+            (firebox.glass_area / firebox.area_O_BR) <=
+                FireboxFormulas_Strict.GLASS_AREA_MAX_RATIO
 
         // ── Section "4.3.1.3" – Firebox base ─────────────────────────────────
 
