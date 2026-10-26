@@ -281,8 +281,7 @@ object TermConstraint:
 
     /**
      * Severity carried by the per-constraint evaluation marker that opts a term
-     * into evaluation on the `firebox-calc` HTTP fold (`FoldsConstraints`,
-     * KOV-2026-10 air-supply map ticket 23, option 1).
+     * into evaluation on the `firebox-calc` HTTP fold (`FoldsConstraints`).
      *
      * Mechanism: a constraint is described-only unless its constructor carries
      * the named argument `evaluated = Some(severity)` (default `None`).  This

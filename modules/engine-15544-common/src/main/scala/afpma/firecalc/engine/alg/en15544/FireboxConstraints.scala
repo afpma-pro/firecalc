@@ -241,7 +241,9 @@ case class FireboxConstraintContext(
  * `firebox_glass_surface_ratio_constraint` is NOT among them — the clause-1
  * glass cap keeps being enforced through that hook and the formula path, so
  * a kind using this mixin still reports a `GlassSurfaceRatio` verdict.
- * Cap authority: EN 15544:2023 clause 1, printed p. 7.
+ * Cap authority: EN 15544:2023 clause 1, printed p. 7; the full chain is
+ * stated once at the scaladoc of
+ * `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth`.
  */
 trait RemovedFireboxSizingConstraints[-F <: Firebox_15544] extends FireboxConstraints[F]:
 

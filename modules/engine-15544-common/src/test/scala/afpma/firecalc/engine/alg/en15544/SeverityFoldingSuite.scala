@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.*
 
 /**
  * Severity behaviour of the `constraints` fold: the advisory custom-constraint
- * channel and the per-term evaluation switch (ticket 23) — how a declared
+ * channel and the per-term evaluation switch — how a declared
  * finding or a marked standard constraint reaches `ConstraintOutcome.Violated`
  * with its `blocking` flag.
  *
@@ -142,7 +142,7 @@ class SeverityFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFold
         }
 
         "ctx = None evaluates no custom or advisory channel at all" in {
-            // Accepted precondition (ticket 23), stated on the fold's
+            // Accepted precondition, stated on the fold's
             // scaladoc: without the sizing ctx the custom channels —
             // blocking and advisory alike — are never run, so a declared
             // advisory finding must NOT leak into the ctx = None verdict
@@ -166,7 +166,7 @@ class SeverityFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFold
         }
     }
 
-    // ── Per-term evaluation switch (ticket 23) ─────────────────────────────
+    // ── Per-term evaluation switch ─────────────────────────────────────────
     //
     // The fold is described-only by default: a standard verdict reflects the
     // constraint's existence, not its validation.  A kind opts a term into
@@ -244,7 +244,7 @@ class SeverityFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFold
                             evaluated = Some(TermConstraint.EvaluatedSeverity.Blocking)
                         )
 
-    "per-term evaluation switch: described-only by default, evaluated when marked (ticket 23)" - {
+    "per-term evaluation switch: described-only by default, evaluated when marked" - {
 
         def outcomeOf(
             verdicts: List[ConstraintVerdict],
@@ -283,8 +283,8 @@ class SeverityFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFold
                 .find(_.term == ConstraintTerm.GlassArea)
                 .getOrElse(fail("expected a GlassArea verdict"))
 
-            // The descriptor stays exactly as built (ticket 13's value): a
-            // term keeps being described whether or not it is evaluated.
+            // The descriptor stays exactly as built: a term keeps being
+            // described whether or not it is evaluated.
             verdict.descriptor match
                 case ConstraintDescriptor.Max(Left(q)) =>
                     q.value.toDouble shouldBe 0.188 +- 1e-9

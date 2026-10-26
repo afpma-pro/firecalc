@@ -81,7 +81,9 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
 
     // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1, printed p. 7 ───────
     //
-    // Authority: EN 15544:2023 clause 1, printed p. 7.
+    // Authority chain (verbatim clause-1 sentence, MB10/MB17 page cites, the
+    // O_BR/6 open question) is stated once at the scaladoc of
+    // `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth`.
 
     override def glassArea_constraints(
         firebox: F,
@@ -310,10 +312,12 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
 
     // ── Glass-area cap: the second hook of the same cap ───────────────────
     //
-    // Authority: EN 15544:2023 clause 1, printed p. 7 (see `glassArea_constraints`
-    // above).  NOT removed by `RemovedFireboxSizingConstraints`: this hook
-    // keeps enforcing the same clause through the formula boolean, whose
-    // denominator is the BUILT §3.7 surface `area_O_BR` — not `ctx.O_BR`.
+    // Authority: EN 15544:2023 clause 1, printed p. 7 (full chain at the
+    // `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth` scaladoc;
+    // see `glassArea_constraints` above).  NOT removed by
+    // `RemovedFireboxSizingConstraints`: this hook keeps enforcing the same
+    // clause through the formula boolean, whose denominator is the BUILT §3.7
+    // surface `area_O_BR` — not `ctx.O_BR`, the 900·m_B design target.
 
     override def firebox_glass_surface_ratio_constraint(
         firebox: F

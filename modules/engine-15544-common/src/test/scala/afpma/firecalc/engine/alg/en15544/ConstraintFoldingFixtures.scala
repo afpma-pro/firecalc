@@ -201,9 +201,12 @@ trait ConstraintFoldingFixtures:
         )
 
     // Authority and the denominator decision behind these numbers: EN
-    // 15544:2023 clause 1, printed p. 7.  Each fixture's glass area sits
-    // strictly between the built/5 threshold and the 900·m_B/5 threshold,
-    // so the two readings give opposite verdicts.
+    // 15544:2023 clause 1, printed p. 7 — the cap uses the BUILT §3.7
+    // surface, not the 900·m_B proxy (full chain at the scaladoc of
+    // `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth`).
+    // Each fixture's glass area sits strictly between the built/5
+    // threshold and the 900·m_B/5 threshold, so the two readings give
+    // opposite verdicts.
     //
     // The two directional tests live in [[ConstraintFoldingSuite]]; the
     // per-term evaluation switch in [[SeverityFoldingSuite]] pins its

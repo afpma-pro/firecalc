@@ -340,13 +340,15 @@ class ConstraintFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFo
 
     // ── Glass-area cap denominator: BUILT surface, not 900·m_B ─────────────
     //
-    // Authority and the denominator decision: EN 15544:2023 clause 1, printed
-    // p. 7, cap measured against the BUILT surface; the fixtures and their
-    // arithmetic are in [[ConstraintFoldingFixtures]].
+    // Authority and the denominator decision: EN 15544:2023 clause 1,
+    // printed p. 7, cap measured against the BUILT surface (full chain at
+    // the scaladoc of
+    // `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth`); the
+    // fixtures and their arithmetic are in [[ConstraintFoldingFixtures]].
     // These tests pin which denominator the `GlassArea` hook and its folded
     // Max descriptor actually use.
 
-    "glass-area cap measures the BUILT surface, not 900·m_B (ticket 13)" - {
+    "glass-area cap measures the BUILT surface, not 900·m_B" - {
 
         "glass between O_BR/5 and built/5 PASSES when built > nominal" in {
             val constraints = plainEngine

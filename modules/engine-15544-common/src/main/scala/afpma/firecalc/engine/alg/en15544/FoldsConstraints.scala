@@ -52,8 +52,8 @@ import io.taig.babel.Locale
  * `NotEvaluated(MissingMB)`: the reason names the missing request
  * parameter, not a data dependency on `m_B` itself (the glass-area cap
  * reads built geometry from the context, and the custom/advisory
- * channels need neither).  Precondition, accepted with ticket 23: on
- * that branch the blocking and advisory custom-constraint channels are
+ * channels need neither).  Accepted precondition: on that branch the
+ * blocking and advisory custom-constraint channels are
  * not evaluated at all — their `Custom` verdict is the same
  * placeholder — so advisory findings ride inside the 200 body only on
  * the `ctx = Some` branch.
@@ -122,12 +122,11 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
             )
 
         /**
-         * The evaluation switch behind every slot (KOV-2026-10 air-supply
-         * map, ticket 23, option 1).
+         * The evaluation switch behind every slot.
          *
          * Unmarked (the default for every `TermConstraint` any shipped kind
          * returns): returns `present` — the existence-derived outcome, i.e.
-         * the pre-ticket behaviour unchanged.
+         * pre-switch behaviour unchanged.
          *
          * Marked (`TermConstraint.Evaluatable` constructed with
          * `evaluated = Some(severity)`): additionally runs the constraint's
@@ -142,7 +141,8 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
          * in en15544 `typedefs.scala`) runs every cited constraint through
          * `foldToErrDeep` regardless of the marker, so an `Advisory`
          * finding still hard-fails there and the mark changes the outcome
-         * on this fold alone until ticket 17 lands.  `blocking` comes from the
+         * on this fold alone: grading local results by severity is not
+         * implemented.  `blocking` comes from the
          * `EvaluatedSeverity` mark (`Blocking` / `Advisory`), mirroring the
          * `firebox_custom_constraints` / `advisory_firebox_custom_constraints`
          * split of 3ab73d1b; both severities already ride the wire shape and

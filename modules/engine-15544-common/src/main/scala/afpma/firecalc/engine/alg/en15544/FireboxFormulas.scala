@@ -40,9 +40,28 @@ trait FireboxFormulas[-F]:
         def area_O_BR: Area
 
         /**
-         * EN 15544:2023 clause 1 (scope exclusion), printed p. 7.  Derived boolean:
-         * glass area ≤ 1/5 of the BUILT interior chamber surface
-         * ([[area_O_BR]], §3.7) — not the §4.3.1.2 required surface.
+         * The glass-area cap: the glass surface of a stove door must not
+         * exceed one fifth of the BUILT interior surface of the combustion
+         * chamber — EN 15544:2023 §3.7 « surface de la chambre de
+         * combustion », the sum of the interior surfaces (printed p. 8),
+         * measured per the §4.3.1.2 note « comme si l'ouverture
+         * n'existait pas » (printed p. 11); this code's [[area_O_BR]].
+         * Authority for the cap itself: EN 15544:2023 clause 1, printed
+         * p. 7 — « Le présent document ne s'applique pas dans les cas
+         * suivants : […] chambres de combustion avec des plaques de verre
+         * supérieures à 1/5 de la surface de la chambre de combustion ».
+         * That is a scope exclusion, not a dimensioning rule: a chamber at
+         * or under 1/5 stays inside the standard.  The denominator is never
+         * the §4.3.1.2 Formule (3) design target 900·m_B (printed p. 11,
+         * [[O_BR_calc]]): it shares only the letter O_BR with the surface
+         * the cap measures against.  Reinforced by MB10-2022 printed p. 8
+         * and MB17 printed p. 5, both worded against the interior surface
+         * of the combustion chamber.  Open question, not a rule: whether
+         * certified Ecolabeled stoves are still held to an O_BR/6 limit —
+         * 1/6 appears in no current source (neither EN 15544:2023 nor the
+         * 2022 Merkblatts), and this code enforces 1/5 for every kind.
+         * This scaladoc is the single prose owner of that authority chain;
+         * other sites cite it, they do not restate it.
          */
         def firebox_glass_surface_ratio_below_one_fifth: Boolean
 

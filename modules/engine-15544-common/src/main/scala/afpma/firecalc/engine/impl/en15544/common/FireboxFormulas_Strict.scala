@@ -31,6 +31,9 @@ object FireboxFormulas_Strict:
     def make[F <: Firebox_15544] = new FireboxFormulas_Strict[F] {}
 
     // Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1, printed p. 7 — as one number.
+    // Authority chain (verbatim clause-1 text, MB10/MB17 cites, the O_BR/6
+    // open question) is stated once at the scaladoc of
+    // `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth`.
     // Both code hooks derive from this constant: the formula check below, and
     // the cm² cap in `FireboxConstraints_Strict.glassArea_constraint_oneFifth_maxRatio`.
     val GLASS_AREA_MAX_RATIO: Double = 1.0 / 5.0
@@ -72,7 +75,9 @@ trait FireboxFormulas_Strict[F <: Firebox_15544] extends FireboxFormulas[F]:
 
         // ── Glass-area cap ≤ 1/5 — EN 15544:2023 clause 1, printed p. 7 ───
         //
-        // Authority: EN 15544:2023 clause 1, printed p. 7 — not restated here.
+        // Authority: EN 15544:2023 clause 1, printed p. 7; the chain incl.
+        // the O_BR/6 open question is stated once at the scaladoc of
+        // `FireboxFormulas.firebox_glass_surface_ratio_below_one_fifth`.
         //
         // Local to this path: the denominator is `area_O_BR` above, the BUILT
         // §3.7 interior surface; the ratio feeds the
