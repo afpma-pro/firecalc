@@ -5,7 +5,6 @@
 
 package afpma.firecalc.i18n
 
-import io.taig.babel.StringFormat1
 import io.taig.babel.StringFormat3
 
 object I18nData_Firebox:
@@ -48,42 +47,40 @@ object I18nData_Firebox:
         )
 
         case class Ecolabeled(
-            version                                  : String,
-            version_1_with_airbox                    : String,
-            version_2_without_airbox                 : String,
-            version_2_air_intake_shape               : String,
-            door_opening_width                       : String,
-            glass_width                              : String,
-            glass_height                             : String,
-            ash_pit_height_AF                        : String,
-            height_of_first_row_of_air_injectors_X   : String,
-            distance_between_air_injectors_Y         : String,
-            air_manifold_height_W                    : String,
-            firebox_floor_thickness                  : String,
-            inner_wall_thickness_D1                  : String,
-            outer_wall_thickness_D2                  : String,
-            air_column_thickness_S                   : String,
-            width_between_two_air_columns_sides_E    : String,
-            width_between_two_air_columns_rear_E     : String,
-            reinforcement_bars_offset_in_corners     : String,
-            reinforcement_bars_offset_in_corners_R1  : String,
-            reinforcement_bars_offset_in_corners_R2  : String,
-            reinforcement_bars_offset_in_corners_R3  : String,
-            injector_height_Z                        : String,
-            injector_surface_area                    : String,
-            injector_surface_area_obstructed_max_perc: StringFormat1,
-            injector_width_rear_wall_Lr              : String,
-            injector_width_side_wall_Ls              : String,
-            injector_width_door_wall_Lt              : String,
-            injector_height_door_wall_Zt             : String,
-            air_column_thickness_door_wall_St        : String,
-            air_manifold_inner_width                 : String,
-            air_manifold_inner_depth                 : String,
-            air_columns_cross_section_width          : String,
-            air_injectors_cross_section_width        : String,
-            air_columns_rise_length                  : String,
-            air_intake_equivalent_shape              : String,
-            computed_values                          : String
+            version                                : String,
+            version_1_with_airbox                  : String,
+            version_2_without_airbox               : String,
+            version_2_air_intake_shape             : String,
+            door_opening_width                     : String,
+            glass_width                            : String,
+            glass_height                           : String,
+            ash_pit_height_AF                      : String,
+            height_of_first_row_of_air_injectors_X : String,
+            distance_between_air_injectors_Y       : String,
+            air_manifold_height_W                  : String,
+            firebox_floor_thickness                : String,
+            inner_wall_thickness_D1                : String,
+            outer_wall_thickness_D2                : String,
+            air_column_thickness_S                 : String,
+            width_between_two_air_columns_sides_E  : String,
+            width_between_two_air_columns_rear_E   : String,
+            reinforcement_bars_offset_in_corners   : String,
+            reinforcement_bars_offset_in_corners_R1: String,
+            reinforcement_bars_offset_in_corners_R2: String,
+            reinforcement_bars_offset_in_corners_R3: String,
+            injector_height_Z                      : String,
+            injector_width_rear_wall_Lr            : String,
+            injector_width_side_wall_Ls            : String,
+            injector_width_door_wall_Lt            : String,
+            injector_height_door_wall_Zt           : String,
+            air_column_thickness_door_wall_St      : String,
+            air_manifold_inner_width               : String,
+            air_manifold_inner_depth               : String,
+            air_columns_cross_section_width        : String,
+            air_injectors_cross_section_width      : String,
+            air_columns_rise_length                : String,
+            air_intake_equivalent_shape            : String,
+            computed_values                        : String
         )
 
         case class Tested(
