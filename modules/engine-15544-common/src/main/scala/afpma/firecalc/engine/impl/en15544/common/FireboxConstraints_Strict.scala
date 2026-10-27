@@ -13,6 +13,9 @@ import afpma.firecalc.units.coulombutils.show_SquareCentimeters
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.i18n.LocalizedString
+import afpma.firecalc.i18n.implicits.I18N
+
 import afpma.firecalc.engine.alg.en15544.ConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraintContext
 import afpma.firecalc.engine.alg.en15544.FireboxConstraints
@@ -25,6 +28,7 @@ import afpma.firecalc.engine.models.en15544.std.Firebox_15544.Dimensions
 import afpma.firecalc.engine.models.en15544.typedefs.*
 import afpma.firecalc.engine.models.gtypedefs.λ
 import afpma.firecalc.engine.standard.*
+import afpma.firecalc.engine.standard.show_InvalidTermValue
 
 import cats.syntax.all.*
 
@@ -209,7 +213,23 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
         ctx    : ConstraintContext
     ): Seq[Option[TermConstraint[H_BR]]] =
         val minConstraint: Option[TermConstraint[H_BR]] =
-            ctx.H_BR_min.map(TermConstraint.Min.apply)
+            ctx.H_BR_min.map: minH =>
+                TermConstraint
+                    .GenericTyped[H_BR, InvalidTermValue[H_BR]]  (
+                        value   = firebox.dimensions.height,
+                        isValid = specifiedHeight =>
+                            if (specifiedHeight >= minH)
+                                Right(specifiedHeight)
+                            else
+                                Left(
+                                    TermValueShouldBeGreaterOrEqThan[H_BR](
+                                        LocalizedString.from(I18N.en15544.terms.H_BR.name),
+                                        specifiedHeight,
+                                        minH
+                                    )
+                                )
+                    )
+                    .withEvaluated(TermConstraint.EvaluatedSeverity.Blocking)
 
         val max5pDev: Option[TermConstraint[H_BR]] =
             ifNotSingleTestedOf(firebox, orElse = None):
@@ -218,20 +238,22 @@ trait FireboxConstraints_Strict[-F <: Firebox_15544] extends FireboxConstraints[
                 val minH = calculatedHeight - tol5p
                 val maxH = calculatedHeight + tol5p
                 Some(
-                    TermConstraint.GenericTyped[H_BR, FireboxHeightOutOfRange]  (
-                        value   = firebox.dimensions.height,
-                        isValid = specifiedHeight =>
-                            if (minH <= specifiedHeight && specifiedHeight <= maxH)
-                                Right(specifiedHeight)
-                            else
-                                Left(
-                                    FireboxHeightOutOfRange(
-                                        (minH: H_BR).showP,
-                                        (maxH: H_BR).showP,
-                                        specifiedHeight.showP
+                    TermConstraint
+                        .GenericTyped[H_BR, FireboxHeightOutOfRange]  (
+                            value   = firebox.dimensions.height,
+                            isValid = specifiedHeight =>
+                                if (minH <= specifiedHeight && specifiedHeight <= maxH)
+                                    Right(specifiedHeight)
+                                else
+                                    Left(
+                                        FireboxHeightOutOfRange(
+                                            (minH: H_BR).showP,
+                                            (maxH: H_BR).showP,
+                                            specifiedHeight.showP
+                                        )
                                     )
-                                )
-                    )
+                        )
+                        .withEvaluated(TermConstraint.EvaluatedSeverity.Blocking)
                 )
             .orElse(None)
 

@@ -410,4 +410,69 @@ class SeverityFoldingSuite extends AnyFreeSpec with Matchers with ConstraintFold
         }
     }
 
+    // ── H_BR band and floor: the shared strict owner marks both Blocking ──
+    //
+    // EN 15544:2023 §4.3.1.4: the specified height must lie within ±5 % of
+    // the calculated height `H_BR`, and must be at least `25 cm + m_B`.
+    // ADR-0014: both terms are enforced two-sided and blocking from the
+    // shared strict owner, so the plain engine (which delegates to
+    // `FireboxConstraints_Strict`) surfaces a failing term as
+    // `Violated(blocking = true)` — no per-term re-marking needed.
+
+    "h_BR band and floor are graded blocking from the shared strict owner" - {
+
+        def hBrVerdict(
+            verdicts: List[ConstraintVerdict],
+            rule    : String
+        ): ConstraintVerdict =
+            verdicts
+                .find(v => v.term == ConstraintTerm.H_BR && v.label == rule)
+                .getOrElse(fail(s"no H_BR verdict for label=$rule"))
+
+        "an entered height outside the ±5 % band folds to a blocking h_BR_band Violated" in {
+            // Entered 100 cm against H_BR = 80 cm → band [76, 84] cm;
+            // 100 > 84, so the two-sided band fails. The floor (35 cm)
+            // passes, so h_BR_min stays Satisfied and only the band fires.
+            val firebox  = cleanFirebox.copy(firebox_height_H = 100.cm)
+            val ctx      = constraintContext.copy(H_BR_min = Some(35.cm))
+            val verdicts = plainEngine.constraints(firebox, Some(ctx), fireboxCtxNoShape)
+
+            val verdict = hBrVerdict(verdicts, "h_BR_band")
+            verdict.outcome match
+                case ConstraintOutcome.Violated(code, message, blocking) =>
+                    code shouldBe "h_BR_band"
+                    // The message is the localised `firebox_height_out_of_range`
+                    // with the ENTERED height named (the 2026-10-27 wording fix).
+                    message should include("must be between")
+                    message should include("entered value")
+                    blocking shouldBe true
+                case other                                               =>
+                    fail(s"expected a blocking h_BR_band Violated, got $other")
+
+            // The floor passes at 100 cm ≥ 35 cm: only the band fires.
+            hBrVerdict(verdicts, "h_BR_min").outcome shouldBe ConstraintOutcome.Satisfied
+        }
+
+        "an entered height below 25 cm + m_B folds to a blocking h_BR_min Violated" in {
+            // Entered 30 cm against the floor 25 cm + 10 kg = 35 cm: the
+            // value-carrying floor fails. (The band [76, 84] also fails at
+            // 30 cm, but the pin is on the floor verdict.)
+            val firebox  = cleanFirebox.copy(firebox_height_H = 30.cm)
+            val ctx      = constraintContext.copy(H_BR_min = Some(35.cm))
+            val verdicts = plainEngine.constraints(firebox, Some(ctx), fireboxCtxNoShape)
+
+            val verdict = hBrVerdict(verdicts, "h_BR_min")
+            verdict.outcome match
+                case ConstraintOutcome.Violated(code, message, blocking) =>
+                    code shouldBe "h_BR_min"
+                    // The message is the localised
+                    // `term_should_be_greater_or_eq_than` — the same sentence
+                    // the private floor check emits today.
+                    message should include("should be ≥")
+                    blocking shouldBe true
+                case other                                               =>
+                    fail(s"expected a blocking h_BR_min Violated, got $other")
+        }
+    }
+
 end SeverityFoldingSuite

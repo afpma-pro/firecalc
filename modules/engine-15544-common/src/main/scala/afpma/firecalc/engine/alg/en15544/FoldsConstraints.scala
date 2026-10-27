@@ -385,12 +385,11 @@ trait FoldsConstraints[-F <: Firebox_15544] extends FireboxEngine[F]:
                 // ── 5. h_br_constraints (2 verdicts) ────────────────────
                 val hBrConstraints = constraintsAlg.h_br_constraints(firebox, c)
                 val hBrVerdicts    =
-                    // First: Min(H_BR_min) → Range(Some(min), None)
+                    // First: H ≥ H_BR_min → Range(Some(min), None)
                     val firstHBr      = hBrConstraints.headOption.flatten
-                    val minDescriptor = firstHBr match
-                        case Some(tc: TermConstraint.Min[?]) =>
-                            ConstraintDescriptor.Range(Some(Left(qtyDToWireQty(tc.min))), None)
-                        case _                               => ConstraintDescriptor.Range(None, None)
+                    val minDescriptor = c.H_BR_min match
+                        case Some(min) => ConstraintDescriptor.Range(Some(Left(qtyDToWireQty(min))), None)
+                        case None      => ConstraintDescriptor.Range(None, None)
                     val minVerdict    = slot(
                         ConstraintTerm.H_BR,
                         "h_BR_min",
