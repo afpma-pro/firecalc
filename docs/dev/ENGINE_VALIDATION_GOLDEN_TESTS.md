@@ -34,7 +34,7 @@ Because the distinction between "golden" and "not golden" is load-bearing, the r
 
 **No non-golden fixture may use any of these names.** A dev fixture, a unit-test fixture, an experimental scenario — none of them should use "cas type" in their name, their path, or their package. Non-golden fixtures live under `dev_fixtures/` (for development fixtures compiled into the main source tree) or under `src/test/scala/` (for test-only fixtures), and they use descriptive names like `NPipeTopologyFixture_15544`.
 
-See `modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/dev_fixtures/en15544/NPipeTopologyFixture_15544.scala` for the canonical example of a non-golden dev fixture.
+See the private repo's `firecalc-firebox-austrian-api/modules/firebox-austrian-strict/src/main/scala/afpma/firecalc/engine/dev_fixtures/en15544/NPipeTopologyFixture_15544.scala` for the canonical example of a non-golden dev fixture.
 
 ## Inventory of golden fixtures
 
@@ -44,7 +44,7 @@ See `modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/dev_fixtur
 | EN 13384 — C16 | [`cas_types/en13384/CasType_13384_C16.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/cas_types/en13384/CasType_13384_C16.scala) | `modules/engine/validation/cas_types_13384/current/C16.afpma.txt` |
 | EN 15544 — C1 — Colonne ascendante | [`cas_types/en15544/CasType_15544_C1.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/cas_types/en15544/CasType_15544_C1.scala) | `modules/engine/validation/cas_types_15544/current/01 - Colonne ascendante.afpma.txt` |
 | EN 15544 — C2 — Kachelofen | [`cas_types/en15544/CasType_15544_C2.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/cas_types/en15544/CasType_15544_C2.scala) | `modules/engine/validation/cas_types_15544/current/02 - Kachelofen.afpma.txt` |
-| EN 15544 — N-pipe chain | [`dev_fixtures/en15544/NPipeTopologyFixture_15544.scala`](../../modules/engine-15544-strict/src/main/scala/afpma/firecalc/engine/dev_fixtures/en15544/NPipeTopologyFixture_15544.scala) | `modules/engine/validation/cas_types_15544/current/04 - N-pipe chain.afpma.txt` |
+| EN 15544 — N-pipe chain | `dev_fixtures/en15544/NPipeTopologyFixture_15544.scala` (in the private repo `firecalc-firebox-austrian-api`, under `modules/firebox-austrian-strict/`) | `modules/engine/validation/cas_types_15544/current/04 - N-pipe chain.afpma.txt` |
 
 Version-stamped history of reference outputs is preserved alongside `current/` in dated subdirectories like `v7_20250131_firecalc-v0.2.3/`. Never delete or edit history files.
 

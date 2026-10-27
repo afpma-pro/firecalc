@@ -50,8 +50,6 @@ Running this app might put your PC at risk.
 1. Click **"More info"** (small link at bottom)
 2. Click **"Run anyway"** button that appears
 
-![Windows SmartScreen](../assets/windows-smartscreen.png)
-
 ### Step 3: Install
 
 1. Choose installation location (default: `C:\Program Files\FireCalc AFPMA`)
@@ -106,8 +104,6 @@ unidentified developer.
 3. **Right-click** (or Control-click) "FireCalc AFPMA"
 4. Select **"Open"** from menu
 5. In the dialog that appears, click **"Open"**
-
-![macOS Gatekeeper](../assets/macos-gatekeeper.png)
 
 ### Step 5: First Launch
 
@@ -330,7 +326,7 @@ FireCalc requests minimal permissions:
 ### Getting Help
 
 1. **Documentation**: Check [user documentation](README.md)
-2. **FAQ**: Common questions answered in [FAQ.md](FAQ.md)
+2. **FAQ**: Common questions answered in the user documentation
 3. **GitHub Issues**: Report bugs at `https://github.com/afpma-pro/firecalc/issues`
 4. **Email**: support@afpma.pro
 

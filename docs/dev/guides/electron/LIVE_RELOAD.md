@@ -196,13 +196,13 @@ make prod-electron
    - Alternative: `sbt ~ui/fastLinkJS`
 
 2. **Vite Dev Server**
-   - Configured in [`modules/ui/vite.config.js`](modules/ui/vite.config.js)
+   - Configured in [`modules/ui/vite.config.js`](../../../../modules/ui/vite.config.js)
    - Watches the Scala.js output directory
    - Serves files with HMR enabled
    - Uses WebSocket for live updates
 
 3. **Electron Main Process**
-   - Modified in [`web/electron-app/src/main.js`](web/electron-app/src/main.js)
+   - Modified in [`web/electron-app/src/main.js`](../../../../web/electron-app/src/main.js)
    - Detects `VITE_DEV_SERVER=true` environment variable
    - Loads from `http://localhost:5173` instead of static files
    - Allows localhost connections in CSP for HMR
@@ -259,7 +259,7 @@ make prod-electron
    lsof -ti:5173 | xargs kill -9
    ```
 
-3. Or use a different port in [`modules/ui/vite.config.js`](modules/ui/vite.config.js):
+3. Or use a different port in [`modules/ui/vite.config.js`](../../../../modules/ui/vite.config.js):
    ```javascript
    server: {
      port: 5174  // Change this
@@ -282,7 +282,7 @@ make prod-electron
 
 **Problem:** Router error about parsing `file://` URLs.
 
-**Solution:** This was fixed in [`modules/ui/src/main/scala/afpma/firecalc/ui/Frontend.scala`](modules/ui/src/main/scala/afpma/firecalc/ui/Frontend.scala) to handle hash-based routing. When using Vite dev server, this isn't an issue since we use `http://` URLs.
+**Solution:** This was fixed in [`modules/ui/src/main/scala/afpma/firecalc/ui/Frontend.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/Frontend.scala) to handle hash-based routing. When using Vite dev server, this isn't an issue since we use `http://` URLs.
 
 ---
 
@@ -338,6 +338,6 @@ make prod-ui-build && make prod-electron
 
 ## Related Documentation
 
-- **[MAKEFILE_REFERENCE.md](MAKEFILE_REFERENCE.md)** - Complete reference of all make targets
-- [modules/ui/vite.config.js](../../../modules/ui/vite.config.js) - Vite configuration
-- [Makefile](../../../Makefile) - Source file with all make targets
+- **[MAKEFILE_REFERENCE.md](../MAKEFILE_REFERENCE.md)** - Complete reference of all make targets
+- [modules/ui/vite.config.js](../../../../modules/ui/vite.config.js) - Vite configuration
+- [Makefile](../../../../Makefile) - Source file with all make targets

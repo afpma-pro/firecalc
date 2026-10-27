@@ -44,7 +44,6 @@ Core architectural patterns and design decisions:
 - **[ENGINE_VALIDATION_GOLDEN_TESTS.md](ENGINE_VALIDATION_GOLDEN_TESTS.md)** - ⭐ Golden fixture validation against external EN 13384 / EN 15544 reference implementations; reserved naming policy
 - **[TRANSLATION_AUTOMATION_SPEC.md](TRANSLATION_AUTOMATION_SPEC.md)** - Automated translation discovery system
 - **[guides/DIRECTION_PROPAGATION.md](guides/DIRECTION_PROPAGATION.md)** — Direction propagation in pipe panels (PipeFrame, RelativeDirectionInput, cascade sync) (lives in `guides/`, see [Setup & Development Guides](#setup--development-guides))
-- **[BABEL_CUSTOM_VERSION_DEPENDENCY.md](BABEL_CUSTOM_VERSION_DEPENDENCY.md)** - Custom Babel 0.5.4 local dependency (temporary)
 - **[WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md](WINDOWS_CI_SBT_COURSIER_FILE_LOCKS.md)** - Windows CI workarounds for SBT/Coursier
 
 ## 🏗️ Architecture Documentation

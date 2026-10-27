@@ -60,7 +60,7 @@ Build dependency (`build.sbt`): `firebox_calc_api` depends on `utils, units, dom
 ### Negative
 
 - **Custom codec divergence:** `Codecs.scala` contains a hand-written encoder/decoder for `FireboxCalcRequest` that diverges from the `V5Instances` derivation. This is a maintenance surface: if `Firebox_V4` subtypes gain or lose fields, the custom codec must be updated alongside the `V5Instances` derivation.
-- **Two encodings for the same type:** Developers must understand that `Firebox_V4` is encoded differently on the HTTP wire (flat) versus YAML persistence and localStorage (wrapper). The glossary in `CONTEXT.md` documents the distinction.
+- **Two encodings for the same type:** Developers must understand that `Firebox_V4` is encoded differently on the HTTP wire (flat) versus YAML persistence and localStorage (wrapper). The EN 15544 firebox context glossary documents the distinction.
 
 ## Considered Alternatives
 

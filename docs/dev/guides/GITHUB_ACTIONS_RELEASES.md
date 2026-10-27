@@ -37,7 +37,7 @@ The `electron-` prefix ensures tags are specific to the Electron desktop app mod
 
 ### What Happens When You Push a Staging Tag
 
-1. **GitHub Actions Workflow Starts**: [`.github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
+1. **GitHub Actions Workflow Starts**: [`.github/workflows/release-staging.yml`](../../../.github/workflows/release-staging.yml)
 2. **Draft Release Created**: A private draft release is created (not visible to public)
 3. **Multi-Platform Builds**: Builds run in parallel on:
    - Ubuntu (Linux AppImage)
@@ -52,9 +52,9 @@ The workflow uses the **exact same Makefile targets** as local development:
 
 | Platform | Workflow Step | Makefile Target |
 |----------|---------------|-----------------|
-| Linux | `make staging-electron-package-linux` | [`staging-electron-package-linux`](../../../Makefile:431) |
-| Windows | `make staging-electron-package-win` | [`staging-electron-package-win`](../../../Makefile:423) |
-| macOS | `make staging-electron-package-mac` | [`staging-electron-package-mac`](../../../Makefile:415) |
+| Linux | `make staging-electron-package-linux` | [`staging-electron-package-linux`](../../../Makefile) |
+| Windows | `make staging-electron-package-win` | [`staging-electron-package-win`](../../../Makefile) |
+| macOS | `make staging-electron-package-mac` | [`staging-electron-package-mac`](../../../Makefile) |
 
 This ensures **100% consistency** between local builds and CI builds.
 
@@ -109,12 +109,12 @@ git push origin v1.0.0
 
 **Production differences:**
 - Tag pattern: `v*` (without `-staging`)
-- Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml) (needs updating)
+- Workflow: [`.github/workflows/release.yml`](../../../.github/workflows/release.yml) (needs updating)
 - Build: `make prod-electron-package-*`
 - Backend: `https://api.firecalc.afpma.pro`
 - Privacy: Can be public or draft based on workflow config
 
-> ⚠️ **Note**: The current [`release.yml`](.github/workflows/release.yml:1) has inconsistencies with the Makefile. It should be updated to match the staging workflow pattern before use.
+> ⚠️ **Note**: The current [`release.yml`](../../../.github/workflows/release.yml) has inconsistencies with the Makefile. It should be updated to match the staging workflow pattern before use.
 
 ## Quick Reference
 

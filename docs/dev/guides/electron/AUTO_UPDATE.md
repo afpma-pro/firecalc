@@ -17,7 +17,7 @@ FireCalc uses **manual updates via GitHub Releases** (no code signing).
 
 ## Configuration
 
-### [`web/electron-builder.yml`](../../../web/electron-builder.yml)
+### [`web/electron-builder.yml`](../../../../web/electron-builder.yml)
 ```yaml
 publish:
   provider: github
@@ -35,7 +35,7 @@ mac:
   notarize: false
 ```
 
-### [`web/electron-app/src/main.js`](../../../web/electron-app/src/main.js)
+### [`web/electron-app/src/main.js`](../../../../web/electron-app/src/main.js)
 ```javascript
 // Manual updates only
 autoUpdater.autoDownload = false;
@@ -61,7 +61,7 @@ autoUpdater.setFeedURL({
 
 ### Version Management
 
-**Single source of truth:** [`build.sbt`](../../../build.sbt) line 102: `ui_base_version`
+**Single source of truth:** [`build.sbt`](../../../../build.sbt) line 102: `ui_base_version`
 
 **Sync to package.json:**
 ```bash
@@ -98,7 +98,7 @@ git push origin main --tags
 
 ### GitHub Actions Automation
 
-The [`.github/workflows/release.yml`](../../../.github/workflows/release.yml) workflow automatically:
+The [`.github/workflows/release.yml`](../../../../.github/workflows/release.yml) workflow automatically:
 1. Detects version tags (`v*`)
 2. Builds for Linux, Windows, macOS
 3. Creates GitHub Release
@@ -167,6 +167,5 @@ mac:
 
 ## Related Documentation
 
-- [RELEASE_PROCESS.md](RELEASE_PROCESS.md) - Detailed release workflow
-- [PRODUCTION.md](PRODUCTION.md) - Production deployment
-- [electron-builder.yml](../../../web/electron-builder.yml) - Build configuration
+- [PRODUCTION.md](../PRODUCTION.md) - Production deployment
+- [electron-builder.yml](../../../../web/electron-builder.yml) - Build configuration

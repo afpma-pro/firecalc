@@ -62,14 +62,14 @@ D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/stream
 
 1) Single sbt session per target
 - Avoid starting multiple sbt JVMs back-to-back. Use semicolon syntax to chain tasks in one process.
-- See [`Makefile`](Makefile) targets:
+- See [`Makefile`](../../Makefile) targets:
   - dev: dev-electron-ui-build
   - staging: staging-electron-ui-build
   - prod: prod-electron-ui-build
 
 2) Serialize resolution and quiet the UI
 - Flags: `-Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false`
-- Applied to the sbt invocations in [`Makefile`](Makefile).
+- Applied to the sbt invocations in [`Makefile`](../../Makefile).
 
 3) Isolate caches inside workspace (Windows)
 - Prevents sharing C:\Users\runneradmin caches across jobs and reduces lock conflicts.
@@ -79,20 +79,20 @@ D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/stream
     -Dsbt.global.base=${{ github.workspace }}\.sbt-global
     -Dsbt.boot.directory=${{ github.workspace }}\.sbt-boot
     -Dsbt.ivy.home=${{ github.workspace }}\.ivy2
-- Implemented in [`release-staging.yml`](.github/workflows/release-staging.yml).
+- Implemented in [`release-staging.yml`](../../.github/workflows/release-staging.yml).
 - Cached via actions/cache to avoid redownloads across runs.
 
 4) Prefetch scala3-compiler via Coursier CLI (optional)
 - Using cs.exe to fetch org.scala-lang:scala3-compiler_3:3.9.0 into the isolated cache early.
 - May reduce initial download contention but not proven essential.
-- Implemented in [`release-staging.yml`](.github/workflows/release-staging.yml).
+- Implemented in [`release-staging.yml`](../../.github/workflows/release-staging.yml).
 
 5) Keep the ScalablyTyped Scala 3 compatibility hack enabled (CRITICAL)
 - The "hackScalablyTypedRemoveSourceFuture" removes `-source:future` flag from ScalablyTyped's Zinc compiler
 - This hack is REQUIRED for Scala 3 compatibility to prevent `implicit class` generation errors
 - Originally considered disabling it (FIRECALC_CI_NO_ST_HACK=1) but this caused Scala 3 compilation failures
 - Decision: Keep hack enabled on all platforms including Windows CI
-- Implemented in [`build.sbt`](build.sbt) lines 414-478
+- Implemented in [`build.sbt`](../../build.sbt) lines 414-478
 
 6) Keep Coursier for plugin resolution (avoid Ivy plugin error)
 - We initially added an Ivy fallback (FIRECALC_CI_FORCE_IVY=1) but observed the sbt-crossproject POM mismatch on Windows when Ivy is used for plugins.
@@ -102,26 +102,26 @@ D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/stream
 7) Make sbt plugin/maven resolvers explicit
 - Added explicit resolvers to stabilize plugin resolution on Windows.
 - Helps avoid Ivy POM parsing quirks.
-- Implemented in [`project/plugins.sbt`](project/plugins.sbt).
+- Implemented in [`project/plugins.sbt`](../../project/plugins.sbt).
 
 8) Use cross-env for cross-platform NODE_OPTIONS (CRITICAL for Windows)
 - Replace Unix-style `NODE_OPTIONS='value'` with `cross-env NODE_OPTIONS=value` in npm scripts.
 - Required for Windows cmd.exe/PowerShell compatibility.
-- Implemented in [`modules/ui/package.json`](modules/ui/package.json).
+- Implemented in [`modules/ui/package.json`](../../modules/ui/package.json).
 
 9) Install npm dependencies before sbt operations (CRITICAL)
 - ScalablyTyped requires TypeScript to be present in node_modules.
 - Workflow reordered to run `make ui-setup` and `make electron-setup` before any sbt operations.
-- Implemented in [`release-staging.yml`](.github/workflows/release-staging.yml).
+- Implemented in [`release-staging.yml`](../../.github/workflows/release-staging.yml).
 
 ## Diff overview (what changed and where)
 
-- [`Makefile`](Makefile)
+- [`Makefile`](../../Makefile)
   - Chain tasks in one sbt session
   - Add `-Dsbt.coursier=true -Dsbt.coursier.parallel-downloads=1 -Dsbt.supershell=false`
   - Pre-resolve via `update; ui/update` before linking
 
-- [`.github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
+- [`.github/workflows/release-staging.yml`](../../.github/workflows/release-staging.yml)
   - Isolated caches on Windows: COURSIER_CACHE, SBT_OPTS with custom dirs
   - actions/cache for .coursier/.ivy2/.sbt-boot/.sbt-global
   - Optional: cs.exe prefetch scala3-compiler_3:3.9.0 (may not be essential)
@@ -130,15 +130,15 @@ D:/a/firecalc/firecalc/modules/ui/target/streams/_global/stImport/_global/stream
   - No pre-warm step (removed - ScalablyTyped triggers too early)
   - npm dependency installation BEFORE sbt operations (critical)
 
-- [`build.sbt`](build.sbt)
+- [`build.sbt`](../../build.sbt)
   - ScalablyTyped Scala 3 compatibility hack (lines 414-478)
   - Removed unused FIRECALC_CI_FORCE_IVY code
 
-- [`modules/ui/package.json`](modules/ui/package.json)
+- [`modules/ui/package.json`](../../modules/ui/package.json)
   - Added cross-env package for Windows-compatible environment variables
   - Updated npm scripts to use cross-env for NODE_OPTIONS
 
-- [`project/plugins.sbt`](project/plugins.sbt)
+- [`project/plugins.sbt`](../../project/plugins.sbt)
   - Added explicit plugin + maven resolvers
 
 ## Minimal snippets
@@ -242,10 +242,10 @@ A: The hack (lines 414-478 in build.sbt) patches ScalablyTyped's Zinc compiler t
 
 ## Related files
 
-- [`Makefile`](Makefile)
-- [`build.sbt`](build.sbt)
-- [`.github/workflows/release-staging.yml`](.github/workflows/release-staging.yml)
-- [`project/plugins.sbt`](project/plugins.sbt)
-- [`modules/ui/package.json`](modules/ui/package.json)
+- [`Makefile`](../../Makefile)
+- [`build.sbt`](../../build.sbt)
+- [`.github/workflows/release-staging.yml`](../../.github/workflows/release-staging.yml)
+- [`project/plugins.sbt`](../../project/plugins.sbt)
+- [`modules/ui/package.json`](../../modules/ui/package.json)
 
 End.

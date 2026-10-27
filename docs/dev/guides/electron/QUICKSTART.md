@@ -162,7 +162,7 @@ web/
 
 ## Resources
 
-- [Full Documentation](./ELECTRON_DESKTOP.md)
+- [Full Documentation](DESKTOP_APP.md)
 - [Electron Docs](https://www.electronjs.org/docs/latest/)
 - [electron-builder](https://www.electron.build/)
 

@@ -11,9 +11,9 @@ This document explains how the UI module handles file operations in both web bro
 
 The UI module now supports dual-environment file operations through:
 
-1. **[`ElectronAPI.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/electron/ElectronAPI.scala)** - Scala.js facade for Electron IPC API
-2. **[`FileSystemService.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/services/FileSystemService.scala)** - Unified abstraction for file operations
-3. **Updated Components** - [`FireCalcProjectComponent.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/components/FireCalcProjectComponent.scala) uses the service
+1. **[`ElectronAPI.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/electron/ElectronAPI.scala)** - Scala.js facade for Electron IPC API
+2. **[`FileSystemService.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/services/FileSystemService.scala)** - Unified abstraction for file operations
+3. **Updated Components** - [`FireCalcProjectComponent.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/components/FireCalcProjectComponent.scala) uses the service
 
 ## How It Works
 
@@ -148,13 +148,13 @@ if ElectronAPI.isAvailable then
 
 ## Version Synchronization
 
-The Electron app version is synchronized with the UI version defined in [`build.sbt`](../../../build.sbt).
+The Electron app version is synchronized with the UI version defined in [`build.sbt`](../../../../build.sbt).
 
 ### How It Works
 
-1. **Source of Truth**: [`build.sbt`](../../../build.sbt:110) defines `ui_base_version` (e.g., `"0.1.0"`)
+1. **Source of Truth**: [`build.sbt`](../../../../build.sbt) defines `ui_base_version` (e.g., `"0.1.0"`)
 2. **Full Version**: Constructed as `ui_version = ui_base_version + "+engine-" + engine_version`
-3. **sbt Task**: `syncBuildConfig` updates [`web/package.json`](../../../web/package.json), generates environment variables, and creates JavaScript constants
+3. **sbt Task**: `syncBuildConfig` updates [`web/package.json`](../../../../web/package.json), generates environment variables, and creates JavaScript constants
 4. **Build Process**: The Makefile automatically syncs versions before building
 
 ### Manual Version Sync
@@ -165,15 +165,15 @@ sbt "project ui" syncBuildConfig
 ```
 
 This task:
-- Updates the `version` field in [`web/package.json`](../../../web/package.json) to match `ui_version` (e.g., `0.1.0+engine-0.2.4-SNAPSHOT`)
-- Generates [`web/.env.electron`](../../../web/.env.electron) with repository and version info
-- Generates [`web/generated-constants.js`](../../../web/generated-constants.js) for the renderer process
+- Updates the `version` field in [`web/package.json`](../../../../web/package.json) to match `ui_version` (e.g., `0.1.0+engine-0.2.4-SNAPSHOT`)
+- Generates [`web/.env.electron`](../../../../web/.env.electron) with repository and version info
+- Generates [`web/generated-constants.js`](../../../../web/generated-constants.js) for the renderer process
 
 ### Electron's getVersion()
 
-When running in Electron, `app.getVersion()` returns the version from [`package.json`](../../../web/package.json), which is kept in sync through the build process.
+When running in Electron, `app.getVersion()` returns the version from [`package.json`](../../../../web/package.json), which is kept in sync through the build process.
 
-For detailed version management, see [`VERSIONING_SYSTEM.md`](VERSIONING_SYSTEM.md).
+For detailed version management, see [`VERSIONING_SYSTEM.md`](../VERSIONING_SYSTEM.md).
 
 ## File Type Filtering
 
@@ -244,7 +244,7 @@ Common errors:
 - **Preload Script**: Exposes only safe, specific APIs via `contextBridge`
 - **CSP**: Content Security Policy enforced
 
-All file operations go through the secure IPC channel defined in [`preload.js`](../../../web/electron-app/src/preload.js).
+All file operations go through the secure IPC channel defined in [`preload.cjs`](../../../../web/electron-app/src/preload.cjs).
 
 ## Testing
 
@@ -292,15 +292,15 @@ chimney:
 # ... rest of project data
 ```
 
-See [`AppState`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/models/AppState.scala) for the complete data model.
+See [`AppStateSchema`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/models/schema/AppStateSchema.scala) for the complete data model.
 
 ## Related Files
 
-- **Electron Main Process**: [`web/electron-app/src/main.js`](../../../web/electron-app/src/main.js)
-- **Electron Preload Script**: [`web/electron-app/src/preload.js`](../../../web/electron-app/src/preload.js)
-- **Scala.js Facade**: [`modules/ui/src/main/scala/afpma/firecalc/ui/electron/ElectronAPI.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/electron/ElectronAPI.scala)
-- **File System Service**: [`modules/ui/src/main/scala/afpma/firecalc/ui/services/FileSystemService.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/services/FileSystemService.scala)
-- **Project Components**: [`modules/ui/src/main/scala/afpma/firecalc/ui/components/FireCalcProjectComponent.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/components/FireCalcProjectComponent.scala)
+- **Electron Main Process**: [`web/electron-app/src/main.js`](../../../../web/electron-app/src/main.js)
+- **Electron Preload Script**: [`web/electron-app/src/preload.cjs`](../../../../web/electron-app/src/preload.cjs)
+- **Scala.js Facade**: [`modules/ui/src/main/scala/afpma/firecalc/ui/electron/ElectronAPI.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/electron/ElectronAPI.scala)
+- **File System Service**: [`modules/ui/src/main/scala/afpma/firecalc/ui/services/FileSystemService.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/services/FileSystemService.scala)
+- **Project Components**: [`modules/ui/src/main/scala/afpma/firecalc/ui/components/FireCalcProjectComponent.scala`](../../../../modules/ui/src/main/scala/afpma/firecalc/ui/components/FireCalcProjectComponent.scala)
 
 ## Future Enhancements
 

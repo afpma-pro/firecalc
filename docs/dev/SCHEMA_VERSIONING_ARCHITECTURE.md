@@ -137,7 +137,7 @@ final case class FireCalcYAML_V1(
 )
 ```
 
-**Version Type**: [`FireCalc_Version`](../../modules/dto/src/main/scala/afpma/firecalc/dto/common/FireCalc_Version.scala)
+**Version Type**: [`FireCalc_Version`](../../modules/dto/src/main/scala/afpma/firecalc/dto/common/FIreCalc_Version.scala)
 
 **Security**: This data is safe to send to backend - no personal customer information
 
@@ -254,7 +254,7 @@ object ComponentName_Version:
 | Type | Location | Purpose |
 |------|----------|---------|
 | [`AppStateSchema_Version`](../../modules/ui/src/main/scala/afpma/firecalc/ui/models/schema/common/AppStateSchema_Version.scala) | `ui/models/schema/common/` | AppStateSchema container version |
-| [`FireCalc_Version`](../../modules/dto/src/main/scala/afpma/firecalc/dto/common/FireCalc_Version.scala) | `dto/common/` | FireCalcYAML engine state version |
+| [`FireCalc_Version`](../../modules/dto/src/main/scala/afpma/firecalc/dto/common/FIreCalc_Version.scala) | `dto/common/` | FireCalcYAML engine state version |
 | [`ClientProjectData_Version`](../../modules/ui/src/main/scala/afpma/firecalc/ui/models/schema/common/ClientProjectData_Version.scala) | `ui/models/schema/common/` | Sensitive data version |
 | [`BillingInfo_Version`](../../modules/ui/src/main/scala/afpma/firecalc/ui/models/schema/common/BillingInfo_Version.scala) | `ui/models/schema/common/` | Billing form data version |
 
@@ -373,7 +373,7 @@ def migrateToLatest(data: ClientProjectData_V1): ClientProjectData_V2 =
 
 #### 4. Update Type Alias
 
-In [`ClientProjectData.scala`](../../modules/ui/src/main/scala/afpma/firecalc/ui/models/schema/ClientProjectData.scala):
+In [`ClientProjectData.scala`](../../modules/ui/src/main/scala/afpma/firecalc/ui/models/ClientProjectData.scala):
 
 ```scala
 import afpma.firecalc.ui.models.schema.v2.*

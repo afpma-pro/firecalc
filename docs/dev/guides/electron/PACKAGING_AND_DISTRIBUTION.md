@@ -481,9 +481,9 @@ git push origin main --tags
 
 ## Related Documentation
 
-- [ELECTRON_AUTO_UPDATE.md](ELECTRON_AUTO_UPDATE.md) - Auto-update details
-- [PRODUCTION.md](PRODUCTION.md) - Production deployment
-- [STAGING.md](STAGING.md) - Staging environment
+- [ELECTRON_AUTO_UPDATE.md](AUTO_UPDATE.md) - Auto-update details
+- [PRODUCTION.md](../PRODUCTION.md) - Production deployment
+- [STAGING.md](../STAGING.md) - Staging environment
 - [GitHub Releases](https://github.com/afpma-pro/firecalc/releases)
 
 ## Support
@@ -491,5 +491,5 @@ git push origin main --tags
 For release issues:
 1. Check GitHub Actions logs
 2. Review this guide
-3. Check [ELECTRON_AUTO_UPDATE.md](ELECTRON_AUTO_UPDATE.md)
+3. Check [ELECTRON_AUTO_UPDATE.md](AUTO_UPDATE.md)
 4. Open issue if problem persists

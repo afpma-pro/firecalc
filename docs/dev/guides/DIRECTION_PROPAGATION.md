@@ -66,7 +66,7 @@ frameBeforeByIdx (Signal[Map[Int, PipeFrame]])  ← recomputes on any elem chang
 
 ## Sync Binders (in `RelativeDirectionInput`)
 
-All syncs use `.distinct.changes.debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)` to prevent transaction-depth overflow. See [`RelativeDirectionInput.scala`](../../modules/ui/src/main/scala/afpma/firecalc/ui/components/RelativeDirectionInput.scala).
+All syncs use `.distinct.changes.debounce(LAMINAR_BIDIRSYNC_DEFAULT_DELAY_MS)` to prevent transaction-depth overflow. See [`RelativeDirectionInput.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/components/RelativeDirectionInput.scala).
 
 ### `forwardSync` — user edits relative dir → updates `absDirVar`
 

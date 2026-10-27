@@ -24,17 +24,17 @@ The versioning system provides:
 | **Production** | `<UI_BASE_VERSION>+engine-<ENGINE_VERSION>` | Shows git hash | Full version |
 
 `<UI_BASE_VERSION>` / `<ENGINE_VERSION>` stand for the current SNAPSHOT defaults —
-`lazy val ui_base_version` and `val engine_version_default` in [`build.sbt`](build.sbt)
+`lazy val ui_base_version` and `val engine_version_default` in [`build.sbt`](../../../build.sbt)
 (run `make check` to print the values in effect); `e3d4c6c1` is an illustrative git hash.
 
 ## How It Works
 
 ### Version Components
 
-1. **UI_BASE_VERSION** - the current `ui_base_version` SNAPSHOT; `lazy val ui_base_version` in [`build.sbt`](build.sbt)
+1. **UI_BASE_VERSION** - the current `ui_base_version` SNAPSHOT; `lazy val ui_base_version` in [`build.sbt`](../../../build.sbt)
 2. **ENGINE_VERSION** - the current `engine_version_default` SNAPSHOT (see build.sbt / `make check`); scraped from `val engine_version_default`
-   in [`build.sbt`](build.sbt). Deliberate two-name split: the scrape in
-   [`scripts/generate-ui-version.sh`](scripts/generate-ui-version.sh) reads
+   in [`build.sbt`](../../../build.sbt). Deliberate two-name split: the scrape in
+   [`scripts/generate-ui-version.sh`](../../../scripts/generate-ui-version.sh) reads
    `engine_version_default` (the moving default); `engine_version` is what the build
    actually uses and may be pinned at build-load time via `FIRECALC_PUBLISH_VERSION`
    (see [dev README](../README.md), "Publishing the engine artifacts") — the pin never
@@ -47,11 +47,11 @@ The versioning system provides:
    - Staging: `<UI_BASE_VERSION>-staging+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
    - Prod: `<UI_BASE_VERSION>+engine-<ENGINE_VERSION>-b20-423-ge3d4c6c1`
 
-**Note:** [`build.sbt`](build.sbt) is the single source of truth. [`scripts/generate-ui-version.sh`](scripts/generate-ui-version.sh) is the only reader of the version values: it extracts them from `build.sbt` via text scraping (a `grep` of the line holding `val engine_version_default`) unless a caller passes `UI_BASE_VERSION` / `ENGINE_VERSION` / `GIT_HASH` environment overrides, so the quoted literal MUST stay on that same line.
+**Note:** [`build.sbt`](../../../build.sbt) is the single source of truth. [`scripts/generate-ui-version.sh`](../../../scripts/generate-ui-version.sh) is the only reader of the version values: it extracts them from `build.sbt` via text scraping (a `grep` of the line holding `val engine_version_default`) unless a caller passes `UI_BASE_VERSION` / `ENGINE_VERSION` / `GIT_HASH` environment overrides, so the quoted literal MUST stay on that same line.
 
 ### Build Process
 
-[`scripts/generate-ui-version.sh`](scripts/generate-ui-version.sh) generates [`modules/ui/firecalc-ui.js`](modules/ui/firecalc-ui.js:1) with version exports; the root [`Makefile`](Makefile) macros and [`firecalc-docker/scripts/deploy.sh`](firecalc-docker/scripts/deploy.sh) call the same script, so the two build recipes cannot drift apart. User-facing entry points:
+[`scripts/generate-ui-version.sh`](../../../scripts/generate-ui-version.sh) generates [`modules/ui/firecalc-ui.js`](../../../modules/ui/firecalc-ui.js) with version exports; the root [`Makefile`](../../../Makefile) macros and [`firecalc-docker/scripts/deploy.sh`](../../../firecalc-docker/scripts/deploy.sh) call the same script, so the two build recipes cannot drift apart. User-facing entry points:
 
 ```bash
 make dev-ui-build      # Generates dev version
@@ -61,11 +61,11 @@ make prod-ui-build     # Generates production version
 
 ### Code Flow
 
-1. [`FIRECALC_UI.scala`](modules/ui/src/main/scala/afpma/firecalc/ui/FIRECALC_UI.scala:1-24) - Imports version components from JavaScript
+1. [`FIRECALC_UI.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/FIRECALC_UI.scala) - Imports version components from JavaScript
    - `UI_BASE_VERSION`, `ENGINE_VERSION`, `GIT_HASH`, `UI_FULL_VERSION`
-2. [`VersionService.scala`](modules/ui/src/main/scala/afpma/firecalc/ui/services/VersionService.scala:1-61) - Formats version per environment
-3. [`Footer.scala`](modules/ui/src/main/scala/afpma/firecalc/ui/Footer.scala:1-41) - Displays version (with tooltip in prod)
-4. [`Frontend.scala`](modules/ui/src/main/scala/afpma/firecalc/ui/Frontend.scala:72) - Logs version on startup
+2. [`VersionService.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/services/VersionService.scala) - Formats version per environment
+3. [`Footer.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/Footer.scala) - Displays version (with tooltip in prod)
+4. [`Frontend.scala`](../../../modules/ui/src/main/scala/afpma/firecalc/ui/Frontend.scala) - Logs version on startup
 
 ## Testing
 

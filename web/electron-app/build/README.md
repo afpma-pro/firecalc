@@ -30,4 +30,4 @@ electron-builder automatically converts the PNG icon to platform-specific format
 - **Windows:** `.ico` file  
 - **Linux:** Uses PNG directly
 
-The configuration in [`electron-builder.yml`](../electron-builder.yml) points to `build/icon.png` for all platforms.
+The configuration in [`electron-builder.yml`](../../electron-builder.yml) points to `build/icon.png` for all platforms.
