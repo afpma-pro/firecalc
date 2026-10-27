@@ -8,6 +8,7 @@ package afpma.firecalc.payments
 import java.io.File
 import java.nio.file.Files
 
+import afpma.firecalc.config.ConfigPathResolver
 import afpma.firecalc.dto.FireCalcYAML
 
 import afpma.firecalc.reports.EN15544ValidationException
@@ -354,6 +355,15 @@ object Main extends IOApp:
                     "Refusing to start with a default to prevent accidental misconfiguration."
             )
         }
+
+        // `--check-config`: print the resolved config paths and exit (documented in
+        // docs/dev/guides/PRODUCTION.md; the Makefile `*-env-test` targets run it as a
+        // forked `run` child, which inherits the invoking client's FIRECALC_ENV — a
+        // `console` session would see the warm sbt server's environment instead; see
+        // docs/dev/README.md, "Build layout & invocation").
+        if args.contains("--check-config") then
+            println(ConfigPathResolver.debugInfo())
+            return IO.pure(ExitCode.Success)
 
         // Create HTTP client resource
         EmberClientBuilder.default[IO].build.use { httpClient =>
