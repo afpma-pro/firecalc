@@ -259,7 +259,7 @@ dev-electron-app-run:
 
 dev-backend-run:
 	@echo "Starting payments backend in development mode..."
-	@FIRECALC_ENV=development sbt "payments/run"
+	@FIRECALC_ENV=development sbt --client "payments/run"
 
 ## ================================
 ## DEVELOPMENT - SETUP/VERIFICATION
@@ -277,7 +277,7 @@ dev-env-setup:
 
 dev-env-test:
 	@echo "Testing development environment detection..."
-	@sbt "console" <<< 'import afpma.firecalc.config.ConfigPathResolver; println(ConfigPathResolver.debugInfo()); sys.exit(0)'
+	@FIRECALC_ENV=development sbt --client "payments/run --check-config"
 
 ## ================================
 ## STAGING - UI
@@ -308,7 +308,7 @@ staging-electron-app-run:
 
 staging-backend-run:
 	@echo "Starting payments backend in staging mode..."
-	@FIRECALC_ENV=staging sbt "payments/run"
+	@FIRECALC_ENV=staging sbt --client "payments/run"
 
 # PDF logos are staged from the module tree by firecalc-docker/scripts/deploy.sh
 # (modules/invoices/configs/logo.png, modules/reports/src/main/resources/logo.jpg).
@@ -337,7 +337,7 @@ staging-env-setup:
 
 staging-env-test:
 	@echo "Testing staging environment detection..."
-	@FIRECALC_ENV=staging sbt "console" <<< 'import afpma.firecalc.config.ConfigPathResolver; println(ConfigPathResolver.debugInfo()); sys.exit(0)'
+	@FIRECALC_ENV=staging sbt --client "payments/run --check-config"
 
 ## ================================
 ## PRODUCTION - UI
@@ -368,7 +368,7 @@ prod-electron-app-run:
 
 prod-backend-run:
 	@echo "Starting payments backend in production mode..."
-	@FIRECALC_ENV=production sbt "payments/run"
+	@FIRECALC_ENV=production sbt --client "payments/run"
 
 prod-backend-build:
 	@echo "Building for production deployment..."
@@ -393,7 +393,7 @@ prod-env-setup:
 
 prod-env-test:
 	@echo "Testing production environment detection..."
-	@FIRECALC_ENV=production sbt "console" <<< 'import afpma.firecalc.config.ConfigPathResolver; println(ConfigPathResolver.debugInfo()); sys.exit(0)'
+	@FIRECALC_ENV=production sbt --client "payments/run --check-config"
 
 ## ================================
 ## SHARED ELECTRON BUILD TARGETS
