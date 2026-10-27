@@ -126,8 +126,71 @@ This installs a pre-commit hook that:
 
 See [`scripts/git-hooks/README.md`](../../scripts/git-hooks/README.md) for details.
 
-### Stale warm sbt server: `ui/test` red suites that are not actually broken
+### Build layout & invocation (sbt 2.x)
 
+The build runs the sbt pinned in `project/build.properties` (sbt 2.0.9 at the time of
+writing). The launcher version is irrelevant — CI's sbt 1.11.6 launcher install is
+vestigial, the launcher always fetches the pinned build version. `build.properties` is
+the only authority on the sbt version.
+
+**Where the build puts things.** Every module writes into one tree at the repo root,
+keyed by platform; the contents are CAS-linked from `~/.cache/sbt/v2`:
+
+```
+target/out/{jvm,sjs1}/scala-3.9.0/firecalc-<module-dir-name>/classes/       # main classes
+target/out/{jvm,sjs1}/scala-3.9.0/firecalc-<module-dir-name>/test-classes/  # test classes
+target/out/{jvm,sjs1}/scala-3.9.0/firecalc-<module-dir-name>/test-reports/  # test XMLs, PDF renders
+target/out/{jvm,sjs1}/scala-3.9.0/firecalc-<module-dir-name>/src_managed/   # generated sources
+```
+
+The directory names above are also the published artifact names: `firecalc-` + the module
+directory name verbatim (`firecalc-utils`, `firecalc-engine-15544-common`,
+`firecalc-firebox_calc_api` — underscores and hyphens kept). The sbt *command* ids are a
+third, separate spelling defined in `build.sbt` — legacy underscores, `JS`-suffixed on the
+JS side of crossProjects (`engine_15544_common`, `engine_15544_commonJS`) — never guess
+them: the Makefile targets are verified spellings, copy from there. Anything under
+`modules/*/target/` or `modules/*/.{jvm,js}/target/` is
+pre-sbt-2 residue: never written, never read (purged 2026-10-27). If one reappears, an
+sbt 1.x process ran — recheck before trusting any class found under it.
+
+**One shared warm server per repo.** `sbt --client "<cmd>"` attaches to this repo's
+long-lived server — the one VS Code/Metals already runs, or one started manually with
+`sbt --server`; if none is up, `--client` starts a background one. Warm dispatch is ≈0.4 s
+against a multi-second cold start, and the compiler sits in RAM once per repo. Never keep
+a second resident server for the same repo (concurrent sbt servers have OOM-killed this
+machine); stop the shared one with `sbt --client shutdown`. `sbt --client` takes exactly
+ONE command argument — several commands go `;`-separated inside it
+(`sbt --client 'compile; testOnly *X'`).
+
+`sbt --server --batch "<cmd>"` runs a fresh foreground JVM that exits when done. That is
+not a second resident server, and it is **required** whenever the command reads an
+environment variable or system property at build-load time: a running server keeps the
+values it loaded with, and `--batch` alone does not create a fresh JVM.
+
+| Purpose | Invocation | Why |
+|---|---|---|
+| Compile / test / dev loop | `sbt --client "<cmd>"` | attaches to the shared warm server |
+| Backend in one environment | `FIRECALC_ENV=<env> sbt --client "payments/run"` | the `run` child is forked by the sbtn **client** and inherits the client's env — works on a shared server (verified on sbt 2.0.9, 2026-10-27) |
+| Env / config check | `FIRECALC_ENV=<env> sbt --client "payments/run --check-config"` | same inheritance; prints the resolved config paths and exits (see `docs/dev/guides/PRODUCTION.md`) |
+| Engine stamp publish | `FIRECALC_PUBLISH_VERSION=<ver> sbt --server --batch publishEngineLocal` | `build.sbt` reads the env at load time → fresh JVM required; see "Publishing the engine artifacts" below |
+| Snapshot regeneration | `FIRECALC_UPDATE_SNAPSHOTS=1 sbt --server --batch "<module>/testOnly *"` | test JVMs do not inherit the client's env |
+| Forced test runs | `sbt --client "<module>/Test/testOnly *"` | bare `test` maps to `testQuick` under sbt 2.x — "Total 0 … No tests to run" means cache-skipped, not green |
+
+Never:
+
+- **running `sbt --server` while a server already owns the socket** — the boot fails with
+  `Address already in use` and the next `--client` silently attaches to the OLD server;
+  `sbt --client shutdown` first.
+- **per-command `set` on a shared server** — `set` is session state; it persists into
+  every later client invocation (verified).
+- **baking `FIRECALC_ENV` into the server at startup** — forked `run` children never see
+  the server's environment; put the variable on the client invocation.
+- **trusting `sbt console` for config questions** — the console worker is started by the
+  server and reports the server's environment, not the caller's; use
+  `payments/run --check-config` instead.
+- **trusting classes under `modules/*/target/`** — pre-sbt-2 residue, see above.
+
+**Warm-state trap: `ui/test` reports red suites that are not actually broken.**
 `sbt --client "ui/test"` can report `java.lang.ClassNotFoundException` for suites that
 exist and pass (observed: 8 utest suites incl. `RemotePrefetch*Spec`, plus ~10
 "suite-load error" entries). Root cause is warm-state, not code: a server JVM started
@@ -141,19 +204,14 @@ sbt --server --batch "ui/test"    # fresh JVM, matches build.properties
 ```
 
 Verified 2026-10-06 on `chore/inert-calc-knobs-and-docs`: cold run is 332/332 green and
-every "red" suite executes. Three related traps when trusting test output:
-- Under sbt 2.x (this build's `build.properties`), the `test` key maps to `testQuick` on a
-  fresh JVM too — a run printing `Total 0 … No tests to run` means everything was
-  **cache-skipped**, not executed. It is not only a warm/Bloop artifact.
-- Evidence-grade runs (release verification, spec acceptance) must therefore be
-  **forced**: `sbt --server --batch "<module>/testOnly *"` — never rely on bare `test`
-  (warm or cold) to execute anything.
-- sbt 2 also packages each project's own Test products into a `-tests.jar` first on the
-  Test classpath. Suites resolving classpath resources via `Paths.get(url.toURI)` die with
-  `jdk.zipfs FileSystemNotFoundException` there. The build exports exploded test-classes
-  dirs (`testClasspathAsDirectories`, i.e. `Test / exportJars := false`) for the JVM
-  projects with classpath-resource suites — see ticket
-  `.scratch/austrian-refusal-and-strict-only/issues/07` for the diagnosis recipe.
+every "red" suite executes.
+
+**Classpath-resource suites and `-tests.jar`.** sbt 2 packages each project's Test
+products into a `-tests.jar` first on the Test classpath. Suites resolving classpath
+resources via `Paths.get(url.toURI)` die there with `jdk.zipfs
+FileSystemNotFoundException`. The build exports exploded test-classes dirs
+(`testClasspathAsDirectories`, i.e. `Test / exportJars := false`) for the JVM projects
+with classpath-resource suites.
 
 ### Publishing the engine artifacts (local repository only)
 

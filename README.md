@@ -67,7 +67,7 @@ make sync-build-config
 ```bash
 # Engine tests
 sbt "engine/test"
-sbt "engine-15544-strict/test"
+sbt "engine_15544_strict/test"
 
 # UI tests
 sbt "~ui/testOnly *AppState_Suite"
@@ -76,7 +76,7 @@ sbt "~ui/testOnly *AppState_Suite"
 sbt "~labo/testOnly *labo_Suite"
 
 # DTO tests
-sbt "dtoJVM/test"
+sbt "dto/test"
 
 # FDIM exercises
 sbt "fdim/test"
