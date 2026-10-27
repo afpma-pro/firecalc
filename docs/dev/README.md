@@ -171,7 +171,7 @@ values it loaded with, and `--batch` alone does not create a fresh JVM.
 | Compile / test / dev loop | `sbt --client "<cmd>"` | attaches to the shared warm server |
 | Backend in one environment | `FIRECALC_ENV=<env> sbt --client "payments/run"` | the `run` child is forked by the sbtn **client** and inherits the client's env — works on a shared server (verified on sbt 2.0.9, 2026-10-27) |
 | Env / config check | `FIRECALC_ENV=<env> sbt --client "payments/run --check-config"` | same inheritance; prints the resolved config paths and exits (see `docs/dev/guides/PRODUCTION.md`) |
-| Engine stamp publish | `FIRECALC_PUBLISH_VERSION=<ver> sbt --server --batch publishEngineLocal` | `build.sbt` reads the env at load time → fresh JVM required; see "Publishing the engine artifacts" below |
+| Engine stamp publish | `FIRECALC_PUBLISH_VERSION=<ver> sbt --server --batch publishEngineLocal` | `build.sbt` reads the env at load time → fresh JVM required; see [Engine stamp chain → Publishing: SNAPSHOT loop vs SHA stamp](ENGINE_STAMP_CHAIN.md#publishing-snapshot-loop-vs-sha-stamp) |
 | Snapshot regeneration | `FIRECALC_UPDATE_SNAPSHOTS=1 sbt --server --batch "<module>/testOnly *"` | test JVMs do not inherit the client's env |
 | Forced test runs | `sbt --client "<module>/Test/testOnly *"` | bare `test` maps to `testQuick` under sbt 2.x — "Total 0 … No tests to run" means cache-skipped, not green |
 
@@ -212,63 +212,12 @@ FileSystemNotFoundException`. The build exports exploded test-classes dirs
 (`testClasspathAsDirectories`, i.e. `Test / exportJars := false`) for the JVM projects
 with classpath-resource suites.
 
-### Publishing the engine artifacts (local repository only)
+### Engine stamp chain
 
-The 14 engine-line modules granted to `firecalc-firebox-austrian-api` as binary
-artifacts (ADR-0007) are the only
-publishable projects in this repository — everything else (ui, payments, reports,
-laminar_*, ...) is `publish / skip := true`. One command publishes the full granted
-closure (JVM artifacts only; the Scala.js sides stay skipped):
-
-```bash
-# Daily dev loop — moving SNAPSHOT (the current `engine_version_default`, see build.sbt / `make check`):
-sbt --client publishEngineLocal
-
-# Shipped/committed pins — SHA-stamped version (ADR-0007 shape 0.3.0-b25+<sha7>):
-# tag the exact published commit first (annotated, never moved afterwards):
-git tag -a "engine-0.3.0-b25+$(git rev-parse --short=7 HEAD)" -m "engine artifacts 0.3.0-b25+$(git rev-parse --short=7 HEAD)"
-FIRECALC_PUBLISH_VERSION=0.3.0-b25+$(git rev-parse --short=7 HEAD) sbt --server --batch publishEngineLocal
-```
-
-Notes:
-
-- Artifacts land in `~/.ivy2/local/pro.afpma/` (Ivy layout — sbt's implicit Local
-  resolver; no remote registry is ever contacted, and there is no CI publishing).
-- Tag-and-publish discipline (ADR-0007): the annotated `engine-<version>` tag is
-  the git-side twin of the artifact. Create it on the exact commit being
-  published, push it, and **never move it**; publish only from the tagged
-  commit. `firecalc-docker/scripts/deploy.sh` gates every `CALC_SERVER=true`
-  build on this — tag present, `VERSIONS.firecalc` equal to the tag's peeled
-  commit, working tree byte-identical to the tag across the 14 modules' `src/main` —
-  and publishes at the pinned version as the FIRST sbt step (warm-server trap).
-- `FIRECALC_PUBLISH_VERSION` is read when `build.sbt` loads, so the stamp MUST be
-  published with a fresh JVM: `sbt --server --batch` (a foreground server, as in the
-  test commands above). Under sbt 2.x, plain `sbt --batch` still routes to the warm
-  background server — which reloads `build.sbt` after a version bump but never
-  inherits the shell's env var — so it publishes at the default version, not the
-  stamp. The same value can also be passed as a JVM system property
-  (`-DFIRECALC_PUBLISH_VERSION=...`) at load time.
-- The version stamp propagates: the published ivy/pom metadata and
-  `afpma.firecalc.utils.BuildInfo.engineVersion` (generated source inside
-  firecalc-utils) carry the exact pinned string.
-- Caveat: the pin is not purely engine-scoped. In the JVM that loads it, it also
-  re-versions derived non-granted modules: `reports_version`, `payments_version` and
-  `ui_version` feed the `version` and `BuildInfo` strings of ui/payments/reports. Those
-  modules stay unpublished (`publish / skip`), so only their local build metadata moves.
-  One caveat on the caveat: `reports_version`, `payments_version` and `ui_version` are
-  also embedded in firecalc-utils' generated `BuildInfo` — and firecalc-utils IS a
-  granted, published module. So a pinned build's published firecalc-utils artifact
-  carries the pin-derived non-engine strings inside its BuildInfo source. This is
-  metadata only: it changes no dependency resolution and no artifact coordinates.
-- Allowlist source of truth: `engine_publish_jvm_ids` in `build.sbt` (drives three
-  consumers: the skip gating through `commonSettings`, the Scaladoc kill-switch
-  (`Compile / packageDoc / publishArtifact`, also in `commonSettings`), and the
-  `publishEngineLocal` alias).
-  Adding a module there is a licensing decision, not a build decision.
-
-Consumer side (private repo): declare `"pro.afpma" %% "firecalc-engine" % "<pin>"`
-(module names are `firecalc-*`; JVM-only, Scala 3.9.0) — no resolver entry is
-needed for publishLocal artifacts.
+- See [ENGINE_STAMP_CHAIN.md](ENGINE_STAMP_CHAIN.md) — the one authoritative doc for
+  the publish → tag → pin chain: the two version names, the publish allowlist,
+  SNAPSHOT vs SHA-stamped publishing, tag-and-publish discipline, the six deploy-gate
+  checks, and the consumer-side engine pin in `firecalc-firebox-austrian-api`.
 
 ### Working with Database
 - See [DB_SQLITE3_MIGRATION_GUIDE.md](guides/DB_SQLITE3_MIGRATION_GUIDE.md) for schema changes

@@ -42,8 +42,8 @@ ThisBuild / homepage         := Some(url("https://www.afpma.pro"))
 //                          SHA-stamped coordinate (`0.3.0-b25+<sha7>`, ADR-0007). Read once
 //                          when the build loads, so it must be set in the environment of the
 //                          JVM that loads build.sbt (a warm sbt --client server keeps the
-//                          value it loaded with). See docs/dev/README.md,
-//                          "Publishing the engine artifacts".
+//                          value it loaded with). See docs/dev/ENGINE_STAMP_CHAIN.md,
+//                          "The two version names".
 val engine_version_default = "0.3.1-b26-SNAPSHOT"
 lazy val engine_version    =
     sys.env

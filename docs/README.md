@@ -39,6 +39,7 @@ Technical documentation is organized within each module for easy access by devel
 - **[Architecture Overview](../ARCHITECTURE.md)** - High-level system architecture
 - **[Developer Guides](dev/guides/)** - Installation, setup, and development workflows
 - **[Engine Validation — Golden Tests](dev/ENGINE_VALIDATION_GOLDEN_TESTS.md)** - Cross-validation methodology against EN 13384 / EN 15544 reference implementations
+- **[Engine Stamp Chain — publish → tag → pin](dev/ENGINE_STAMP_CHAIN.md)** - Publish allowlist, SNAPSHOT vs SHA-stamped publishing, tag discipline, deploy gate, and the private engine pin
 - **[Private Calculation Backend — Deployment Cutover](deployment/private-backend-cutover.md)** - Routing, versioning, health gating, and rollback for the standalone firebox-calc backend
 
 ## 📝 Contributing to Documentation

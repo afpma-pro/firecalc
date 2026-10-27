@@ -86,7 +86,7 @@ sbt "engine-13384-strict/testOnly *cas_types_13384_C16_Suite"
 sbt --client publishEngineLocal
 ```
 
-See `docs/dev/README.md` → "Publishing the engine artifacts" for the
+See `docs/dev/ENGINE_STAMP_CHAIN.md` → "Publishing: SNAPSHOT loop vs SHA stamp" for the
 `FIRECALC_PUBLISH_VERSION` SHA-stamped pin shape used for committed pins.
 
 ## 🔧 Development

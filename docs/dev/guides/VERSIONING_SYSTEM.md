@@ -37,7 +37,7 @@ The versioning system provides:
    [`scripts/generate-ui-version.sh`](../../../scripts/generate-ui-version.sh) reads
    `engine_version_default` (the moving default); `engine_version` is what the build
    actually uses and may be pinned at build-load time via `FIRECALC_PUBLISH_VERSION`
-   (see [dev README](../README.md), "Publishing the engine artifacts") — the pin never
+   (see [Engine stamp chain](../ENGINE_STAMP_CHAIN.md), "The two version names") — the pin never
    affects the scraped default.
 3. **GIT_HASH** (`b20-423-ge3d4c6c1`) - From `git describe --tags --always`
    - Format: `<tag>-<commits-since-tag>-g<hash>`

@@ -184,6 +184,10 @@ headers at the two calc locations (ticket 21):
 
 ## 3. Versioning scheme
 
+The values in the table below are a dated record from the cutover moment (b25), not
+the current values; for how engine versions are actually stamped, tagged, and pinned
+today, see the [engine stamp chain](../dev/ENGINE_STAMP_CHAIN.md).
+
 | Component | Version source | Current value |
 |---|---|---|
 | Normative contract | `modules/firebox_calc_api/openapi/firebox-calc-api.yaml` `info.version` | `1.0.0` |

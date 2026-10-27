@@ -13,7 +13,7 @@
 # ~/.ivy2/local, so they must be published at the pinned version BEFORE any
 # other sbt invocation: a later plain `sbt --batch` can attach to a warm server
 # that loaded the SNAPSHOT default and silently publish wrong coordinates
-# (docs/dev/README.md, "Publishing the engine artifacts" — warm-server trap).
+# (docs/dev/ENGINE_STAMP_CHAIN.md, "Publishing: SNAPSHOT loop vs SHA stamp" — warm-server trap).
 #
 # Provenance contract (ADR-0007): an annotated `engine-<version>` tag marks
 # the exact commit that version was published from and is never moved. The gate
