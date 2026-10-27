@@ -18,16 +18,16 @@ import java.nio.file.{Files, Path}
  * Set the environment variable `FIRECALC_UPDATE_SNAPSHOTS=1` to write `actual`
  * back to the snapshot file instead of asserting.
  *
- * IMPORTANT: use `sbt` (not `sbt --client`) so the env var reaches the forked
- * test JVM. The `--client` flag connects to a long-lived server process that
- * does not inherit shell env vars.
+ * IMPORTANT: use `sbt --server --batch` (not bare `sbt` or `sbt --client`) so the
+ * env var reaches the forked test JVM. Under sbt 2.x both forms route to the
+ * long-lived background server, which does not inherit shell env vars.
  *
  * ```bash
  * # Regenerate snapshots for a single suite
- * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "reports/testOnly *EcolabeledFireboxPipeSuite"
+ * FIRECALC_UPDATE_SNAPSHOTS=1 sbt --server --batch "reports/testOnly *EcolabeledFireboxPipeSuite"
  *
  * # Regenerate snapshots for all suites in a module
- * FIRECALC_UPDATE_SNAPSHOTS=1 sbt "engine_15544_strict/test"
+ * FIRECALC_UPDATE_SNAPSHOTS=1 sbt --server --batch "engine_15544_strict/test"
  * ```
  */
 object SnapshotAssert:

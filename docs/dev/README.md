@@ -170,7 +170,7 @@ sbt --client publishEngineLocal
 # Shipped/committed pins — SHA-stamped version (ADR-0007 shape 0.3.0-b25+<sha7>):
 # tag the exact published commit first (annotated, never moved afterwards):
 git tag -a "engine-0.3.0-b25+$(git rev-parse --short=7 HEAD)" -m "engine artifacts 0.3.0-b25+$(git rev-parse --short=7 HEAD)"
-FIRECALC_PUBLISH_VERSION=0.3.0-b25+$(git rev-parse --short=7 HEAD) sbt --batch publishEngineLocal
+FIRECALC_PUBLISH_VERSION=0.3.0-b25+$(git rev-parse --short=7 HEAD) sbt --server --batch publishEngineLocal
 ```
 
 Notes:
@@ -185,9 +185,12 @@ Notes:
   commit, working tree byte-identical to the tag across the 14 modules' `src/main` —
   and publishes at the pinned version as the FIRST sbt step (warm-server trap).
 - `FIRECALC_PUBLISH_VERSION` is read when `build.sbt` loads, so the stamp MUST be
-  published with a fresh JVM (`sbt --batch`, or a new sbt shell). A warm
-  `sbt --client` server keeps the version it loaded with; the same value can also
-  be passed as a JVM system property (`-DFIRECALC_PUBLISH_VERSION=...`) at load time.
+  published with a fresh JVM: `sbt --server --batch` (a foreground server, as in the
+  test commands above). Under sbt 2.x, plain `sbt --batch` still routes to the warm
+  background server — which reloads `build.sbt` after a version bump but never
+  inherits the shell's env var — so it publishes at the default version, not the
+  stamp. The same value can also be passed as a JVM system property
+  (`-DFIRECALC_PUBLISH_VERSION=...`) at load time.
 - The version stamp propagates: the published ivy/pom metadata and
   `afpma.firecalc.utils.BuildInfo.engineVersion` (generated source inside
   firecalc-utils) carry the exact pinned string.
