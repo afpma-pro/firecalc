@@ -11,6 +11,7 @@ Core calculation engine for masonry heater design compliant with EN 13384 and EN
 
 ### Technical Documentation
 
+- **[GLOSSARY.md](GLOSSARY.md)** - The module's own vocabulary: preferred terms, with `_Avoid_` lists for the code names
 - **[ENGINE.md](ENGINE.md)** - Engine development guide (compilation, testing, publishing)
 - **[Homologation.md](Homologation.md)** - Validation and homologation notes
 - **[EN13384_INTERPRETATION.md](EN13384_INTERPRETATION.md)** - Implementation notes and standard interpretations
@@ -146,7 +147,7 @@ val length: Quantity[Length] = 5.withUnit[Meter]
 
 ### Standards Compliance
 - Implements EN 13384 thermal and fluid dynamic calculations
-- Supports EN 15544 strict and MCE (Maximum Credible Event) modes
+- Supports EN 15544 strict and MCE modes
 - Documented interpretations and assumptions (see [EN13384_INTERPRETATION.md](EN13384_INTERPRETATION.md))
 
 ## ⚠️ Important Notes
