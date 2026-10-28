@@ -97,3 +97,5 @@ astformatter
 # (SPEC_00 decision 14: "Do not put proprietary source back into a public
 # repository"). This entry keeps `firecalc-firebox-austrian-api/` out of the public working tree.
 firecalc-firebox-austrian-api/
+# scalex symbol-navigation cache (regenerated on demand)
+.scalex/
