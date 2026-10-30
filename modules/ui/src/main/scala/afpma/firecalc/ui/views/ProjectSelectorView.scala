@@ -11,6 +11,7 @@ import afpma.firecalc.payments.shared.Constants.LEGACY_FIRECALC_FILE_EXTENSION
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
+import afpma.firecalc.ui.components.GlobalErrorDialog
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.AppStateSchemaHelper
@@ -45,7 +46,10 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                 val id = ProjectManager.openFromFile(schema)
                 router.pushState(ProjectPage(localeVar.now().language, id))
             case Failure(e)      =>
-                dom.window.alert(s"Failed to load: ${e.getMessage}")
+                GlobalErrorDialog.showUserAttemptError(
+                    Some                                             (fileName    ),
+                    currentI18N.errors.failed_to_decode_project.apply(e.getMessage)
+                )
 
     lazy val node: Div =
         val hiddenFileInput = input(
@@ -57,9 +61,12 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                     val files = thisNode.ref.files
                     if files.length > 0 then
                         import scala.concurrent.ExecutionContext.Implicits.global
-                        FileSystemService.readFileFromInput(files(0)).foreach {
+                        // Capture the File up front: the input is cleared below, which
+                        // empties the live FileList, and the name is needed for feedback.
+                        val file = files(0)
+                        FileSystemService.readFileFromInput(file).foreach {
                             case Right((content, fileName)) => loadFromFileContent(content, fileName)
-                            case Left(error)                => dom.window.alert(error)
+                            case Left(error)                => GlobalErrorDialog.showUserAttemptError(Some(file.name), error)
                         }
                         thisNode.ref.value = ""
                 }
@@ -93,7 +100,8 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                             FileSystemService.openFile().foreach {
                                 case Right(Some((content, fileName))) => loadFromFileContent(content, fileName)
                                 case Right(None)                      => () // cancelled
-                                case Left(error)                      => dom.window.alert(error)
+                                // No file name is known when the native dialog/read fails.
+                                case Left(error)                      => GlobalErrorDialog.showUserAttemptError(None, error)
                             }
                         else hiddenFileInput.ref.click()
                     }
@@ -149,11 +157,7 @@ final case class ProjectSelectorView()(using Locale) extends Component:
             // Left: project info
             div(
                 cls := "flex flex-col",
-                p(
-                    cls := "font-medium",
-                    if entry.name.nonEmpty then entry.name
-                    else I18N_UI.project_selector.no_name
-                ),
+                p(cls := "font-medium", entry.displayName),
                 p(
                     cls := "text-sm text-base-content/60",
                     s"${I18N_UI.project_selector.modified}: ${formatDate(entry.lastModified)}"
@@ -173,7 +177,10 @@ final case class ProjectSelectorView()(using Locale) extends Component:
                     cls := "btn btn-sm btn-error btn-outline",
                     lucide.`trash-2`(stroke_width = 1.5),
                     onClick --> { _ =>
-                        if dom.window.confirm(I18N_UI.project_selector.confirm_delete(entry.name)) then
+                        // displayName, not entry.name: the confirmation names the
+                        // project exactly as the card above it does (localized
+                        // "Untitled" for an empty name, never raw empty quotes).
+                        if dom.window.confirm(I18N_UI.project_selector.confirm_delete(entry.displayName)) then
                             ProjectManager.deleteProject(entry.id)
                             refresh                     (        )
                     }

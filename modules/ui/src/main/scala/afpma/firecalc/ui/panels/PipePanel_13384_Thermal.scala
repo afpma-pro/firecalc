@@ -24,6 +24,7 @@ import afpma.firecalc.ui.components.*
 import afpma.firecalc.ui.instances.*
 import afpma.firecalc.ui.models.anglePresetsSignal
 import afpma.firecalc.ui.models.casingPresetsSignal
+import afpma.firecalc.ui.models.currentI18N
 import afpma.firecalc.ui.models.flowResistancePresetsSignal
 import afpma.firecalc.ui.models.pipePresetsSignal
 import afpma.firecalc.ui.services.CatalogImageStore
@@ -419,9 +420,11 @@ trait PipePanel_13384_Thermal(using Locale, DisplayUnits) extends PipePanel:
                 (Int, ThermalPipeDescr_13384, XtraOutputs                   ),
                 (Int, AddSectionSloppedForceManualElevationGain, XtraOutputs),
                 HtmlElement
-            ] { case (i, aa: AddSectionSloppedForceManualElevationGain, x) => (i, aa, x) } { (_, _) =>
-                // should never happen, only allowed internally in engine
-                ???
+            ] { case (i, aa: AddSectionSloppedForceManualElevationGain, x) => (i, aa, x) } { (iaax, _) =>
+                // Valid wire data this version cannot display (only migrated / foreign
+                // state carries it): named translated failure for the global error dialog,
+                // the slot subtree stays empty.
+                UndisplayableDuctElement.failure(iaax._2)(using currentI18N)
             }
             .handleCase[
                 (Int, ThermalPipeDescr_13384, XtraOutputs),

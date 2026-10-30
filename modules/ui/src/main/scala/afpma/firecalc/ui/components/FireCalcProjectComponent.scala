@@ -17,6 +17,7 @@ import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.project.ProjectManager
 import afpma.firecalc.ui.services.FileSystemService
+import afpma.firecalc.ui.services.ProjectExport
 
 import com.raquo.laminar.api.L.*
 
@@ -80,24 +81,17 @@ object FireCalcProjet:
 
             isProcessingVar.set(true)
 
-            // Export full AppStateSchema (engine_state + sensitive_data + billing_data).
-            // Backend PDF generation uses a separate code path (OrderPDFReportModalComponent)
-            // that sends only engine_state — this file export is independent.
-            AppStateSchemaHelper.encodeToYaml(appStateSchemaVar.now()) match
-                case Failure(ex) =>
-                    GlobalErrorDialog.showGenericError(I18N_UI.errors.failed_to_encode_project.apply(ex.getMessage))
-                    isProcessingVar.set               (false                                                       )
+            // Shared with the global error dialog's « Sauvegarder le projet » action.
+            ProjectExport.save().foreach {
+                case Left(error) =>
+                    // Explicit user save: a repeated press must give feedback again
+                    // (the dialog's own save path reports inline, never here).
+                    GlobalErrorDialog.showUserAttemptError(None, error)
+                    isProcessingVar.set                   (false      )
 
-                case Success(yamlContent) =>
-                    // Use FileSystemService which handles both browser and Electron
-                    FileSystemService.saveFile(filename_var.now(), yamlContent).foreach {
-                        case Left(error) =>
-                            GlobalErrorDialog.showGenericError(error)
-                            isProcessingVar.set               (false)
-
-                        case Right(_) =>
-                            isProcessingVar.set(false)
-                    }
+                case Right(_) =>
+                    isProcessingVar.set(false)
+            }
 
         lazy val node =
             div(
@@ -130,10 +124,11 @@ object FireCalcProjet:
             // Auto-detect full schema vs legacy engine-state-only format
             AppStateSchemaHelper.decodeFromFile(yamlContent) match
                 case Failure(e) =>
-                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project"                            )
-                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                                             )
-                    GlobalErrorDialog.showGenericError         (I18N_UI.errors.failed_to_decode_project.apply(e.getMessage))
-                    isLoadingVar.set                           (false                                                      )
+                    scala.scalajs.js.Dynamic.global.console.log("ERROR: Failed to load project")
+                    scala.scalajs.js.Dynamic.global.console.log(e.getMessage()                 )
+                    val message = I18N_UI.errors.failed_to_decode_project.apply(e.getMessage)
+                    GlobalErrorDialog.showUserAttemptError(Some(fileName), message)
+                    isLoadingVar.set                      (false                  )
 
                 case Success(schema) =>
                     scala.scalajs.js.Dynamic.global.console.log("Project loaded successfully")
@@ -149,8 +144,9 @@ object FireCalcProjet:
 
             FileSystemService.openFile().onComplete {
                 case Success(Left(error)) =>
-                    GlobalErrorDialog.showGenericError(error)
-                    isLoadingVar.set                  (false)
+                    // No file name is known when the native dialog/read fails.
+                    GlobalErrorDialog.showUserAttemptError(None, error)
+                    isLoadingVar.set                      (false      )
 
                 case Success(Right(None)) =>
                     // User cancelled
@@ -160,8 +156,8 @@ object FireCalcProjet:
                     loadFromContent(content, fileName)
 
                 case Failure(ex) =>
-                    GlobalErrorDialog.showGenericError(ex.getMessage)
-                    isLoadingVar.set                  (false        )
+                    GlobalErrorDialog.showUserAttemptError(None, ex.getMessage)
+                    isLoadingVar.set                      (false              )
             }
 
         /** Read file from browser file input */
@@ -172,15 +168,15 @@ object FireCalcProjet:
 
             FileSystemService.readFileFromInput(file).onComplete {
                 case Success(Left(error)) =>
-                    GlobalErrorDialog.showGenericError(error)
-                    isLoadingVar.set                  (false)
+                    GlobalErrorDialog.showUserAttemptError(Some(file.name), error)
+                    isLoadingVar.set                      (false                 )
 
                 case Success(Right((content, fileName))) =>
                     loadFromContent(content, fileName)
 
                 case Failure(ex) =>
-                    GlobalErrorDialog.showGenericError(ex.getMessage)
-                    isLoadingVar.set                  (false        )
+                    GlobalErrorDialog.showUserAttemptError(Some(file.name), ex.getMessage)
+                    isLoadingVar.set                      (false                         )
             }
 
         lazy val node =

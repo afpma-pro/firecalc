@@ -27,20 +27,26 @@ object ProjectMigration:
             val raw = org.scalajs.dom.window.localStorage.getItem(LocalStorageKeys.APP_STATE_SCHEMA)
             AppStateSchemaMigrations.migrateToLatest(raw) match
                 case Some(schema) =>
-                    val id          = generateProjectId()
-                    val name        = schema.engine_state.project_description.reference
-                    val projectName = if name.nonEmpty then name else "Projet migré"
-                    val now         = scala.scalajs.js.Date.now()
-                    val entry       = ProjectEntry(id, projectName, lastModified = now, createdAt = now)
+                    val id  = generateProjectId()
+                    val now = scala.scalajs.js.Date.now()
+                    // The reference goes into the index verbatim — possibly empty.
+                    // Never a hardcoded placeholder: no language is frozen into storage
+                    // (the localized "Untitled" fallback is a display-time concern,
+                    // see ProjectEntry.displayName).
 
-                    ProjectStorage.save(id, schema   )
-                    ProjectIndex.save  (Vector(entry))
+                    ProjectStorage.save     (id, schema)
+                    ProjectIndex.addEntry   (
+                        id,
+                        schema.engine_state.project_description.reference,
+                        createdAt    = now,
+                        lastModified = now
+                    )
 
                     // Remove old key
                     org.scalajs.dom.window.localStorage.removeItem(LocalStorageKeys.APP_STATE_SCHEMA)
 
-                    org.scalajs.dom.console.log(s"Migrated single-project data to project ${id.value} ('$projectName')")
-                    Some                       (id                                                                     )
+                    org.scalajs.dom.console.log(s"Migrated single-project data to project ${id.value}")
+                    Some                       (id                                                    )
 
                 case None =>
                     // Corrupted data — start fresh

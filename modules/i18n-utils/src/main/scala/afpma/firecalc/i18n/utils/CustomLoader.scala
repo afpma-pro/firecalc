@@ -23,7 +23,15 @@ final class CustomLoader(configs: Map[String, String]) extends Loader[Id]:
                     ""
                 )
 
-                (locale, ConfigFactory.parseString(configContent))
+                // .resolve(): HOCON substitutions between keys of a locale's
+                // conf (e.g. ${project_selector.title}) must be resolved here:
+                // without it, toBabel's unwrapped throws ConfigException.
+                // NotResolved on whole-value references, and embedded "${...}"
+                // references leak into the UI as literal text. Conf files on
+                // this loader must therefore contain no literal "${...}"
+                // templates (the engine confs that do use them go through the
+                // separate afpma.firecalc.i18n.customloader, unresolved).
+                (locale, ConfigFactory.parseString(configContent).resolve())
             }
             .map { case (locale, config) =>
                 toBabel(config).map(Translation(locale, _))

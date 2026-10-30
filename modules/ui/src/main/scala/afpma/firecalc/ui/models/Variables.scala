@@ -46,6 +46,7 @@ import afpma.firecalc.engine.utils.*
 
 import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
 
+import afpma.firecalc.ui.i18n.I18nData_UI
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
@@ -69,6 +70,7 @@ import com.raquo.airstream.core.Signal
 import com.raquo.airstream.eventbus.EventBus
 import com.raquo.airstream.state.Var
 import com.raquo.airstream.web.WebStorageVar
+import org.scalajs.dom
 
 import coulomb.*
 import coulomb.ops.algebra.all.*
@@ -144,6 +146,57 @@ val billingInfoVar =
 val localeVar       = engineStateVar.zoomLazy(_.locale)((g, x) => g.copy(locale = x))
 val displayUnitsVar =
     engineStateVar.zoomLazy(_.display_units)((g, x) => g.copy(display_units = x))
+
+/**
+ * The active locale at show time, resolved in this authority order:
+ *
+ *  1. the URL's locale segment — the single locale authority (the Router rewrites
+ *     it on every route render), and the only source that can NEVER be
+ *     transaction-stale. Root cause fixed here: inside Airstream's own propagation
+ *     Transaction — the one the route render, panel construction and error-dialog
+ *     show run in — `Var.now()` returns the PRE-transaction value even for the
+ *     root var written on the previous line. Observable symptom of that staleness:
+ *     a construction-throw dialog resolved the pre-sync locale (cold
+ *     `/en/project/<id>` boot over a persisted `locale: "fr"` rendered the dialog
+ *     in French);
+ *  2. the ROOT state var, `appStateSchemaVar.now()` — the fallback for the
+ *     locale-less root route, where the URL has no segment to read.
+ *
+ * The fallback MUST be the root var, never `localeVar.now()`: after a fresh `.set`
+ * on the root, `appStateSchemaVar.now()` is synchronous, but the zoomed child
+ * `localeVar` only re-evaluates once its source signal propagates through a
+ * mounted subscription, so mid-transaction its `now()` lags the root write. For
+ * REACTIVE / act-time uses `localeVar` remains the correct handle (its signal,
+ * mounted consumers); only show-time reads belong here. This MUST stay a `def`: a
+ * top-level `val` would evaluate at initialisation, before the state var is
+ * initialised (blank-page NPE in Scala.js).
+ */
+def currentLocale: Locale =
+    LocaleUrl
+        .languageFromHash(dom.window.location.hash)
+        .map(Locale(_))
+        .getOrElse(appStateSchemaVar.now().engine_state.locale)
+
+/**
+ * The active-locale UI translation bundle, resolved at the call site — the way the ui
+ * module resolves I18N_UI labels imperatively at show time (error surfaces, dialog
+ * callbacks), where no ambient `given Locale` is in scope (ui-i18n cannot import ui
+ * models, so this accessor necessarily lives here). Components and zooms that already
+ * render under a `given Locale` keep using it directly; this accessor is not meant to
+ * migrate them. Labels must be looked up when they are rendered, not captured earlier:
+ * the locale can change between page load and the
+ * moment a component shows text (the URL's locale is re-written on every route
+ * render, before any page node is constructed; a persisted state's locale field is
+ * stripped on restore and never reaches this channel),
+ * and I18N_UI is a total lookup with an FR fallback baked in. Resolution goes through
+ * `currentLocale` (the root read), NOT `localeVar.now()`: the zoomed child lags a
+ * fresh root write mid-transaction, so a construction-throw error dialog would resolve
+ * the pre-sync locale (see `currentLocale`'s scaladoc). This MUST stay a `def`:
+ * NEVER cache it in a top-level or object-scope `val` — eager evaluation at
+ * initialisation would read the locale before it is initialised (blank-page NPE in
+ * Scala.js).
+ */
+def currentI18N: I18nData_UI = I18N_UI(using currentLocale)
 
 val project_descr_var = engineStateVar.zoomLazy(_.project_description)((ast, x) => ast.copy(project_description = x))
 
@@ -966,7 +1019,6 @@ import afpma.firecalc.ui.models.UIState
 import afpma.firecalc.ui.models.UIState.given
 import io.circe.Encoder
 import io.circe.parser
-import org.scalajs.dom
 import afpma.firecalc.engine.models.en15544.typedefs.n_min
 
 lazy val catalogDecodeFailed: Var[Boolean] = Var(false)

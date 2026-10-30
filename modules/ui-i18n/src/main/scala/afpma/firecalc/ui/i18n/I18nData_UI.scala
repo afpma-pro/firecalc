@@ -306,16 +306,20 @@ object I18nData_UI:
     }
 
     case class ProjectSelector(
-        title           : String,
-        new_project     : String,
-        open_file       : String,
-        open            : String,
-        delete          : String,
-        confirm_delete  : StringFormat1,
-        no_name         : String,
-        modified        : String,
-        no_projects     : String,
-        back_to_projects: String
+        title            : String,
+        new_project      : String,
+        open_file        : String,
+        open             : String,
+        delete           : String,
+        confirm_delete   : StringFormat1,
+        no_name          : String,
+        modified         : String,
+        no_projects      : String,
+        // One-frame text behind the quiet redirect to the projects list when the URL
+        // names a project that is not in storage. The load path never shows an
+        // untranslated string; this is the only surface for that case.
+        project_not_found: String,
+        back_to_projects : String
     )
 
     case class Tooltips(
@@ -348,20 +352,31 @@ case class ConnectivityStatus(
 )
 
 case class Errors(
-    error_prefix            : StringFormat1,
-    failed_to_encode_project: StringFormat1,
-    failed_to_decode_project: StringFormat1,
-    no_content_returned     : String,
-    no_path_returned        : String,
-    unknown_error           : String,
-    failed_to_read_file     : StringFormat1,
-    failed_to_write_file    : StringFormat1,
-    failed_to_save_file     : StringFormat1,
-    failed_to_open_dialog   : StringFormat1,
-    failed_to_save_dialog   : StringFormat1,
-    value_ge_0              : StringFormat1,
-    value_gt_0              : StringFormat1,
-    value_is_undefined      : String
+    error_prefix                                     : StringFormat1,
+    failed_to_encode_project                         : StringFormat1,
+    failed_to_decode_project                         : StringFormat1,
+    // Application-error-dialog message for a persisted project state that is present
+    // but does not decode (see ProjectStorage / GlobalErrorDialog). No {0}: the caller
+    // prefixes the project name when known (same display shape as showUserAttemptError);
+    // this text itself stays nameless.
+    unreadable_project_state                         : String,
+    // Application-error-dialog message for a duct element that is valid wire data but
+    // cannot be displayed by this version (see UndisplayableDuctElement): it names the
+    // element kind in prose and points at the dialog's own Save / Projects-list exits.
+    // Must stay present in every language's i18n/en.conf, fr.conf: the typed decoder
+    // requires each declared field to have a matching key in every bundle.
+    undisplayable_section_force_manual_elevation_gain: String,
+    no_content_returned                              : String,
+    no_path_returned                                 : String,
+    unknown_error                                    : String,
+    failed_to_read_file                              : StringFormat1,
+    failed_to_write_file                             : StringFormat1,
+    failed_to_save_file                              : StringFormat1,
+    failed_to_open_dialog                            : StringFormat1,
+    failed_to_save_dialog                            : StringFormat1,
+    value_ge_0                                       : StringFormat1,
+    value_gt_0                                       : StringFormat1,
+    value_is_undefined                               : String
 )
 
 final case class Firebox(
@@ -381,7 +396,10 @@ object Firebox:
 case class GlobalError(
     title          : String,
     transaction_msg: String,
-    generic_msg    : String,
+    save_button    : String,
+    save_done      : String,
+    go_to_projects : String,
+    close_button   : String,
     reload_button  : String
 )
 

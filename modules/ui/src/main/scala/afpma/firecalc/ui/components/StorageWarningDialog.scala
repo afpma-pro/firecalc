@@ -5,10 +5,10 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.ui.i18n.StorageWarning
-
 import afpma.firecalc.ui.router
 import afpma.firecalc.ui.ProjectSelectorPage
+import afpma.firecalc.ui.models.currentI18N
+import afpma.firecalc.ui.models.localeVar
 import afpma.firecalc.ui.models.project.LocalStorageUtils
 
 import com.raquo.airstream.state.Var
@@ -16,7 +16,6 @@ import org.scalajs.dom
 
 object StorageWarningDialog:
 
-    private var currentI18n: Option[StorageWarning] = None
     private val shownVar = Var(false)
 
     private lazy val dialog: dom.HTMLDialogElement =
@@ -39,9 +38,8 @@ object StorageWarningDialog:
             .addEventListener(
                 "click",
                 (_: dom.Event) => {
-                    d.close()
-                    val lang = dom.window.location.hash.split("/").find(_.nonEmpty).getOrElse("fr")
-                    router.pushState(ProjectSelectorPage(io.taig.babel.Language(lang)))
+                    d.close         (                                             )
+                    router.pushState(ProjectSelectorPage(localeVar.now().language))
                 }
             )
 
@@ -50,13 +48,6 @@ object StorageWarningDialog:
 
         dom.document.body.appendChild(d)
         d
-
-    /** Set the i18n strings to use. Call once after locale is known. */
-    def setI18n(i18n: StorageWarning): Unit =
-        currentI18n                                                 = Some(i18n)
-        dialog.querySelector("#storage-warning-title").textContent  = i18n.title
-        dialog.querySelector("#storage-warning-manage").textContent = i18n.manage_projects
-        dialog.querySelector("#storage-warning-close").textContent  = i18n.close
 
     /** Reset the shown-once guard so the dialog can appear again (e.g., after project deletion). */
     def reset(): Unit =
@@ -90,14 +81,7 @@ object StorageWarningDialog:
         if shownVar.now() then return
         shownVar.set(true)
 
-        val i18n = currentI18n.getOrElse {
-            StorageWarning          (
-                title           = "Browser Storage Full",
-                message         = "Your browser's local storage is full. Go to the projects page to delete old projects.",
-                manage_projects = "Go to Projects",
-                close           = "Close"
-            )
-        }
+        val i18n = currentI18N.storage_warning
 
         dialog.querySelector("#storage-warning-title").textContent   = i18n.title
         dialog.querySelector("#storage-warning-message").textContent = i18n.message

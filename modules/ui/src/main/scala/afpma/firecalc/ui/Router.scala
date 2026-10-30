@@ -7,6 +7,7 @@ package afpma.firecalc.ui
 
 import afpma.firecalc.dto.all.*
 
+import afpma.firecalc.ui.models.localeVar
 import afpma.firecalc.ui.models.project.ProjectId
 
 import com.raquo.waypoint.*
@@ -15,7 +16,6 @@ import org.scalajs.dom
 import scala.language.adhocExtensions
 
 import io.taig.babel.Language
-import io.taig.babel.Languages
 import upickle.default.*
 
 sealed trait Page derives ReadWriter
@@ -59,7 +59,7 @@ lazy val projectRoute = Route[ProjectPage, (String, String)](
 object router
     extends com.raquo.waypoint.Router[Page]         (
         routes          = List(projectRoute, projectSelectorRoute, defaultRoute),
-        routeFallback   = _ => ProjectSelectorPage(lang = Languages.Fr),
+        routeFallback   = _ => ProjectSelectorPage(lang = localeVar.now().language),
         serializePage   = page => write(page), // serialize page data for storage in History API log
         deserializePage = pageStr => read(pageStr), // deserialize the above
         getPageTitle    = _ => "FireCalc AFPMA" // mock page title (displayed in the browser tab next to favicon)

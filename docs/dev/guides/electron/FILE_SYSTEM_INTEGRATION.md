@@ -228,7 +228,8 @@ Common errors:
 - File encoding/decoding failures
 - Permission denied
 - File not found
-- User cancelled operation (returns `Right(None)`)
+- User cancelled the native open dialog (`openFile` returns `Right(None)`)
+- User cancelled the native save dialog (`saveFile` returns `Right(false)`; Electron only — browser downloads cannot be cancelled)
 
 ## Security Considerations
 

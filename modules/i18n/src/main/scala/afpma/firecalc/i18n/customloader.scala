@@ -26,6 +26,9 @@ final class CustomLoader(configs: Map[String, String]) extends Loader[Id]:
                     ""
                 )
 
+                // No .resolve() on purpose: engine confs contain literal
+                // "${az}"/"${el}" app-level templates, not HOCON substitutions;
+                // resolving would throw on them.
                 (locale, ConfigFactory.parseString(configContent))
             }
             .map { case (locale, config) =>

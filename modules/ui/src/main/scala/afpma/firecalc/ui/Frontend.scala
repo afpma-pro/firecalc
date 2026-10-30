@@ -7,10 +7,7 @@ package afpma.firecalc.ui
 
 import afpma.firecalc.dto.all.*
 
-import afpma.firecalc.ui.i18n.implicits.I18N_UI
-
 import afpma.firecalc.ui.components.GlobalErrorDialog
-import afpma.firecalc.ui.components.StorageWarningDialog
 import afpma.firecalc.ui.services.CatalogImageStore
 import afpma.firecalc.ui.services.VersionService
 import afpma.firecalc.ui.views.*
@@ -37,17 +34,10 @@ object Frontend {
         ) { schemaVal =>
             import models.project.{ProjectStorage, ProjectIndex}
             models.project.ProjectManager.activeProjectIdVar.now().foreach { id =>
-                ProjectStorage.save(id, schemaVal)
-                val name        = schemaVal.engine_state.project_description.reference
-                val defaultName =
-                    if name.nonEmpty then name else I18N_UI(using localeVar.now()).project_selector.no_name
-                ProjectIndex.updateEntry(
-                    id,
-                    _.copy        (
-                        name         = defaultName,
-                        lastModified = scala.scalajs.js.Date.now()
-                    )
-                )
+                ProjectStorage.save        (id, schemaVal                                           )
+                // The index name is re-projected verbatim from the live reference;
+                // no localized placeholder is ever stored (see ProjectIndex.syncNameOnSave).
+                ProjectIndex.syncNameOnSave(id, schemaVal.engine_state.project_description.reference)
             }
         } --> Observer[Unit](_ => ())
 
@@ -151,65 +141,92 @@ object Frontend {
 //         scala.scalajs.js.Dynamic.global.console.log(s"[$key] ======")
 //     case _ => ()
 
-    def renderPage(page: Page): Div = page match
+    def renderPage(page: Page): Div =
+        // The URL is the single locale authority: resolve it and sync the show-time
+        // channel before ANY node is constructed, so everything resolved at show/act
+        // time speaks the URL's language. The sync writes the ROOT Var directly:
+        // localeVar is a two-level zoomLazy chain and Airstream only detects staleness
+        // once the parent is started, so a lazy-zoom write issued inside this mount
+        // transaction never lands on the root — show-time readers (models.currentLocale)
+        // would otherwise still resolve the pre-sync locale (proven on cold boot).
+        // The root URL carries no locale segment: its resolution IS the channel's
+        // current value (cold boot: the schema default).
+        given loc: Locale = page match
+            case ProjectSelectorPage(lang) => Locale(language = lang)
+            case ProjectPage(lang, _, _)   => Locale(language = lang)
+            case DefaultPage               => currentLocale
+        appStateSchemaVar.update(s => s.copy(engine_state = s.engine_state.copy(locale = loc)))
+        page match
 
-        case ProjectSelectorPage(lang) =>
-            given loc: Locale = Locale(language = lang)
-            models.project.ProjectManager.saveCurrentProject    (    )
-            models.project.ProjectManager.activeProjectIdVar.set(None)
-            ProjectSelectorView().node
+            case ProjectSelectorPage(lang) =>
+                models.project.ProjectManager.saveCurrentProject    (    )
+                models.project.ProjectManager.activeProjectIdVar.set(None)
+                ProjectSelectorView().node
 
-        case ProjectPage(lang, projectId, displayUnitsOpt) =>
-            given loc: Locale       = Locale(language = lang)
-            given du : DisplayUnits = displayUnitsOpt.getOrElse(DisplayUnits.SI)
+            case ProjectPage(lang, projectId, displayUnitsOpt) =>
+                given du: DisplayUnits = displayUnitsOpt.getOrElse(DisplayUnits.SI)
 
-            // Do NOT mutate appStateSchemaVar here: renderPage runs inside
-            // `child <-- router.currentPageSignal.map(renderPage)`, so the previous
-            // page's Div is still mounted when we execute. Its reactive subtree
-            // (DaisyUIDynamicList / splitMatchSeq caches keyed by list index) would
-            // observe the incoming schema at stale indices and throw ClassCastException
-            // before Laminar gets a chance to unmount it. Instead, verify the project
-            // exists here, then install it in onMountCallback — by then the previous
-            // subtree is detached and its observers are dead.
-            if !models.project.ProjectManager.projectExists(projectId) then
-                dom.window.setTimeout(() => router.replaceState(ProjectSelectorPage(lang)), 0)
-                div                  (p("Projet introuvable...")                             )
-            else
-                HomeView().node
-                    .amend(onMountCallback { _ =>
-                        models.project.ProjectManager.switchToProject(projectId)
-                        localeVar.set                                (loc      )
-                        displayUnitsVar.set                          (du       )
-                    })
+                // The render that follows the startup preload (cold boot / reload of a
+                // project URL) is the FIRST render of that id; any later one is a user
+                // navigation (a projects-list card click). Consumed here so the unreadable
+                // case can pick its suppression policy (reportUnreadableProject).
+                val fromStartupPreload = startupPreloadedProjectId.contains(projectId)
+                if fromStartupPreload then startupPreloadedProjectId = None
 
-        case DefaultPage =>
-            val lang = localeVar.now().language
-            models.project.ProjectMigration.migrateIfNeeded() match
-                case Some(id) =>
-                    dom.window.setTimeout(() => router.replaceState(ProjectPage(lang, id)), 0)
-                    div                  (p("Migration en cours...")                         )
-                case None     =>
-                    // Load last opened project if any, otherwise show selector
-                    val lastProject = models.project.ProjectIndex
-                        .load()
-                        .sortBy(-_.lastModified)
-                        .headOption
-                    lastProject match
-                        case Some(entry) =>
-                            dom.window.setTimeout(() => router.replaceState(ProjectPage(lang, entry.id)), 0)
-                            div                  (p("Chargement...")                                       )
-                        case None        =>
-                            dom.window.setTimeout(() => router.replaceState(ProjectSelectorPage(lang)), 0)
-                            div                  (p("Chargement...")                                     )
+                // Do NOT install the incoming project schema here: renderPage runs inside
+                // `child <-- router.currentPageSignal.map(renderPage)`, so the previous
+                // page's Div is still mounted when we execute. Its reactive subtree
+                // (DaisyUIDynamicList / splitMatchSeq caches keyed by list index) would
+                // observe the incoming schema at stale indices and throw ClassCastException
+                // before Laminar gets a chance to unmount it. Instead, read the persisted
+                // state here, then install it in onMountCallback — by then the previous
+                // subtree is detached and its observers are dead.
+                //
+                // The read is three-way (ProjectLoadOutcome), because "absent" and
+                // "present but unreadable" are different answers to give the user: the
+                // first gets the quiet redirect with a translated one-frame message, the
+                // second the application-error dialog (its escape actions; deleting the
+                // card in the projects list is the recovery) before the same redirect. The
+                // corrupt bytes are deliberately left in storage.
+                models.project.ProjectManager.projectOutcome(projectId) match
+                    case models.project.ProjectLoadOutcome.Ok(_)   =>
+                        HomeView().node
+                            .amend(onMountCallback { _ =>
+                                models.project.ProjectManager.switchToProject(projectId)
+                                displayUnitsVar.set                          (du       )
+                            })
+                    case models.project.ProjectLoadOutcome.Corrupt =>
+                        reportUnreadableProject(projectId, fromStartupPreload                          )
+                        dom.window.setTimeout  (() => router.replaceState(ProjectSelectorPage(lang)), 0)
+                        div                    (p(currentI18N.errors.unreadable_project_state)         )
+                    case models.project.ProjectLoadOutcome.Missing =>
+                        dom.window.setTimeout(() => router.replaceState(ProjectSelectorPage(lang)), 0)
+                        div                  (p(currentI18N.project_selector.project_not_found)      )
+
+            case DefaultPage =>
+                val lang = loc.language
+                models.project.ProjectMigration.migrateIfNeeded() match
+                    case Some(id) =>
+                        dom.window.setTimeout(() => router.replaceState(ProjectPage(lang, id)), 0)
+                        div                  (p("Migration en cours...")                         )
+                    case None     =>
+                        // Load last opened project if any, otherwise show selector
+                        val lastProject = models.project.ProjectIndex
+                            .load()
+                            .sortBy(-_.lastModified)
+                            .headOption
+                        lastProject match
+                            case Some(entry) =>
+                                dom.window.setTimeout(() => router.replaceState(ProjectPage(lang, entry.id)), 0)
+                                div                  (p("Chargement...")                                       )
+                            case None        =>
+                                dom.window.setTimeout(() => router.replaceState(ProjectSelectorPage(lang)), 0)
+                                div                  (p("Chargement...")                                     )
 
     def main(args: Array[String]): Unit =
 
         // Log version information to console on startup
         VersionService.logVersionToConsole()
-
-        // Initialize global error dialog i18n using the current locale
-        GlobalErrorDialog.setI18n   (I18N_UI(using localeVar.now()).global_error   )
-        StorageWarningDialog.setI18n(I18N_UI(using localeVar.now()).storage_warning)
 
         def isTransactionLoop(msg: String): Boolean =
             msg.contains("Transaction depth exceeded") || msg.contains("maxDepth")
@@ -295,6 +312,9 @@ object Frontend {
      * router's `setTimeout(replaceState(ProjectPage(...)))` then triggers a second
      * resolution to `ProjectPage(lang, id)` whose `switchToProject(id)` short-circuits
      * because the preload already set `activeProjectIdVar`.
+     *
+     * The resolved id is also recorded (`startupPreloadedProjectId`): the load path has
+     * to tell this startup render from a later user navigation to the same project.
      */
     private def preloadProjectFromUrl(): Unit =
         import models.project.{ProjectManager, ProjectMigration, ProjectIndex}
@@ -309,7 +329,42 @@ object Frontend {
                         .orElse(ProjectIndex.load().sortBy(-_.lastModified).headOption.map(_.id))
                 case _: ProjectSelectorPage => None
 
-        targetId.foreach(ProjectManager.restoreProjectState)
+        targetId.foreach { id =>
+            startupPreloadedProjectId = Some(id)
+            ProjectManager.restoreProjectState(id)
+        }
+
+    /**
+     * The project id [[preloadProjectFromUrl]] resolved from the URL, consumed by the
+     * first `ProjectPage` render of that id (see renderPage). That render is the startup
+     * one — cold boot or reload of a project URL; any later render of the same id is a
+     * user navigation. Only the unreadable-project report needs the difference.
+     */
+    private var startupPreloadedProjectId: Option[models.project.ProjectId] = None
+
+    /**
+     * Report a project whose stored state does NOT decode (the application-error dialog;
+     * its data stays in storage). The suppression policy follows how the load happened:
+     *  - startup (the render right after the preload): shown once per page-load, keyed on
+     *    the project id — a reload is a fresh page-load and does re-show it, because the
+     *    trap genuinely repeats on every reload.
+     *  - anything else (opening the project from its card): the per-attempt variant, so
+     *    repeated attempts each give feedback instead of the silent bounce this replaces.
+     *    The projects index holds the card's name, so the dialog names the project.
+     */
+    private def reportUnreadableProject(projectId: models.project.ProjectId, fromStartupPreload: Boolean): Unit =
+        import models.project.ProjectIndex
+
+        val message = currentI18N.errors.unreadable_project_state
+        val name    = ProjectIndex
+            .findEntry(projectId)
+            .map(_.displayName(using currentLocale))
+        if fromStartupPreload then
+            GlobalErrorDialog.showErrorWithKey     (
+                s"unreadable-project:${projectId.value}",
+                name.fold(message)(n => s"$n: $message")
+            )
+        else GlobalErrorDialog.showUserAttemptError(name, message)
 
     def waitForLoad(f: => Any): Unit =
         if (dom.window.asInstanceOf[js.Dynamic].documentLoaded == null)

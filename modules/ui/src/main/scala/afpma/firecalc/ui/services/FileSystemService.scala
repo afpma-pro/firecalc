@@ -35,9 +35,12 @@ object FileSystemService:
      *
      * @param defaultFileName Suggested filename
      * @param content File content to save
-     * @return Future with Either error message or success
+     * @return Future with `Left(message)` for a user-displayable failure, `Right(true)` if
+     *         the content was written / the download handed off (the browser path is always
+     *         `true`), or `Right(false)` if the user cancelled the native save dialog
+     *         (Electron only).
      */
-    def saveFile(defaultFileName: String, content: String)(using Locale): Future[Either[String, Unit]] =
+    def saveFile(defaultFileName: String, content: String)(using Locale): Future[Either[String, Boolean]] =
 
         if isElectron then saveFileElectron(defaultFileName, content)
         else Future.successful(saveFileBrowser(defaultFileName, content))
@@ -93,16 +96,16 @@ object FileSystemService:
 
     private def saveFileElectron(defaultFileName: String, content: String)(using
         locale: Locale
-    ): Future[Either[String, Unit]] =
+    ): Future[Either[String, Boolean]] =
         import scala.concurrent.ExecutionContext.Implicits.global
 
         for
             dialogResult <- ElectronAPI.saveFileDialog(defaultFileName)(using locale)
             writeResult  <- dialogResult match
-                case Left(error)           => Future.successful(Left(error))
-                case Right(None)           => Future.successful(Right(())  ) // User cancelled
+                case Left(error)           => Future.successful(Left(error) )
+                case Right(None)           => Future.successful(Right(false)) // User cancelled
                 case Right(Some(filePath)) =>
-                    ElectronAPI.writeFile(filePath, content)(using locale)
+                    ElectronAPI.writeFile(filePath, content)(using locale).map(_.map(_ => true))
         yield writeResult
 
     private def openFileElectron()(using locale: Locale): Future[Either[String, Option[(String, String)]]] =
@@ -125,7 +128,7 @@ object FileSystemService:
 
     // ===== Private Browser implementations =====
 
-    private def saveFileBrowser(fileName: String, content: String)(using Locale): Either[String, Unit] =
+    private def saveFileBrowser(fileName: String, content: String)(using Locale): Either[String, Boolean] =
         try
             // Create Blob with content
             val blob = new dom.Blob(
@@ -150,7 +153,8 @@ object FileSystemService:
             // Clean up
             dom.window.setTimeout(() => URL.revokeObjectURL(url), 100)
 
-            Right(())
+            // The browser download path cannot be cancelled: always a write.
+            Right(true)
         catch
             case ex: Exception =>
                 Left(I18N_UI.errors.failed_to_save_file.apply(ex.getMessage))

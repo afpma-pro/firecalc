@@ -469,7 +469,12 @@ final case class DynamicFlowOnlyPipeSlotPanel(
                 HtmlElement
             ] { case (i, incr: AddSectionSloppedForceManualElevationGain, x) =>
                 (i, incr, x)
-            } { (_, _) => ??? }
+            } { (iix, _) =>
+                // Valid wire data this version cannot display (only migrated / foreign
+                // state carries it): named translated failure for the global error dialog,
+                // the slot subtree stays empty.
+                UndisplayableDuctElement.failure(iix._2)(using currentI18N)
+            }
             .handleCase[
                 (Int, FlowOnlyPipeDescr_15544, XtraOutputs),
                 (Int, AddSectionHorizontal, XtraOutputs   ),
