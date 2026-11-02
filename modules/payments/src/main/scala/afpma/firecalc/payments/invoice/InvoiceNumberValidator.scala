@@ -70,4 +70,33 @@ object InvoiceNumberValidator {
             .replace("[MM]", zonedDateTime.format(DateTimeFormatter.ofPattern("MM")))
             .replace("[DD]", zonedDateTime.format(DateTimeFormatter.ofPattern("dd")))
     }
+
+    // Derived from the same ValidPlaceholders set validatePlaceholders accepts — there is
+    // deliberately no second spelling of the placeholder grammar. Bracketed text that is
+    // not a valid placeholder stays literal: a validated prefix contains no such text, but
+    // the matcher must not invent a wildcard for it either.
+    private val ValidPlaceholderTokens =
+        s"(?:${ValidPlaceholders.map(java.util.regex.Pattern.quote).mkString("|")})".r
+
+    /**
+     * Does a stored number carry this environment's static prefix? The literal
+     * segments of the prefix must match exactly; date placeholders may legitimately
+     * hold another year, month or day (clause 6 — "dev run 2025-0007 → 2026-0008"),
+     * and the number part may have been written at another width. Owned here because
+     * this is where the prefix grammar is defined; the startup guard asks.
+     */
+    def prefixApplies(prefix: String, number: String): Boolean = {
+        val literals    = ValidPlaceholderTokens.split(prefix).toList
+        val digitFields = ValidPlaceholderTokens.findAllIn(prefix).map(placeholderDigitField).toList
+        val regex       = literals
+            .map(java.util.regex.Pattern.quote)
+            .zip(digitFields :+ "")
+            .map((literal, digitField) => literal + digitField)
+            .mkString("^", "", "\\d+$")
+        java.util.regex.Pattern.compile(regex).matcher(number).matches()
+    }
+
+    /** A placeholder stands for exactly the digits it prints: [YYYY] four, [YY]/[MM]/[DD] two. */
+    private def placeholderDigitField(token: String): String =
+        s"\\d{${token.drop(1).dropRight(1).length}}"
 }

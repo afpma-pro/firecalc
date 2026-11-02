@@ -24,7 +24,7 @@ object CalculationClientConfigTest extends TestSuite {
                   |  development {
                   |    product-catalog = "development"
                   |    database { filename = "test.db", path = "/tmp/test.db" }
-                  |    invoice { number-prefix = "FC", number-digits = 4, counter-starting-number = 1 }
+                  |    invoice { number-prefix = "FC", number-digits = 4, counter-start = 1 }
                   |    invoice-generation { config-file-path = "test.yaml" }
                   |    retry { max-retries = 3, base-delay-ms = 1000, max-delay-ms = 30000 }
                   |    admin { email = "admin@test.com" }

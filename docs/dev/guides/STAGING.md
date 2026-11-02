@@ -81,10 +81,12 @@ staging {
   invoice {
     number-prefix = "FCALC-STG-[YYYY]-"
     number-digits = 4
-    counter-starting-number = 1
+    counter-start = 1
   }
 }
 ```
+
+What `counter-start` does, and what to do when a start is refused by the invoice numbering guard: [INVOICE_NUMBERING_RUNBOOK.md](INVOICE_NUMBERING_RUNBOOK.md).
 
 **Database Location**: `databases/staging/firecalc-payments-staging.db`
 - Created automatically on first run

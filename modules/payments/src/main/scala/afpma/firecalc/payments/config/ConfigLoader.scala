@@ -154,38 +154,38 @@ object ConfigLoader:
             val adminConfig             = envConfig.getConfig("admin")
             val jwtSection              = envConfig.getConfig("jwt")
 
-            PaymentsConfig                 (
-                environment                  = environment,
-                productCatalog               = Try(envConfig.getString("product-catalog")).getOrElse(environment),
-                invoiceNumberPrefix          = invoiceConfig.getString("number-prefix"),
-                invoiceNumberDigits          = invoiceConfig.getInt("number-digits"),
-                invoiceCounterStartingNumber = invoiceConfig.getInt("counter-starting-number"),
-                invoiceTimezone              = ZoneId.of(
+            PaymentsConfig            (
+                environment             = environment,
+                productCatalog          = Try(envConfig.getString("product-catalog")).getOrElse(environment),
+                invoiceNumberPrefix     = invoiceConfig.getString("number-prefix"),
+                invoiceNumberDigits     = invoiceConfig.getInt("number-digits"),
+                invoiceCounterStart     = loadInvoiceCounterStart(invoiceConfig),
+                invoiceTimezone         = ZoneId.of(
                     Try(invoiceConfig.getString("timezone")).getOrElse("Europe/Paris")
                 ),
-                retryConfig                  = InvoiceRetryConfig(
+                retryConfig             = InvoiceRetryConfig(
                     maxRetries  = retryConfig.getInt("max-retries"),
                     baseDelayMs = retryConfig.getLong("base-delay-ms"),
                     maxDelayMs  = retryConfig.getLong("max-delay-ms")
                 ),
-                databaseConfig               = DatabaseConfig(
+                databaseConfig          = DatabaseConfig(
                     filename = databaseConfig.getString("filename"),
                     path     = databaseConfig.getString("path")
                 ),
-                invoiceConfig                = InvoiceConfig(
+                invoiceConfig           = InvoiceConfig(
                     configFilePath = invoiceGenerationConfig.getString("config-file-path"),
                     enabled        = Try(invoiceGenerationConfig.getBoolean("enabled")).getOrElse(true)
                 ),
-                adminConfig                  = AdminConfig(
+                adminConfig             = AdminConfig(
                     email = adminConfig.getString("email")
                 ),
-                reportAsDraft                = Try(envConfig.getBoolean("report-as-draft")).getOrElse(false),
-                jwtConfig                    = JwtConfig(
+                reportAsDraft           = Try(envConfig.getBoolean("report-as-draft")).getOrElse(false),
+                jwtConfig               = JwtConfig(
                     secret            = jwtSection.getString("secret"),
                     expirationMinutes = Try(jwtSection.getInt("expiration-minutes")).getOrElse(60),
                     issuer            = Try(jwtSection.getString("issuer")).getOrElse("firecalc-payments")
                 ),
-                loggingConfig                = Try(envConfig.getConfig("logging"))
+                loggingConfig           = Try(envConfig.getConfig("logging"))
                     .map { loggingSection =>
                         import scala.jdk.CollectionConverters.*
                         LoggingConfig       (
@@ -201,9 +201,9 @@ object ConfigLoader:
                         )
                     }
                     .getOrElse(LoggingConfig()),
-                fireboxAvailability          = loadFireboxAvailability(envConfig),
-                calculationClientConfig      = loadCalculationClientConfig(envConfig),
-                corsAllowedOrigins           = Try {
+                fireboxAvailability     = loadFireboxAvailability(envConfig),
+                calculationClientConfig = loadCalculationClientConfig(envConfig),
+                corsAllowedOrigins      = Try {
                     import scala.jdk.CollectionConverters.*
                     envConfig.getStringList("cors-allowed-origins").asScala.toList
                 }.getOrElse   (List("*")      )
@@ -233,6 +233,27 @@ object ConfigLoader:
                 door15aCatalog = tryBool("door15a-catalog")
             )
         else FireboxAvailability.AllEnabled
+
+    /**
+     * Reads the REQUIRED `invoice.counter-start` — the invoice counter start of this
+     * environment, which the boot may raise to the highest invoice number already
+     * issued (the bounded repair). There is deliberately no compatibility
+     * branch for the retired `invoice.counter-starting-number`: a config still carrying
+     * the old key fails here, at configuration load, naming the retired key and the
+     * replacement. The deployment preflight (firecalc-docker) is what catches such a
+     * config before deployment; the boot itself stays strict.
+     */
+    private[config] def loadInvoiceCounterStart(invoiceSection: Config): Long =
+        if invoiceSection.hasPath("counter-starting-number") then
+            throw new IllegalArgumentException(
+                "the configuration key invoice.counter-starting-number is retired; " +
+                    "its replacement is invoice.counter-start — the invoice counter start of this environment"
+            )
+        else if !invoiceSection.hasPath("counter-start") then
+            throw new IllegalArgumentException(
+                "missing required configuration key invoice.counter-start — the invoice counter start of this environment (an integer >= 1)"
+            )
+        else invoiceSection.getLong("counter-start")
 
     private[config] def loadCalculationClientConfig(envConfig: Config): CalculationClientConfig =
         if envConfig.hasPath        ("calculation-client") then

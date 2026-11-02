@@ -74,9 +74,15 @@ COMPOSE_FILE := $(shell \
 # opens (invoice-generation.config-file-path in the payments config — BackendMain
 # resolves paymentsConfig.invoiceConfig.configFilePath, and the shipped template
 # default names configs/development/invoices/company-invoice.yaml, which does not
-# exist inside the container), and the in-file environment selector, which must
+# exist inside the container), the in-file environment selector, which must
 # equal the directory name because nothing in the loader cross-checks them
-# (ConfigLoader falls back to "development" when the key is absent). The PDF
+# (ConfigLoader falls back to "development" when the key is absent), and a
+# payments config that predates the counter-start rename — these files are
+# hand-made per machine, so a checkout update never rewrites the retired key
+# invoice.counter-starting-number, and the backend refuses to load a config that
+# still carries it (ConfigLoader.loadInvoiceCounterStart). The key check is a
+# text match naming the exact edit; the numbering invariants themselves stay
+# with the application at boot. The PDF
 # logos are checked by scripts/deploy.sh, which fails naming the path before the
 # image build can fail at its unconditional COPY of artifacts/logo.png (and logo.jpg).
 .require-configs:
@@ -107,6 +113,12 @@ COMPOSE_FILE := $(shell \
 			missing=1; \
 		fi; \
 	done; \
+	if [ -f "configs/$$env_name/payments/payments-config.conf" ] && grep -qE '^[[:space:]]*counter-starting-number[[:space:]]*=' "configs/$$env_name/payments/payments-config.conf"; then \
+		old_value="$$(sed -n 's/^[[:space:]]*counter-starting-number[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' "configs/$$env_name/payments/payments-config.conf" | head -n1)"; \
+		echo "ERROR: configs/$$env_name/payments/payments-config.conf still carries the retired key invoice.counter-starting-number"; \
+		echo "       replace that key with invoice.counter-start, keeping the value$${old_value:+ — here: 'counter-starting-number = $$old_value' becomes 'counter-start = $$old_value'}; the backend refuses to load a config with the old key"; \
+		missing=1; \
+	fi; \
 	invoice_path="$$(sed -n 's/^[[:space:]]*config-file-path[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "configs/$$env_name/payments/payments-config.conf" | head -n1)"; \
 	invoice_env="$$(printf '%s\n' "$$invoice_path" | sed -n 's|^configs/\([a-z]*\)/.*|\1|p')"; \
 	if [ -z "$$invoice_path" ]; then \

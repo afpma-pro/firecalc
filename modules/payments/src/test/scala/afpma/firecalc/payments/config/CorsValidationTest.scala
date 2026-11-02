@@ -14,27 +14,27 @@ object CorsValidationTest extends TestSuite {
     // Create minimal PaymentsConfig instances for testing
     // PaymentsConfig requires these fields:
     // environment, productCatalog, invoiceNumberPrefix, invoiceNumberDigits (Int),
-    // invoiceCounterStartingNumber (Int >=1), invoiceTimezone (ZoneId), retryConfig, databaseConfig,
+    // invoiceCounterStart (Long >=1), invoiceTimezone (ZoneId), retryConfig, databaseConfig,
     // invoiceConfig, adminConfig, reportAsDraft (Boolean), jwtConfig,
     // loggingConfig (has default), corsAllowedOrigins (has default)
 
     // productCatalog must be "development", "staging", or "production"
 
     private def mkConfig(environment: String, productCatalog: String, corsOrigins: List[String]) =
-        PaymentsConfig                 (
-            environment                  = environment,
-            productCatalog               = productCatalog,
-            invoiceNumberPrefix          = "FC",
-            invoiceNumberDigits          = 6,
-            invoiceCounterStartingNumber = 1,
-            invoiceTimezone              = java.time.ZoneId.of("Europe/Paris"),
-            retryConfig                  = InvoiceRetryConfig(),
-            databaseConfig               = DatabaseConfig(filename = "test.db", path = "/tmp/test.db"),
-            invoiceConfig                = InvoiceConfig(configFilePath = "test.yaml"),
-            adminConfig                  = AdminConfig(email = "admin@test.com"),
-            reportAsDraft                = true,
-            jwtConfig                    = JwtConfig(secret = "test-secret-that-is-long-enough-for-hmac-256", expirationMinutes = 60),
-            corsAllowedOrigins           = corsOrigins
+        PaymentsConfig        (
+            environment         = environment,
+            productCatalog      = productCatalog,
+            invoiceNumberPrefix = "FC",
+            invoiceNumberDigits = 6,
+            invoiceCounterStart = 1,
+            invoiceTimezone     = java.time.ZoneId.of("Europe/Paris"),
+            retryConfig         = InvoiceRetryConfig(),
+            databaseConfig      = DatabaseConfig(filename = "test.db", path = "/tmp/test.db"),
+            invoiceConfig       = InvoiceConfig(configFilePath = "test.yaml"),
+            adminConfig         = AdminConfig(email = "admin@test.com"),
+            reportAsDraft       = true,
+            jwtConfig           = JwtConfig(secret = "test-secret-that-is-long-enough-for-hmac-256", expirationMinutes = 60),
+            corsAllowedOrigins  = corsOrigins
         )
 
     val tests = Tests {

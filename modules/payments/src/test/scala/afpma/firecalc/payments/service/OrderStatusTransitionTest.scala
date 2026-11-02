@@ -108,6 +108,9 @@ object OrderStatusTransitionTest extends TestSuite {
 
             def findConfirmedOrdersWithoutInvoiceNumber(): IO[List[ProductOrder]] =
                 IO.pure(List.empty)
+
+            def allOrderInvoiceFacts(): IO[List[OrderFact]] =
+                IO.pure(List.empty)
         }
 
         val productRepo = new ProductRepository[IO] {

@@ -31,6 +31,13 @@ trait OrderRepository[F[_]]:
     def updateInvoiceNumber                    (id: OrderId, invoiceNumber: String                                  ): F[Boolean]
     def findConfirmedOrdersWithoutInvoiceNumber(                                                                    ): F[List[ProductOrder]]
 
+    /**
+     * Every order, raw, for the boot-time numbering state: (OrderId, status, stored invoice
+     * number if any, customer email for later masking, createdAt, updatedAt). Reading never
+     * throws for null invoice numbers.
+     */
+    def allOrderInvoiceFacts(): F[List[OrderFact]]
+
 object OrderRepository:
     def create[F[_]: Async: Logger](using conn: Conn, ec: ExecutionContext): F[OrderRepository[F]] =
         Async[F].pure(new MoleculeOrderRepository[F])

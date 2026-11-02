@@ -10,24 +10,24 @@ import java.time.ZoneId
 import afpma.firecalc.domain.FireboxAvailability
 
 case class PaymentsConfig(
-    environment                 : String,
-    productCatalog              : String,
-    fireboxAvailability         : FireboxAvailability     = FireboxAvailability.AllEnabled,
-    invoiceNumberPrefix         : String,
-    invoiceNumberDigits         : Int,
-    invoiceCounterStartingNumber: Int,
-    invoiceTimezone             : ZoneId,
-    retryConfig                 : InvoiceRetryConfig,
-    databaseConfig              : DatabaseConfig,
-    invoiceConfig               : InvoiceConfig,
-    adminConfig                 : AdminConfig,
-    reportAsDraft               : Boolean,
-    jwtConfig                   : JwtConfig,
-    loggingConfig               : LoggingConfig           = LoggingConfig(),
-    corsAllowedOrigins          : List[String]            = List("*"), // SEC-016: validated fail-closed in ConfigLoader for non-development
-    calculationClientConfig     : CalculationClientConfig = CalculationClientConfig()
+    environment            : String,
+    productCatalog         : String,
+    fireboxAvailability    : FireboxAvailability     = FireboxAvailability.AllEnabled,
+    invoiceNumberPrefix    : String,
+    invoiceNumberDigits    : Int,
+    invoiceCounterStart    : Long,
+    invoiceTimezone        : ZoneId,
+    retryConfig            : InvoiceRetryConfig,
+    databaseConfig         : DatabaseConfig,
+    invoiceConfig          : InvoiceConfig,
+    adminConfig            : AdminConfig,
+    reportAsDraft          : Boolean,
+    jwtConfig              : JwtConfig,
+    loggingConfig          : LoggingConfig           = LoggingConfig(),
+    corsAllowedOrigins     : List[String]            = List("*"), // SEC-016: validated fail-closed in ConfigLoader for non-development
+    calculationClientConfig: CalculationClientConfig = CalculationClientConfig()
 ) {
-    require(invoiceCounterStartingNumber >= 1, "Starting number must be at least 1")
+    require(invoiceCounterStart >= 1, "invoice.counter-start must be at least 1")
     require(
         productCatalog == "development" || productCatalog == "staging" || productCatalog == "production",
         s"Product catalog must be 'development', 'staging', or 'production', got: $productCatalog"

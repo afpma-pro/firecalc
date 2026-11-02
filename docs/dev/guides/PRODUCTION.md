@@ -96,10 +96,12 @@ production {
   invoice {
     number-prefix = "FCALC-[YYYY]-"  # Clean production prefix
     number-digits = 4
-    counter-starting-number = 1
+    counter-start = 1
   }
 }
 ```
+
+What `counter-start` does, and what to do when a start is refused by the invoice numbering guard: [INVOICE_NUMBERING_RUNBOOK.md](INVOICE_NUMBERING_RUNBOOK.md).
 
 **Database Location**: `databases/prod/firecalc-payments-prod.db`
 - **CRITICAL**: Must be backed up regularly (daily minimum)
@@ -244,7 +246,7 @@ make docker-fix-db-perms
 ```bash
 # Full pipeline — described once, under 'make prod-docker-deploy-up' in
 # docs/dev/guides/MAKEFILE_REFERENCE.md (config preflight runs before any
-# build and names every missing runtime config)
+# build and names every missing runtime config and every retired config key)
 make prod-docker-deploy-up
 ```
 

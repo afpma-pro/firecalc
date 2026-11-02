@@ -222,5 +222,30 @@ object InvoiceNumberValidatorTest extends TestSuite {
             assert(result.endsWith("001")    )
             assert(result == "TEST-001"      ) // No date placeholders, so exact match
         }
+
+        // prefixApplies (the startup guard's clause 6 question, owned with the grammar).
+        test("prefixApplies - literals must match, placeholders may hold another date") {
+            assert(InvoiceNumberValidator.prefixApplies("FCALC-STG-[YYYY]-", "FCALC-STG-2026-0004")    )
+            // clause 6: a number written under a previous year still carries this prefix
+            assert(InvoiceNumberValidator.prefixApplies("FCALC-STG-[YYYY]-", "FCALC-STG-2025-0007")    )
+            assert(!InvoiceNumberValidator.prefixApplies("FCALC-STG-[YYYY]-", "OTHER-PREFIX-2025-0004"))
+        }
+
+        test("prefixApplies - each placeholder covers exactly its own digits, the number part any width") {
+            // [YYYY] is four digits: a three-digit run is not a year.
+            assert(!InvoiceNumberValidator.prefixApplies("FCALC-[YYYY]-", "FCALC-202-0004")          )
+            // [MM] stands for exactly two digits.
+            assert(InvoiceNumberValidator.prefixApplies("FCALC-[YYYY]-[MM]-", "FCALC-2026-11-0004")  )
+            assert(!InvoiceNumberValidator.prefixApplies("FCALC-[YYYY]-[MM]-", "FCALC-2026-111-0004"))
+            // the sequence may have been written at another width
+            assert(InvoiceNumberValidator.prefixApplies("FCALC-[YYYY]-", "FCALC-2026-1234567")       )
+        }
+
+        test("prefixApplies - bracketed text outside the placeholder set stays literal") {
+            // [WW] is not an accepted placeholder — the matcher must not invent a wildcard
+            // for it (the alternation is derived from the same set validatePrefix accepts).
+            assert(InvoiceNumberValidator.prefixApplies("X-[WW]-", "X-[WW]-5") )
+            assert(!InvoiceNumberValidator.prefixApplies("X-[WW]-", "X-2026-5"))
+        }
     }
 }

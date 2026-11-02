@@ -127,6 +127,20 @@ object InvoiceCounterRepositoryTest extends TestSuite with TestDatabaseSetup {
             }
         }
 
+        test("raiseCounterTo raises the current number and never touches the recorded start") {
+            withRepository { (repo, _) =>
+                for {
+                    _    <- repo.initializeCounter(10)
+                    _    <- repo.raiseCounterTo(7L)
+                    rows <- repo.allCounterRows()
+                } yield {
+                    assert(rows.size == 1                       )
+                    assert(rows.head.currentNumber == Some(7L)  )
+                    assert(rows.head.startingNumber == Some(10L))
+                }
+            }
+        }
+
         test("concurrent counter increments fail with SQLite limitations") {
             withRepository { (repo, conn) =>
                 for {

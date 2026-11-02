@@ -20,11 +20,13 @@ import afpma.firecalc.reports.YAMLFileReadException
 
 import afpma.firecalc.payments.config.ConfigLoader
 import afpma.firecalc.payments.config.LoggingConfig
+import afpma.firecalc.payments.config.PaymentsConfig
 import afpma.firecalc.payments.db.Migrations
 import afpma.firecalc.payments.domain.OrderStatus
 import afpma.firecalc.payments.email.*
 import afpma.firecalc.payments.exceptions.*
 import afpma.firecalc.payments.http.*
+import afpma.firecalc.payments.invoice.{InvoiceNumberingBoot, InvoiceNumberingSource}
 import afpma.firecalc.payments.i18n.implicits.I18N_Payments
 import afpma.firecalc.payments.repository.*
 import afpma.firecalc.payments.service.*
@@ -49,6 +51,7 @@ import afpma.firecalc.firebox_calc_client.Http4sCalcClient
 import com.comcast.ip4s.*
 import io.taig.babel.Locale
 import org.http4s.*
+import org.http4s.client.Client
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.CORS
@@ -164,8 +167,9 @@ object Main extends IOApp:
                     // PDF report generation successful
                     _             <- Log4CatsLogger[F].info(s"[REPORT-GENERATION] Generated PDF report: ${f.getAbsolutePath}")
                     // Generate invoice number and update order with it
-                    invoiceNumber <-
-                        if (context.order.invoiceNumber.isEmpty) {
+                    invoiceNumber <- context.order.invoiceNumber match
+                        case Some(existing) => Async[F].pure(existing)
+                        case None           =>
                             invoiceNumberService
                                 .generateInvoiceNumberAndUpdateOrder(context.order.id)
                                 .handleErrorWith { error =>
@@ -174,7 +178,6 @@ object Main extends IOApp:
                                     logger.error(msg) *>
                                         Async[F].raiseError(InvoiceNumberGenerationFailedException(msg))
                                 }
-                        } else Async[F].pure(context.order.invoiceNumber.get)
                 yield (f, invoiceNumber)
             }
         // Propagate typed FireCalcReportErrors without wrapping them
@@ -345,6 +348,28 @@ object Main extends IOApp:
             ctx.getLogger(pkg).setLevel(Level.valueOf(level.toUpperCase))
         )
 
+    /**
+     * Make a non-success [[ExitCode]] actually reach the process exit status.
+     *
+     * cats-effect's `IOApp` only translates a non-`Success` `ExitCode` into `System.exit`
+     * when it detects a forked JVM via the main thread's id (`== 1`, IOApp.scala line 387).
+     * Since JDK 19 thread ids are randomized (and `-XX:+EnableThreadIds` was removed in
+     * JDK 23), that detection fails on modern JVMs and a non-zero exit would be silently
+     * swallowed: the JVM falls out of `main` and exits 0. A fail-fast refusal to boot
+     * (the invoice numbering guard) must be visible to process supervisors, so
+     * force the exit from a dedicated non-daemon thread. By this point every enclosing
+     * resource scope has already been released; the non-daemon thread only guarantees the
+     * JVM cannot reach its implicit exit-0 path before `System.exit` completes.
+     */
+    private def forceProcessExitIfError(exitCode: ExitCode): IO[ExitCode] =
+        if exitCode == ExitCode.Success then IO.pure(exitCode)
+        else
+            IO {
+                val forceExit = new Thread(() => System.exit(exitCode.code), "firecalc-force-exit")
+                forceExit.start()
+                exitCode
+            }
+
     def run(args: List[String]): IO[ExitCode] =
         // Fail fast if FIRECALC_ENV is not explicitly set.
         // Prevents accidental misconfiguration (e.g. defaulting to sandbox with HMAC bypass).
@@ -366,445 +391,555 @@ object Main extends IOApp:
             return IO.pure(ExitCode.Success)
 
         // Create HTTP client resource
-        EmberClientBuilder.default[IO].build.use { httpClient =>
-            val logger = summon[org.typelevel.log4cats.Logger[IO]]
+        EmberClientBuilder
+            .default[IO]
+            .build
+            .use { httpClient =>
+                val logger = summon[org.typelevel.log4cats.Logger[IO]]
 
-            for {
-                _ <- logger.info(s"FIRECALC_ENV explicitly set to: $firecalcEnv")
+                for {
+                    _ <- logger.info(s"FIRECALC_ENV explicitly set to: $firecalcEnv")
 
-                // Load payments configuration first
-                paymentsConfig <- ConfigLoader.loadPaymentsConfig[IO]()
-                _              <- IO.delay(applyLoggingConfig(paymentsConfig.loggingConfig))
-                _              <- logger.info(
-                    s"Log level configured: root=${paymentsConfig.loggingConfig.rootLevel}" +
-                        (if paymentsConfig.loggingConfig.packageOverrides.nonEmpty
-                         then s", overrides=${paymentsConfig.loggingConfig.packageOverrides}"
-                         else "")
+                    // Load payments configuration first
+                    paymentsConfig <- ConfigLoader.loadPaymentsConfig[IO]()
+                    _              <- IO.delay(applyLoggingConfig(paymentsConfig.loggingConfig))
+                    _              <- logger.info(
+                        s"Log level configured: root=${paymentsConfig.loggingConfig.rootLevel}" +
+                            (if paymentsConfig.loggingConfig.packageOverrides.nonEmpty
+                             then s", overrides=${paymentsConfig.loggingConfig.packageOverrides}"
+                             else "")
+                    )
+                    _              <- logger.info(s"Loaded payments config for environment: ${paymentsConfig.environment}")
+                    _              <- logger.info(s"Using database: ${paymentsConfig.databaseConfig.filename}")
+                    _              <- logger.info(
+                        if (paymentsConfig.corsAllowedOrigins.contains("*"))
+                        then "CORS policy: allowing all origins (default)"
+                        else s"CORS policy: allowing origins ${paymentsConfig.corsAllowedOrigins.mkString(", ")}"
+                    )
+                    fa = paymentsConfig.fireboxAvailability
+                    _              <- logger.info(
+                        s"firebox-availability: traditional=${if fa.traditional then "enabled" else "disabled"}, " +
+                            s"ecolabeled=${if fa.ecolabeled then "enabled" else "disabled"}, " +
+                            s"afpma-prse=${if fa.afpmaPrse then "enabled" else "disabled"}, " +
+                            s"single-tested=${if fa.singleTested then "enabled" else "disabled"}, " +
+                            s"door15a-catalog=${if fa.door15aCatalog then "enabled" else "disabled"}"
+                    )
+
+                    // Run migrations with configured database
+                    _ <- Migrations.migrate[IO](s"jdbc:sqlite:${paymentsConfig.databaseConfig.path}")
+
+                    exitCode <- Database.createConnection[IO](paymentsConfig).use { implicit conn =>
+                        for
+                            _ <- logger.info("Initializing repositories...")
+
+                            // Initialize repositories
+                            productRepo         <- ProductRepository.create[IO]
+                            customerRepo        <- CustomerRepository.create[IO]
+                            orderRepo           <- OrderRepository.create[IO]
+                            purchaseIntentRepo  <- PurchaseIntentRepository.create[IO]
+                            productMetadataRepo <- ProductMetadataRepository.create[IO]
+
+                            // Get product catalog based on configuration
+                            productCatalog = ProductCatalogSelector.getCatalog(paymentsConfig.productCatalog)
+                            _ <- logger.info(s"Using ${paymentsConfig.productCatalog} product catalog")
+
+                            // Sync product catalog to database
+                            _ <- logger.info("Syncing product catalog to database...")
+                            _ <- productCatalog.allProducts.traverse { productInfo =>
+                                productRepo.upsert(productInfo)
+                            }
+                            _ <- logger.info(s"Synced ${productCatalog.allProducts.size} product(s) from catalog")
+
+                            _ <- logger.info("Initializing services...")
+
+                            // Initialize services
+                            authService  <- AuthenticationService.create[IO](
+                                purchaseIntentRepo,
+                                paymentsConfig.jwtConfig
+                            )
+                            orderService <- OrderService
+                                .create[IO](orderRepo, productRepo, customerRepo, productMetadataRepo)
+
+                            // Load email configuration
+                            emailConfig <- ConfigLoader.loadEmailConfig[IO]()
+                            _           <- logger.info(
+                                s"Loaded email configuration: ${emailConfig.smtpHost}:${emailConfig.smtpPort}"
+                            )
+
+                            emailService <- EmailService.create[IO](emailConfig)
+                            // Alternative: Use mocked email service for testing
+                            // emailService <- EmailService.createMocked[IO]
+
+                            _ <- logger.info("Initializing invoice number generation system...")
+
+                            // Initialize invoice number services
+                            invoiceCounterRepo <- InvoiceCounterRepository.create[IO]
+                            databaseInspection <- DatabaseInspection.create[IO]
+                            _                  <- invoiceCounterRepo.initializeCounter(paymentsConfig.invoiceCounterStart)
+
+                            invoiceNumberService <- InvoiceNumberService.create[IO](
+                                paymentsConfig,
+                                invoiceCounterRepo,
+                                orderRepo
+                            )
+
+                            // Register invoice generation callback
+                            // _ <- orderService.registerInvoiceNumberGenerationCallback(invoiceNumberService)
+                            // _ <- logger.info("Registered invoice number generation callback")
+
+                            // The boot-time numbering gate — seed-state read, bounded repair,
+                            // state block, guard point 1, refused-repair framing, retroactive
+                            // pass, guard point 2 — lives in InvoiceNumberingBoot; its docs
+                            // carry the ordering invariants. The clock is injected here; the
+                            // mechanism never reads one itself. A Refused outcome has already
+                            // printed its fatal block when run returns; the process then exits
+                            // before any callback is registered and before any port binds.
+                            bootDate      = java.time.LocalDate.now(paymentsConfig.invoiceTimezone)
+                            bootNow       = java.time.Instant.now() // injected clock for the guard's elapsed-time text
+                            numberingBoot = InvoiceNumberingBoot[IO](
+                                InvoiceNumberingSource[IO](
+                                    invoiceCounterRepo,
+                                    orderRepo,
+                                    databaseInspection,
+                                    paymentsConfig.databaseConfig.path
+                                ),
+                                invoiceNumberService,
+                                paymentsConfig,
+                                bootDate,
+                                bootNow,
+                                (block: String) => Sync[IO].delay(println(block))
+                            )
+                            bootOutcome <- numberingBoot.run
+                            bootExit <-
+                                bootOutcome match
+                                    case InvoiceNumberingBoot.Outcome.Refused => IO.pure(ExitCode.Error)
+                                    case InvoiceNumberingBoot.Outcome.Proceed =>
+                                        serve(
+                                            httpClient,
+                                            paymentsConfig,
+                                            productCatalog,
+                                            productRepo,
+                                            customerRepo,
+                                            purchaseIntentRepo,
+                                            productMetadataRepo,
+                                            authService,
+                                            orderService,
+                                            emailConfig,
+                                            emailService,
+                                            invoiceNumberService
+                                        )
+                        yield bootExit
+                    }
+                } yield exitCode
+            }
+            .flatMap(forceProcessExitIfError)
+
+    /**
+     * The serving half of the composition root, reached only after the boot gate said
+     * Proceed. Everything below runs on already-open resources — the `use` scopes (HTTP
+     * client, database connection, repositories) stay in `run`, which passes the opened
+     * values here — and builds what serving needs: the validated invoice config, the
+     * payment/pdf services, the order-completion callbacks, the middleware-wrapped
+     * routes, and the bound port that then serves until the process is interrupted.
+     * A Refused never reaches this method: nothing is registered and no port binds.
+     */
+    private def serve(
+        httpClient          : Client[IO],
+        paymentsConfig      : PaymentsConfig,
+        productCatalog      : v1.ProductCatalog,
+        productRepo         : ProductRepository[IO],
+        customerRepo        : CustomerRepository[IO],
+        purchaseIntentRepo  : PurchaseIntentRepository[IO],
+        productMetadataRepo : ProductMetadataRepository[IO],
+        authService         : AuthenticationService[IO],
+        orderService        : OrderService[IO],
+        emailConfig         : EmailConfig,
+        emailService        : EmailService[IO],
+        invoiceNumberService: InvoiceNumberService[IO]
+    ): IO[ExitCode] =
+        val logger = Log4CatsLogger[IO]
+        for
+
+            // Load invoice config and extract a validated productCopyConfig (one shot).
+            invoiceConfigFile = new java.io.File(
+                paymentsConfig.invoiceConfig.configFilePath
+            )
+            activeSkus        = productCatalog.allProducts
+                .filter(_.active)
+                .map(_.sku.value)
+            loaded <- IO.fromTry(
+                afpma.firecalc.invoices.config.EnvironmentConfigLoader
+                    .loadWithProductCopy(invoiceConfigFile, activeSkus)
+            )
+            (_, productCopyConfig) = loaded
+            _ <- logger.info("Product copy config validated successfully")
+
+            // GoCardless configuration - load from config file
+            goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
+
+            paymentService <- PaymentService
+                .create[IO](
+                    httpClient,
+                    goCardlessConfig,
+                    emailService,
+                    orderService,
+                    customerRepo,
+                    productCopyConfig
                 )
-                _              <- logger.info(s"Loaded payments config for environment: ${paymentsConfig.environment}")
-                _              <- logger.info(s"Using database: ${paymentsConfig.databaseConfig.filename}")
-                _              <- logger.info(
-                    if (paymentsConfig.corsAllowedOrigins.contains("*"))
-                    then "CORS policy: allowing all origins (default)"
-                    else s"CORS policy: allowing origins ${paymentsConfig.corsAllowedOrigins.mkString(", ")}"
-                )
-                fa = paymentsConfig.fireboxAvailability
-                _              <- logger.info(
-                    s"firebox-availability: traditional=${if fa.traditional then "enabled" else "disabled"}, " +
-                        s"ecolabeled=${if fa.ecolabeled then "enabled" else "disabled"}, " +
-                        s"afpma-prse=${if fa.afpmaPrse then "enabled" else "disabled"}, " +
-                        s"single-tested=${if fa.singleTested then "enabled" else "disabled"}, " +
-                        s"door15a-catalog=${if fa.door15aCatalog then "enabled" else "disabled"}"
+
+            // Initialize invoice pdf generation service (requires paymentService for SEPA mandate lookup)
+            invoicePdfGenerationService <- InvoicePdfGenerationService
+                .create[IO](
+                    paymentsConfig.invoiceConfig.configFilePath,
+                    paymentService,
+                    productCopyConfig
                 )
 
-                // Run migrations with configured database
-                _ <- Migrations.migrate[IO](s"jdbc:sqlite:${paymentsConfig.databaseConfig.path}")
+            // Initialize remote calculation client for Austrian fireboxes
+            calcClientConfig = FireboxCalcClientConfig(
+                baseUri = paymentsConfig.calculationClientConfig.baseUri
+            )
+            _ <- logger.info(
+                s"Calculation client configured: baseUri=${paymentsConfig.calculationClientConfig.baseUri}"
+            )
 
-                exitCode <- Database.createConnection[IO](paymentsConfig).use { implicit conn =>
-                    for
-                        _ <- logger.info("Initializing repositories...")
+            // Create the calculation client using the existing HTTP client
+            calcClient = Http4sCalcClient(calcClientConfig, httpClient)
 
-                        // Initialize repositories
-                        productRepo         <- ProductRepository.create[IO]
-                        customerRepo        <- CustomerRepository.create[IO]
-                        orderRepo           <- OrderRepository.create[IO]
-                        purchaseIntentRepo  <- PurchaseIntentRepository.create[IO]
-                        productMetadataRepo <- ProductMetadataRepository.create[IO]
+            // Register order completion callbacks for 'Processing' state
+            _ <- orderService.registerCallbackForFinalStatus(
+                "project-to-report",
+                domain.OrderStatus.Processing,
+                { context =>
+                    (
+                        for
+                            _ <- logger.info(
+                                s"[REPORT-GENERATION] Order ${context.order.id} completed for customer ${LogSanitizer.maskEmail(context.customer.email)}"
+                            )
 
-                        // Get product catalog based on configuration
-                        productCatalog = ProductCatalogSelector.getCatalog(paymentsConfig.productCatalog)
-                        _ <- logger.info(s"Using ${paymentsConfig.productCatalog} product catalog")
+                            // Check ProductMetadata exists
+                            fileDesc <- context.productMetadata
+                                .map { case fd: FileDescriptionWithContent =>
+                                    IO.pure(fd)
+                                }
+                                .getOrElse(
+                                    IO.raiseError(
+                                        new ProductMetadataMissingException(
+                                            context.order.id.value
+                                        )
+                                    )
+                                )
 
-                        // Sync product catalog to database
-                        _ <- logger.info("Syncing product catalog to database...")
-                        _ <- productCatalog.allProducts.traverse { productInfo =>
-                            productRepo.upsert(productInfo)
-                        }
-                        _ <- logger.info(s"Synced ${productCatalog.allProducts.size} product(s) from catalog")
+                            locale                   = context.customer.language.toLocale
+                            calculationReportService =
+                                new CalculationReportServiceImpl(
+                                    calcClient,
+                                    locale
+                                )
 
-                        _ <- logger.info("Initializing services...")
+                            // Try to process project file and generate PDF report
+                            _ <- logger.info(
+                                s"[REPORT-GENERATION] Processing project file: ${fileDesc.filename} (${fileDesc.mimeType})"
+                            )
+                            (pdfReportFile, invoiceNumber) <-
+                                generatePdfReportAndInvoiceNumber[IO](
+                                    fileDesc,
+                                    context,
+                                    invoiceNumberService,
+                                    locale,
+                                    paymentsConfig.reportAsDraft,
+                                    Some(calculationReportService)
+                                )
 
-                        // Initialize services
-                        authService  <- AuthenticationService.create[IO](purchaseIntentRepo, paymentsConfig.jwtConfig)
-                        orderService <- OrderService
-                            .create[IO](orderRepo, productRepo, customerRepo, productMetadataRepo)
+                            newContext = context
+                                .copy(order =
+                                    context.order
+                                        .copy(invoiceNumber = Some(invoiceNumber))
+                                )
 
-                        // Load email configuration
-                        emailConfig <- ConfigLoader.loadEmailConfig[IO]()
-                        _           <- logger.info(s"Loaded email configuration: ${emailConfig.smtpHost}:${emailConfig.smtpPort}")
+                            // Generate PDF invoice
+                            pdfInvoiceAsBytes <- invoicePdfGenerationService
+                                .generateInvoicePdf(newContext, locale)
 
-                        emailService <- EmailService.create[IO](emailConfig)
-                        // Alternative: Use mocked email service for testing
-                        // emailService <- EmailService.createMocked[IO]
-
-                        _ <- logger.info("Initializing invoice number generation system...")
-
-                        // Initialize invoice number services
-                        invoiceCounterRepo <- InvoiceCounterRepository.create[IO]
-                        _                  <- invoiceCounterRepo.initializeCounter(paymentsConfig.invoiceCounterStartingNumber)
-
-                        invoiceNumberService <- InvoiceNumberService.create[IO](
-                            paymentsConfig,
-                            invoiceCounterRepo,
-                            orderRepo
-                        )
-
-                        // Register invoice generation callback
-                        // _ <- orderService.registerInvoiceNumberGenerationCallback(invoiceNumberService)
-                        // _ <- logger.info("Registered invoice number generation callback")
-
-                        // Generate invoice numbers retroactively for existing confirmed orders
-                        retroactiveCount <- invoiceNumberService.generateInvoiceNumbersRetroactively()
-                        _                <- logger.info(s"Generated $retroactiveCount invoice numbers retroactively during startup")
-
-                        // Load invoice config and extract a validated productCopyConfig (one shot).
-                        invoiceConfigFile = new java.io.File(paymentsConfig.invoiceConfig.configFilePath)
-                        activeSkus        = productCatalog.allProducts.filter(_.active).map(_.sku.value)
-                        loaded <- IO.fromTry(
-                            afpma.firecalc.invoices.config.EnvironmentConfigLoader
-                                .loadWithProductCopy(invoiceConfigFile, activeSkus)
-                        )
-                        (_, productCopyConfig) = loaded
-                        _      <- logger.info("Product copy config validated successfully")
-
-                        // GoCardless configuration - load from config file
-                        goCardlessConfig <- ConfigLoader.loadGoCardlessConfig[IO]()
-
-                        paymentService <- PaymentService
-                            .create[IO](
-                                httpClient,
-                                goCardlessConfig,
+                            // Send email to user containing PDF invoice and PDF report
+                            _ <- logger
+                                .info(
+                                    s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}"
+                                )
+                            _ <- logger.info(
+                                s"[EMAIL-NOTIFIER] Product: ${newContext.product.sku} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
+                            )
+                            _ <- sendInvoiceWithReportToUser(
+                                newContext,
+                                fileDesc,
+                                pdfReportFile,
+                                pdfInvoiceAsBytes,
                                 emailService,
-                                orderService,
-                                customerRepo,
+                                paymentsConfig.adminConfig.email,
                                 productCopyConfig
                             )
 
-                        // Initialize invoice pdf generation service (requires paymentService for SEPA mandate lookup)
-                        invoicePdfGenerationService <- InvoicePdfGenerationService.create[IO](
-                            paymentsConfig.invoiceConfig.configFilePath,
-                            paymentService,
-                            productCopyConfig
-                        )
-
-                        // Initialize remote calculation client for Austrian fireboxes
-                        calcClientConfig = FireboxCalcClientConfig(
-                            baseUri = paymentsConfig.calculationClientConfig.baseUri
-                        )
-                        _ <- logger.info(
-                            s"Calculation client configured: baseUri=${paymentsConfig.calculationClientConfig.baseUri}"
-                        )
-
-                        // Create the calculation client using the existing HTTP client
-                        calcClient = Http4sCalcClient(calcClientConfig, httpClient)
-
-                        // Register order completion callbacks for 'Processing' state
-                        _ <- orderService.registerCallbackForFinalStatus(
-                            "project-to-report",
-                            domain.OrderStatus.Processing,
-                            { context =>
-                                (
-                                    for
-                                        _ <- logger.info(
-                                            s"[REPORT-GENERATION] Order ${context.order.id} completed for customer ${LogSanitizer.maskEmail(context.customer.email)}"
-                                        )
-
-                                        // Check ProductMetadata exists
-                                        fileDesc <- context.productMetadata
-                                            .map { case fd: FileDescriptionWithContent => IO.pure(fd) }
-                                            .getOrElse(
-                                                IO.raiseError(
-                                                    new ProductMetadataMissingException(context.order.id.value)
-                                                )
-                                            )
-
-                                        locale                   = context.customer.language.toLocale
-                                        calculationReportService = new CalculationReportServiceImpl(calcClient, locale)
-
-                                        // Try to process project file and generate PDF report
-                                        _ <- logger.info(
-                                            s"[REPORT-GENERATION] Processing project file: ${fileDesc.filename} (${fileDesc.mimeType})"
-                                        )
-                                        (pdfReportFile, invoiceNumber) <- generatePdfReportAndInvoiceNumber[IO](
-                                            fileDesc,
-                                            context,
-                                            invoiceNumberService,
-                                            locale,
-                                            paymentsConfig.reportAsDraft,
-                                            Some(calculationReportService)
-                                        )
-
-                                        newContext = context
-                                            .copy(order = context.order.copy(invoiceNumber = Some(invoiceNumber)))
-
-                                        // Generate PDF invoice
-                                        pdfInvoiceAsBytes <- invoicePdfGenerationService
-                                            .generateInvoicePdf(newContext, locale)
-
-                                        // Send email to user containing PDF invoice and PDF report
-                                        _ <- logger
-                                            .info(
-                                                s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(newContext.customer.email)}"
-                                            )
-                                        _ <- logger.info(
-                                            s"[EMAIL-NOTIFIER] Product: ${newContext.product.sku} - Amount: ${newContext.order.amount} ${newContext.order.currency}"
-                                        )
-                                        _ <- sendInvoiceWithReportToUser(
-                                            newContext,
-                                            fileDesc,
-                                            pdfReportFile,
-                                            pdfInvoiceAsBytes,
-                                            emailService,
-                                            paymentsConfig.adminConfig.email,
-                                            productCopyConfig
-                                        )
-
-                                        // Send notification email to admin containing PDF invoice only
-                                        _ <- logger.info(
-                                            s"[ADMIN-INVOICE] Sending admin invoice notification for order ${newContext.order.id}"
-                                        )
-                                        _ <- sendAdminInvoiceNotification(
-                                            newContext,
-                                            paymentsConfig.adminConfig.email,
-                                            pdfInvoiceAsBytes,
-                                            emailService,
-                                            productCopyConfig
-                                        )
-
-                                        // Send notification email to admin containing PDF invoice only
-                                        _ <- logger.info(
-                                            s"[ADMIN-INVOICE] Sending admin invoice notification for order ${newContext.order.id}"
-                                        )
-                                        _ <- sendAdminInvoiceNotification(
-                                            newContext,
-                                            paymentsConfig.adminConfig.email,
-                                            pdfInvoiceAsBytes,
-                                            emailService,
-                                            productCopyConfig
-                                        )
-                                    yield ()
-                                ).handleErrorWith { err =>
-                                    logger.error(s"[REPORT-GENERATION] Error : ${err.getMessage}") *>
-                                        (err match
-                                            // Handle EN15544 validation errors - notify customer and admin about invalid project
-                                            case ex: EN15544ValidationException => {
-                                                val userNotif  = UserNotification(
-                                                    email    = EmailAddress.unsafeFromString(context.customer.email),
-                                                    error    = ex,
-                                                    orderId  = Some(context.order.id.value.toString),
-                                                    language = context.customer.language
-                                                )
-                                                val adminNotif = AdminNotification(
-                                                    adminEmail =
-                                                        EmailAddress.unsafeFromString(paymentsConfig.adminConfig.email),
-                                                    subject    =
-                                                        s"EN15544 Validation Failed for Order ${context.order.id.value}",
-                                                    message    =
-                                                        s"Customer ${context.customer.individualNameOrCompanyName} (${context.customer.email}) uploaded an invalid FireCalc project.\n\nValidation errors:\n${ex.validationErrors.mkString("\n- ", "\n- ", "")}",
-                                                    orderId    = Some(context.order.id.value.toString)
-                                                )
-
-                                                logger.info(
-                                                    s"[REPORT-GENERATION] EN15544 validation failed for order ${context.order.id}: ${ex.validationErrors.mkString(", ")}"
-                                                ) *>
-                                                    logger.info(
-                                                        s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' due to validation errors"
-                                                    ) *>
-                                                    orderService
-                                                        .updateOrderStatus(context.order.id, OrderStatus.Failed) *>
-                                                    logger.info(
-                                                        "[REPORT-GENERATION] Sending validation error notifications to customer and admin"
-                                                    ) *>
-                                                    emailService
-                                                        .sendUserNotification(userNotif)
-                                                        .handleErrorWith(e =>
-                                                            logger.error(
-                                                                s"[REPORT-GENERATION] Failed to send user notification: ${e.getMessage}"
-                                                            ) *> IO.unit
-                                                        ) *>
-                                                    emailService
-                                                        .sendAdminNotification(adminNotif)
-                                                        .handleErrorWith(e =>
-                                                            logger.error(
-                                                                s"[REPORT-GENERATION] Failed to send admin notification: ${e.getMessage}"
-                                                            ) *> IO.unit
-                                                        )
-                                                        .void
-                                            }
-
-                                            // Handle other report errors - mark order as failed
-                                            case ex: (YAMLFileReadException | YAMLDecodingException |
-                                                    TypstRenderingException | PDFFileCreationException) =>
-                                                logger.info(
-                                                    s"[REPORT-GENERATION] Report generation error for order ${context.order.id}: ${ex.getClass.getSimpleName}"
-                                                ) *>
-                                                    logger.info(
-                                                        s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' because of: ${err.getMessage}"
-                                                    ) *>
-                                                    orderService
-                                                        .updateOrderStatus(context.order.id, OrderStatus.Failed)
-                                                        .void
-
-                                            // Handle payment exceptions - mark order as failed
-                                            case ex: (ProductMetadataMissingException | PDFGenerationFailedException |
-                                                    InvoiceNumberGenerationFailedException) =>
-                                                logger.info(
-                                                    s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' because of: ${err.getMessage}"
-                                                ) *>
-                                                    orderService
-                                                        .updateOrderStatus(context.order.id, OrderStatus.Failed)
-                                                        .void
-
-                                            case other =>
-                                                IO.raiseError(other))
-                                }
-                            }
-                        )
-                        _ <- IO.println("Registered PDF invoice + PDF Report generation and sending callback")
-
-                        // Register callback for notifying admin when order status becomes "Failed" or "Cancelled"
-                        _ <- orderService.registerCallbackForFinalStatuses(
-                            "email-notifier-admin",
-                            Set(domain.OrderStatus.Failed, domain.OrderStatus.Cancelled),
-                            { context =>
-                                val adminEmail = paymentsConfig.adminConfig.email
-                                IO.println(
-                                    s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}"
-                                ) *>
-                                    IO.println(
-                                        s"[EMAIL-NOTIFIER] Product: ${context.product.sku} - Amount: ${context.order.amount}"
-                                    )
-                                // Here you could send a completion email using the emailService
-                                val adminNotif = AdminNotification(
-                                    adminEmail = EmailAddress.unsafeFromString(adminEmail),
-                                    subject    = s"Order ${context.order.status} : ${context.order.id.value}",
-                                    message    =
-                                        s"PDF Report generation failed for customer '${context.customer.individualNameOrCompanyName}' (${context.customer.email}) ? Or payment failed (mandate cancelled ?) ? Make sure the customer will pay its bill by other payment methods.",
-                                    orderId    = Some(context.order.id.value.toString)
-                                )
-                                emailService
-                                    .sendAdminNotification(adminNotif)
-                                    .flatMap:
-                                        handleEmailResult(
-                                            s"admin notification with PDF invoice ${context.order.invoiceNumber} for customer ${LogSanitizer.maskEmail(context.customer.email)}",
-                                            context,
-                                            adminEmail
-                                        )
-                            }
-                        )
-
-                        purchaseService <- PurchaseService.create[IO](
-                            productRepo,
-                            customerRepo,
-                            purchaseIntentRepo,
-                            productMetadataRepo,
-                            authService,
-                            orderService,
-                            paymentService,
-                            emailService,
-                            productCopyConfig,
-                            paymentsConfig.fireboxAvailability
-                        )
-
-                        _ <- IO.println("Setting up HTTP routes...")
-
-                        // Setup routes
-                        purchaseRoutes = PurchaseRoutes.create[IO](purchaseService)
-                        webhookRoutes  = WebhookRoutes.create[IO](paymentService)
-                        staticRoutes   = StaticPageRoutes.create[IO](emailConfig)
-                        healthRoutes   = HealthCheckRoutes.create[IO]
-                        sourceRoutes   = SourceRoutes.create[IO]
-
-                        // JWT auth middleware — ready for future protected routes
-                        // Usage: val protectedRoutes = jwtMiddleware(authedRoutes)
-                        jwtMiddleware = AuthMiddleware[IO](authService)
-
-                        // SEC-010: Enforce 50 MB request body size limit on routes that accept bodies
-                        maxBodySize       = 50L * 1024 * 1024
-                        purchaseRoutes_V1 = EntityLimiter.httpRoutes(purchaseRoutes.routes_V1, maxBodySize)
-                        webhookRoutes_V1  = EntityLimiter.httpRoutes(webhookRoutes.routes_V1, maxBodySize)
-
-                        // Apply selective logging middleware to each route group
-                        // SEC-006: Disable body logging on sensitive routes to prevent PII leakage
-                        purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders        = true,
-                            logBody           = false,
-                            redactHeadersWhen = name =>
-                                Logger.defaultRedactHeadersWhen(name) ||
-                                    name == CIString("Authorization")
-                        )(purchaseRoutes_V1)
-
-                        webhookRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders        = true,
-                            logBody           = false,
-                            redactHeadersWhen = name =>
-                                Logger.defaultRedactHeadersWhen(name) ||
-                                    name == CIString("Webhook-Signature")
-                        )(webhookRoutes_V1)
-
-                        staticRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = false // Only headers for static routes
-                        )(staticRoutes.routes_V1)
-
-                        healthRoutes_V1_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = false // Only headers for health check routes
-                        )(healthRoutes.routes_V1)
-
-                        sourceRoutes_WithLogging = Logger.httpRoutes(
-                            logHeaders = true,
-                            logBody    = false // Only headers for source routes
-                        )(sourceRoutes.routes)
-
-                        // Combine all logged routes
-                        allRoutes_V1 =
-                            purchaseRoutes_V1_WithLogging <+> webhookRoutes_V1_WithLogging <+> staticRoutes_V1_WithLogging <+> healthRoutes_V1_WithLogging <+> sourceRoutes_WithLogging
-
-                        // SEC-016: Apply CORS middleware with configurable origin whitelist
-                        corsPolicy = {
-                            val base = CORS.policy.withAllowCredentials(false)
-                            if (paymentsConfig.corsAllowedOrigins.contains("*"))
-                                base.withAllowOriginAll
-                            else {
-                                val allowed = paymentsConfig.corsAllowedOrigins.map(CIString(_)).toSet
-                                base.withAllowOriginHostCi(origin => allowed.contains(origin))
-                            }
-                        }
-                        corsRoutes = corsPolicy.apply(allRoutes_V1)
-
-                        // Create HttpApp
-                        httpApp = corsRoutes.orNotFound
-
-                        _ <- IO.println("Starting HTTP server...")
-
-                        // Start server
-                        _ <- EmberServerBuilder
-                            .default[IO]
-                            .withHost(ipv4"0.0.0.0")
-                            .withPort(port"8181")
-                            .withHttpApp(httpApp)
-                            .build
-                            .use(_ =>
-                                IO.println("Server started at http://localhost:8181") *>
-                                    IO.println("Available endpoints:") *>
-                                    IO.println("  POST /v1/purchase/create-intent") *>
-                                    IO.println("  POST /v1/purchase/verify-and-process") *>
-                                    IO.println("  ") *>
-                                    IO.println("  POST /v1/webhooks/gocardless") *>
-                                    IO.println("  ") *>
-                                    IO.println("  GET  /v1/payment_complete") *>
-                                    IO.println("  GET  /v1/payment_cancelled") *>
-                                    IO.println("  ") *>
-                                    IO.println("  GET  /v1/healthcheck") *>
-                                    IO.println("  GET  /source (AGPLv3 compliance)") *>
-                                    IO.println("  ") *>
-                                    IO.println("GoCardless Configuration:") *>
-                                    IO.println(s"  Environment: ${goCardlessConfig.environment}") *>
-                                    IO.println(s"  Base URL: ${goCardlessConfig.baseUrl}") *>
-                                    IO.never
+                            // Send notification email to admin containing PDF invoice only
+                            _ <- logger.info(
+                                s"[ADMIN-INVOICE] Sending admin invoice notification for order ${newContext.order.id}"
                             )
-                    yield ExitCode.Success
+                            _ <- sendAdminInvoiceNotification(
+                                newContext,
+                                paymentsConfig.adminConfig.email,
+                                pdfInvoiceAsBytes,
+                                emailService,
+                                productCopyConfig
+                            )
+                        yield ()
+                    ).handleErrorWith { err =>
+                        logger.error(
+                            s"[REPORT-GENERATION] Error : ${err.getMessage}"
+                        ) *>
+                            (err match
+                                // Handle EN15544 validation errors - notify customer and admin about invalid project
+                                case ex: EN15544ValidationException => {
+                                    val userNotif  = UserNotification(
+                                        email    = EmailAddress.unsafeFromString(
+                                            context.customer.email
+                                        ),
+                                        error    = ex,
+                                        orderId  = Some(
+                                            context.order.id.value.toString
+                                        ),
+                                        language = context.customer.language
+                                    )
+                                    val adminNotif = AdminNotification(
+                                        adminEmail = EmailAddress.unsafeFromString(
+                                            paymentsConfig.adminConfig.email
+                                        ),
+                                        subject    = s"EN15544 Validation Failed for Order ${context.order.id.value}",
+                                        message    =
+                                            s"Customer ${context.customer.individualNameOrCompanyName} (${context.customer.email}) uploaded an invalid FireCalc project.\n\nValidation errors:\n${ex.validationErrors.mkString("\n- ", "\n- ", "")}",
+                                        orderId    = Some(
+                                            context.order.id.value.toString
+                                        )
+                                    )
+
+                                    logger.info(
+                                        s"[REPORT-GENERATION] EN15544 validation failed for order ${context.order.id}: ${ex.validationErrors.mkString(", ")}"
+                                    ) *>
+                                        logger.info(
+                                            s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' due to validation errors"
+                                        ) *>
+                                        orderService
+                                            .updateOrderStatus(
+                                                context.order.id,
+                                                OrderStatus.Failed
+                                            ) *>
+                                        logger.info(
+                                            "[REPORT-GENERATION] Sending validation error notifications to customer and admin"
+                                        ) *>
+                                        emailService
+                                            .sendUserNotification(userNotif)
+                                            .handleErrorWith(e =>
+                                                logger.error(
+                                                    s"[REPORT-GENERATION] Failed to send user notification: ${e.getMessage}"
+                                                ) *> IO.unit
+                                            ) *>
+                                        emailService
+                                            .sendAdminNotification(adminNotif)
+                                            .handleErrorWith(e =>
+                                                logger.error(
+                                                    s"[REPORT-GENERATION] Failed to send admin notification: ${e.getMessage}"
+                                                ) *> IO.unit
+                                            )
+                                            .void
+                                }
+
+                                // Handle other report errors - mark order as failed
+                                case ex: (YAMLFileReadException | YAMLDecodingException | TypstRenderingException |
+                                        PDFFileCreationException) =>
+                                    logger.info(
+                                        s"[REPORT-GENERATION] Report generation error for order ${context.order.id}: ${ex.getClass.getSimpleName}"
+                                    ) *>
+                                        logger.info(
+                                            s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' because of: ${err.getMessage}"
+                                        ) *>
+                                        orderService
+                                            .updateOrderStatus(
+                                                context.order.id,
+                                                OrderStatus.Failed
+                                            )
+                                            .void
+
+                                // Handle payment exceptions - mark order as failed
+                                case ex: (ProductMetadataMissingException | PDFGenerationFailedException |
+                                        InvoiceNumberGenerationFailedException) =>
+                                    logger.info(
+                                        s"[REPORT-GENERATION] Update Order ${context.order.id} with status 'Failed' because of: ${err.getMessage}"
+                                    ) *>
+                                        orderService
+                                            .updateOrderStatus(
+                                                context.order.id,
+                                                OrderStatus.Failed
+                                            )
+                                            .void
+
+                                case other =>
+                                    IO.raiseError(other))
+                    }
                 }
-            } yield ExitCode.Success
-        }
+            )
+            _ <- IO.println(
+                "Registered PDF invoice + PDF Report generation and sending callback"
+            )
+
+            // Register callback for notifying admin when order status becomes "Failed" or "Cancelled"
+            _ <- orderService.registerCallbackForFinalStatuses(
+                "email-notifier-admin",
+                Set(domain.OrderStatus.Failed, domain.OrderStatus.Cancelled),
+                { context =>
+                    val adminEmail = paymentsConfig.adminConfig.email
+                    IO.println(
+                        s"[EMAIL-NOTIFIER] Sending email to ${LogSanitizer.maskEmail(context.customer.email)}"
+                    ) *>
+                        IO.println(
+                            s"[EMAIL-NOTIFIER] Product: ${context.product.sku} - Amount: ${context.order.amount}"
+                        )
+                    // Here you could send a completion email using the emailService
+                    val adminNotif = AdminNotification(
+                        adminEmail = EmailAddress.unsafeFromString(adminEmail),
+                        subject    = s"Order ${context.order.status} : ${context.order.id.value}",
+                        message    =
+                            s"PDF Report generation failed for customer '${context.customer.individualNameOrCompanyName}' (${context.customer.email}) ? Or payment failed (mandate cancelled ?) ? Make sure the customer will pay its bill by other payment methods.",
+                        orderId    = Some(context.order.id.value.toString)
+                    )
+                    emailService
+                        .sendAdminNotification(adminNotif)
+                        .flatMap:
+                            handleEmailResult(
+                                s"admin notification with PDF invoice ${context.order.invoiceNumber} for customer ${LogSanitizer.maskEmail(context.customer.email)}",
+                                context,
+                                adminEmail
+                            )
+                }
+            )
+
+            purchaseService <- PurchaseService.create[IO](
+                productRepo,
+                customerRepo,
+                purchaseIntentRepo,
+                productMetadataRepo,
+                authService,
+                orderService,
+                paymentService,
+                emailService,
+                productCopyConfig,
+                paymentsConfig.fireboxAvailability
+            )
+
+            _ <- IO.println("Setting up HTTP routes...")
+
+            // Setup routes
+            purchaseRoutes = PurchaseRoutes.create[IO](purchaseService)
+            webhookRoutes  = WebhookRoutes.create[IO](paymentService)
+            staticRoutes   = StaticPageRoutes.create[IO](emailConfig)
+            healthRoutes   = HealthCheckRoutes.create[IO]
+            sourceRoutes   = SourceRoutes.create[IO]
+
+            // JWT auth middleware — ready for future protected routes
+            // Usage: val protectedRoutes = jwtMiddleware(authedRoutes)
+            jwtMiddleware = AuthMiddleware[IO](authService)
+
+            // SEC-010: Enforce 50 MB request body size limit on routes that accept bodies
+            maxBodySize       = 50L * 1024 * 1024
+            purchaseRoutes_V1 = EntityLimiter.httpRoutes(
+                purchaseRoutes.routes_V1,
+                maxBodySize
+            )
+            webhookRoutes_V1  = EntityLimiter.httpRoutes(
+                webhookRoutes.routes_V1,
+                maxBodySize
+            )
+
+            // Apply selective logging middleware to each route group
+            // SEC-006: Disable body logging on sensitive routes to prevent PII leakage
+            purchaseRoutes_V1_WithLogging = Logger.httpRoutes(
+                logHeaders        = true,
+                logBody           = false,
+                redactHeadersWhen = name =>
+                    Logger.defaultRedactHeadersWhen(name) ||
+                        name == CIString("Authorization")
+            )(purchaseRoutes_V1)
+
+            webhookRoutes_V1_WithLogging = Logger.httpRoutes(
+                logHeaders        = true,
+                logBody           = false,
+                redactHeadersWhen = name =>
+                    Logger.defaultRedactHeadersWhen(name) ||
+                        name == CIString("Webhook-Signature")
+            )(webhookRoutes_V1)
+
+            staticRoutes_V1_WithLogging = Logger.httpRoutes(
+                logHeaders = true,
+                logBody    = false // Only headers for static routes
+            )(staticRoutes.routes_V1)
+
+            healthRoutes_V1_WithLogging = Logger.httpRoutes(
+                logHeaders = true,
+                logBody    = false // Only headers for health check routes
+            )(healthRoutes.routes_V1)
+
+            sourceRoutes_WithLogging = Logger.httpRoutes(
+                logHeaders = true,
+                logBody    = false // Only headers for source routes
+            )(sourceRoutes.routes)
+
+            // Combine all logged routes
+            allRoutes_V1 =
+                purchaseRoutes_V1_WithLogging <+> webhookRoutes_V1_WithLogging <+> staticRoutes_V1_WithLogging <+> healthRoutes_V1_WithLogging <+> sourceRoutes_WithLogging
+
+            // SEC-016: Apply CORS middleware with configurable origin whitelist
+            corsPolicy = {
+                val base = CORS.policy.withAllowCredentials(false)
+                if (paymentsConfig.corsAllowedOrigins.contains("*"))
+                    base.withAllowOriginAll
+                else {
+                    val allowed =
+                        paymentsConfig.corsAllowedOrigins.map(CIString(_)).toSet
+                    base.withAllowOriginHostCi(origin => allowed.contains(origin))
+                }
+            }
+            corsRoutes = corsPolicy.apply(allRoutes_V1)
+
+            // Create HttpApp
+            httpApp = corsRoutes.orNotFound
+
+            _ <- IO.println("Starting HTTP server...")
+
+            // Start server
+            _ <- EmberServerBuilder
+                .default[IO]
+                .withHost(ipv4"0.0.0.0")
+                .withPort(port"8181")
+                .withHttpApp(httpApp)
+                .build
+                .use(_ =>
+                    IO.println("Server started at http://localhost:8181") *>
+                        IO.println("Available endpoints:") *>
+                        IO.println("  POST /v1/purchase/create-intent") *>
+                        IO.println("  POST /v1/purchase/verify-and-process") *>
+                        IO.println("  ") *>
+                        IO.println("  POST /v1/webhooks/gocardless") *>
+                        IO.println("  ") *>
+                        IO.println("  GET  /v1/payment_complete") *>
+                        IO.println("  GET  /v1/payment_cancelled") *>
+                        IO.println("  ") *>
+                        IO.println("  GET  /v1/healthcheck") *>
+                        IO.println("  GET  /source (AGPLv3 compliance)") *>
+                        IO.println("  ") *>
+                        IO.println("GoCardless Configuration:") *>
+                        IO.println(
+                            s"  Environment: ${goCardlessConfig.environment}"
+                        ) *>
+                        IO.println(
+                            s"  Base URL: ${goCardlessConfig.baseUrl}"
+                        ) *>
+                        IO.never
+                )
+        yield ExitCode.Success

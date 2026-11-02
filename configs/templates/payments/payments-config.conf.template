@@ -35,7 +35,7 @@ payments {
       # - Production: "FCALC-[YYYY]-"
       number-prefix = "FCALC-DEV-[YYYY]-"
       number-digits = 4
-      counter-starting-number = 1
+      counter-start = 1
       timezone = "Europe/Paris"
     }
     

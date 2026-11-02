@@ -115,8 +115,42 @@ case class InvoiceCounter(
     createdAt     : Instant
 )
 
+/**
+ * Order lifecycle states. Each value is set by exactly one GoCardless payment event, as mapped
+ * in GoCardlessPaymentServiceImpl; the invoice counter is advanced only by the Processing
+ * transition ("the only mint point"). Whether an invoice number is OWED in a state is part of
+ * the boot-time numbering invariant (an unnumbered Processing/Confirmed/PaidOut order is a fault;
+ * an unnumbered Pending/Failed/Cancelled order is normal).
+ */
 enum OrderStatus:
-    case Pending, Processing, Confirmed, PaidOut, Failed, Cancelled
+    /** Set at order creation; GoCardless has not submitted the payment yet (pending / pending_submission; a `created` webhook only stores the payment id). No number owed. */
+    case Pending
+
+    /** Set by the GoCardless `("payments","submitted")` event — sent to the banks, no longer cancellable by us. The only mint point: a number IS owed here. */
+    case Processing
+
+    /** Set by the GoCardless `("payments","confirmed")` event — the customer's bank confirms collection. A number is owed, already held from Processing. */
+    case Confirmed
+
+    /** Set by the GoCardless `("payments","paid_out")` event — funds transferred to our account. A number is owed, already held. (A charge-back has no handler: the order stays PaidOut and keeps its number.) */
+    case PaidOut
+
+    /** Set by the GoCardless `("payments","failed")` event — collection failed. No number owed; an order that reached submitted first keeps whatever number it holds. */
+    case Failed
+
+    /** Set by the GoCardless `("payments","cancelled")` event — cancelled before the charge date. No number owed. */
+    case Cancelled
+
+object OrderStatus:
+    /**
+     * Whether an invoice number is OWED in this state — the domain statement of the
+     * boot-time numbering invariant documented on the enum above. The boot guard and
+     * its reports ask this instead of re-encoding the state list at each call site.
+     */
+    def owesNumber(status: OrderStatus): Boolean =
+        status match
+            case Processing | Confirmed | PaidOut => true
+            case Pending | Failed | Cancelled     => false
 
 enum PaymentProvider:
     case GoCardless, Unknown

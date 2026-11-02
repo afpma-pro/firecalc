@@ -125,3 +125,29 @@ object Database:
                 conn
             }
         )(conn => Async[F].delay(conn.close()))
+
+    /**
+     * Open a connection against a database FILE (not in-memory) at a resolved path —
+     * the ONE recipe for tests where the resolved path and the journal mode are
+     * observable facts, not just the stored rows. Same PRAGMA sequence as production
+     * (configureSQLitePragmas), same eager driver registration (the object
+     * initializer); the schema itself is applied by the caller's migration fixture.
+     */
+    def testFileConnection[F[_]: Async: Logger](path: java.nio.file.Path): Resource[F, Conn] =
+        Resource.make(
+            Async[F].delay {
+                val SQLITE_URL = s"jdbc:sqlite:${path.toAbsolutePath}"
+
+                val sqlConn = DriverManager.getConnection(SQLITE_URL)
+
+                configureSQLitePragmas(sqlConn)
+
+                val metaDb = MoleculeDomain_sqlite()
+                val proxy  = JdbcProxy(SQLITE_URL, metaDb)
+
+                // Create Molecule connection
+                implicit val conn: JdbcConn_JVM = JdbcHandlerSQlite_JVM.recreateDb(proxy, sqlConn)
+
+                conn
+            }
+        )(conn => Async[F].delay(conn.close()))

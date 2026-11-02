@@ -22,6 +22,7 @@ Essential guides for getting started and working with the codebase:
 - **[I18N.md](guides/I18N.md)** - Internationalization system (Babel, translations)
 - **[DB_SQLITE3_MIGRATION_GUIDE.md](guides/DB_SQLITE3_MIGRATION_GUIDE.md)** - Database schema migrations
 - **[GOCARDLESS.md](guides/GOCARDLESS.md)** - GoCardless payment integration
+- **[INVOICE_NUMBERING_RUNBOOK.md](guides/INVOICE_NUMBERING_RUNBOOK.md)** - Invoice-numbering boot guard runbook: which order states hold numbers, read-only file inspection, the three repairs
 - **[OPEN_SOURCE_PRIVACY_SETUP.md](guides/OPEN_SOURCE_PRIVACY_SETUP.md)** - Privacy and security configuration
 
 ### [Electron Desktop App Guides](guides/electron/)

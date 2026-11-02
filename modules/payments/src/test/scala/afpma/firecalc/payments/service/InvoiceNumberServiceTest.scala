@@ -26,30 +26,30 @@ import utest.*
 object InvoiceNumberServiceTest extends TestSuite with TestDatabaseSetup {
 
     val testConfig = PaymentsConfig(
-        environment                  = "test",
-        productCatalog               = "development",
-        invoiceNumberPrefix          = "TEST-",
-        invoiceNumberDigits          = 3,
-        invoiceCounterStartingNumber = 1,
-        invoiceTimezone              = ZoneId.of("Europe/Paris"),
-        retryConfig                  = InvoiceRetryConfig(
+        environment         = "test",
+        productCatalog      = "development",
+        invoiceNumberPrefix = "TEST-",
+        invoiceNumberDigits = 3,
+        invoiceCounterStart = 1,
+        invoiceTimezone     = ZoneId.of("Europe/Paris"),
+        retryConfig         = InvoiceRetryConfig(
             maxRetries  = 2,
             baseDelayMs = 10,
             maxDelayMs  = 100
         ),
-        databaseConfig               = DatabaseConfig(
+        databaseConfig      = DatabaseConfig(
             filename = "test-in-memory.db",
             path     = ":memory:"
         ),
-        invoiceConfig                = InvoiceConfig(
+        invoiceConfig       = InvoiceConfig(
             configFilePath = "test-invoice-config.yaml",
             enabled        = false // Disabled for tests
         ),
-        adminConfig                  = AdminConfig(
+        adminConfig         = AdminConfig(
             email = "admin@example.com"
         ),
-        reportAsDraft                = true,
-        jwtConfig                    = JwtConfig(
+        reportAsDraft       = true,
+        jwtConfig           = JwtConfig(
             secret = "test-only-secret-not-used-in-invoice-tests"
         )
     )
@@ -70,7 +70,7 @@ object InvoiceNumberServiceTest extends TestSuite with TestDatabaseSetup {
         test("generate invoice number with correct format") {
             withService { (service, repo, conn) =>
                 for {
-                    _             <- repo.initializeCounter(testConfig.invoiceCounterStartingNumber)
+                    _             <- repo.initializeCounter(testConfig.invoiceCounterStart)
                     invoiceNumber <- service.generateInvoiceNumber()
                 } yield {
                     assert(invoiceNumber == "TEST-001")
@@ -81,7 +81,7 @@ object InvoiceNumberServiceTest extends TestSuite with TestDatabaseSetup {
         test("generate multiple invoice numbers in sequence") {
             withService { (service, repo, conn) =>
                 for {
-                    _      <- repo.initializeCounter(testConfig.invoiceCounterStartingNumber)
+                    _      <- repo.initializeCounter(testConfig.invoiceCounterStart)
                     first  <- service.generateInvoiceNumber()
                     second <- service.generateInvoiceNumber()
                     third  <- service.generateInvoiceNumber()

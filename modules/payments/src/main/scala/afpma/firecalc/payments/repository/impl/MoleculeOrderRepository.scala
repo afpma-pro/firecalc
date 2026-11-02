@@ -272,3 +272,45 @@ class MoleculeOrderRepository[F[_]: Async: Logger](using conn: Conn, ec: Executi
                     })
             }
         yield result
+
+    def allOrderInvoiceFacts(): F[List[OrderFact]] =
+        for
+            _    <- logger.debug("Reading raw order invoice facts for the boot numbering state")
+            rows <- future2AsyncF {
+                rawQuery(
+                    """SELECT po.orderId, po.status, po.invoiceNumber, c.email, po.createdAt, po.updatedAt
+                      |FROM ProductOrder po
+                      |LEFT JOIN Customer c ON c.customerId = po.customerId
+                      |ORDER BY po.updatedAt""".stripMargin
+                )
+            }
+        yield rows.flatMap {
+            case List(orderId, status, invoiceNumber, email, createdAt, updatedAt) =>
+                for
+                    uuid   <- scala.util.Try(UUID.fromString(orderId.toString)).toOption
+                    stat   <- domain.OrderStatus.values.find(_.toString == status.toString)
+                    create <- parseTimestamp(createdAt)
+                    update <- parseTimestamp(updatedAt)
+                yield OrderFact      (
+                    orderId       = api.OrderId(uuid),
+                    status        = stat,
+                    invoiceNumber = Option(invoiceNumber).map(_.toString),
+                    customerEmail = if email == null then "(no customer row)" else email.toString,
+                    createdAt     = create,
+                    updatedAt     = update
+                )
+            case _                                                                 => None
+        }
+
+    /**
+     * Timestamps are ISO-8601 strings when Molecule writes them; fall back to epoch
+     * millis for anything older. Values that parse as neither drop the row rather than
+     * throwing — the boot read must surface the database as it is.
+     */
+    private def parseTimestamp(value: Any): Option[java.time.Instant] =
+        Option(value).flatMap: v =>
+            val s = v.toString
+            scala.util
+                .Try   (java.time.Instant.parse(s)                                       )
+                .toOption
+                .orElse(scala.util.Try(java.time.Instant.ofEpochMilli(s.toLong)).toOption)

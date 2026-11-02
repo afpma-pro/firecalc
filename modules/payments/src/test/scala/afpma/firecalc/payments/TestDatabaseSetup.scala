@@ -5,8 +5,10 @@
 
 package afpma.firecalc.payments
 
-import molecule.db.common.spi.Conn
+import java.nio.file.{Files, Path}
+
 import cats.effect.{IO, Resource}
+import molecule.db.common.spi.Conn
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import scala.concurrent.ExecutionContext
@@ -42,6 +44,31 @@ trait TestDatabaseSetup {
      * The connection will have all production SQLite PRAGMAs applied.
      */
     def setupTestDatabase: IO[Conn] = getTestConnection
+
+    /**
+     * A fresh temp directory for a file-based test database, deleted on release —
+     * the walk is deepest-first so the WAL sidecars go before the directory itself.
+     */
+    def tempDatabaseDirectory(prefix: String): Resource[IO, Path] =
+        Resource
+            .make(IO(Files.createTempDirectory(prefix)))(dir =>
+                IO {
+                    if Files.exists (dir                    ) then
+                        Files
+                            .walk(dir)
+                            .sorted(java.util.Comparator.reverseOrder())
+                            .forEach(Files.deleteIfExists(_))
+                }
+            )
+
+    /**
+     * Opens a connection on a database FILE (not in-memory), with the production SQLite
+     * PRAGMAs and the schema created by Molecule. The ONE such recipe lives on
+     * [[Database]] (testFileConnection) — this is the test-side alias for it; the
+     * eager driver registration rides on Database class loading.
+     */
+    def testFileConnectionResource(path: Path): Resource[IO, Conn] =
+        Database.testFileConnection[IO](path)
 }
 
 object TestDatabaseSetup extends TestDatabaseSetup

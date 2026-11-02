@@ -7,7 +7,7 @@ package afpma.firecalc.payments.repository.impl
 
 import java.time.Instant
 
-import afpma.firecalc.payments.repository.InvoiceCounterRepository
+import afpma.firecalc.payments.repository.{CounterRow, InvoiceCounterRepository}
 import afpma.firecalc.payments.repository.impl.dsl.MoleculeDomain.*
 
 import cats.effect.Async
@@ -77,4 +77,50 @@ class MoleculeInvoiceCounterRepository[F[_]](using
         A.blocking {
             InvoiceCounter.currentNumber.query.get.headOption
         }
+
+    def raiseCounterTo(newCurrent: Long): F[Unit] =
+        A.blocking {
+            // Raw query, like the atomic increment: the value is written verbatim, never
+            // incremented — the boot repair verified it against the issued numbers first.
+            val now = Instant.now().toString
+            rawQuery(
+                s"UPDATE InvoiceCounter SET currentNumber = $newCurrent, updatedAt = '$now' RETURNING currentNumber"
+            )
+            ()
+        }.handleErrorWith { error =>
+            logger.error(s"Failed to raise invoice counter to $newCurrent: ${error.getMessage}") *>
+                A.raiseError(error)
+        }
+
+    def allCounterRows(): F[List[CounterRow]] =
+        A.blocking {
+            // Raw query, not a DSL facet: the DSL types currentNumber/startingNumber as
+            // non-null, but the V9 columns are nullable and reading must surface nulls,
+            // zero rows and multiple rows as data instead of throwing.
+            rawQuery("SELECT id, currentNumber, startingNumber FROM InvoiceCounter ORDER BY id")
+                .map { row =>
+                    CounterRow            (
+                        id             = toLong(row(0)),
+                        currentNumber  = optionalLong(row(1)),
+                        startingNumber = optionalLong(row(2))
+                    )
+                }
+        }
+
+    private def toLong(value: Any): Long =
+        optionalLong(value).getOrElse(
+            throw new IllegalStateException(s"Expected an integer column, got: $value")
+        )
+
+    private def optionalLong(value: Any): Option[Long] =
+        value match
+            case null        => None
+            case None        => None
+            case Some(inner) => optionalLong(inner)
+            case v: Long                 => Some(v)
+            case v: Int                  => Some(v.toLong)
+            case v: Short                => Some(v.toLong)
+            case v: java.math.BigInteger => Some(v.longValue)
+            case v: String               => v.toLongOption
+            case v => v.toString.toLongOption
 }
