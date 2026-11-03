@@ -575,9 +575,11 @@ docker-deploy-logs:
 ## ENGINE VALIDATION
 ## ================================
 
-# Run engine golden-file validation tests
+# Run engine golden-file validation tests.
+# Test/testOnly * forces discovery: bare 'test' is testQuick under sbt 2.x, which
+# reports success with zero tests once a warm server has run those suites.
 run-validation:
-	sbt --client "engineValidation/test"
+	sbt --client "engineValidation/Test/testOnly *"
 
 # Update golden reference files from current output.
 # Review changes with 'git diff' before committing.
