@@ -13,7 +13,7 @@ import afpma.firecalc.engine.models.en15544.firebox.{AFPMA_PRSE, TraditionalFire
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 
 /**
- * The EN 15544 **strict** firebox engine registry (shared, ticket 16).
+ * The EN 15544 **strict** firebox engine registry (shared).
  *
  * Austrian-free by construction: the two proprietary kinds (`Ecolabeled`,
  * `Door15aCatalog`) register the generic remote-only carriers

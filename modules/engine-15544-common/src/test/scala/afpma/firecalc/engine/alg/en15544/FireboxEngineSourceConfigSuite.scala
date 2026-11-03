@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.*
 
 /**
  * Unit tests for [[FireboxEngineSourceConfig]] — the cross-platform per-kind
- * engine-source vocabulary (tickets 09 + 10: Ecolabeled and Door15aCatalog
+ * engine-source vocabulary (Ecolabeled and Door15aCatalog
  * calculation are remote-only).
  *
  * `fromRemoteKeys` is the exact seam the Scala.js UI uses to parse

@@ -103,7 +103,7 @@ payments {
       door15a-catalog = true
     }
 
-    # Remote calculation client (ticket 21 cutover)
+    # Remote calculation client
     # Payments obtains Austrian (Ecolabeled, Door15aCatalog) calculation data
     # for PDF reports exclusively through the standalone firebox-calc backend
     # over HTTP (GET /v1/kinds, POST /v1/calculate) — no per-kind local switch,

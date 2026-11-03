@@ -9,7 +9,7 @@ import afpma.firecalc.dto.all.Firebox
 import afpma.firecalc.engine.models.en15544.std.Firebox_15544
 
 /**
- * DTO→engine-model conversion (shared, ticket 16).
+ * DTO→engine-model conversion (shared).
  *
  * The public artifact links NO proprietary Austrian engine model, so the two
  * Austrian kinds convert to the generic remote-only carriers

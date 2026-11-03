@@ -110,8 +110,8 @@ services:
   # ===========================================================================
   # Independent calculation backend serving GET /v1/kinds and POST /v1/calculate.
   # No payments dependencies, no database mounts — pure calculation engine.
-  # The assembly JAR is built in the private (non-AGPL) repository (ticket 14);
-  # the public repository no longer builds this module (ticket 20). Point the
+  # The assembly JAR is built in the private (non-AGPL) repository;
+  # the public repository no longer builds this module. Point the
   # build context at the private checkout.
   calc-backend:
     build:

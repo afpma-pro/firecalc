@@ -39,8 +39,8 @@ import afpma.firecalc.domain.AzimuthDirection
 import afpma.firecalc.domain.InclinationDirection
 
 /**
- * Generic, Austrian-free `Firebox_15544` carriers for the two proprietary kinds
- * (ticket 11; shared since ticket 16).
+ * Generic, Austrian-free `Firebox_15544` carriers for the two proprietary
+ * kinds.
  *
  * The public artifact links NO proprietary Austrian engine model: the
  * `Ecolabeled` and `Door15aFirebox_Catalog` engine models, their constraints,

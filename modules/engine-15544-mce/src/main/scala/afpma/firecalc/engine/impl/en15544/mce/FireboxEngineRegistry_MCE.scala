@@ -32,7 +32,7 @@ object FireboxEngineRegistry_MCE
 
     /**
      * Entry order mirrors the retired resolver's match-arm order (see strict),
-     * with the two proprietary Austrian entries removed (ticket 16).
+     * with the two proprietary Austrian entries removed.
      */
     val all: List[FireboxEngineAny[
         FireboxPipe_Module_13384.FullDescr,
@@ -45,6 +45,6 @@ object FireboxEngineRegistry_MCE
     )
 
     // No `checkTotality()` here: the closed taxonomy still names the two
-    // proprietary kinds, but their MCE engines are private (ticket 16).
+    // proprietary kinds, but their MCE engines are private.
     // `withEngine` fails typed for the unregistered kinds — no catch-all
     // (invariant 9).

@@ -234,13 +234,13 @@ case class FireCalcYAML_Loader(
 
     /**
      * Build the strict project description algebra for this project's firebox,
-     * resolving the firebox engine through the registry (ticket 11: generic
+     * resolving the firebox engine through the registry (generic
      * dispatch).
      *
      * `FireboxEngineRegistry_Strict.engineFor` narrows the erased firebox with
      * each entry's `TypeTest` and hands back a `FireboxEngineFor` pairing the
      * engine with the firebox it was resolved for — no concrete model type is
-     * named here (ticket 16: the public module is platform-uniform, with the
+     * named here (the public module is platform-uniform, with the
      * generic remote-only carriers shared by the JVM and the browser). An
      * unregistered firebox is a typed failure, not a catch-all (invariant 9).
      */

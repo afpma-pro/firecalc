@@ -136,7 +136,7 @@ object EN15544_Strict_Application:
         private val designFirebox: afpma.firecalc.engine.models.en15544.std.Firebox_15544 =
             delegate.inputs.design.firebox
 
-        // ── Remote-backed registry (ticket 11: generic over the base registry) ──
+        // ── Remote-backed registry (generic over the base registry) ─────────────
         // Built by mapping the base `FireboxEngineRegistry_Strict` entry list:
         // the entry whose `narrow` accepts this project's firebox — the kind
         // `remoteData` was prefetched for — is swapped for a remote-backed
@@ -147,8 +147,8 @@ object EN15544_Strict_Application:
         // This is generic in the model type: it uses each entry's own
         // `TypeTest`-backed `narrow` to identify the served kind, so the wrapper
         // never names a concrete firebox model. The base registry carries
-        // generic remote-only carriers for the proprietary kinds (ticket 16:
-        // shared, Austrian-free), and this mapping swaps the served entry for
+        // generic remote-only carriers for the proprietary kinds (shared,
+        // Austrian-free), and this mapping swaps the served entry for
         // the remote-backed engine.
         override protected lazy val fireboxEngineRegistry: FireboxEngineRegistry[
             FireboxPipe_Module_15544.FullDescr,

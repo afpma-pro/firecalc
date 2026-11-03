@@ -455,7 +455,7 @@ lazy val firebox_calc_api = crossProject(JVMPlatform, JSPlatform)
 // `ReferenceConformingServer` for contract tests, or a live deployment for
 // cross-repository acceptance. It has NO Austrian/Strict implementation
 // dependency, no proprietary fixture, and no numerical oracle: numerical and
-// engine correctness is owned by the private repository (ticket 17).
+// engine correctness is owned by the private repository.
 // The browser never links it; the UI exercises the remote path over HTTP via
 // `firebox_calc_client_js`.
 
@@ -748,9 +748,9 @@ lazy val engine_15544_strict = crossProject(JVMPlatform, JSPlatform)
     )
     .jsConfigure(_.settings(jsSourceMapSettings *))
     .settings(watchI18nSources("i18n"))
-    // Ticket 16: the Austrian engine instances, registry, calculation core,
-    // conversion, C3 cas-types, and NPipe fixture moved to the private
-    // repository (ticket 14). The public module is platform-uniform: the
+    // The IP-isolation phase moved the Austrian engine instances, registry,
+    // calculation core, conversion, C3 cas-types, and NPipe fixture to the
+    // private repository. The public module is platform-uniform: the
     // shared sources register generic remote-only carriers for the two
     // proprietary kinds.
     .dependsOn(
