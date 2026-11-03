@@ -22,6 +22,34 @@ keeps the values it loaded with — setting the variable afterwards has no effec
 That single fact explains every fresh-JVM requirement in the chain (see the Build-layout
 invocation table in the [dev README](README.md)).
 
+## The version line: what the `bNN` suffix means
+
+The `bNN` suffix of `engine_version_default` is the **build line**, the same one the
+application literals carry (`reports_base_version`, `payments_base_version`,
+`ui_base_version`). It is not an engine-side counter and it is not a compatibility
+marker — `0.3.x` is.
+
+- The line opens in exactly one kind of commit: `chore: prepare next version`, which
+  moves the three application literals, `engine_version_default` and the generated
+  `web/package.json` string together. Nothing else may bump `bNN`.
+- An engine behaviour change never starts a new line: it is a **new stamp on the current
+  line**. The `+<sha7>` suffix is what names the sources (ADR-0007); the `bNN` prefix
+  promises nothing about behaviour, so reaching for it to mark a change buys nothing and
+  costs the invariant below.
+- Any number of stamps per line is normal — the identity of a published artifact is the
+  pair (`bNN`, `+<sha7>`), which is exactly what the tag and the ivy descriptor share.
+- Because `reports_version`, `payments_version` and `ui_version` are derived as
+  `<app-line>+engine-<engine_version>` (see
+  [Propagation](#propagation)), the two lines MUST stay equal: if they differ, the
+  mismatch is printed into every generated version string, into `BuildInfo`, and into the
+  report goldens that pin those strings.
+
+A stamp whose coordinate is no longer on the current line stays exactly where it was: its
+annotated tag is never moved, its artifacts are never rebuilt, its coordinate is never
+reused (see [Tag-and-publish discipline](#tag-and-publish-discipline)). A line bump that
+turns out to be wrong is corrected by leaving the line as it was and cutting the next
+stamp on it — not by republishing under the abandoned coordinate.
+
 ## Publish allowlist (granted modules)
 
 The 14 engine-line modules granted to `firecalc-firebox-austrian-api` as binary
