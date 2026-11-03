@@ -8,6 +8,12 @@ Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
 Status: cutover complete on branch `firebox-api` (ticket 21, Phase 3 of the
 IP-isolation program, recorded in the private repository).
 
+Numbered references in this document (`ticket NN`, `SPEC_00`) are items of that
+2026 IP-isolation program. Its issue tracker and evidence notes are kept in the
+private repository, not published here, so the numbers are historical keys — not
+links a reader of this repository can follow. The behaviour they refer to is
+described in full at each use.
+
 This document records the deployed state, routing, versioning, health-check
 and rate-limit setup, failure behavior, and rollback procedure for running
 both public user workflows (Ecolabeled, Door15aCatalog) against the

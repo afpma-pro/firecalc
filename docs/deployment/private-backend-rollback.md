@@ -9,6 +9,10 @@ Operational rollback for the Phase 3 cutover (ticket 21; SPEC_00 decision 14,
 last two rows). Use when the deployed private calculation backend shows a
 production availability or behavioral regression after cutover.
 
+`ticket NN` and `SPEC_00` are items of the 2026 IP-isolation program, tracked in
+the private repository and not published here: they are historical keys, not
+links in this repository.
+
 **Goal:** restore calculation service while preserving the HTTP seam and
 client compatibility. **Never** restore proprietary source or artifacts to
 the public repository, link public and private builds, or bypass HTTP.
