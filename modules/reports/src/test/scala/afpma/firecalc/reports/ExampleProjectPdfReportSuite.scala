@@ -51,6 +51,13 @@ import org.scalatest.matchers.should.Matchers
  * Bypasses the report factory validation gate so that fixtures with
  * intentional validation warnings (flue gas velocity, pressure) still
  * produce a PDF.
+ *
+ * The assertion is the generated Typst source ([[SnapshotAssert]]) — it is
+ * deterministic and it is where any change to what the report says shows up.
+ * The rendered PDF goes to `modules/reports/target/test-reports/` for visual
+ * inspection and is never compared; a tracked copy of it would only drift
+ * (nondeterministic bytes, no reader). The sibling [[RemoteAsResultReportSuite]]
+ * is the one that compares a PDF golden.
  */
 class ExampleProjectPdfReportSuite extends AnyFreeSpec with Matchers:
 
@@ -116,14 +123,13 @@ class ExampleProjectPdfReportSuite extends AnyFreeSpec with Matchers:
         val pdfBytes = JavaTypst.render(typstString)
         pdfBytes.length should be > 0
 
-        // Write to a tracked resource for git history
+        // Render to PDF so a person can open the report. This is output, not an
+        // assertion: Typst stamps a generation timestamp inside the compressed
+        // page streams, so the bytes differ on every run (see PdfGoldenAssert),
+        // and the report's content is asserted on the Typst source above. It
+        // therefore lands under target/, never in tracked resources.
         val outPath = Paths
-            .get(
-                getClass.getClassLoader
-                    .getResource("generated-reports")
-                    .toURI
-            )
-            .resolve("example-project-traditional.pdf")
+            .get("modules/reports/target/test-reports", "example-project-traditional.pdf")
 
         Files.createDirectories(outPath.getParent)
         Files.write            (outPath, pdfBytes)
