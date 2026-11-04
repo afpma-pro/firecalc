@@ -57,7 +57,7 @@
 # # The ssh host is machine-specific: the shared script deliberately has no
 # # default for it. REMOTE_HOST= (set but empty) still means "local
 # # destination", no ssh involved.
-# REMOTE_HOST="${REMOTE_HOST-<HOST>}"
+# export REMOTE_HOST="${REMOTE_HOST-<HOST>}"
 # REMOTE_DIR="${REMOTE_DIR:-/home/afpma/data/firecalc-group/firecalc}"
 # EXCLUDE_LIST="${EXCLUDE_LIST:-$SCRIPT_DIR/rsync-<HOST>-exclude-list.txt}"
 #
@@ -95,7 +95,7 @@
 # # The ssh host is machine-specific: the shared script deliberately has no
 # # default for it. REMOTE_HOST= (set but empty) still means "local
 # # destination", no ssh involved.
-# REMOTE_HOST="${REMOTE_HOST-<HOST>}"
+# export REMOTE_HOST="${REMOTE_HOST-<HOST>}"
 #
 # # Both repos sit side by side under afpma-pro/; FIREBOX_LOCAL_DIR overrides.
 # FIREBOX_LOCAL_DIR="${FIREBOX_LOCAL_DIR:-$SCRIPT_DIR/../firecalc-firebox-austrian-api}"
