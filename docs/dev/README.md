@@ -189,6 +189,12 @@ Never:
   server and reports the server's environment, not the caller's; use
   `payments/run --check-config` instead.
 - **trusting classes under `modules/*/target/`** — pre-sbt-2 residue, see above.
+- **relying on sbt 2's task cache to re-run a hand-rolled `sourceGenerators` task** —
+  conf contents read inside `FileFunction.cached` are not task inputs, and the
+  meta-build's `-Xmacro-settings:sbt:no-default-task-cache` does NOT reach tasks
+  declared in `project/*.scala`; such a task must state `Def.uncached` itself
+  (`project/I18nGenerator.scala`) and is guarded by
+  `scripts/tests/test-i18n-regeneration.sh`.
 
 **Warm-state trap: `ui/test` reports red suites that are not actually broken.**
 `sbt --client "ui/test"` can report `java.lang.ClassNotFoundException` for suites that

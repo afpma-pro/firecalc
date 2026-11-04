@@ -37,7 +37,13 @@ excludeDependencies += ExclusionRule(organization = "org.scalameta", name = "par
 
 // addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "2.0.19")
 
-// sbt 2: custom tasks defined in this meta-build (i18n generators, watchSources appends)
-// are side-effecting and lack sjsonnew codecs (e.g. sbt.internal.io.Source) — opt them out
-// of the default task cache; sbt-provided tasks stay cached.
+// Per sbt's macro layer this keeps tasks defined in `.sbt` files out of sbt 2's
+// default task cache: `core-macros ContextUtil.isTaskCacheByDefault` reads this
+// token, and `main Load.scala` feeds it to the `.sbt` load path only. It does
+// NOT reach tasks declared in `project/*.scala`, which zinc compiles without
+// passing it to the macro. Verified here: with this line in place, the compiled
+// meta-build class for the i18n generator still called `ActionCache.cache` with
+// `BuildWideCacheConfiguration`. Tasks defined in this meta-build opt out with
+// `Def.uncached` instead — see `project/I18nGenerator.scala`, tripwire
+// `scripts/tests/test-i18n-regeneration.sh`.
 Compile / scalacOptions += "-Xmacro-settings:sbt:no-default-task-cache"

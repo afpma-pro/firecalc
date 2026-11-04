@@ -137,6 +137,15 @@ object I18nGenerator {
             file(s"modules/$moduleName/src/main/resources/i18n/$lang.conf")
         }.toSet
 
-        cachedFun(inputFiles).toSeq
+        // Not a fix — an intent marker. `Def.uncached` is the opt-out sbt's task
+        // macro honours syntactically (any `sbt.util.Uncached.apply` in the task
+        // body ⇒ the node is built uncached), and this generator must never be
+        // served from sbt 2's task cache: the conf bytes it reads are inside
+        // `FileFunction.cached` above, so they are not task inputs, and a cached
+        // replay would leave `files.scala` stale while compilation stayed green —
+        // the breakage would surface only at runtime as `Missing key [errors / …]`.
+        // Cost is nil: `FileFunction.cached` still short-circuits on unchanged
+        // content hashes. Tripwire: scripts/tests/test-i18n-regeneration.sh.
+        Def.uncached(cachedFun(inputFiles)).toSeq
     }
 }
