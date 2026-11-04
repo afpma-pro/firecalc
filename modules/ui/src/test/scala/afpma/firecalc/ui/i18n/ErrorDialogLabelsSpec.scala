@@ -28,13 +28,18 @@ import utest.*
  *    first assertion below is what fails, and it names the key. HOCON substitutions are
  *    written with the value the bundle resolves them to (`global_error.save_button` =
  *    `${tooltips.save_project}`, `global_error.go_to_projects` =
- *    `${project_selector.title}`), so editing a bundle MUST be mirrored here.
+ *    `${project_selector.title}`), so editing a bundle MUST be mirrored here — including
+ *    the download action's labels and the `default_names.project` value a nameless
+ *    project's download is named from: a label no bundle declares is an action the dialog
+ *    cannot offer.
  *
  * 2. Against a synthetic payload with ONE leaf missing, the rest of the dialog still
  *    resolves from that payload, and the missing leaf is reported by key path rather than
  *    replaced by invented prose. That is the incident this degradation exists for:
  *    `global_error` was intact and `errors/unreadable_project_state` was missing, so a
- *    whole-record decode failed while every action label was still available.
+ *    whole-record decode failed while every action label was still available. The same
+ *    degradation is checked on one of the download action's own leaves: losing that action
+ *    may cost the dialog its button, it may not cost it a single other string.
  *
  * uTest, no DOM: the `ui` tests run on a plain Node.js jsEnv (build.sbt `Test / jsEnv`
  * and `modules/ui/test/vite-env-register.mjs`, no jsdom), which is exactly why
@@ -46,15 +51,20 @@ object ErrorDialogLabelsSpec extends TestSuite:
     private val enBundle = ErrorDialogLabels(
         errorTitle             = "Application Error",
         unreadableProjectState =
-            "The saved data for this project could not be read, so the project could not be opened. It is still " +
-                "in your browser's storage: reload the page to try again, or delete the project from the projects " +
-                "list and start over.",
+            "The saved data for this project could not be read, so the project could not be opened. It is still in " +
+                "your browser's storage: use \"Download the saved file\" to keep a copy of it, or reload the page " +
+                "to try again. Deleting the project from the Projects list is what removes those bytes.",
         transactionMsg         = "A reactive loop was detected. This is a bug that will be fixed.",
         reloadButton           = "Reload the page",
         closeButton            = "Close",
         goToProjects           = "Projects list",
         saveButton             = "Save",
         saveDone               = "Project saved",
+        downloadStoredButton   = "Download the saved file",
+        downloadStoredDone     = "Saved file downloaded",
+        defaultProjectName     = "project",
+        noStoredState          = "There is no saved file for this project in this browser's storage.",
+        storageUnavailable     = "This browser's storage could not be read: there is no saved file to download.",
         unresolved             = Nil
     )
 
@@ -63,14 +73,21 @@ object ErrorDialogLabelsSpec extends TestSuite:
         errorTitle             = "Erreur de l'application",
         unreadableProjectState =
             "Les données enregistrées pour ce projet n'ont pas pu être lues : le projet n'a pas pu être ouvert. " +
-                "Elles sont restées dans le stockage de votre navigateur : rechargez la page pour réessayer, ou " +
-                "supprimez le projet depuis la liste des projets pour repartir de zéro.",
+                "Elles sont restées dans le stockage de votre navigateur : utilisez « Télécharger le fichier " +
+                "enregistré » pour en garder une copie, ou rechargez la page pour réessayer. C'est la suppression " +
+                "du projet depuis la liste des projets qui efface définitivement ces données.",
         transactionMsg         = "Une boucle réactive a été détectée. Ce bug sera corrigé.",
         reloadButton           = "Recharger la page",
         closeButton            = "Fermer",
         goToProjects           = "Liste des projets",
         saveButton             = "Sauvegarder le projet",
         saveDone               = "Projet sauvegardé",
+        downloadStoredButton   = "Télécharger le fichier enregistré",
+        downloadStoredDone     = "Fichier enregistré téléchargé",
+        defaultProjectName     = "projet",
+        noStoredState          = "Aucun fichier enregistré pour ce projet dans le stockage de ce navigateur.",
+        storageUnavailable     =
+            "Le stockage de ce navigateur n'a pas pu être lu : aucun fichier enregistré à télécharger.",
         unresolved             = Nil
     )
 
@@ -84,7 +101,12 @@ object ErrorDialogLabelsSpec extends TestSuite:
             ("closeButton", obtained.closeButton, expected.closeButton                                 ),
             ("goToProjects", obtained.goToProjects, expected.goToProjects                              ),
             ("saveButton", obtained.saveButton, expected.saveButton                                    ),
-            ("saveDone", obtained.saveDone, expected.saveDone                                          )
+            ("saveDone", obtained.saveDone, expected.saveDone                                          ),
+            ("downloadStoredButton", obtained.downloadStoredButton, expected.downloadStoredButton      ),
+            ("downloadStoredDone", obtained.downloadStoredDone, expected.downloadStoredDone            ),
+            ("defaultProjectName", obtained.defaultProjectName, expected.defaultProjectName            ),
+            ("noStoredState", obtained.noStoredState, expected.noStoredState                           ),
+            ("storageUnavailable", obtained.storageUnavailable, expected.storageUnavailable            )
         ).collect { case (field, got, want) if got != want => s"$field: got [$got], expected [$want]" }.toList
 
     /** Labels whose text is empty or blank: such a label renders an unusable control. */
@@ -97,7 +119,12 @@ object ErrorDialogLabelsSpec extends TestSuite:
             ("closeButton", labels.closeButton                      ),
             ("goToProjects", labels.goToProjects                    ),
             ("saveButton", labels.saveButton                        ),
-            ("saveDone", labels.saveDone                            )
+            ("saveDone", labels.saveDone                            ),
+            ("downloadStoredButton", labels.downloadStoredButton    ),
+            ("downloadStoredDone", labels.downloadStoredDone        ),
+            ("defaultProjectName", labels.defaultProjectName        ),
+            ("noStoredState", labels.noStoredState                  ),
+            ("storageUnavailable", labels.storageUnavailable        )
         ).collect { case (field, text) if text.trim.isEmpty => field }.toList
 
     /**
@@ -105,17 +132,26 @@ object ErrorDialogLabelsSpec extends TestSuite:
      * -> `.conf` content). Every value names its language, so a test can tell which locale
      * a resolved string came from; `save_button` / `go_to_projects` stay HOCON
      * substitutions because that is how the real bundles declare them and the dialog's
-     * labels must survive that indirection. `withUnreadable` / `withCloseButton` omit one
-     * leaf, which is the only payload fault that matters here.
+     * labels must survive that indirection. `withUnreadable` / `withCloseButton` /
+     * `withDownloadStoredButton` omit one leaf, which is the only payload fault that
+     * matters here; `default_names.project` is always present because it only ever names a
+     * download, it is never shown, so no test here is about it going missing.
      */
-    private def bundle(language: String, withUnreadable: Boolean = true, withCloseButton: Boolean = true): String =
+    private def bundle(
+        language                : String,
+        withUnreadable          : Boolean = true,
+        withCloseButton         : Boolean = true,
+        withDownloadStoredButton: Boolean = true
+    ): String =
         // One entry per line, no commas: the shape resources/i18n/{en,fr}.conf use, so the
         // loader sees here what it sees in the app. An omitted leaf drops its whole line.
-        val unreadableLine =
+        val unreadableLine     =
             if withUnreadable then s"""    unreadable_project_state = "$language unreadable project state"\n"""
             else ""
-        val closeLine      =
+        val closeLine          =
             if withCloseButton then s"""    close_button    = "$language close"\n""" else ""
+        val downloadButtonLine =
+            if withDownloadStoredButton then s"""    download_stored_button = "$language download stored"\n""" else ""
 
         s"""
            |errors = {
@@ -132,9 +168,15 @@ object ErrorDialogLabelsSpec extends TestSuite:
            |    transaction_msg = "$language reactive loop"
            |    save_button     = $${tooltips.save_project}
            |    save_done       = "$language project saved"
+           |${downloadButtonLine}    download_stored_done   = "$language download stored done"
+           |    no_stored_state        = "$language no stored state"
+           |    storage_unavailable    = "$language storage unavailable"
            |    go_to_projects  = $${project_selector.title}
            |    reload_button   = "$language reload"
            |${closeLine}}
+           |default_names = {
+           |    project = "$language project"
+           |}
            |""".stripMargin
 
     /** A generated-`configs` shaped payload for both locales. */
@@ -180,9 +222,42 @@ object ErrorDialogLabelsSpec extends TestSuite:
             assert(labels.goToProjects == "fr projects list"                         )
             assert(labels.saveButton == "fr save"                                    )
             assert(labels.saveDone == "fr project saved"                             )
+            assert(labels.downloadStoredButton == "fr download stored"               )
+            assert(labels.downloadStoredDone == "fr download stored done"            )
+            assert(labels.defaultProjectName == "fr project"                         )
+            assert(labels.noStoredState == "fr no stored state"                      )
+            assert(labels.storageUnavailable == "fr storage unavailable"             )
             // The one missing leaf says which key is missing, and says it nowhere else.
             assert(labels.unreadableProjectState == "errors/unreadable_project_state")
             assert(labels.unresolved == List("errors/unreadable_project_state")      )
+        }
+
+        // ── The same degradation on one of the download action's own leaves ──────────
+
+        test("a payload without global_error/download_stored_button still yields the rest of the dialog") {
+            val labels = ErrorDialogLabels.resolve(
+                Locales.fr,
+                bundlePair(
+                    bundle("en", withDownloadStoredButton = false),
+                    bundle("fr", withDownloadStoredButton = false)
+                )
+            )
+            // A missing action leaf costs that action its own label and nothing else: the
+            // two refusal lines, the naming fallback and every other control still come
+            // from this payload, so the dialog keeps its text and names one absent key.
+            assert(labels.errorTitle == "fr title")
+            assert(labels.transactionMsg == "fr reactive loop"                         )
+            assert(labels.reloadButton == "fr reload"                                  )
+            assert(labels.closeButton == "fr close"                                    )
+            assert(labels.goToProjects == "fr projects list"                           )
+            assert(labels.saveButton == "fr save"                                      )
+            assert(labels.saveDone == "fr project saved"                               )
+            assert(labels.downloadStoredDone == "fr download stored done"              )
+            assert(labels.defaultProjectName == "fr project"                           )
+            assert(labels.noStoredState == "fr no stored state"                        )
+            assert(labels.storageUnavailable == "fr storage unavailable"               )
+            assert(labels.downloadStoredButton == "global_error/download_stored_button")
+            assert(labels.unresolved == List("global_error/download_stored_button")    )
         }
 
         test("a leaf only the requested locale lacks comes from fr, with nothing unresolved") {

@@ -394,13 +394,22 @@ object Firebox:
     )
 
 case class GlobalError(
-    title          : String,
-    transaction_msg: String,
-    save_button    : String,
-    save_done      : String,
-    go_to_projects : String,
-    close_button   : String,
-    reload_button  : String
+    title                 : String,
+    transaction_msg       : String,
+    save_button           : String,
+    save_done             : String,
+    // The application-error dialog's download action (see ProjectExport / GlobalErrorDialog):
+    // the button, its confirmation line, and the two refusal lines. Must stay present in
+    // every language's i18n/en.conf, fr.conf and stay unparameterized (no {0}):
+    // ErrorDialogLabels decodes each of them as a plain String leaf, so a StringFormat1
+    // there would leave the dialog showing a key path instead of a label.
+    download_stored_button: String,
+    download_stored_done  : String,
+    no_stored_state       : String,
+    storage_unavailable   : String,
+    go_to_projects        : String,
+    close_button          : String,
+    reload_button         : String
 )
 
 case class Placeholders(

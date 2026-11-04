@@ -8,10 +8,12 @@ package afpma.firecalc.ui.components
 import afpma.firecalc.ui.i18n.ErrorDialogLabels
 
 import scala.collection.mutable
+import scala.concurrent.Future
 
 import afpma.firecalc.ui.ProjectSelectorPage
 import afpma.firecalc.ui.models.currentLocale
 import afpma.firecalc.ui.models.localeVar
+import afpma.firecalc.ui.models.project.ProjectId
 import afpma.firecalc.ui.models.project.ProjectManager
 import afpma.firecalc.ui.router
 import afpma.firecalc.ui.services.ProjectExport
@@ -31,7 +33,7 @@ object GlobalErrorDialog:
     // Cached for the page lifetime, keyed by the locale. `resolve`'s fast path touches
     // `implicits.I18Ns`, and a `lazy val` whose initializer threw is left uninitialized,
     // so uncached every label read (title before the `shownMessages` check, `show`,
-    // `resetSaveAction`, `unreadableProjectMessage` — suppressed errors included)
+    // `resetActions`, `unreadableProjectMessage` — suppressed errors included)
     // re-decodes both bundles, then every leaf. Kept here rather than in `ui-i18n`: an
     // object-scope `lazy val` there sits in front of the Scala.js init-order hazard.
     private var cachedLabels: Option[(Locale, ErrorDialogLabels)] = None
@@ -83,7 +85,7 @@ object GlobalErrorDialog:
             <div class="modal-box">
                 <h3 class="font-bold text-lg text-error" id="global-error-title"></h3>
                 <p class="py-4 whitespace-pre-wrap" id="global-error-message"></p>
-                <p class="text-error text-sm pb-4 hidden" id="global-error-save-failed"></p>
+                <p class="text-error text-sm pb-4 hidden" id="global-error-action-failed"></p>
                 <div class="divider my-0"></div>
                 <!-- Recovery choices, stacked vertically under the message: a four-button
                      modal-action row overflows the modal box (dialog-overflow.png). -->
@@ -94,6 +96,13 @@ object GlobalErrorDialog:
                     <button class="btn btn-outline w-full hidden" id="global-error-save">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-down-icon lucide-file-down"><path d="M15 2H6a2 2 0 0 0 -2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>
                         <span id="global-error-save-label"></span>
+                    </button>
+                    <!-- Inline copy of lucide `download` (deliberately NOT the `file-down`
+                         glyph the save action uses: this is different bytes, not a second
+                         way to save): same raw-DOM constraint as above. -->
+                    <button class="btn btn-outline w-full hidden" id="global-error-download-stored">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                        <span id="global-error-download-stored-label"></span>
                     </button>
                     <!-- Inline copy of lucide `file-stack` (afpma.firecalc.ui.icons.lucide, the
                          toolbar projects-list glyph): same raw-DOM constraint as above. -->
@@ -113,6 +122,8 @@ object GlobalErrorDialog:
             .addEventListener("click", (_: dom.Event) => dom.window.location.reload())
         d.querySelector("#global-error-save")
             .addEventListener("click", (_: dom.Event) => saveCurrentProject())
+        // No listener for #global-error-download-stored: `show` wires that button with the
+        // project id it was opened for, and unwires it when there is none.
         // Same navigation the toolbar and StorageWarningDialog ship: close the dialog,
         // render the projects list inside the running app (no reload). Project deletion —
         // the way out of a corrupted persisted state — only exists in the selector.
@@ -135,60 +146,132 @@ object GlobalErrorDialog:
     private def saveLabel: dom.Element =
         dialog.querySelector("#global-error-save-label")
 
-    private def saveFailure: dom.Element =
-        dialog.querySelector("#global-error-save-failed")
+    private def actionFailure: dom.Element =
+        dialog.querySelector("#global-error-action-failed")
 
-    private def clearSaveFailure(): Unit =
-        saveFailure.textContent = ""
-        saveFailure.classList.add("hidden")
+    private def downloadStoredButton: dom.HTMLButtonElement =
+        dialog.querySelector("#global-error-download-stored").asInstanceOf[dom.HTMLButtonElement]
 
-    /** Re-arm the save action: enabled button, no failure line, clean label. */
-    private def resetSaveAction(): Unit =
-        saveButton.disabled = false
-        clearSaveFailure()
-        saveLabel.textContent = labels().saveButton
+    private def downloadStoredLabel: dom.Element =
+        dialog.querySelector("#global-error-download-stored-label")
+
+    private def clearActionFailure(): Unit =
+        actionFailure.textContent = ""
+        actionFailure.classList.add("hidden")
+
+    /** A fresh error starts with both recovery actions armed: enabled, own label, no failure line. */
+    private def resetActions(): Unit =
+        resetAction       (saveButton, saveLabel, labels().saveButton                              )
+        resetAction       (downloadStoredButton, downloadStoredLabel, labels().downloadStoredButton)
+        clearActionFailure(                                                                        )
+
+    /**
+     * Run a recovery action (save the live model, or hand over a project's stored bytes) from
+     * inside the dialog and report it inline. This dialog is the surface already reporting a
+     * failure, so an action failure goes in the paragraph under the message — never into
+     * `showGenericError`, which would just re-show this dialog (see `show`), and never as an
+     * escaped exception, which would take the app down with the error it was showing.
+     *
+     * `reArmAfterSuccess` is the one real difference between the two actions: saving is a
+     * moment that has been taken, so Save stays spent until a fresh error re-arms it, while
+     * handing over stored bytes consumes nothing — the payload stays in storage and the delete
+     * action stays the only thing that removes it, so asking again is normal (and gives the
+     * same file). Every attempt starts from the action's own label, so a repeat never inherits
+     * the ✓ of the previous one.
+     *
+     * The Locale is resolved once, from `currentLocale` — the same show-time authority
+     * `labels()` uses. `localeVar.now()` is transaction-stale inside the route render this
+     * dialog shows from, and a button label from one locale next to a failure line from
+     * another is a mismatch the user cannot explain.
+     */
+    private def runInlineAction(
+        button           : dom.HTMLButtonElement,
+        label            : dom.Element,
+        cleanLabel       : => String,
+        doneLabel        : => String,
+        reArmAfterSuccess: Boolean
+    )(action: Locale => Future[Either[String, Boolean]]): Unit =
+        import scala.concurrent.ExecutionContext.Implicits.global
+
+        given locale: Locale = currentLocale
+
+        resetAction(button, label, cleanLabel)
+        // Pending guard: a disabled button dispatches no click events.
+        button.disabled = true
+
+        action(locale).foreach {
+            case Left(error) =>
+                button.disabled           = false
+                actionFailure.textContent = error
+                actionFailure.classList.remove("hidden")
+
+            case Right(true) =>
+                // Success: the dialog stays open and the button shows the completed state, so
+                // the user sees the file landed.
+                label.textContent = s"✓ $doneLabel"
+                button.disabled   = !reArmAfterSuccess
+
+            case Right(false) =>
+                // The user cancelled the native save dialog (Electron only): re-arm the button
+                // with no visible change.
+                button.disabled = false
+        }
+
+    /** Re-arm one action: enabled, its own label, failure line cleared. */
+    private def resetAction(button: dom.HTMLButtonElement, label: dom.Element, cleanLabel: => String): Unit =
+        button.disabled   = false
+        label.textContent = cleanLabel
+        clearActionFailure()
 
     /**
      * Save the current project right from the dialog, through the shared export path
-     * (`ProjectExport`). A failure renders inline under the message — never by calling
-     * `showGenericError` from inside the dialog, which would just re-show the dialog.
+     * (`ProjectExport`). Only available when a project is open — see `show`.
      */
     private def saveCurrentProject(): Unit =
-        import scala.concurrent.ExecutionContext.Implicits.global
-
-        // Pending guard: a disabled button dispatches no click events.
-        saveButton.disabled = true
-        clearSaveFailure()
-
-        given Locale = localeVar.now()
-        ProjectExport.save().foreach { result =>
-            result match
-                case Left(error) =>
-                    saveButton.disabled     = false
-                    saveFailure.textContent = error
-                    saveFailure.classList.remove("hidden")
-
-                case Right(true) =>
-                    // Success: the dialog stays open and the button shows the completed
-                    // state, so the user sees the export landed. It stays disabled.
-                    saveLabel.textContent = s"✓ ${labels().saveDone}"
-
-                case Right(false) =>
-                    // User cancelled the native save dialog (Electron only): silently
-                    // re-arm the button, no visible change.
-                    saveButton.disabled = false
-        }
+        runInlineAction(saveButton, saveLabel, labels().saveButton, labels().saveDone, reArmAfterSuccess = false)(
+            locale => ProjectExport.save()(using locale)
+        )
 
     /**
-     * Show an error with a title the caller resolved through `labels()` (never a direct
-     * payload read). Keys on the displayed message: the
-     * right behaviour for errors re-raised by render passes (a dismissed error stays
-     * silent). User-initiated flows must use `showUserAttemptError` instead, so their
-     * retries give feedback again.
+     * Hand over the STORED bytes of the project this dialog was opened for, through the shared
+     * stored-bytes path (`ProjectExport.downloadStoredState`): no decode, no re-encode, the
+     * only way out of a payload this version cannot read.
+     *
+     * The id is a parameter, not dialog state: `show` wires this handler with the id it was
+     * given and hides the button otherwise, so the click always has one. Keyed on that id,
+     * never on `ProjectManager.activeProjectIdVar` like the save action — a project whose
+     * payload does not decode never became the active one, so nothing else in the app knows
+     * which project the user is being told about.
      */
-    private def show(title: String, message: String): Unit = show(title, message, message)
+    private def downloadStoredState(id: ProjectId): Unit =
+        runInlineAction(
+            downloadStoredButton,
+            downloadStoredLabel,
+            labels().downloadStoredButton,
+            labels().downloadStoredDone,
+            reArmAfterSuccess = true
+        )(locale => ProjectExport.downloadStoredState(id)(using locale))
 
-    private def show(title: String, message: String, suppressionKey: String): Unit =
+    /**
+     * Show an error keyed on its own text — the right suppression policy for errors re-raised
+     * by render passes (a dismissed error stays silent). Titles come from `labels()`, never
+     * from a direct payload read. User-initiated flows must use `showUserAttemptError`
+     * instead, so their retries give feedback again.
+     */
+    private def showMessageKeyed(title: String, message: String): Unit =
+        show(title, message, message)
+
+    /**
+     * `storedStateOf` is the project whose stored bytes the dialog may hand back as a file:
+     * Some only for the unreadable-project report, the one error that names a project. Every
+     * other path leaves it out and gets no such action.
+     */
+    private def show(
+        title         : String,
+        message       : String,
+        suppressionKey: String,
+        storedStateOf : Option[ProjectId] = None
+    ): Unit =
         // Re-show suppression: once a key has been shown, identical keys stay silent for
         // the rest of the page-load (the dismissed error does not pop back on further
         // render passes); a new key still updates the dialog.
@@ -196,13 +279,22 @@ object GlobalErrorDialog:
         shownMessages.add(suppressionKey)
 
         try
-            // A fresh error starts with a clean save action.
-            resetSaveAction()
+            // A fresh error starts with both recovery actions armed.
+            resetActions()
 
-            // The action only exists when a project is open — e.g. an error raised while
+            // The save action only exists when a project is open — e.g. an error raised while
             // opening a bad file from the projects list has no active project to save.
-            if ProjectManager.activeProjectIdVar.now().isDefined then saveButton.classList.remove("hidden")
-            else saveButton.classList.add                                                        ("hidden")
+            saveButton.classList.toggle("hidden", ProjectManager.activeProjectIdVar.now().isEmpty)
+
+            // The stored-bytes action is keyed on the project this dialog was opened for, never
+            // on the active one: an unreadable project has no active project to offer. Wiring the
+            // handler here, around the id itself, is what makes "a click always has a project"
+            // a fact of the code rather than of an ordering argument: no id, no handler, and the
+            // button is hidden.
+            downloadStoredButton.classList.toggle("hidden", storedStateOf.isEmpty)
+            storedStateOf match
+                case Some(id) => downloadStoredButton.onclick = (_: dom.Event) => downloadStoredState(id)
+                case None     => downloadStoredButton.onclick = null
 
             dialog.querySelector("#global-error-title").textContent   = title
             dialog.querySelector("#global-error-message").textContent = message
@@ -223,10 +315,10 @@ object GlobalErrorDialog:
     /** Show a transaction loop error with dialog labels (translated when the payload decodes). */
     def showTransactionError(): Unit =
         val l = labels()
-        show(l.errorTitle, l.transactionMsg)
+        showMessageKeyed(l.errorTitle, l.transactionMsg)
 
     /** Show a generic application error with the dialog title (render-pass default: keyed on the message). */
-    def showGenericError(message: String): Unit = show(labels().errorTitle, message)
+    def showGenericError(message: String): Unit = showMessageKeyed(labels().errorTitle, message)
 
     /**
      * Show an application error whose suppression is NOT the message: the caller supplies
@@ -235,9 +327,11 @@ object GlobalErrorDialog:
      * same page cannot re-open a dismissed dialog, while a reload (a fresh page-load,
      * still hitting the same broken bytes) does re-show it. Keys are opaque here;
      * per-attempt keys belong to `showUserAttemptError`, the only place they are built.
+     * `storedStateOf` is the project the report is about, which is what offers the
+     * stored-bytes action; only the unreadable-project report has one.
      */
-    def showErrorWithKey(suppressionKey: String, message: String): Unit =
-        show(labels().errorTitle, message, suppressionKey)
+    def showErrorWithKey(suppressionKey: String, message: String, storedStateOf: Option[ProjectId] = None): Unit =
+        show(labels().errorTitle, message, suppressionKey, storedStateOf)
 
     /**
      * Show an error raised by an explicit user attempt (picking a bad file, pressing
@@ -247,10 +341,11 @@ object GlobalErrorDialog:
      * key is built. Callers pass the error plus the attempted file name when it is in
      * hand (None when genuinely unknown, e.g. native-dialog failures); the file-error
      * display shape — "$name: $error" when a name is known, kept nameless otherwise —
-     * also lives only here.
+     * also lives only here. `storedStateOf` is the project the attempt was on, when the
+     * attempt was on a known project (see `showErrorWithKey`).
      */
-    def showUserAttemptError(fileName: Option[String], message: String): Unit =
+    def showUserAttemptError(fileName: Option[String], message: String, storedStateOf: Option[ProjectId] = None): Unit =
         val displayed = fileName.fold(message)(name => s"$name: $message")
-        show(labels().errorTitle, displayed, s"$displayed @ ${scala.scalajs.js.Date.now()}")
+        show(labels().errorTitle, displayed, s"$displayed @ ${scala.scalajs.js.Date.now()}", storedStateOf)
 
 end GlobalErrorDialog

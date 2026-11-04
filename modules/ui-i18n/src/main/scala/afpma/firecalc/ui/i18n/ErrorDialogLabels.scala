@@ -44,6 +44,13 @@ final case class ErrorDialogLabels(
     goToProjects          : String,
     saveButton            : String,
     saveDone              : String,
+    downloadStoredButton  : String,
+    downloadStoredDone    : String,
+    noStoredState         : String,
+    storageUnavailable    : String,
+    // Not shown: the localized fallback that names a stored-state download. Last, so the
+    // order above stays exactly the order the dialog shows its strings.
+    defaultProjectName    : String,
     // HOCON paths no locale supplied, in the order the dialog shows them; Nil when the
     // payload covered every leaf.
     unresolved            : List[String]
@@ -114,6 +121,11 @@ object ErrorDialogLabels:
             goToProjects           = valueOf(goToProjectsPath),
             saveButton             = valueOf(saveButtonPath),
             saveDone               = valueOf(saveDonePath),
+            downloadStoredButton   = valueOf(downloadStoredButtonPath),
+            downloadStoredDone     = valueOf(downloadStoredDonePath),
+            noStoredState          = valueOf(noStoredStatePath),
+            storageUnavailable     = valueOf(storageUnavailablePath),
+            defaultProjectName     = valueOf(defaultProjectNamePath),
             unresolved             = leafPaths.collect { case path if resolved(path).isEmpty => path.print }
         )
 
@@ -135,6 +147,11 @@ object ErrorDialogLabels:
             goToProjects           = i18n.global_error.go_to_projects,
             saveButton             = i18n.global_error.save_button,
             saveDone               = i18n.global_error.save_done,
+            downloadStoredButton   = i18n.global_error.download_stored_button,
+            downloadStoredDone     = i18n.global_error.download_stored_done,
+            noStoredState          = i18n.global_error.no_stored_state,
+            storageUnavailable     = i18n.global_error.storage_unavailable,
+            defaultProjectName     = i18n.default_names.project,
             unresolved             = Nil
         )
 
@@ -142,15 +159,22 @@ object ErrorDialogLabels:
     // renamed or misspelled field is a compile error here rather than a runtime
     // "Missing key", and the path `unresolved` reports is the path the decode actually
     // looked for — a log line can never name a key the payload does not use. Declared in
-    // field order so `unresolved` reads in the order the dialog shows the controls.
-    private val errorTitlePath            : Path = Path(I(_.global_error.title)             )
-    private val unreadableProjectStatePath: Path = Path(I(_.errors.unreadable_project_state))
-    private val transactionMsgPath        : Path = Path(I(_.global_error.transaction_msg)   )
-    private val reloadButtonPath          : Path = Path(I(_.global_error.reload_button)     )
-    private val closeButtonPath           : Path = Path(I(_.global_error.close_button)      )
-    private val goToProjectsPath          : Path = Path(I(_.global_error.go_to_projects)    )
-    private val saveButtonPath            : Path = Path(I(_.global_error.save_button)       )
-    private val saveDonePath              : Path = Path(I(_.global_error.save_done)         )
+    // field order so `unresolved` reads in the order the dialog shows its strings;
+    // `defaultProjectName` comes last because it is the one leaf never shown — it only
+    // names a download, so its absence costs a generic file name, not a missing label.
+    private val errorTitlePath            : Path = Path(I(_.global_error.title)                 )
+    private val unreadableProjectStatePath: Path = Path(I(_.errors.unreadable_project_state)    )
+    private val transactionMsgPath        : Path = Path(I(_.global_error.transaction_msg)       )
+    private val reloadButtonPath          : Path = Path(I(_.global_error.reload_button)         )
+    private val closeButtonPath           : Path = Path(I(_.global_error.close_button)          )
+    private val goToProjectsPath          : Path = Path(I(_.global_error.go_to_projects)        )
+    private val saveButtonPath            : Path = Path(I(_.global_error.save_button)           )
+    private val saveDonePath              : Path = Path(I(_.global_error.save_done)             )
+    private val downloadStoredButtonPath  : Path = Path(I(_.global_error.download_stored_button))
+    private val downloadStoredDonePath    : Path = Path(I(_.global_error.download_stored_done)  )
+    private val noStoredStatePath         : Path = Path(I(_.global_error.no_stored_state)       )
+    private val storageUnavailablePath    : Path = Path(I(_.global_error.storage_unavailable)   )
+    private val defaultProjectNamePath    : Path = Path(I(_.default_names.project)              )
 
     private val leafPaths: List[Path] =
         List(
@@ -161,7 +185,12 @@ object ErrorDialogLabels:
             closeButtonPath,
             goToProjectsPath,
             saveButtonPath,
-            saveDonePath
+            saveDonePath,
+            downloadStoredButtonPath,
+            downloadStoredDonePath,
+            noStoredStatePath,
+            storageUnavailablePath,
+            defaultProjectNamePath
         )
 
     /**

@@ -365,6 +365,11 @@ object Frontend {
      * never from `currentI18N`: the dialog resolves its labels with a built-in fallback, so
      * this report cannot be the thing that throws before the dialog is reached — the exact
      * failure this path had when the generated payload and the typed layer disagreed.
+     *
+     * This is the only report that names a project, so it is the only one passing the id:
+     * that is what offers the dialog's "download the saved file" action for bytes this
+     * version cannot decode. The file-import callers keep the 2-argument forms and get no
+     * such action — they have no stored project behind the failure.
      */
     private def reportUnreadableProject(projectId: models.project.ProjectId, fromStartupPreload: Boolean): Unit =
         import models.project.ProjectIndex
@@ -376,9 +381,10 @@ object Frontend {
         if fromStartupPreload then
             GlobalErrorDialog.showErrorWithKey     (
                 s"unreadable-project:${projectId.value}",
-                name.fold(message)(n => s"$n: $message")
+                name.fold(message)(n => s"$n: $message"),
+                Some              (projectId           )
             )
-        else GlobalErrorDialog.showUserAttemptError(name, message)
+        else GlobalErrorDialog.showUserAttemptError(name, message, Some(projectId))
 
     def waitForLoad(f: => Any): Unit =
         if (dom.window.asInstanceOf[js.Dynamic].documentLoaded == null)

@@ -44,14 +44,13 @@ import afpma.firecalc.engine.models.gtypedefs.t_chimney_wall_top_min
 import afpma.firecalc.engine.standard.*
 import afpma.firecalc.engine.utils.*
 
-import afpma.firecalc.payments.shared.Constants.FIRECALC_FILE_EXTENSION
-
 import afpma.firecalc.ui.i18n.I18nData_UI
 import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.config.UIConfig
 import afpma.firecalc.ui.daisyui.DaisyUIVerticalAccordionAndJoin.Title.QuadrionSubtotal
+import afpma.firecalc.ui.models.project.ProjectFileName
 import afpma.firecalc.ui.models.project.ProjectId
 import afpma.firecalc.ui.models.project.ProjectManager.activeProjectIdVar
 import afpma.firecalc.ui.models.schema.AppStateSchemaMigrations
@@ -204,15 +203,8 @@ val project_descr_var = engineStateVar.zoomLazy(_.project_description)((ast, x) 
 // depends on both project description and locale for i18n default name
 
 val filename_var = project_descr_var.zoomLazy(prj =>
-    given Locale    = localeVar.now()
-    val fname_noext = Option
-        .when(prj.reference.nonEmpty)(prj.reference)
-        .getOrElse(I18N_UI.default_names.project)
-        .map(c => if c.isLetterOrDigit then c else '_')
-        .replaceAll("_+", "_")
-        .stripPrefix("_")
-        .stripSuffix("_")
-    s"${fname_noext}${FIRECALC_FILE_EXTENSION}"
+    given Locale = localeVar.now()
+    ProjectFileName.of(prj.reference, I18N_UI.default_names.project)
 )((p, _) => p)
 
 // local conditions
