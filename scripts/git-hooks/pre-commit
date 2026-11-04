@@ -221,6 +221,13 @@ if [ $SCALA_STAGED -eq 1 ]; then
     fi
 fi
 
+# ── No tracked pointer into the untracked .scratch/ tree ──
+if ! SCRATCH_REF_OUTPUT=$(./scripts/ci/check-scratch-references.sh --staged 2>&1); then
+    echo ""
+    echo "$SCRATCH_REF_OUTPUT"
+    exit 1
+fi
+
 # Report results
 if [ ${#MISSING_HEADERS[@]} -gt 0 ]; then
     echo -e "${RED}✗ ERROR: Missing license headers in ${#MISSING_HEADERS[@]} file(s):${NC}"

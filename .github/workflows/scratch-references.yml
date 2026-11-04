@@ -1,0 +1,45 @@
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2025 Association Française du Poêle Maçonné Artisanal
+#
+# GitHub Actions workflow to keep tracked files from pointing into the untracked
+# .scratch/ issue tracker. Forward-only: it scans the files a change touches, so
+# pointers that predate the rule stay until someone edits that line.
+
+name: Scratch Reference Check (Changed Files)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  check-scratch-references:
+    name: Check .scratch/ References
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for an accurate diff
+
+      - name: Get base reference
+        id: base-ref
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "base=origin/main" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run scratch reference check
+        run: |
+          chmod +x scripts/ci/check-scratch-references.sh
+          ./scripts/ci/check-scratch-references.sh --changed --base-ref ${{ steps.base-ref.outputs.base }}

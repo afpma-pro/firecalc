@@ -18,6 +18,7 @@ The `pre-commit` hook automatically checks all staged files for AGPL-3.0-or-late
 - ✅ Respects exclusion patterns (node_modules, target, generated files, etc.)
 - ✅ Provides clear error messages with header format examples
 - ✅ Verifies Scala/SBT files are formatted (`scalafmt --check`) — fails fast with instructions to run `make fmt`
+- ✅ Rejects tracked files that point into the untracked `.scratch/` issue tracker (`scripts/ci/check-scratch-references.sh --staged`; only the staged change is scanned, so existing pointers stay until someone edits that line)
 - ✅ Works for all developers regardless of IDE choice
 
 ### Installation
