@@ -1217,12 +1217,7 @@ lazy val ui = (project in file("modules/ui"))
                 .withSourceMap(false)
                 .withOptimizer(true)
         },
-        scalaJSUseMainModuleInitializer := true,
-        Compile / sourceGenerators += Def.task {
-            Seq(
-                (ui_i18n.js / Compile / sourceManaged).value / "afpma" / "firecalc" / "ui" / "i18n" / "files.scala"
-            )
-        }
+        scalaJSUseMainModuleInitializer := true
     )
     .settings(
         commonSettings,
