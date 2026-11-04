@@ -12,11 +12,13 @@ import afpma.firecalc.ui.i18n.implicits.I18N_UI
 
 import afpma.firecalc.ui.*
 import afpma.firecalc.ui.components.GlobalErrorDialog
+import afpma.firecalc.ui.daisyui.DaisyUITooltip
 import afpma.firecalc.ui.icons.lucide
 import afpma.firecalc.ui.models.*
 import afpma.firecalc.ui.models.AppStateSchemaHelper
 import afpma.firecalc.ui.models.project.*
 import afpma.firecalc.ui.services.FileSystemService
+import afpma.firecalc.ui.services.ProjectExport
 
 import com.raquo.laminar.api.L.*
 
@@ -152,6 +154,9 @@ final case class ProjectSelectorView()(using Locale) extends Component:
         )
 
     private def renderProjectCard(entry: ProjectEntry): Div =
+        // Per-card, never per-list: the control is inert until clicked, so a pending
+        // native save dialog cannot be stacked by a second press.
+        val pending = Var(false)
         div(
             cls := "card bg-base-200 p-4 mb-3 flex flex-row items-center justify-between",
             // Left: project info
@@ -166,12 +171,52 @@ final case class ProjectSelectorView()(using Locale) extends Component:
             // Right: action buttons
             div(
                 cls := "flex flex-row gap-2",
-                button(
+                button        (
                     cls := "btn btn-sm btn-secondary",
                     I18N_UI.project_selector.open,
                     onClick --> { _ =>
                         router.pushState(ProjectPage(localeVar.now().language, entry.id))
                     }
+                ),
+                // Two invariants this control exists for:
+                //  - the non-destructive escape for an unreadable project: its
+                //    stored bytes are only ever removed by deleting the card,
+                //    never by downloading them;
+                //  - it reads nothing at render time (no `project_<id>_app_state`
+                //    lookup, no decode): the card is inert until clicked.
+                DaisyUITooltip(
+                    ttContent  = p(I18N_UI.project_selector.download_stored),
+                    element    = button(
+                        cls        := "btn btn-sm btn-outline",
+                        lucide.`file-down`(stroke_width = 1.5),
+                        aria.label := I18N_UI.project_selector.download_stored,
+                        disabled <-- pending,
+                        onClick --> { _ =>
+                            // Guard against a double press while a dialog is pending.
+                            if !pending.now() then
+                                pending.set(true)
+                                import scala.concurrent.ExecutionContext.Implicits.global
+                                ProjectExport.downloadStoredState(entry.id).onComplete { result =>
+                                    result match
+                                        // Left: nothing was stored, or storage could not be read.
+                                        // Reported through the user-attempt path (per-attempt
+                                        // suppression key), so pressing again reports again.
+                                        case Success(Left(message)) =>
+                                            GlobalErrorDialog.showUserAttemptError(Some(entry.displayName), message)
+                                        // Right(true): handed off. Right(false): the native dialog
+                                        // was cancelled. Both silent — only the button re-arms.
+                                        case Success(Right(_))      => ()
+                                        // Defensive: the primitive never fails by design.
+                                        case Failure(ex)            =>
+                                            GlobalErrorDialog
+                                                .showUserAttemptError(Some(entry.displayName), ex.getMessage)
+                                    // Re-armed on every outcome: a stuck disabled button would
+                                    // make the only non-destructive escape unusable.
+                                    pending.set(false)
+                                }
+                        }
+                    ),
+                    ttPosition = "tooltip-bottom"
                 ),
                 button(
                     cls := "btn btn-sm btn-error btn-outline",

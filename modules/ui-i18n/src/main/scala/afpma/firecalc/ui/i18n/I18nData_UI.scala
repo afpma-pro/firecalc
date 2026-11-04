@@ -310,6 +310,7 @@ object I18nData_UI:
         new_project      : String,
         open_file        : String,
         open             : String,
+        download_stored  : String,
         delete           : String,
         confirm_delete   : StringFormat1,
         no_name          : String,
