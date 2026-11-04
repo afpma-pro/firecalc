@@ -44,7 +44,7 @@
 
       align(top + left)[
         *Software : FireCalc AFPMA* \
-        Versions : reports 0.9.0-b26-SNAPSHOT engine 0.3.1-b26-SNAPSHOT \
+        Versions : reports 1.0.0 engine 0.3.1 \
         DOCUMENT NOT FINALIZED : NOT CERTIFICATION \
         \
       ],
