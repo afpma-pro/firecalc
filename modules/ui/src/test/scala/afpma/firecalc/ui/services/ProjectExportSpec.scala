@@ -35,9 +35,10 @@ import utest.*
  *
  * uTest, no DOM: the `ui` tests run on a plain Node.js jsEnv (build.sbt `Test / jsEnv`,
  * no jsdom), which is why this spec tests the decision and NOT
- * [[ProjectExport.downloadStoredState]] itself — that one reads `localStorage` and hands
- * the bytes to `FileSystemService`, so it is covered by the browser / Electron acceptance
- * pass instead.
+ * [[ProjectExport.downloadStoredState]] itself — that one needs a browser, where it is
+ * checked by hand: store one `projects_index` entry plus a `project_<id>_app_state`
+ * payload that does not decode, open that project, and the dialog's download action must
+ * hand over a file whose bytes equal `localStorage.getItem("project_<id>_app_state")`.
  */
 object ProjectExportSpec extends TestSuite:
 

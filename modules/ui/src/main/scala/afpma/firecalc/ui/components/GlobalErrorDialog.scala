@@ -87,8 +87,9 @@ object GlobalErrorDialog:
                 <p class="py-4 whitespace-pre-wrap" id="global-error-message"></p>
                 <p class="text-error text-sm pb-4 hidden" id="global-error-action-failed"></p>
                 <div class="divider my-0"></div>
-                <!-- Recovery choices, stacked vertically under the message: a four-button
-                     modal-action row overflows the modal box (dialog-overflow.png). -->
+                <!-- Recovery choices, stacked vertically under the message: a modal-action
+                     row with too many buttons overflows the modal box, so each action gets
+                     its own full-width row. -->
                 <div class="flex flex-col gap-2 pb-4 pt-2">
                     <!-- Inline copy of lucide `file-down` (afpma.firecalc.ui.icons.lucide, the
                          toolbar export glyph): this raw-DOM dialog cannot mount Laminar nodes.
