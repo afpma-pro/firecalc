@@ -5,12 +5,12 @@
 
 package afpma.firecalc.ui.components
 
-import afpma.firecalc.ui.i18n.GlobalError
+import afpma.firecalc.ui.i18n.ErrorDialogLabels
 
 import scala.collection.mutable
 
 import afpma.firecalc.ui.ProjectSelectorPage
-import afpma.firecalc.ui.models.currentI18N
+import afpma.firecalc.ui.models.currentLocale
 import afpma.firecalc.ui.models.localeVar
 import afpma.firecalc.ui.models.project.ProjectManager
 import afpma.firecalc.ui.router
@@ -21,9 +21,49 @@ import org.scalajs.dom
 
 object GlobalErrorDialog:
 
-    // Labels are resolved at show time through models.currentI18N (see its definition
-    // for the init-order / never-eager-val warning).
-    private def i18nNow: GlobalError = currentI18N.global_error
+    // Single label-resolution point, through ErrorDialogLabels: a payload/typed-layer
+    // mismatch makes every `currentI18N` read throw, which is how this dialog went
+    // silent. `resolve` never throws, so nothing here can fail on a broken payload — a
+    // leaf no locale supplies renders as its key path and is only logged. Locale comes
+    // from models.currentLocale, the show-time authority, NOT `localeVar.now()`: that is
+    // transaction-stale inside the route render this dialog shows from.
+    //
+    // Cached for the page lifetime, keyed by the locale. `resolve`'s fast path touches
+    // `implicits.I18Ns`, and a `lazy val` whose initializer threw is left uninitialized,
+    // so uncached every label read (title before the `shownMessages` check, `show`,
+    // `resetSaveAction`, `unreadableProjectMessage` — suppressed errors included)
+    // re-decodes both bundles, then every leaf. Kept here rather than in `ui-i18n`: an
+    // object-scope `lazy val` there sits in front of the Scala.js init-order hazard.
+    private var cachedLabels: Option[(Locale, ErrorDialogLabels)] = None
+
+    private def labels(): ErrorDialogLabels =
+        val locale = currentLocale
+        cachedLabels
+            .filter(_._1 == locale)
+            .map(_._2)
+            .getOrElse:
+                val resolved = ErrorDialogLabels.resolve(locale)
+                // One-shot diagnosis of the degraded state: a leaf missing from every
+                // bundle is a build/data fault the user cannot retry, so the key paths are
+                // named once and the dialog keeps rendering. Only a fresh resolution gets
+                // here, and that happens at most once per locale per page.
+                if resolved.unresolved.nonEmpty then
+                    dom.console.error(
+                        s"Global error dialog: no locale supplied these i18n keys — showing their key paths: " +
+                            resolved.unresolved.mkString(", ")
+                    )
+                cachedLabels = Some(locale -> resolved)
+                resolved
+
+    /**
+     * The "stored but unreadable project" message, resolved through the same never-throwing
+     * path as the dialog's own labels — the dialog owns this text so the caller reporting a
+     * corrupt persisted state cannot be the one that throws before the dialog is reached
+     * (what happened when both `reportUnreadableProject` and the corrupt-state frame read
+     * `currentI18N.errors.unreadable_project_state`: no dialog, no message, one console
+     * stack).
+     */
+    def unreadableProjectMessage: String = labels().unreadableProjectState
 
     /**
      * Re-show suppression (mirrors StorageWarningDialog's once-per-episode guard): a
@@ -106,7 +146,7 @@ object GlobalErrorDialog:
     private def resetSaveAction(): Unit =
         saveButton.disabled = false
         clearSaveFailure()
-        saveLabel.textContent = i18nNow.save_button
+        saveLabel.textContent = labels().saveButton
 
     /**
      * Save the current project right from the dialog, through the shared export path
@@ -131,7 +171,7 @@ object GlobalErrorDialog:
                 case Right(true) =>
                     // Success: the dialog stays open and the button shows the completed
                     // state, so the user sees the export landed. It stays disabled.
-                    saveLabel.textContent = s"✓ ${i18nNow.save_done}"
+                    saveLabel.textContent = s"✓ ${labels().saveDone}"
 
                 case Right(false) =>
                     // User cancelled the native save dialog (Electron only): silently
@@ -140,7 +180,8 @@ object GlobalErrorDialog:
         }
 
     /**
-     * Show an error with an i18n-supplied title. Keys on the displayed message: the
+     * Show an error with a title the caller resolved through `labels()` (never a direct
+     * payload read). Keys on the displayed message: the
      * right behaviour for errors re-raised by render passes (a dismissed error stays
      * silent). User-initiated flows must use `showUserAttemptError` instead, so their
      * retries give feedback again.
@@ -154,30 +195,38 @@ object GlobalErrorDialog:
         if shownMessages.contains(suppressionKey) then return
         shownMessages.add(suppressionKey)
 
-        // A fresh error starts with a clean save action.
-        resetSaveAction()
+        try
+            // A fresh error starts with a clean save action.
+            resetSaveAction()
 
-        // The action only exists when a project is open — e.g. an error raised while
-        // opening a bad file from the projects list has no active project to save.
-        if ProjectManager.activeProjectIdVar.now().isDefined then saveButton.classList.remove("hidden")
-        else saveButton.classList.add                                                        ("hidden")
+            // The action only exists when a project is open — e.g. an error raised while
+            // opening a bad file from the projects list has no active project to save.
+            if ProjectManager.activeProjectIdVar.now().isDefined then saveButton.classList.remove("hidden")
+            else saveButton.classList.add                                                        ("hidden")
 
-        dialog.querySelector("#global-error-title").textContent   = title
-        dialog.querySelector("#global-error-message").textContent = message
-        val i18n = i18nNow
-        dialog.querySelector("#global-error-reload").textContent               = i18n.reload_button
-        dialog.querySelector("#global-error-go-to-projects-label").textContent = i18n.go_to_projects
-        dialog.querySelector("#global-error-close").textContent                = i18n.close_button
-        // A different message arriving while the dialog is open already updated the text
-        // above; showModal() on an open <dialog> throws InvalidStateError.
-        if !dialog.open then dialog.showModal()
+            dialog.querySelector("#global-error-title").textContent   = title
+            dialog.querySelector("#global-error-message").textContent = message
+            val l = labels()
+            dialog.querySelector("#global-error-reload").textContent               = l.reloadButton
+            dialog.querySelector("#global-error-go-to-projects-label").textContent = l.goToProjects
+            dialog.querySelector("#global-error-close").textContent                = l.closeButton
+            // A different message arriving while the dialog is open already updated the text
+            // above; showModal() on an open <dialog> throws InvalidStateError.
+            if !dialog.open then dialog.showModal()
+        catch
+            // This dialog is the escape hatch for every other failure: nothing is left to
+            // report an error raised here to, so it can only be logged — an exception
+            // escaping `show*` would take the whole app down with the error it was showing.
+            case ex: Throwable =>
+                dom.console.error(s"Global error dialog: failed to render the error — $ex\n$message")
 
-    /** Show a transaction loop error with i18n messages. */
+    /** Show a transaction loop error with dialog labels (translated when the payload decodes). */
     def showTransactionError(): Unit =
-        show(i18nNow.title, i18nNow.transaction_msg)
+        val l = labels()
+        show(l.errorTitle, l.transactionMsg)
 
-    /** Show a generic application error with i18n title (render-pass default: keyed on the message). */
-    def showGenericError(message: String): Unit = show(i18nNow.title, message)
+    /** Show a generic application error with the dialog title (render-pass default: keyed on the message). */
+    def showGenericError(message: String): Unit = show(labels().errorTitle, message)
 
     /**
      * Show an application error whose suppression is NOT the message: the caller supplies
@@ -188,7 +237,7 @@ object GlobalErrorDialog:
      * per-attempt keys belong to `showUserAttemptError`, the only place they are built.
      */
     def showErrorWithKey(suppressionKey: String, message: String): Unit =
-        show(i18nNow.title, message, suppressionKey)
+        show(labels().errorTitle, message, suppressionKey)
 
     /**
      * Show an error raised by an explicit user attempt (picking a bad file, pressing
@@ -202,6 +251,6 @@ object GlobalErrorDialog:
      */
     def showUserAttemptError(fileName: Option[String], message: String): Unit =
         val displayed = fileName.fold(message)(name => s"$name: $message")
-        show(i18nNow.title, displayed, s"$displayed @ ${scala.scalajs.js.Date.now()}")
+        show(labels().errorTitle, displayed, s"$displayed @ ${scala.scalajs.js.Date.now()}")
 
 end GlobalErrorDialog

@@ -188,6 +188,15 @@ object Frontend {
                 // second the application-error dialog (its escape actions; deleting the
                 // card in the projects list is the recovery) before the same redirect. The
                 // corrupt bytes are deliberately left in storage.
+                //
+                // The corrupt case takes its message from GlobalErrorDialog
+                // (.unreadableProjectMessage), NOT from currentI18N: this frame and its
+                // report run in the same render, and a direct payload read throws there
+                // exactly when the payload and the typed layer disagree — which hid the
+                // dialog entirely (the caller threw before it was reached). The dialog
+                // resolves its own labels with a built-in fallback, so the report and this
+                // frame always have text. The Missing branch below stays on currentI18N: it
+                // has no dialog to fall back to, so a payload mismatch still breaks it.
                 models.project.ProjectManager.projectOutcome(projectId) match
                     case models.project.ProjectLoadOutcome.Ok(_)   =>
                         HomeView().node
@@ -198,7 +207,7 @@ object Frontend {
                     case models.project.ProjectLoadOutcome.Corrupt =>
                         reportUnreadableProject(projectId, fromStartupPreload                          )
                         dom.window.setTimeout  (() => router.replaceState(ProjectSelectorPage(lang)), 0)
-                        div                    (p(currentI18N.errors.unreadable_project_state)         )
+                        div                    (p(GlobalErrorDialog.unreadableProjectMessage)          )
                     case models.project.ProjectLoadOutcome.Missing =>
                         dom.window.setTimeout(() => router.replaceState(ProjectSelectorPage(lang)), 0)
                         div                  (p(currentI18N.project_selector.project_not_found)      )
@@ -351,11 +360,16 @@ object Frontend {
      *  - anything else (opening the project from its card): the per-attempt variant, so
      *    repeated attempts each give feedback instead of the silent bounce this replaces.
      *    The projects index holds the card's name, so the dialog names the project.
+     *
+     * The message comes from the dialog itself (`GlobalErrorDialog.unreadableProjectMessage`),
+     * never from `currentI18N`: the dialog resolves its labels with a built-in fallback, so
+     * this report cannot be the thing that throws before the dialog is reached — the exact
+     * failure this path had when the generated payload and the typed layer disagreed.
      */
     private def reportUnreadableProject(projectId: models.project.ProjectId, fromStartupPreload: Boolean): Unit =
         import models.project.ProjectIndex
 
-        val message = currentI18N.errors.unreadable_project_state
+        val message = GlobalErrorDialog.unreadableProjectMessage
         val name    = ProjectIndex
             .findEntry(projectId)
             .map(_.displayName(using currentLocale))

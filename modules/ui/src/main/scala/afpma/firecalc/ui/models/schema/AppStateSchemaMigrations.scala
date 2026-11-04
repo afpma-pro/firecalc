@@ -50,7 +50,9 @@ import org.scalajs.dom
  * - V3: engine_state upgraded to FireCalcYAML_V3
  * - V4: engine_state upgraded to FireCalcYAML_V4
  * - V5: engine_state upgraded to FireCalcYAML_V5 (Firebox_V4 with ecolabel R1/R2/R3 fields)
- * - V6 (current): engine_state upgraded to FireCalcYAML_V6 (post_firebox_pipes replaces separate pipe fields)
+ * - V6: engine_state upgraded to FireCalcYAML_V6 (post_firebox_pipes replaces separate pipe fields)
+ * - V7 (current): post_firebox_pipes wrapped in FramedPostFireboxPipes (chain-level single initialDirection /
+ *   initialPosition), engine_state upgraded to FireCalcYAML_V7 with V4 pipe slot descriptors
  *
  * ## Migration Strategy
  * 1. Parse YAML to JSON using circe-yaml
@@ -159,7 +161,7 @@ object AppStateSchemaMigrations:
                 None
 
             case Some(1) =>
-                // V1 - decode and migrate to V6
+                // V1 - decode and migrate to V7
                 decodeV1(rawData)
                     .flatMap(migrateFromV1ToV2)
                     .flatMap(migrateFromV2ToV3)
@@ -173,7 +175,7 @@ object AppStateSchemaMigrations:
                         None
 
             case Some(2) =>
-                // V2 - decode and migrate to V6
+                // V2 - decode and migrate to V7
                 // Fallback: old V2 data may use V1 Firebox structure (before Firebox_V2 was created).
                 // Decode as V1 then migrate V1→V2 (Chimney adds height_of_first_row_of_air_injectors = 5.cm).
                 decodeV2(rawData)
@@ -192,7 +194,7 @@ object AppStateSchemaMigrations:
                         None
 
             case Some(3) =>
-                // V3 - decode and migrate to V6
+                // V3 - decode and migrate to V7
                 decodeV3(rawData)
                     .flatMap(migrateFromV3ToV4)
                     .flatMap(migrateFromV4ToV5)
@@ -204,7 +206,7 @@ object AppStateSchemaMigrations:
                         None
 
             case Some(4) =>
-                // V4 - decode and migrate to V6
+                // V4 - decode and migrate to V7
                 decodeV4(rawData)
                     .flatMap(migrateFromV4ToV5)
                     .flatMap(migrateFromV5ToV6)
@@ -215,7 +217,7 @@ object AppStateSchemaMigrations:
                         None
 
             case Some(5) =>
-                // V5 - decode and migrate to V6
+                // V5 - decode and migrate to V7
                 decodeV5(rawData)
                     .flatMap(migrateFromV5ToV6)
                     .flatMap(migrateFromV6ToV7) match
@@ -225,10 +227,23 @@ object AppStateSchemaMigrations:
                         None
 
             case Some(6) =>
-                // Current version - decode directly
-                decodeV6(rawData).toOption.flatMap(v6 => migrateFromV6ToV7(v6).toOption)
+                // V6 - decode and migrate to V7
+                decodeV6(rawData)
+                    .flatMap(migrateFromV6ToV7) match
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.warn(s"Failed to migrate V6 to $V_LATEST: ${e.getMessage()}")
+                        None
+
             case Some(7) =>
-                decodeV7(rawData).toOption
+                // V7 is current - decode directly. A decode failure MUST be reported, not swallowed:
+                // silence here made a corrupted V7 document look like an unrelated bug, the console
+                // showing only "Detected schema version: 7" before the state was treated as absent.
+                decodeV7(rawData) match
+                    case Success(v_latest) => Some(v_latest)
+                    case Failure(e)        =>
+                        dom.console.warn(s"Failed to decode $V_LATEST: ${e.getMessage()}")
+                        None
 
             case Some(version) =>
                 dom.console.log(s"Unknown schema version: $version")
