@@ -319,14 +319,33 @@ Then, **through the UI** (browser, `https://firecalc.afpma.pro`):
 ## 9. Backups (nightly cron)
 
 ```bash
-# install in the crontab of a user that can READ the db (the live dbs are
-# root-owned on this host — observed 2026-11-04 — so root's crontab is the
-# safe default; verify with one manual run before calling it installed):
-sudo crontab -l 2>/dev/null
-sudo crontab -   # append:
-# 30 3 * * * TS=$(date +\%F); sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db ".backup /home/afpma/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS.db" && find /home/afpma/data/firecalc-group/production/db-backups -name '*.db' -mtime +30 -delete
-# expect (manual test): snapshot file appears (`.backup` is WAL-safe; `cp` is not)
-sudo sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db ".backup /home/afpma/data/firecalc-group/production/db-backups/manual-test.db" && ls -lh /home/afpma/data/firecalc-group/production/db-backups/
+# A long one-line crontab entry survives terminal paste-wrap badly (observed
+# 2026-11-05: fragments → "bad minute"; crontab installs atomically, so a
+# failed paste changes nothing). Install a small script instead, then ONE
+# short crontab line.
+command -v sqlite3
+# ^ expect: /usr/bin/sqlite3 (adjust the script if not)
+
+sudo tee /usr/local/bin/firecalc-prod-backup.sh > /dev/null <<'EOF'
+#!/bin/sh
+# FireCalc production DB backup (PROD_GO_LIVE.md §9). .backup is WAL-safe.
+DB=/home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db
+DEST=/home/afpma/data/firecalc-group/production/db-backups
+TS=$(date +%F)
+/usr/bin/sqlite3 "$DB" ".backup $DEST/firecalc-payments-production-$TS.db"
+find "$DEST" -name '*.db' -mtime +30 -delete
+EOF
+sudo chmod 755 /usr/local/bin/firecalc-prod-backup.sh
+
+# manual run = the install verification:
+sudo /usr/local/bin/firecalc-prod-backup.sh
+# ^ expect: silent; today's file appears
+ls -lh /home/afpma/data/firecalc-group/production/db-backups/
+
+# keep existing root entries, append ONE short line:
+( sudo crontab -l 2>/dev/null; echo '30 3 * * * /usr/local/bin/firecalc-prod-backup.sh' ) | sudo crontab -
+sudo crontab -l | tail -2
+# ^ expect: the firecalc-prod-backup.sh line exactly once; other entries intact
 ```
 
 Nightly `.backup`, 30-day retention (the `find … -delete` tail above).
