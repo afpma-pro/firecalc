@@ -99,6 +99,24 @@ the rehearsal — re-offer if you want the full history on GitHub:
 
 ## 3. Tree transfers to afpmadocker1 (dry-run, then real)
 
+**Third-repo prerequisite (discovered live 2026-11-05):** `modules/ui/package.json`
+depends on `"@scala-js/vite-plugin-scalajs": "file:../../../vite-plugin-scalajs"` —
+a sibling checkout of `afpma-pro/vite-plugin-scalajs` OUTSIDE the public repo. rsync
+never carries it (it lives above the repo root) and it is absent from both group
+folders, so a FRESH tree fails the vite build with
+`Cannot find package '@scala-js/vite-plugin-scalajs'`. Ship it once per parent dir:
+
+```bash
+# on the DEV machine, from the public repo root (prebuilt dist/, no node_modules)
+rsync -avz --delete --exclude node_modules --exclude .git \
+  ../vite-plugin-scalajs/ afpmadocker1:/home/afpma/data/firecalc-group/production/vite-plugin-scalajs/
+# ^ expect: file list incl. dist/index.js, exit 0
+```
+
+(For the staging tree the same file lives one level up: target
+`/home/afpma/data/firecalc-group/vite-plugin-scalajs` — needed before staging's next
+redeploy from a wiped `node_modules`.)
+
 Create the production layout first (the push scripts create only the final
 path component), then dry-run both transfers, then run them for real.
 `--delete` is never used, so VPS-only state (databases, certs, artifacts,
