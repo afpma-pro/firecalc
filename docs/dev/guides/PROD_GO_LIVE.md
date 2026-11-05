@@ -72,8 +72,8 @@ fast-forward; never `--tags` on the QA branch.
 # + this runbook; VERSIONS pins unchanged since R2)
 # expect: branch created, tip = staging tip (VERSIONS pins unchanged)
 git branch production staging
-# expect: annotated tag object; peel == 7b0185fb (R)
-git tag -a v1.0.0.production.0 7b0185fb -m "FireCalc 1.0.0 — production go-live"
+# expect: annotated tag object; peel == 7b0185fb (R); message matches the v1.0.0.staging.0 convention
+git tag -a v1.0.0.production.0 7b0185fb -m "FireCalc 1.0.0 production"
 git cat-file -t v1.0.0.production.0
 # expect: tag
 git rev-parse 'v1.0.0.production.0^{commit}'
