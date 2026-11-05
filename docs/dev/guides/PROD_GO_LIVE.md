@@ -233,13 +233,13 @@ Pre-deploy snapshot — `N/A` on the very first deploy (no DB exists yet);
 
 ```bash
 # on afpmadocker1, only if the prod DB already exists
-mkdir -p /home/afpma/data/backups/firecalc-prod
+mkdir -p /home/afpma/data/firecalc-group/production/db-backups
 TS=$(date +%Y%m%d-%H%M)
 sudo sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db \
-  ".backup /home/afpma/data/backups/firecalc-prod/firecalc-payments-production-$TS-pre-deploy.db"
-sudo chown afpma:afpma /home/afpma/data/backups/firecalc-prod/firecalc-payments-production-$TS-pre-deploy.db
+  ".backup /home/afpma/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS-pre-deploy.db"
+sudo chown afpma:afpma /home/afpma/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS-pre-deploy.db
 # expect: the -pre-deploy.db file appears
-ls -lh /home/afpma/data/backups/firecalc-prod/
+ls -lh /home/afpma/data/firecalc-group/production/db-backups/
 ```
 
 Deploy (this is the root `prod-docker-deploy-up` wrapper, spelled out so the
@@ -324,9 +324,9 @@ Then, **through the UI** (browser, `https://firecalc.afpma.pro`):
 # safe default; verify with one manual run before calling it installed):
 sudo crontab -l 2>/dev/null
 sudo crontab -   # append:
-# 30 3 * * * TS=$(date +\%F); sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db ".backup /home/afpma/data/backups/firecalc-prod/firecalc-payments-production-$TS.db" && find /home/afpma/data/backups/firecalc-prod -name '*.db' -mtime +30 -delete
+# 30 3 * * * TS=$(date +\%F); sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db ".backup /home/afpma/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS.db" && find /home/afpma/data/firecalc-group/production/db-backups -name '*.db' -mtime +30 -delete
 # expect (manual test): snapshot file appears (`.backup` is WAL-safe; `cp` is not)
-sudo sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db ".backup /home/afpma/data/backups/firecalc-prod/manual-test.db" && ls -lh /home/afpma/data/backups/firecalc-prod/
+sudo sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db ".backup /home/afpma/data/firecalc-group/production/db-backups/manual-test.db" && ls -lh /home/afpma/data/firecalc-group/production/db-backups/
 ```
 
 Nightly `.backup`, 30-day retention (the `find … -delete` tail above).
