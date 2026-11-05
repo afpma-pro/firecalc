@@ -107,15 +107,15 @@ folders, so a FRESH tree fails the vite build with
 `Cannot find package '@scala-js/vite-plugin-scalajs'`. Ship it once per parent dir:
 
 ```bash
-# on the DEV machine, from the public repo root (prebuilt dist/, no node_modules)
-rsync -avz --delete --exclude node_modules --exclude .git \
-  ../vite-plugin-scalajs/ afpmadocker1:/home/afpma/data/firecalc-group/production/vite-plugin-scalajs/
-# ^ expect: file list incl. dist/index.js, exit 0
+# on the DEV machine, from the public repo root (gitignored shim, same pattern
+# as the repo pushes — recreatable from push-tree-to-vps.sh's usage comment)
+# Dry-run first (local, no ssh): DRY_RUN=1 REMOTE_HOST= GROUP_DIR=/tmp/prod-tree ./push-repo-vite-plugin-scalajs-afpmadocker1.sh
+./push-repo-vite-plugin-scalajs-afpmadocker1.sh
+# ^ expect: two rsync file lists (firecalc-group/vite-plugin-scalajs AND
+#   firecalc-group/production/vite-plugin-scalajs), each incl. dist/index.js,
+#   no node_modules/.git; exit 0. The staging-parent copy pre-clears the same
+#   trap for staging's next redeploy from a wiped node_modules.
 ```
-
-(For the staging tree the same file lives one level up: target
-`/home/afpma/data/firecalc-group/vite-plugin-scalajs` — needed before staging's next
-redeploy from a wiped `node_modules`.)
 
 Create the production layout first (the push scripts create only the final
 path component), then dry-run both transfers, then run them for real.

@@ -109,6 +109,27 @@
 #
 # exec "$SCRIPT_DIR/scripts/deploy/push-tree-to-vps.sh" \
 #     "$FIREBOX_LOCAL_DIR" "$REMOTE_DIR" "$EXCLUDE_LIST"
+#
+# --- push-repo-vite-plugin-scalajs-<HOST>.sh ---------------------------------
+# (Third-repo transfer: ../vite-plugin-scalajs sibling checkout pushed into
+# BOTH group parents so every tree's file:../../../vite-plugin-scalajs UI dep
+# resolves; pairs with rsync-vite-plugin-scalajs-<HOST>-exclude-list.txt
+# excluding node_modules + .git, dist/ travels. Requires a built plugin.)
+#
+# set -euo pipefail
+# SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# export REMOTE_HOST="${REMOTE_HOST-<HOST>}"
+# GROUP_DIR="${GROUP_DIR:-/home/afpma/data/firecalc-group}"
+# PLUGIN_LOCAL_DIR="${PLUGIN_LOCAL_DIR:-$SCRIPT_DIR/../vite-plugin-scalajs}"
+# EXCLUDE_LIST="${EXCLUDE_LIST:-$SCRIPT_DIR/rsync-vite-plugin-scalajs-<HOST>-exclude-list.txt}"
+# if [[ ! -f "$PLUGIN_LOCAL_DIR/dist/index.js" ]]; then
+#     echo "No built plugin at $PLUGIN_LOCAL_DIR/dist/index.js (cd there && npm run build)" >&2
+#     exit 1
+# fi
+# for parent in "$GROUP_DIR" "$GROUP_DIR/production"; do
+#     "$SCRIPT_DIR/scripts/deploy/push-tree-to-vps.sh" \
+#         "$PLUGIN_LOCAL_DIR" "$parent/vite-plugin-scalajs" "$EXCLUDE_LIST"
+# done
 # =============================================================================
 
 set -euo pipefail
