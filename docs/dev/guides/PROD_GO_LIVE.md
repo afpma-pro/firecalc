@@ -280,6 +280,13 @@ make -C firecalc-docker deploy MODE=behind-proxy CALC_SERVER=true
 docker compose -f firecalc-docker/docker-compose.yml ps
 ```
 
+**Gateway note:** the deploy force-recreates the nginx gateway after
+`up -d` (Makefile step 6). The gateway image bakes in only the entrypoint —
+the routing confs are rendered at container start and upstream service
+names are resolved once at config load — so a surviving gateway would keep
+the stale conf and the dead upstream IPs of the recreated
+backend/calc-server. No manual `restart nginx` needed.
+
 **First-deploy triage:** a backend stuck in `restarting` (not unhealthy) is
 the invoice-numbering guard exiting before ports bind — read the
 `=== invoice numbering state (boot) ===` block in

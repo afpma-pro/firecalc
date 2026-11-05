@@ -198,6 +198,14 @@ deploy: .require-configs
 	@# Step 6: Start containers
 	@echo "[6/6] Starting containers..."
 	docker compose up -d
+	@# The gateway image bakes in only the entrypoint — the routing confs are
+	@# bind-mounted and rendered at container start, and upstream service
+	@# names are resolved once at config load. A conf-only change therefore
+	@# produces an identical image, so `up -d` never recreates the gateway:
+	@# it would keep the stale conf and the dead upstream IPs of the
+	@# recreated backend/calc-server (502s on both healthcheck legs).
+	@# Force the re-render + re-resolution.
+	docker compose up -d --no-deps --force-recreate nginx
 	@echo ""
 	@echo "Deployment complete."
 	@echo "Run 'make smoke' to verify."
@@ -225,6 +233,8 @@ build:
 up: .require-variant
 	bash scripts/generate-certs.sh
 	docker compose up -d
+	@# Same gateway staleness as deploy step 6: force re-render + re-resolution.
+	docker compose up -d --no-deps --force-recreate nginx
 	@echo "Containers started."
 # ---------------------------------------------------------------------------
 # down — Stop and remove containers
