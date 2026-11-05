@@ -30,6 +30,20 @@ The release identity is fixed (already cut and staging-validated):
 | Engine tag | `engine-0.3.1+7b0185f` (annotated, peels to R) |
 | Application tag (this runbook) | `v1.0.0.production.0` (annotated, peels to R) |
 
+Two provenance conventions were established during the first production push
+(2026-11-05) and govern every later deploy:
+
+- **`.0` = cut, `.1` = deployed tree.** `v1.0.0.production.0` marks the release
+  cut (peels to R); `v1.0.0.production.1` (`24ad04c2`) marks the tree that was
+  actually rsynced and built on the VPS — later doc/script commits on the branch
+  never crossed to the VPS. Verify the deployed commit from the VPS tree itself
+  (`git -C …/production/firecalc rev-parse HEAD`) before tagging.
+- **The private repo mirrors the public branch/tag model.**
+  `firecalc-firebox-austrian-api` carries `staging` + `production` branches and
+  `v1.0.0.<env>.<n>` tags pointing at the commit actually deployed there (all of
+  `36737cd` for this release; staging and production run byte-identical firebox
+  trees). Push explicit refs — no branch there has an upstream.
+
 ---
 
 ## 1. Prerequisite (BLOCKING): GoCardless live organisation
