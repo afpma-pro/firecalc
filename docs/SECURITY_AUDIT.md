@@ -131,7 +131,7 @@ The token format is `jwt_<UUID>_<timestamp>`. No HMAC, no RSA signature, no secr
 
 - **GoCardless sandbox token**: `<REDACTED>`
 - **GoCardless webhook secret**: `<REDACTED>`
-- **SMTP password**: `<REDACTED>` for the ops mailbox (`<OPS_MAILBOX>`) on `ssl0.ovh.net`
+- **SMTP password**: `<REDACTED>` for the ops mailbox (`<OPS_MAILBOX>`) on `<SMTP_HOST>`
 
 These files are excluded from git ONLY via `.git/info/exclude` — a local-only, non-portable file. The `.gitignore` does NOT cover `docker/configs/staging/payments/*.conf`. A fresh clone has no protection against accidentally committing these files.
 

@@ -4,7 +4,7 @@
 # Copyright (C) 2025-2026 Association Française du Poêle Maçonné Artisanal
 #
 # =============================================================================
-# Push one working tree to the VPS group folder /home/afpma/data/firecalc-group/
+# Push one working tree to the VPS group folder <DEPLOY_HOME>/data/firecalc-group/
 # (VPS_STAGING_REDEPLOY_DEV_PLAN.md ticket 04). This is the single shared
 # implementation; the push-repo-*.sh scripts at the repository root are
 # config-only shims that supply the source, destination, exclude list, and host:
@@ -58,7 +58,7 @@
 # # default for it. REMOTE_HOST= (set but empty) still means "local
 # # destination", no ssh involved.
 # export REMOTE_HOST="${REMOTE_HOST-<HOST>}"
-# REMOTE_DIR="${REMOTE_DIR:-/home/afpma/data/firecalc-group/firecalc}"
+# REMOTE_DIR="${REMOTE_DIR:-<DEPLOY_HOME>/data/firecalc-group/firecalc}"
 # EXCLUDE_LIST="${EXCLUDE_LIST:-$SCRIPT_DIR/rsync-<HOST>-exclude-list.txt}"
 #
 # exec "$SCRIPT_DIR/scripts/deploy/push-tree-to-vps.sh" \
@@ -99,7 +99,7 @@
 #
 # # Both repos sit side by side under afpma-pro/; FIREBOX_LOCAL_DIR overrides.
 # FIREBOX_LOCAL_DIR="${FIREBOX_LOCAL_DIR:-$SCRIPT_DIR/../firecalc-firebox-austrian-api}"
-# REMOTE_DIR="${REMOTE_DIR:-/home/afpma/data/firecalc-group/firecalc-firebox-austrian-api}"
+# REMOTE_DIR="${REMOTE_DIR:-<DEPLOY_HOME>/data/firecalc-group/firecalc-firebox-austrian-api}"
 # EXCLUDE_LIST="${EXCLUDE_LIST:-$SCRIPT_DIR/rsync-firebox-<HOST>-exclude-list.txt}"
 #
 # if [[ ! -d "$FIREBOX_LOCAL_DIR/.git" ]]; then
@@ -119,7 +119,7 @@
 # set -euo pipefail
 # SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # export REMOTE_HOST="${REMOTE_HOST-<HOST>}"
-# GROUP_DIR="${GROUP_DIR:-/home/afpma/data/firecalc-group}"
+# GROUP_DIR="${GROUP_DIR:-<DEPLOY_HOME>/data/firecalc-group}"
 # PLUGIN_LOCAL_DIR="${PLUGIN_LOCAL_DIR:-$SCRIPT_DIR/../vite-plugin-scalajs}"
 # EXCLUDE_LIST="${EXCLUDE_LIST:-$SCRIPT_DIR/rsync-vite-plugin-scalajs-<HOST>-exclude-list.txt}"
 # if [[ ! -f "$PLUGIN_LOCAL_DIR/dist/index.js" ]]; then

@@ -6,14 +6,22 @@ Copyright (C) 2026 Association Française du Poêle Maçonné Artisanal
 # Production Go-Live Runbook — FireCalc AFPMA
 
 The operator step-by-step for cutting the `v1.0.0` release over to
-`firecalc.afpma.pro` / `api.firecalc.afpma.pro` on **afpmadocker1**.
+`firecalc.afpma.pro` / `api.firecalc.afpma.pro` on **<DEPLOY_HOST>**.
 Written 2026-11-05 after the staging rehearsal of the same release candidate
 (`7b0185fb`) succeeded end-to-end; every staging-discovered correction is
 already folded into the commands below.
 
 **Hand-off protocol:** every fenced block is for a human terminal — *dev
-machine* or *afpmadocker1* — never for an agent. Each carries `# expect:`
+machine* or *<DEPLOY_HOST>* — never for an agent. Each carries `# expect:`
 comments; if reality differs, stop and report the exact line.
+
+**Disclosure rule (since 2026-11-05):** tracked files carry zero topology
+disclosure — no deploy hostname, login, home path, IP, or mailbox-provider
+name. Use the placeholders `<DEPLOY_HOST>`, `<DEPLOY_USER>`,
+`<DEPLOY_HOME>`, `<DEPLOY_HOST_IP>`, `<SMTP_HOST>` and generic "your
+mailbox provider"/"your registrar" wording; the operator resolves them from
+the gitignored carriers (`.env.production`, shim scripts). Git history
+predating the rule keeps the literals — accepted, not rewritten.
 
 Companion docs: `docs/dev/guides/PRODUCTION.md` (steady-state operations),
 `docs/dev/guides/STAGING.md`, `docs/dev/guides/INVOICE_NUMBERING_RUNBOOK.md`
@@ -63,13 +71,13 @@ register the webhook at section 6, then paste the secrets here before 7.
 | 3 | SMTP password (shared mailbox) | `configs/production/payments/email-config.conf` → `smtp.password` | Already written literally (same as staging). Rotation is a **deferred task** (section 10). |
 | 4 | `JWT_SECRET` | `firecalc-docker/.env.production` → `JWT_SECRET` | Already generated fresh at P4.2 (differs from staging). Record it in your password store; it is the production JWT key. |
 | 5 | `LETSENCRYPT_EMAIL` | already set | Ops mailbox — supplied by the operator directly into `firecalc-docker/.env.production`; deliberately not written in this tracked doc (unused behind-proxy; NPM issues the certs). |
-| 6 | `<AFPMADOCKER1_IP>` | DNS A records (section 5) | The VPS public IP. |
+| 6 | `<DEPLOY_HOST_IP>` | DNS A records (section 5) | The VPS public IP. |
 | 7 | `<NPM_CONTAINER>` | network decision (section 4) + section 6 | Discover it: see block below. |
-| 8 | `<ADMIN_MAILBOX_ALIAS>` | OVH mailbox alias | The production admin alias (`+admin-production` sub-address of the ops mailbox; literal value lives in the gitignored `configs/production/payments/gocardless-config.conf` → `admin-email`). Must exist **before** the first invoice email (admin invoice notifications + GC admin emails). Create the alias in OVH. |
+| 8 | `<ADMIN_MAILBOX_ALIAS>` | Mailbox-provider alias | The production admin alias (a plus-tag sub-address of the ops mailbox; literal value lives in the gitignored `configs/production/payments/gocardless-config.conf` → `admin-email`). Must exist **before** the first invoice email (admin invoice notifications + GC admin emails). Create the alias with your mailbox provider. |
 | 9 | Live webhook events | GoCardless dashboard | Mirror the sandbox subscription (charges/payments lifecycle). The handler verifies signatures and logs+emails anything unhandled, so over-subscribing is safe. **Do NOT enable the optional client certificate** — signature verification is the authentication (see section 6). |
 
 ```bash
-# on afpmadocker1 — discover the nginx-proxy-manager container name
+# on <DEPLOY_HOST> — discover the nginx-proxy-manager container name
 docker ps --format '{{.Names}}' | grep -iE 'proxy|npm'
 # expect: exactly one name (this is <NPM_CONTAINER>)
 ```
@@ -111,7 +119,7 @@ git push origin dev
 the rehearsal — re-offer if you want the full history on GitHub:
 `git push -u origin staging v1.0.0.staging.0` (fast-forward).
 
-## 3. Tree transfers to afpmadocker1 (dry-run, then real)
+## 3. Tree transfers to <DEPLOY_HOST> (dry-run, then real)
 
 **Third-repo prerequisite (discovered live 2026-11-05):** `modules/ui/package.json`
 depends on `"@scala-js/vite-plugin-scalajs": "file:../../../vite-plugin-scalajs"` —
@@ -123,8 +131,8 @@ folders, so a FRESH tree fails the vite build with
 ```bash
 # on the DEV machine, from the public repo root (gitignored shim, same pattern
 # as the repo pushes — recreatable from push-tree-to-vps.sh's usage comment)
-# Dry-run first (local, no ssh): DRY_RUN=1 REMOTE_HOST= GROUP_DIR=/tmp/prod-tree ./push-repo-vite-plugin-scalajs-afpmadocker1.sh
-./push-repo-vite-plugin-scalajs-afpmadocker1.sh
+# Dry-run first (local, no ssh): DRY_RUN=1 REMOTE_HOST= GROUP_DIR=/tmp/prod-tree ./push-repo-vite-plugin-scalajs-<DEPLOY_HOST>.sh
+./push-repo-vite-plugin-scalajs-<DEPLOY_HOST>.sh
 # ^ expect: two rsync file lists (firecalc-group/vite-plugin-scalajs AND
 #   firecalc-group/production/vite-plugin-scalajs), each incl. dist/index.js,
 #   no node_modules/.git; exit 0. The staging-parent copy pre-clears the same
@@ -137,11 +145,11 @@ path component), then dry-run both transfers, then run them for real.
 `.env` symlink) always survives.
 
 ```bash
-# on afpmadocker1
+# on <DEPLOY_HOST>
 # expect: empty production/ dir with two children created here so ownership is afpma
-mkdir -p /home/afpma/data/firecalc-group/production
+mkdir -p <DEPLOY_HOME>/data/firecalc-group/production
 # expect: staging tree untouched
-ls /home/afpma/data/firecalc-group/
+ls <DEPLOY_HOME>/data/firecalc-group/
 ```
 
 ```bash
@@ -149,19 +157,19 @@ ls /home/afpma/data/firecalc-group/
 # expect: lists configs/production/**, firecalc-docker/.env.production,
 #         modules/ui/.env.production.local, modules/invoices/configs/logo.png;
 #         NO firecalc-docker/.env line (prod list excludes it)
-DRY_RUN=1 ./push-repo-prod-afpmadocker1.sh
+DRY_RUN=1 ./push-repo-prod-<DEPLOY_HOST>.sh
 # expect: .git/refs/tags/ entries present (the gate needs them)
-DRY_RUN=1 ./push-repo-firebox-prod-afpmadocker1.sh
+DRY_RUN=1 ./push-repo-firebox-prod-<DEPLOY_HOST>.sh
 
 # real runs
 # expect: rsync completes, exit 0
-./push-repo-prod-afpmadocker1.sh && ./push-repo-firebox-prod-afpmadocker1.sh
+./push-repo-prod-<DEPLOY_HOST>.sh && ./push-repo-firebox-prod-<DEPLOY_HOST>.sh
 ```
 
-## 4. One-time VPS setup (afpmadocker1, production tree)
+## 4. One-time VPS setup (<DEPLOY_HOST>, production tree)
 
 ```bash
-cd /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker
+cd <DEPLOY_HOME>/data/firecalc-group/production/firecalc/firecalc-docker
 # expect: symlink created
 ln -sf docker-compose.behind-proxy.yml docker-compose.yml
 # expect: carrier keys present (build-local mode + production FIREBOX path)
@@ -202,13 +210,13 @@ existing staging DB where the counter had already advanced).
 
 ## 5. DNS (external)
 
-In the `afpma.pro` zone (OVH): add `A` records `firecalc` and `api.firecalc`
-→ `<AFPMADOCKER1_IP>` (add `AAAA` only if the host has IPv6). Staging records
+In the `afpma.pro` zone at your registrar: add `A` records `firecalc` and `api.firecalc`
+→ `<DEPLOY_HOST_IP>` (add `AAAA` only if the host has IPv6). Staging records
 stay as they are.
 
 ```bash
 # check propagation from anywhere, before touching NPM
-# expect: both resolve to <AFPMADOCKER1_IP>
+# expect: both resolve to <DEPLOY_HOST_IP>
 dig +short firecalc.afpma.pro A
 dig +short api.firecalc.afpma.pro A
 ```
@@ -240,27 +248,27 @@ curl -sI https://firecalc.afpma.pro/ | head -1
 curl -sI https://api.firecalc.afpma.pro/v1/kinds | head -1
 ```
 
-## 7. Deploy + smoke (afpmadocker1)
+## 7. Deploy + smoke (<DEPLOY_HOST>)
 
 Pre-deploy snapshot — `N/A` on the very first deploy (no DB exists yet);
 **mandatory** for every later redeploy/migration/rollback:
 
 ```bash
-# on afpmadocker1, only if the prod DB already exists
-mkdir -p /home/afpma/data/firecalc-group/production/db-backups
+# on <DEPLOY_HOST>, only if the prod DB already exists
+mkdir -p <DEPLOY_HOME>/data/firecalc-group/production/db-backups
 TS=$(date +%Y%m%d-%H%M)
-sudo sqlite3 /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db \
-  ".backup /home/afpma/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS-pre-deploy.db"
-sudo chown afpma:afpma /home/afpma/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS-pre-deploy.db
+sudo sqlite3 <DEPLOY_HOME>/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db \
+  ".backup <DEPLOY_HOME>/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS-pre-deploy.db"
+sudo chown <DEPLOY_USER>:<DEPLOY_USER> <DEPLOY_HOME>/data/firecalc-group/production/db-backups/firecalc-payments-production-$TS-pre-deploy.db
 # expect: the -pre-deploy.db file appears
-ls -lh /home/afpma/data/firecalc-group/production/db-backups/
+ls -lh <DEPLOY_HOME>/data/firecalc-group/production/db-backups/
 ```
 
 Deploy (this is the root `prod-docker-deploy-up` wrapper, spelled out so the
 stage you're in is always visible):
 
 ```bash
-cd /home/afpma/data/firecalc-group/production/firecalc
+cd <DEPLOY_HOME>/data/firecalc-group/production/firecalc
 # expect, in order: config guard silent; engine gate GREEN on engine-0.3.1+7b0185f;
 #   linked local trees (no clone — "local-tree mode" lines); publish 0.3.1+7b0185f;
 #   public jars; UI fullLinkJS + host assertion (no example.com); landing export;
@@ -310,11 +318,11 @@ curl -sS https://api.firecalc.afpma.pro/v1/kinds
 ```
 
 ```bash
-# on afpmadocker1 — backend boot evidence
+# on <DEPLOY_HOST> — backend boot evidence
 # expect: firebox-availability: traditional=enabled, ecolabeled=disabled,
 #         afpma-prse=disabled, single-tested=enabled, door15a-catalog=disabled
 # expect: === invoice numbering state (boot) === block, counter-start = 1
-docker compose -f /home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/docker-compose.yml logs --no-color backend 2>&1 | grep -iE 'firebox-availability|invoice numbering'
+docker compose -f <DEPLOY_HOME>/data/firecalc-group/production/firecalc/firecalc-docker/docker-compose.yml logs --no-color backend 2>&1 | grep -iE 'firebox-availability|invoice numbering'
 ```
 
 Then, **through the UI** (browser, `https://firecalc.afpma.pro`):
@@ -340,25 +348,25 @@ Then, **through the UI** (browser, `https://firecalc.afpma.pro`):
 command -v sqlite3
 # ^ expect: /usr/bin/sqlite3 (adjust the script if not)
 
-sudo tee /home/afpma/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh > /dev/null <<'EOF'
+sudo tee <DEPLOY_HOME>/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh > /dev/null <<'EOF'
 #!/bin/sh
 # FireCalc production DB backup (PROD_GO_LIVE.md §9). .backup is WAL-safe.
 # Lives beside the snapshots it produces; the find -delete targets *.db only.
-DB=/home/afpma/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db
-DEST=/home/afpma/data/firecalc-group/production/db-backups
+DB=<DEPLOY_HOME>/data/firecalc-group/production/firecalc/firecalc-docker/databases/production/firecalc-payments-production.db
+DEST=<DEPLOY_HOME>/data/firecalc-group/production/db-backups
 TS=$(date +%F)
 /usr/bin/sqlite3 "$DB" ".backup $DEST/firecalc-payments-production-$TS.db"
 find "$DEST" -name '*.db' -mtime +30 -delete
 EOF
-sudo chmod 755 /home/afpma/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh
+sudo chmod 755 <DEPLOY_HOME>/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh
 
 # manual run = the install verification:
-sudo /home/afpma/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh
+sudo <DEPLOY_HOME>/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh
 # ^ expect: silent; today's file appears
-ls -lh /home/afpma/data/firecalc-group/production/db-backups/
+ls -lh <DEPLOY_HOME>/data/firecalc-group/production/db-backups/
 
 # keep existing root entries, append ONE short line:
-( sudo crontab -l 2>/dev/null; echo '30 3 * * * /home/afpma/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh' ) | sudo crontab -
+( sudo crontab -l 2>/dev/null; echo '30 3 * * * <DEPLOY_HOME>/data/firecalc-group/production/db-backups/firecalc-prod-backup.sh' ) | sudo crontab -
 sudo crontab -l | tail -2
 # ^ expect: the firecalc-prod-backup.sh line exactly once; other entries intact
 ```

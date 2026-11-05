@@ -67,7 +67,7 @@ Each `.template` file starts with a comment pointing to the `.example` counterpa
 **Actions** (manual, by project administrator):
 
 1. **SMTP password** (highest priority — real mail server):
-   - [ ] Log into OVH mail admin for the ops mailbox (`<OPS_MAILBOX>`)
+   - [ ] Log into the mailbox provider's mail admin for the ops mailbox (`<OPS_MAILBOX>`)
    - [ ] Change password immediately
    - [ ] Update `docker/configs/staging/payments/email-config.conf` locally
    - [ ] Update production config if same credentials are shared
@@ -120,7 +120,7 @@ docker/configs/staging/reports/logo.jpg
 
 | Credential | Service | Priority | Status |
 |---|---|---|---|
-| SMTP password | OVH mail admin | P0 (real mail server) | TODO |
+| SMTP password | the mailbox provider's mail admin | P0 (real mail server) | TODO |
 | GoCardless sandbox token | GoCardless dashboard | P1 (sandbox only) | TODO |
 | GoCardless webhook secret | GoCardless dashboard | P1 (sandbox only) | TODO |
 
@@ -134,7 +134,7 @@ docker/configs/staging/reports/logo.jpg
 ## Dependencies
 
 - GoCardless dashboard access (for token rotation)
-- OVH mail admin access (for SMTP password rotation)
+- the mailbox provider's mail admin access (for SMTP password rotation)
 - Production config files may need updating if they share credentials with staging
 
 ## Testing Plan
