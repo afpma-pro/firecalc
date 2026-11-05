@@ -8,29 +8,6 @@ export default function Downloads() {
   const t = useTranslations('downloads');
   const locale = useLocale();
 
-  const platforms = [
-    {
-      name: 'online',
-      icon: '🌐',
-      ariaLabel: 'Online web application'
-    },
-    {
-      name: 'windows',
-      icon: '🪟',
-      ariaLabel: 'Windows desktop application'
-    },
-    {
-      name: 'macos',
-      icon: '🍎',
-      ariaLabel: 'macOS desktop application'
-    },
-    {
-      name: 'linux',
-      icon: '🐧',
-      ariaLabel: 'Linux desktop application'
-    }
-  ];
-
   return (
     <section id="downloads" className="py-20 bg-gradient-to-br from-firecalc-orange-light to-firecalc-yellow">
       <div className="container mx-auto px-4">
@@ -42,44 +19,25 @@ export default function Downloads() {
           {t('subtitle')}
         </p>
 
-        {/* Platform Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {platforms.map((platform, index) => {
-            const isOnline = platform.name === 'online';
-            const Tag = isOnline ? 'a' : 'div';
-            const tagProps = isOnline
-              ? { href: `/app/#/${locale}`, className: 'download-card download-card-active' }
-              : { className: 'download-card' };
-            return (
-              <Tag
-                key={index}
-                {...tagProps}
-                {...(!isOnline ? { role: 'article' } : {})}
-                aria-label={platform.ariaLabel}
-              >
-                {/* Platform Icon */}
-                <div className="text-6xl mb-4" aria-hidden="true">
-                  {platform.icon}
-                </div>
+        {/* Web App Card */}
+        <div className="grid grid-cols-1 max-w-sm mx-auto">
+          <a
+            href={`/app/#/${locale}`}
+            className="download-card download-card-active"
+            aria-label="Online web application"
+          >
+            <div className="text-6xl mb-4" aria-hidden="true">
+              🌐
+            </div>
 
-                {/* Platform Name */}
-                <h3 className="text-xl font-bold mb-4 text-firecalc-brown-dark">
-                  {t(platform.name)}
-                </h3>
+            <h3 className="text-xl font-bold mb-4 text-firecalc-brown-dark">
+              {t('online')}
+            </h3>
 
-                {/* Status Badge */}
-                {platform.name === 'online' ? (
-                  <div className="inline-flex items-center gap-2 bg-firecalc-orange text-white px-4 py-2 rounded-full font-semibold text-sm">
-                    <span>{t('beta_available')}</span>
-                  </div>
-                ) : (
-                  <div className="inline-block bg-firecalc-yellow text-firecalc-brown-dark px-4 py-2 rounded-full font-semibold text-sm">
-                    {t('coming_soon')}
-                  </div>
-                )}
-              </Tag>
-            );
-          })}
+            <div className="inline-flex items-center gap-2 bg-firecalc-orange text-white px-4 py-2 rounded-full font-semibold text-sm">
+              <span>{t('available_now')}</span>
+            </div>
+          </a>
         </div>
 
         {/* GitHub Link */}

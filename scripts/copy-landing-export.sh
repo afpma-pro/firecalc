@@ -28,7 +28,10 @@ tree_root="$1"
 dest="$tree_root/web/dist-app"
 out_dir="$tree_root/web/landing/out"
 
-landing_parts=(en fr _next assets 404.html)
+landing_parts=(
+    en fr _next assets 404.html
+    favicon.ico icon-192.png icon-512.png apple-touch-icon.png manifest.webmanifest
+)
 for part in "${landing_parts[@]}"; do
     if [[ ! -e "$out_dir/$part" ]]; then
         echo "copy-landing-export: '$part' missing under $out_dir — gateway routes would 404" >&2

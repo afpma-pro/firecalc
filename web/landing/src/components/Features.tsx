@@ -18,6 +18,8 @@ export default function Features() {
       title: 'feature1_title',
       description: 'feature1_desc'
     },
+    // feature2: the "official page" link currently points to the AFPMA site;
+    // point it to the .gouv.fr page once that page is published.
     {
       icon: (
         <svg className="w-16 h-16 text-firecalc-yellow mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

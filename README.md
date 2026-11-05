@@ -2,16 +2,12 @@
 
 Dimensioning software for one‑off masonry heaters (EN 15544, EN 13384).
 
-## ⚠️ Beta Release
+## Production release
 
-**This software is currently in beta and is not production-ready.**
+**FireCalc AFPMA 1.0.0 is live at [https://firecalc.afpma.pro](https://firecalc.afpma.pro).**
 
-- ⚠️ The codebase is under active development
-- ⚠️ APIs and data structures may change without notice
-- ⚠️ Not recommended for production use yet
-- ✅ Suitable for testing, development, and feedback
-
-We welcome early adopters to test the software and provide feedback. Please report any issues you encounter.
+- ✅ Compliant PDF calculation reports (EN 15544 / EN 13384), cross-validated against reference implementations
+- ✅ Continuous development on the `dev` branch; releases are tagged `v<semver>.<env>.<attempt>`
 
 ## Compliant PDF Report
 

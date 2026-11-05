@@ -4,16 +4,14 @@
     "subtitle": "Logiciel de dimensionnement pour poêles maçonnés",
     "description": "Logiciel certifié et conforme aux normes EN 15544 et EN 13384",
     "cta_online": "Version Web",
-    "cta_download": "Télécharger l'application",
-    "beta_badge": "Bêta - Essayer maintenant",
-    "version_1_release": "Version 1 disponible début 2026"
+    "version_1_release": "Version 1.0 — novembre 2026"
   },
   "features": {
     "title": "Fonctionnalités clés",
     "feature1_title": "Respect des normes",
     "feature1_desc": "Conforme aux normes européennes\nEN 15544 et EN 13384",
     "feature2_title": "Logiciel Reconnu",
-    "feature2_desc": "Reconnu par l'ADEME et les pouvoirs publics => [page officielle](https://bla.gouv.fr) <=",
+    "feature2_desc": "Reconnu par l'ADEME et les pouvoirs publics => [page officielle](https://www.afpma.pro) <=",
     "feature3_title": "Un outil pro",
     "feature3_desc": "Accéder aux biliothèques de composants\n(foyers certifiés, éléménts de fumisterie, etc...)",
     "feature4_title": "International",
@@ -26,14 +24,10 @@
     "feature7_desc": "Démarrer à votre rythme.\nFacturation au projet"
   },
   "downloads": {
-    "title": "Version en ligne ou Téléchargement",
-    "subtitle": "Choisissez votre plateforme",
+    "title": "Essayer en ligne",
+    "subtitle": "Sans installation",
     "online": "Application Web",
-    "windows": "Windows",
-    "macos": "macOS",
-    "linux": "Linux",
-    "beta_available": "Disponible en version Bêta",
-    "coming_soon": "Disponible début 2026",
+    "available_now": "Disponible",
     "view_on_github": "Voir sur GitHub"
   },
   "newsletter": {

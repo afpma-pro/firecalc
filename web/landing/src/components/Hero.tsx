@@ -49,20 +49,10 @@ export default function Hero() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
           <a
             href={`/app/#/${locale}`}
-            className="btn-primary-custom w-full sm:w-auto relative"
+            className="btn-primary-custom w-full sm:w-auto"
             aria-label={t('cta_online')}
           >
             {t('cta_online')}
-                      <span className="absolute -top-2 -right-2 bg-firecalc-yellow text-firecalc-brown-dark text-xs px-2 py-1 rounded-full font-bold">
-              BETA
-            </span>
-          </a>
-          <a
-            href="#downloads"
-            className="btn-secondary-custom w-full sm:w-auto"
-            aria-label={t('cta_download')}
-          >
-            {t('cta_download')}
           </a>
         </div>
 
