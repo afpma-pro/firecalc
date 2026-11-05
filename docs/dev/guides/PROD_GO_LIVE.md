@@ -48,10 +48,10 @@ register the webhook at section 6, then paste the secrets here before 7.
 | 2 | `<GC_LIVE_WEBHOOK_SECRET>` | same file → `webhook-secret` | Shown **once** when the live webhook is created (section 6). |
 | 3 | SMTP password (shared mailbox) | `configs/production/payments/email-config.conf` → `smtp.password` | Already written literally (same as staging). Rotation is a **deferred task** (section 10). |
 | 4 | `JWT_SECRET` | `firecalc-docker/.env.production` → `JWT_SECRET` | Already generated fresh at P4.2 (differs from staging). Record it in your password store; it is the production JWT key. |
-| 5 | `LETSENCRYPT_EMAIL` | already set | `logiciel@afpma.pro` (unused behind-proxy; NPM issues the certs). |
+| 5 | `LETSENCRYPT_EMAIL` | already set | Ops mailbox — supplied by the operator directly into `firecalc-docker/.env.production`; deliberately not written in this tracked doc (unused behind-proxy; NPM issues the certs). |
 | 6 | `<AFPMADOCKER1_IP>` | DNS A records (section 5) | The VPS public IP. |
 | 7 | `<NPM_CONTAINER>` | network decision (section 4) + section 6 | Discover it: see block below. |
-| 8 | `logiciel+admin-production@afpma.pro` | OVH mailbox alias | Must exist **before** the first invoice email (admin invoice notifications + GC admin emails). Create the alias in OVH. |
+| 8 | `<ADMIN_MAILBOX_ALIAS>` | OVH mailbox alias | The production admin alias (`+admin-production` sub-address of the ops mailbox; literal value lives in the gitignored `configs/production/payments/gocardless-config.conf` → `admin-email`). Must exist **before** the first invoice email (admin invoice notifications + GC admin emails). Create the alias in OVH. |
 | 9 | Live webhook events | GoCardless dashboard | Mirror the sandbox subscription (charges/payments lifecycle). The handler verifies signatures and logs+emails anything unhandled, so over-subscribing is safe. **Do NOT enable the optional client certificate** — signature verification is the authentication (see section 6). |
 
 ```bash

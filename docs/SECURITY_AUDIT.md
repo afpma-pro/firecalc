@@ -131,13 +131,13 @@ The token format is `jwt_<UUID>_<timestamp>`. No HMAC, no RSA signature, no secr
 
 - **GoCardless sandbox token**: `<REDACTED>`
 - **GoCardless webhook secret**: `<REDACTED>`
-- **SMTP password**: `<REDACTED>` for `logiciel@afpma.pro` on `ssl0.ovh.net`
+- **SMTP password**: `<REDACTED>` for the ops mailbox (`<OPS_MAILBOX>`) on `ssl0.ovh.net`
 
 These files are excluded from git ONLY via `.git/info/exclude` — a local-only, non-portable file. The `.gitignore` does NOT cover `docker/configs/staging/payments/*.conf`. A fresh clone has no protection against accidentally committing these files.
 
 **Proof of Concept**: `git add docker/configs/staging/` succeeds on any fresh clone since `.gitignore` has no matching pattern.
 
-**Impact**: One accidental `git add .` exposes the SMTP password (real mail server, not sandbox) and GoCardless API tokens. The SMTP credentials allow sending emails as `logiciel@afpma.pro`.
+**Impact**: One accidental `git add .` exposes the SMTP password (real mail server, not sandbox) and GoCardless API tokens. The SMTP credentials allow sending emails as the ops mailbox (`<OPS_MAILBOX>`).
 
 **Remediation**: See [plan-SEC-002-secrets-protection.md](security/plan-SEC-002-secrets-protection.md). Add patterns to `.gitignore`, rotate all exposed credentials, add secrets scanning.
 
@@ -390,7 +390,7 @@ Both Dockerfile and docker-compose default to `FIRECALC_ENV=staging`. This creat
 
 - **CVSS**: 4.3 · **CWE**: CWE-799 · **Affected**: `PurchaseServiceImpl.scala:34-121`
 
-No rate limiting on `create-intent` enables email bombing via auth code emails. Each call sends a branded email from `logiciel@afpma.pro`, risking SMTP reputation damage.
+No rate limiting on `create-intent` enables email bombing via auth code emails. Each call sends a branded email from the ops mailbox (`<OPS_MAILBOX>`), risking SMTP reputation damage.
 
 ### SEC-021: Error Response Leaks Internal Details
 

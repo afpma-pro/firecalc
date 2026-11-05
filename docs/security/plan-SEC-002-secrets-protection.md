@@ -11,7 +11,7 @@ Real credentials (SMTP password, GoCardless API tokens) exist in local config fi
 **Exposed credentials** (in local files, not tracked but unprotected):
 - `docker/configs/staging/payments/gocardless-config.conf:19` — GoCardless sandbox access token
 - `docker/configs/staging/payments/gocardless-config.conf:24` — GoCardless webhook secret
-- `docker/configs/staging/payments/email-config.conf:22-23` — SMTP username (`logiciel@afpma.pro`) and password
+- `docker/configs/staging/payments/email-config.conf:22-23` — SMTP username (ops mailbox, `<OPS_MAILBOX>`) and password
 
 **Current protection**: Only `.git/info/exclude` (local-only, not shared across clones).
 
@@ -67,7 +67,7 @@ Each `.template` file starts with a comment pointing to the `.example` counterpa
 **Actions** (manual, by project administrator):
 
 1. **SMTP password** (highest priority — real mail server):
-   - [ ] Log into OVH mail admin for `logiciel@afpma.pro`
+   - [ ] Log into OVH mail admin for the ops mailbox (`<OPS_MAILBOX>`)
    - [ ] Change password immediately
    - [ ] Update `docker/configs/staging/payments/email-config.conf` locally
    - [ ] Update production config if same credentials are shared

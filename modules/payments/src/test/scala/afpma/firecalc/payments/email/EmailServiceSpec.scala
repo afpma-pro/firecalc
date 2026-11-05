@@ -29,7 +29,12 @@ class EmailServiceSpec extends AsyncWordSpec with AsyncIOSpec with Matchers {
 
     given Logger[IO] = Slf4jLogger.getLogger[IO]
 
-    val DEFAULT_RECIPIENT_EMAIL_FOR_TEST = "logiciel+test@afpma.pro"
+    // Recipient of the live-send tests: set FIRECALC_TEST_EMAIL_TO to the ops
+    // test alias (kept out of tracked files to avoid address harvesting).
+    // The fallback is the RFC 2606 reserved example domain so EmailAddress
+    // parsing stays valid without citing a real mailbox.
+    val DEFAULT_RECIPIENT_EMAIL_FOR_TEST =
+        sys.env.getOrElse("FIRECALC_TEST_EMAIL_TO", "test@example.com")
 
     "EmailService.sendEmail" should {
 
