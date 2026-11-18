@@ -60,7 +60,7 @@ object ReferenceConformingServer:
     val supportedLocales: List[String] = List("en", "fr")
 
     /** The only API version in the normative contract. */
-    val supportedApiVersions: List[String] = List(afpma.firecalc.firebox_calc_api.ApiVersion.v1)
+    val supportedApiVersions: List[String] = List(afpma.firecalc.firebox_calc_api.FireboxApiVersion.CURRENT)
 
     /**
      * The kinds this reference deployment serves — deliberately a SUBSET of
@@ -156,7 +156,7 @@ object ReferenceConformingServer:
                     jsonResponse(
                         Status.Ok,
                         DiscoveryResponse(
-                            apiVersion = afpma.firecalc.firebox_calc_api.ApiVersion.v1,
+                            apiVersion = afpma.firecalc.firebox_calc_api.FireboxApiVersion.CURRENT,
                             kinds      = servedKinds
                         ).asJson,
                         extraHeaders = Seq(Header.Raw(ci"Cache-Control", "public, max-age=3600"))
@@ -228,10 +228,15 @@ object ReferenceConformingServer:
             case DecodeError.Malformed(err)      => decodeFailureResponse[F](err)
 
     private def handle[F[_]](req: FireboxCalcRequest): Response[F] =
+        // Message wording here is intentionally NOT the production server's
+        // localized EN/FR gate sentence: the contract suite pins only the
+        // `error` id (`CalculationFailure.UnsupportedApiVersionError`), not
+        // the human message — the reference stub serves one minimal English
+        // string by design.
         if !supportedApiVersions.contains(req.apiVersion) then
             errorEnvelope(
                 Status.BadRequest,
-                "unsupported_api_version",
+                CalculationFailure.UnsupportedApiVersionError,
                 s"API version '${req.apiVersion}' is not supported. Supported: ${supportedApiVersions.mkString(", ")}"
             )
         else if !supportedLocales.contains(req.locale.take(2)) then

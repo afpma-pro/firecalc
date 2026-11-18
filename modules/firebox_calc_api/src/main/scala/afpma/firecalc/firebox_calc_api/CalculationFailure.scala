@@ -62,6 +62,16 @@ object CalculationFailure:
     private[CalculationFailure] val PreCheckError : String = "calculation_failed"
 
     /**
+     * The `unsupported_api_version` discriminator: the service speaks a newer
+     * wire generation than the application that sent the request — a deployment
+     * skew, not a calculation failure. It is the one 400 whose remedy is on the
+     * client side (reload/update the application), so it must stay
+     * distinguishable from every other protocol error. Consumers and conformant
+     * servers MUST key off this constant, never the raw string.
+     */
+    val UnsupportedApiVersionError: String = "unsupported_api_version"
+
+    /**
      * Transport-layer failure: the server was unreachable.
      *
      * Covers connection refused, DNS failure, TLS errors, socket timeout,

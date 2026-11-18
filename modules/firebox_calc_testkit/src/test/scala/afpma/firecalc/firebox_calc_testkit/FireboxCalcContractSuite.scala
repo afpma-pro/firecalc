@@ -32,6 +32,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.nio.file.{Files, Paths}
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 
@@ -186,7 +187,7 @@ class FireboxCalcContractSuite extends AnyFreeSpec with Matchers:
             failure match
                 case CalculationFailure.ProtocolError(status, error, _, _) =>
                     status shouldBe 400
-                    error shouldBe "unsupported_api_version"
+                    error shouldBe CalculationFailure.UnsupportedApiVersionError
                 case other                                                 =>
                     fail(s"expected a protocol error, got $other")
         }
@@ -310,6 +311,43 @@ class FireboxCalcContractSuite extends AnyFreeSpec with Matchers:
             // plausible wait and sit in the post-2023 epoch range.
             val reset = last.headers().firstValue("X-RateLimit-Reset").orElse("0").toLongOption.getOrElse(0L)
             reset should be > 1_700_000_000L
+        }
+    }
+
+    // OpenAPI drift guard: openapi/firebox-calc-api.yaml is the normative wire
+    // contract document; this suite pins the served constant to it.
+    "OpenAPI drift guard — FireboxApiVersion.CURRENT matches the OpenAPI document" - {
+
+        "the apiVersion enum has exactly one entry and it equals FireboxApiVersion.CURRENT" in {
+            // The OpenAPI document is the normative wire contract: the shared
+            // `FireboxApiVersion.CURRENT` constant MUST track the `ApiVersion`
+            // schema's enum, so a wire-shape bump that forgets the constant — or
+            // a constant bump that forgets the document — fails HERE, not in
+            // production. Repo-root-relative path: the test cwd is the build
+            // root. Minimal parse (no YAML dependency): the schema block is the
+            // `ApiVersion:` key followed by `type: string` and an inline
+            // `enum: [...]` list.
+            val yaml = Files
+                .readString(Paths.get("modules/firebox_calc_api/openapi/firebox-calc-api.yaml"))
+            val schemaPattern =
+                "ApiVersion:\\s*\\n\\s*type: string\\s*\\n\\s*enum: \\[([^\\]]*)\\]".r
+            schemaPattern.findFirstMatchIn(yaml) match
+                case Some(m) =>
+                    val entries = m.group(1).split(",").map(_.trim).filter(_.nonEmpty)
+                    entries should have size 1
+                    entries.head shouldBe FireboxApiVersion.CURRENT
+                case None    =>
+                    fail("no ApiVersion schema with an inline enum list found in the OpenAPI document")
+        }
+
+        "CURRENT names the V7 DTO generation; its wire spelling stays 'v1'" in {
+            // The generation side of the binding: CURRENT must stay equal to the
+            // V7 generation alias, and the V7 generation's wire spelling is the
+            // legacy 'v1' token (never 'v7' — that spelling must not reach the
+            // wire, 'v8' is the next token ISSUED, at the V8 DTO landing).
+            FireboxApiVersion.CURRENT shouldBe ApiVersion.v7
+            ApiVersion.v7 shouldBe ApiVersion.v1
+            FireboxApiVersion.CURRENT shouldBe "v1"
         }
     }
 

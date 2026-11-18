@@ -94,6 +94,8 @@ object I18nData_UI:
         offline_unavailable     : StringFormat1,
         /** `{0}` = firebox kind: the service is unreachable and nothing is cached. */
         kind_unavailable        : StringFormat1,
+        /** `{0}` = firebox kind: the service speaks a newer API version — reload the page. */
+        version_mismatch        : StringFormat1,
         /**
          * `{0}` = firebox kind, `{1}` = the failed pre-check items (comma-joined).
          * A 422 geometry pre-check rejection names each failed check instead of

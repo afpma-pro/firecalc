@@ -8,6 +8,7 @@ package afpma.firecalc.ui.remote
 import afpma.firecalc.dto.v5.Firebox_V4
 import afpma.firecalc.engine.alg.en15544.FireboxKind
 import afpma.firecalc.firebox_calc_api.*
+import afpma.firecalc.ui.i18n.implicits.I18N_UI
 import afpma.firecalc.ui.models.{firebox_var}
 import afpma.firecalc.ui.utils.{FireboxCalcCache, FireboxKindLabel, RemoteDataState}
 import afpma.firecalc.units.coulombutils.meters
@@ -39,6 +40,10 @@ object RemotePrefetchFailureSpec extends TestSuite:
     // One fake client, one set of poll/settle helpers: see RemotePrefetchHarness.
 
     import RemotePrefetchHarness.*
+
+    /** The expected version-mismatch banner, composed through the same i18n accessor production renders. */
+    private def versionMismatchBanner(using Locale): String =
+        I18N_UI.remote_calc.version_mismatch(FireboxKindLabel(FireboxKind.Ecolabeled))
 
     val tests = Tests {
 
@@ -373,6 +378,54 @@ object RemotePrefetchFailureSpec extends TestSuite:
                         message = "Request body could not be decoded"
                     )
                 )
+            }
+        }
+
+        test("400 unsupported_api_version — the version-mismatch banner, never the generic kind-unavailable") {
+            serialized {
+                given Locale = Locales.fr
+                given Owner  = new Owner {}
+
+                // The service is reachable and healthy — it just speaks a newer
+                // wire generation than this application. Envelope mirrors the
+                // production gate byte-for-shape: 400 + stable id + the
+                // `api_version` per-item detail (the gate DOES carry details —
+                // a 400 whose discriminator is not the pre-check pair must
+                // never unlock the 422 per-item rendering). The degrade
+                // message must tell the user to reload the page, not that the
+                // service is unreachable: the equality pin against the
+                // version_mismatch banner carries the classification contract.
+                // Strings mirror the CURRENT (V7-generation, wire spelling
+                // 'v1') server's real rejection of a foreign token: exactly
+                // what the gate emits today for any token != 'v1'.
+                val store = installWindow()
+                setNavigatorOnline(true             )
+                loadEcolabeled    ("fail-400-apiver")
+                val fake = new FakeClient(_ =>
+                    Future.successful(
+                        Left(
+                            CalculationFailure.ProtocolError(
+                                400,
+                                CalculationFailure.UnsupportedApiVersionError,
+                                "API version 'v2' is not supported by this calculation service (expected 'v1'). " +
+                                    "Update the FireCalc application and reload.",
+                                Some(List(WireErrorItem("api_version", "expected v1, got v2")))
+                            )
+                        )
+                    )
+                )
+                runCycleWith(fake).flatMap { _ =>
+                    awaitState(RemoteFireboxPrefetch.remoteDataStatesSig)(isFailed(_, FireboxKind.Ecolabeled)).map {
+                        states =>
+                            states(FireboxKind.Ecolabeled) match
+                                case RemoteDataState.Failed(reason) =>
+                                    assert(reason == versionMismatchBanner        )
+                                    assert(!reason.contains(kindUnavailableBanner))
+                                case other                          => sys.error(s"expected Failed, got $other")
+                            assert(fake.calls == 1)
+                            assert(store.isEmpty  )
+                    }
+                }
             }
         }
 

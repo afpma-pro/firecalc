@@ -139,7 +139,7 @@ class CalculationReportServiceImpl(
                 )
 
                 FireboxCalcRequest        (
-                    apiVersion         = ApiVersion.v1,
+                    apiVersion         = FireboxApiVersion.CURRENT,
                     kind               = kind,
                     firebox            = firebox,
                     params             = params,

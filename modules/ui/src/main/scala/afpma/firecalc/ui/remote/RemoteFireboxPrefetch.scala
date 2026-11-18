@@ -365,7 +365,7 @@ object RemoteFireboxPrefetch:
             n_min = Some(WireConversions.qtyDToWireQty[Percent](app.n_min))
         )
         val request = FireboxCalcRequest(
-            apiVersion         = ApiVersion.v1,
+            apiVersion         = FireboxApiVersion.CURRENT,
             kind               = wireKind,
             firebox            = firebox,
             params             = params,
@@ -520,16 +520,25 @@ object RemoteFireboxPrefetch:
      * non-empty details, NOT on details presence alone — so a 400
      * malformed_request that also carries items is never mistaken for a geometry
      * verdict, and it gives the payments report consumer the same classification
-     * to key off, so the two surfaces cannot drift once it adopts it. Every other
+     * to key off, so the two surfaces cannot drift once it adopts it.
+     *
+     * A 400 `unsupported_api_version` is checked BEFORE the pre-check branch:
+     * the service is reachable and healthy, it just speaks a newer wire
+     * generation than this application — the banner tells the user to reload
+     * the page instead of reporting an unreachable service. Every other
      * failure keeps the existing generic banner.
      */
     private def unavailableMessageFor(kindLabel: String, failure: CalculationFailure)(using
         Locale
     ): String =
-        failure.preCheckDetails match
-            case Some(items) =>
-                I18N_UI.remote_calc.precheck_failed(kindLabel, items.map(_.message).mkString(", "))
-            case None        => I18N_UI.remote_calc.kind_unavailable(kindLabel)
+        failure match
+            case CalculationFailure.ProtocolError(_, CalculationFailure.UnsupportedApiVersionError, _, _) =>
+                I18N_UI.remote_calc.version_mismatch(kindLabel)
+            case _                                                                                        =>
+                failure.preCheckDetails match
+                    case Some(items) =>
+                        I18N_UI.remote_calc.precheck_failed(kindLabel, items.map(_.message).mkString(", "))
+                    case None        => I18N_UI.remote_calc.kind_unavailable(kindLabel)
 
     // =========================================================================
     //  Derived public signals — pure projections of the one state map
