@@ -326,7 +326,7 @@ class PipeChainRotationSuite extends AnyFlatSpec with Matchers:
             5 -> TBend(90.0, Some(absDirRear)),  // in scope, pinned — count
             6 -> TBend(90.0, Some(absDirRight))  // out of scope — excluded
         )
-        val count = PipeChainRotation.downstreamPinCount(elems, editedIdx = 1, scopeEndIdx = 6)
+        val count = PipeChainRotation.downstreamPinCount(elems, lowerBound = Some(1), scopeEndIdx = 6)
         count shouldBe 3
     }
 

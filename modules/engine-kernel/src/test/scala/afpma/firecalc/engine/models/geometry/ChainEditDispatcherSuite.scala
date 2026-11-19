@@ -500,6 +500,27 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
             case _              => fail("Expected ChimneySlot at idx 2")
     }
 
+    it should "rotate the pin directly after an inserted direction change along with the rest of the downstream" in {
+        val pre  = simpleFlue(sectionNamed("h"), bend(90.0, Some(adFront)), bend(90.0, Some(adLeft)))
+        val newS = simpleFlue(sectionNamed("h"), bend(90.0, None), bend(90.0, Some(adFront)), bend(90.0, Some(adLeft)))
+        val edit = ChainEditDispatcher.detectEdit(pre, newS).getOrElse(fail("no insert detected"))
+        edit shouldBe InsertEdit(ChainCoord(0, 1), 90.0, InsertKind.DescriptorLevel)
+
+        val rewritten = ChainEditDispatcher(pre, newS, edit, RigidRotation, initialFrame = rearInitialFrame)
+
+        val pins = rewritten match
+            case Seq(FlueSlot(d), _*) =>
+                d.collect { case b: FDElem15.AddSharpeAngle_0_to_180 =>
+                    b.absDir
+                }
+            case other                => fail(s"expected a flue slot, got $other")
+        pins shouldBe List(
+            Some(absDir(Right, Horizontal)),
+            Some(absDir(Left, Horizontal) ),
+            Some(absDir(Rear, Horizontal) )
+        )
+    }
+
     it should "return raw new slots when descriptor insertion has no incoming frame" in {
         val pre  = simpleFlue(
             sectionNamed("before"),

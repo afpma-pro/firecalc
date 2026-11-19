@@ -56,7 +56,7 @@ object PipeChainRotation:
             (oldDirOpt, newDirOpt) match
                 case (Some(oldDir), Some(newDir)) =>
                     val (axis, angleRad) = rotationBetween(oldDir, newDir)
-                    rewriteWithRotation(newElems, editedIdx, scopeEndIdx, axis, angleRad)
+                    rewriteWithRotation(newElems, Some(editedIdx), scopeEndIdx, axis, angleRad)
                 case _ => newElems
 
     /**
@@ -68,7 +68,7 @@ object PipeChainRotation:
      */
     def rewriteWithRotation[E](
         elems     : Seq[(Int, E)],
-        lowerBound: Int,
+        lowerBound: Option[Int],
         upperBound: Int,
         axis      : Vec3,
         angleRad  : Double
@@ -76,7 +76,7 @@ object PipeChainRotation:
         if math.abs(angleRad) < 1e-9 then elems
         else
             elems.map { case (idx, elem) =>
-                if idx <= lowerBound || idx >= upperBound then (idx, elem)
+                if idx >= upperBound || lowerBound.exists(idx <= _) then (idx, elem)
                 else
                     ext.asDirectionChange.lift(elem) match
                         case Some((_, Some(absDir))) =>
@@ -111,17 +111,17 @@ object PipeChainRotation:
      * Used by the UI to decide whether to show the rotation offer.
      *
      * @param elems       indexed element list
-     * @param editedIdx   element index that was edited (exclusive lower bound)
+     * @param lowerBound  exclusive lower bound, `None` counts from the scope start
      * @param scopeEndIdx exclusive upper bound
      * @return number of pinned direction-change elements in the downstream scope
      */
     def downstreamPinCount[E](
         elems      : Seq[(Int, E)],
-        editedIdx  : Int,
+        lowerBound : Option[Int],
         scopeEndIdx: Int
     )(using ext: FrameReplay.ElemExtractors[E]): Int =
         elems.count: (idx, elem) =>
-            idx > editedIdx && idx < scopeEndIdx &&
+            idx < scopeEndIdx && lowerBound.forall(idx > _) &&
                 ext.asDirectionChange.lift(elem).exists(_._2.isDefined)
 
     /**

@@ -145,7 +145,7 @@ object ChainEditDispatcher:
         newDir: Vec3
     ): Seq[PostFireboxPipeDescrSlot_V7] =
         val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
-        rotateDownstream(slots, startSlotIdx = 0, startElemLb = -1, axis, angleRad)
+        rotateDownstream(slots, startSlotIdx = 0, skipThrough = None, axis, angleRad)
 
     /**
      * Pure decision function for initial-direction changes.
@@ -202,8 +202,8 @@ object ChainEditDispatcher:
         if coord.slotIdx < 0 || coord.slotIdx >= slots.length then 0
         else
             (coord.slotIdx until slots.length).foldLeft(0) { (acc, sIdx) =>
-                val lb = if sIdx == coord.slotIdx then coord.elemIdx else -1
-                acc + slots(sIdx).pinCount(lb)
+                val skip = if sIdx == coord.slotIdx then Some(coord.elemIdx) else None
+                acc + slots(sIdx).pinCount(skip)
             }
 
     // ── ChainEditDetector (Finding 2: separation of detection from dispatch) ──
@@ -451,7 +451,7 @@ object ChainEditDispatcher:
             (oldExitDirection(current, edit, initialFrame), exitDirection(current, coord, initialFrame)) match
                 case (Some(oldDir), Some(newDir)) =>
                     val (axis, angleRad) = PipeChainRotation.rotationBetween(oldDir, newDir)
-                    rotateDownstream(current, coord.slotIdx, coord.elemIdx, axis, angleRad)
+                    rotateDownstream(current, coord.slotIdx, Some(coord.elemIdx), axis, angleRad)
                 case _ => current
 
     /**
@@ -512,13 +512,11 @@ object ChainEditDispatcher:
      * Shared downstream rotation helper (Finding 3).
      *
      * Rotates all pins from `startSlotIdx` onward by `(axis, angleRad)`.
-     * At the start slot, only pins at index >= `startElemLb` are rotated;
-     * in subsequent slots all pins are rotated.
      */
     private def rotateDownstream(
         slots       : Seq[PostFireboxPipeDescrSlot_V7],
         startSlotIdx: Int,
-        startElemLb : Int,
+        skipThrough : Option[Int],
         axis        : Vec3,
         angleRad    : Double
     ): Seq[PostFireboxPipeDescrSlot_V7] =
@@ -526,7 +524,7 @@ object ChainEditDispatcher:
         else
             slots.zipWithIndex.map { (slot, sIdx) =>
                 if sIdx < startSlotIdx then slot
-                else slot.rotatePins(if sIdx == startSlotIdx then startElemLb else -1, axis, angleRad)
+                else slot.rotatePins(if sIdx == startSlotIdx then skipThrough else None, axis, angleRad)
             }
 
     /**
@@ -568,7 +566,7 @@ object ChainEditDispatcher:
                 val (azDeg, elDeg) = AbsoluteDirection.toAzimuthElevationDeg(targetDir)
                 val newExitDir = Vec3.fromAzimuthElevation(azDeg, elDeg)
                 val (axis, angleRad) = PipeChainRotation.rotationBetween(frame.direction, newExitDir)
-                rotateDownstream(withAbsDir, ie.coord.slotIdx, ie.coord.elemIdx + 1, axis, angleRad)
+                rotateDownstream(withAbsDir, ie.coord.slotIdx, Some(ie.coord.elemIdx), axis, angleRad)
             case None        => newSlots
 
     // ── Slot-level primitives (polymorphic dispatch collapsed into extensions) ──
@@ -627,16 +625,16 @@ object ChainEditDispatcher:
             case ChimneySlot(d)     => FrameReplay.replayFrame(indexed(d), upTo, init)
             case NoFlueSlot         => init
 
-        private def pinCount(lb: Int): Int = slot match
-            case FlueSlot(d)        => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
-            case ThermalFlueSlot(d) => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
-            case ConnectorSlot(d)   => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
-            case ChimneySlot(d)     => PipeChainRotation.downstreamPinCount(indexed(d), lb, d.length)
+        private def pinCount(skipThrough: Option[Int]): Int = slot match
+            case FlueSlot(d)        => PipeChainRotation.downstreamPinCount(indexed(d), skipThrough, d.length)
+            case ThermalFlueSlot(d) => PipeChainRotation.downstreamPinCount(indexed(d), skipThrough, d.length)
+            case ConnectorSlot(d)   => PipeChainRotation.downstreamPinCount(indexed(d), skipThrough, d.length)
+            case ChimneySlot(d)     => PipeChainRotation.downstreamPinCount(indexed(d), skipThrough, d.length)
             case NoFlueSlot         => 0
 
-        private def rotatePins(lb: Int, axis: Vec3, angleRad: Double): PostFireboxPipeDescrSlot_V7 =
+        private def rotatePins(skipThrough: Option[Int], axis: Vec3, angleRad: Double): PostFireboxPipeDescrSlot_V7 =
             def rw[E](d: Seq[E])(using FrameReplay.ElemExtractors[E]): Seq[E] =
-                PipeChainRotation.rewriteWithRotation(indexed(d), lb, d.length, axis, angleRad).map(_._2)
+                PipeChainRotation.rewriteWithRotation(indexed(d), skipThrough, d.length, axis, angleRad).map(_._2)
             slot match
                 case FlueSlot(d)        => FlueSlot       (rw(d))
                 case ThermalFlueSlot(d) => ThermalFlueSlot(rw(d))
