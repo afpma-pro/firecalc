@@ -134,6 +134,17 @@
 
 set -euo pipefail
 
+# Self-location, hardened against degenerate invocations (e.g. a script fed
+# via stdin, where ${BASH_SOURCE[0]} is "bash" and dirname resolves to the
+# CWD): if this script's own file is not in the resolved dir, anchor via the
+# git toplevel instead of silently computing a wrong path.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+_self="$(basename -- "${BASH_SOURCE[0]:-$0}")"
+if [[ ! -f "$SCRIPT_DIR/$_self" ]]; then
+    echo "warning: push-tree-to-vps.sh invoked without a resolvable script path; anchoring via git toplevel" >&2
+    SCRIPT_DIR="$(cd -- "$(git rev-parse --show-toplevel)/scripts/deploy" && pwd)"
+fi
+
 if [[ $# -ne 3 ]]; then
     echo "usage: ${0##*/} <SRC_DIR> <DEST_DIR> <EXCLUDE_LIST>" >&2
     exit 2
