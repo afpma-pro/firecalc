@@ -51,9 +51,9 @@ lazy val engine_version    =
         .orElse(sys.props.get("FIRECALC_PUBLISH_VERSION"))
         .getOrElse(engine_version_default)
 
-lazy val reports_base_version  = "1.0.2"
-lazy val payments_base_version = "1.0.2"
-lazy val ui_base_version       = "1.0.2"
+lazy val reports_base_version  = "1.0.3"
+lazy val payments_base_version = "1.0.3"
+lazy val ui_base_version       = "1.0.3"
 
 // Repository information (single source of truth)
 lazy val githubOwner = "afpma-pro"
