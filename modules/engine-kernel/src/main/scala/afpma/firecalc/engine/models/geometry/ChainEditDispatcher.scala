@@ -357,6 +357,19 @@ object ChainEditDispatcher:
                 case (ChimneySlot(o), ChimneySlot(n)        ) => scanDescr[ThermalPipeDescr_13384_V4](slotIdx, o, n)
                 case _ => Iterator.empty
 
+        private def editSite[E](
+            oldDescr: Seq[E],
+            newDescr: Seq[E],
+            newElem : E
+        ): Option[Int] =
+            val appearedAt = oldDescr
+                .zip(newDescr)
+                .zipWithIndex
+                .collect { case ((oldElem, newElemAtI), i) if newElemAtI == newElem && oldElem != newElem => i }
+            appearedAt match
+                case Seq(site) => Some(site)
+                case _         => None
+
         /**
          * Classify a single element replacement.
          *
@@ -369,13 +382,18 @@ object ChainEditDispatcher:
          */
         private def classifyReplacement[E](
             slotIdx : Int,
+            oldDescr: Seq[E],
             newDescr: Seq[E],
             oldElem : E,
             newElem : E
         )(using ext: FrameReplay.ElemExtractors[E]): Option[ChainEdit] =
-            (ext.asDirectionChange.lift(oldElem), ext.asDirectionChange.lift(newElem)) match
-                case (Some((oldAng, oldAbs)), Some((newAng, newAbs))) =>
-                    val coord = ChainCoord(slotIdx, newDescr.indexOf(newElem))
+            (
+                ext.asDirectionChange.lift(oldElem                    ),
+                ext.asDirectionChange.lift(newElem                    ),
+                editSite                  (oldDescr, newDescr, newElem)
+            ) match
+                case (Some((oldAng, oldAbs)), Some((newAng, newAbs)), Some(site)) =>
+                    val coord = ChainCoord(slotIdx, site)
                     if oldAng != newAng then
                         oldAbs.map                    (oa => AngleEdit(coord, oldAng.toUnit[Degree].value, newAng.toUnit[Degree].value, oa))
                     else if oldAbs != newAbs then Some(DirectionEdit(coord, oldAbs, newAbs)                                                )
@@ -404,7 +422,7 @@ object ChainEditDispatcher:
                 val replacedOld = oldDescr.diff(newDescr).filter(ext.asDirectionChange.isDefinedAt)
                 val replacedNew = newDescr.diff(oldDescr).filter(ext.asDirectionChange.isDefinedAt)
                 if replacedOld.length == 1 && replacedNew.length == 1 then
-                    classifyReplacement(slotIdx, newDescr, replacedOld.head, replacedNew.head).iterator
+                    classifyReplacement(slotIdx, oldDescr, newDescr, replacedOld.head, replacedNew.head).iterator
                 else Iterator.empty
 
     // ── Stages ─────────────────────────────────────────────────────────

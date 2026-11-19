@@ -56,6 +56,10 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
     def bend(angleDeg: Double, pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V4 =
         FDElem15.AddSharpeAngle_0_to_180("b", angleDeg.degrees, pin)
 
+    private val collision     = bend(90.0, Some(adUp))
+    private val edited        = bend(90.0, Some(adLeft))
+    private val downstreamPin = bend(90.0, Some(adRight))
+
     /** A FlueSlot split/merge element — also a 90° direction change (see `IsDirectionChange`). */
     def mergeFlow(pin: Option[AbsoluteDirection]): FlowOnlyPipeDescr_15544_V4 =
         FDElem15.MergeTwoFlowsIntoSingleWith90DegTurn("m", pin, Circle(0.18.meters))
@@ -226,7 +230,7 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         // overwrote B through the dispatcher's rewrite.
         val old = twoSlotChain(Seq(section(), bend(90.0, Some(adDown))), Seq(section(), bend(90.0, Some(adLeft))))
         val nw  = Seq(old(1), FlueSlot(Seq(section(), bend(45.0, Some(adDown)))), ChimneySlot(Seq.empty))
-        // The coordinate is read off the moved slot's NEW position (`newDescr.indexOf`), so its bend —
+        // The coordinate is read off where the edit appeared (`editSite`), so its bend —
         // the second descriptor element — lands at elemIdx 1.
         ChainEditDispatcher.detectEdit(old, nw) shouldBe Some(
             AngleEdit(ChainCoord(1, 1), oldAngleDeg = 90.0, newAngleDeg = 45.0, oldAbsDir = adDown)
@@ -325,6 +329,33 @@ class ChainEditDispatcherSuite extends AnyFlatSpec with Matchers:
         ChainEditDispatcher.detectEdit(old, upd) shouldBe Some(
             DirectionEdit(coord, oldAbsDir = Some(adRight), newAbsDir = Some(adFront))
         )
+    }
+
+    it should "attribute a DirectionEdit to the changed element, not the first one equal to its new value" in {
+        val old = simpleFlue(collision, edited, downstreamPin)
+        val upd = simpleFlue(collision, collision, downstreamPin)
+
+        ChainEditDispatcher.detectEdit(old, upd) shouldBe Some(
+            DirectionEdit(ChainCoord(0, 1), oldAbsDir = Some(adLeft), newAbsDir = Some(adUp))
+        )
+    }
+
+    it should "keep the edited element's pin when its new value collides with an upstream element" in {
+        val old  = simpleFlue(collision, edited, downstreamPin)
+        val upd  = simpleFlue(collision, collision, downstreamPin)
+        val edit = ChainEditDispatcher.detectEdit(old, upd).getOrElse(fail("expected the direction edit"))
+        edit shouldBe DirectionEdit(ChainCoord(0, 1), Some(adLeft), Some(adUp))
+
+        val rewritten = ChainEditDispatcher(old, upd, edit, RigidRotation, initialFrame = rearInitialFrame)
+
+        val pins = rewritten match
+            case Seq(FlueSlot(d), _*) =>
+                d.map {
+                    case b: FDElem15.AddSharpeAngle_0_to_180 => b.absDir
+                    case other => fail(s"expected a pinned bend, got $other")
+                }
+            case other                => fail(s"expected a flue slot, got $other")
+        pins shouldBe List(Some(adUp), Some(adUp), Some(absDir(Front, Horizontal)))
     }
 
     it should "return AngleEdit (not DirectionEdit) when both angle and absDir change on same element" in {
