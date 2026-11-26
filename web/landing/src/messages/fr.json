@@ -2,14 +2,14 @@
   "hero": {
     "title": "FireCalc AFPMA",
     "subtitle": "Logiciel de dimensionnement pour poêles maçonnés",
-    "description": "Logiciel certifié et conforme aux normes EN 15544 et EN 13384",
+    "description": "Logiciel certifié et conforme aux normes NF EN 15544 et NF EN 13384",
     "cta_online": "Version Web",
     "version_1_release": "Version 1.0 — novembre 2026"
   },
   "features": {
     "title": "Fonctionnalités clés",
     "feature1_title": "Respect des normes",
-    "feature1_desc": "Conforme aux normes européennes\nEN 15544 et EN 13384",
+    "feature1_desc": "Conforme aux normes européennes\nNF EN 15544 et NF EN 13384",
     "feature2_title": "Logiciel Reconnu",
     "feature2_desc": "Reconnu par l'ADEME et les pouvoirs publics => [page officielle](https://www.afpma.pro) <=",
     "feature3_title": "Un outil pro",

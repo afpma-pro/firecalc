@@ -2,14 +2,14 @@
   "hero": {
     "title": "FireCalc AFPMA",
     "subtitle": "Dimensioning software for one-off masonry heaters",
-    "description": "Open-source software compliant with EN 15544 and EN 13384 standards",
+    "description": "Open-source software compliant with NF EN 15544 and NF EN 13384 standards",
     "cta_online": "Launch the Web App",
     "version_1_release": "Version 1.0 — November 2026"
   },
   "features": {
     "title": "Key Features",
     "feature1_title": "Standards Compliance",
-    "feature1_desc": "Compliant with European standards\nEN 15544 and EN 13384",
+    "feature1_desc": "Compliant with European standards\nNF EN 15544 and NF EN 13384",
     "feature2_title": "Recognized Software",
     "feature2_desc": "Recognized by ADEME and public authorities => [official page](https://www.afpma.pro) <=",
     "feature3_title": "A Pro Tool",
